@@ -1,0 +1,179 @@
+
+/* ==========================================================
+   CORREDOR SÓLIDO - MASTER CARD v2
+========================================================== */
+
+/* CONTENEDOR */
+.master-card{
+    position:relative;
+    width:98%;
+    max-width:none;
+    margin:-112px auto 0;
+    z-index:30;
+}
+
+/* TARJETA */
+.mc-shell{
+    position:relative;
+    overflow:hidden;
+    border-radius:42px;
+    background:linear-gradient(180deg,#161f2d 0%,#05080f 100%);
+    box-shadow:
+        0 30px 80px rgba(0,0,0,.55),
+        0 0 48px rgba(0,170,255,.14);
+}
+
+.mc-shell::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    background:
+        radial-gradient(circle at 50% -15%,rgba(46,199,255,.24),transparent 42%),
+        linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.01));
+}
+
+.mc-shell::after{
+    content:"";
+    position:absolute;
+    inset:0;
+    border-radius:42px;
+    border:1px solid rgba(65,210,255,.18);
+    box-shadow:
+        0 0 28px rgba(42,190,255,.30),
+        inset 0 0 24px rgba(60,210,255,.04);
+}
+
+/* MUESCA */
+.mc-notch{
+    position:absolute;
+    left:50%;
+    top:-62px;
+    transform:translateX(-50%);
+    width:320px;
+    height:124px;
+    border-radius:0 0 170px 170px;
+    background:linear-gradient(180deg,#161f2d,#05080f);
+    border-left:1px solid rgba(65,210,255,.18);
+    border-right:1px solid rgba(65,210,255,.18);
+    border-bottom:1px solid rgba(65,210,255,.18);
+}
+
+/* GLOW */
+.mc-glow{
+    position:absolute;
+    left:50%;
+    top:-36px;
+    transform:translateX(-50%);
+    width:430px;
+    height:140px;
+    background:radial-gradient(ellipse,rgba(55,210,255,.34),transparent 72%);
+    filter:blur(26px);
+    pointer-events:none;
+}
+
+/* CONTENIDO */
+.mc-content{
+    position:relative;
+    z-index:2;
+    padding:78px 30px 30px;
+}
+
+.mc-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:20px;
+}
+
+.mc-label{
+    display:block;
+    margin-bottom:12px;
+    color:#3bc6ff;
+    font-size:.72rem;
+    font-weight:700;
+    letter-spacing:2px;
+}
+
+.mc-top h2{
+    margin:0;
+    color:#fff;
+    font-size:2.05rem;
+    font-weight:800;
+}
+
+.mc-top p{
+    margin:8px 0 0;
+    color:#9eb2c9;
+}
+
+.mc-change{
+    border:none;
+    border-radius:999px;
+    padding:12px 22px;
+    color:#fff;
+    background:rgba(255,255,255,.06);
+}
+
+.mc-divider{
+    height:1px;
+    margin:28px 0;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.08),transparent);
+}
+
+.mc-metrics{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:10px;
+    text-align:center;
+}
+
+.metric-value{
+    display:block;
+    color:#fff;
+    font-size:2rem;
+    font-weight:800;
+}
+
+.metric-label{
+    display:block;
+    margin-top:8px;
+    color:#8ea4bc;
+    font-size:.82rem;
+}
+
+.mc-coach{
+    margin-top:8px;
+    padding:20px;
+    border-radius:22px;
+    background:rgba(255,255,255,.035);
+    border:1px solid rgba(255,255,255,.05);
+}
+
+.coach-title{
+    display:block;
+    margin-bottom:10px;
+    color:#3bc6ff;
+    font-weight:700;
+}
+
+.mc-coach p{
+    margin:0;
+    color:#d3dce7;
+    line-height:1.6;
+}
+
+.mc-start{
+    width:100%;
+    height:68px;
+    margin-top:28px;
+    border:none;
+    border-radius:24px;
+    color:#fff;
+    font-size:1rem;
+    font-weight:700;
+    cursor:pointer;
+    background:linear-gradient(90deg,#116dff,#2fcfff);
+    box-shadow:
+        0 12px 35px rgba(36,184,255,.35),
+        inset 0 1px 0 rgba(255,255,255,.18);
+}

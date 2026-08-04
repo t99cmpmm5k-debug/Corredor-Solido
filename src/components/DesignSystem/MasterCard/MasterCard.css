@@ -1,0 +1,207 @@
+/*==================================================
+  MASTER CARD
+==================================================*/
+
+.master-card{
+
+    position:relative;
+
+    width:100%;
+
+    max-width:700px;
+
+    margin:-120px auto 0;
+
+    z-index:30;
+
+    padding:0 6px;
+
+}
+
+
+
+/*==================================================
+  SHELL
+==================================================*/
+
+.mc-shell{
+
+    position:relative;
+
+    overflow:hidden;
+
+    border-radius:42px;
+
+background:
+linear-gradient(
+180deg,
+rgba(24,35,53,.99) 0%,
+rgba(11,17,28,.995) 100%
+);
+
+    box-shadow:
+
+        0 28px 70px rgba(0,0,0,.60),
+0 0 12px rgba(47,208,255,.18);
+
+}
+
+
+
+/*==================================================
+  CRISTAL
+==================================================*/
+
+.mc-shell::before{
+
+    content:"";
+
+    position:absolute;
+
+    inset:0;
+
+    background:
+
+        radial-gradient(
+
+            circle at 50% -15%,
+
+            rgba(255,255,255,.08),
+
+            transparent 42%
+
+        ),
+
+        linear-gradient(
+
+            180deg,
+
+            rgba(255,255,255,.05),
+
+            rgba(255,255,255,.015)
+
+        );
+
+}
+
+
+
+/*==================================================
+  BORDE
+==================================================*/
+
+.mc-shell::after{
+
+ content:"";
+
+position:absolute;
+
+inset:0;
+
+border-radius:42px;
+
+border:1px solid rgba(255,255,255,.05);
+
+box-shadow:
+
+0 0 6px rgba(47,208,255,.95),
+
+0 0 18px rgba(47,208,255,.55),
+
+0 0 40px rgba(47,208,255,.22),
+
+inset 0 0 22px rgba(255,255,255,.02);
+}
+
+
+
+/*==================================================
+  MUESCA
+==================================================*/
+
+.mc-notch{
+
+    position:absolute;
+
+    left:50%;
+
+    top:-82px;
+
+    transform:translateX(-50%);
+
+    width:420px;
+
+    height:165px;
+
+    border-radius:0 0 220px 220px;
+
+    background:
+
+        linear-gradient(
+
+            180deg,
+
+            var(--background-700),
+
+            var(--background-900)
+
+        );
+
+    border-left:1px solid var(--border-soft);
+
+    border-right:1px solid var(--border-soft);
+
+    border-bottom:1px solid var(--border-soft);
+
+}
+
+
+
+/*==================================================
+  GLOW
+==================================================*/
+
+.mc-glow{
+
+    position:absolute;
+
+    left:50%;
+
+    top:-34px;
+
+    transform:translateX(-50%);
+
+    width:470px;
+
+    height:160px;
+
+    background:
+
+        radial-gradient(
+
+            ellipse,
+
+            rgba(47,208,255,.40),
+
+            transparent 72%
+
+        );
+
+    filter:blur(34px);
+
+    pointer-events:none;
+
+}
+.mc-content{position:relative;z-index:2;padding:74px 28px 28px}
+.mc-top{display:flex;justify-content:space-between;align-items:flex-start;gap:18px}
+.mc-label{display:block;color:#35bfff;font-size:.72rem;font-weight:700;letter-spacing:2px;margin-bottom:12px}
+.mc-top h2{margin:0;color:#fff;font-size:2rem;font-weight:800}
+.mc-top p{margin:8px 0 0;color:#9fb1c7}
+.mc-change{border:none;border-radius:999px;padding:12px 20px;background:rgba(255,255,255,.06);color:#fff}
+.mc-divider{height:1px;margin:26px 0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.08),transparent)}
+.mc-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.mc-metric{text-align:center}.metric-value{display:block;color:#fff;font-size:2rem;font-weight:800}.metric-label{display:block;margin-top:8px;color:#90a4bb;font-size:.82rem}
+.mc-coach{margin-top:8px;padding:20px;border-radius:20px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05)}
+.coach-title{display:block;color:#40c6ff;font-weight:700;margin-bottom:10px}
+.mc-coach p{margin:0;color:#d4dde7;line-height:1.6}
+.mc-start{width:100%;height:64px;margin-top:24px;border:none;border-radius:22px;color:#fff;font-weight:700;font-size:1rem;background:linear-gradient(90deg,#157dff,#2ac8ff);box-shadow:0 12px 30px rgba(27,176,255,.28);cursor:pointer}

@@ -1,0 +1,186 @@
+.workout-icon{
+
+    --size:48px;
+
+    width:var(--size);
+    height:var(--size);
+
+    display:flex;
+    justify-content:center;
+    align-items:center;
+
+    position:relative;
+
+    border-radius:50%;
+
+    background:var(--card-background);
+
+    border:2px solid;
+
+    transition:
+        transform .25s,
+        box-shadow .25s,
+        border-color .25s;
+
+}
+
+.workout-icon::before{
+
+    content:"";
+
+    position:absolute;
+
+    inset:0;
+
+    border-radius:50%;
+
+    background:
+
+        radial-gradient(
+
+            circle,
+
+            rgba(255,255,255,.08),
+
+            transparent 70%
+
+        );
+
+}
+
+.workout-icon iconify-icon{
+
+    position:relative;
+
+    z-index:2;
+
+    font-size:30px;
+
+}
+
+/*=========================
+        TAMAÑOS
+=========================*/
+
+.workout-icon.sm{
+
+    --size:48px;
+
+}
+
+.workout-icon.md{
+
+    --size:64px;
+
+}
+
+.workout-icon.lg{
+
+    --size:60px;
+
+}
+
+/*=========================
+        RODAJE
+=========================*/
+
+.workout-icon.easy{
+
+    color:var(--color-success);
+    border-color:var(--color-success);
+
+}
+
+/*=========================
+        GYM
+=========================*/
+
+.workout-icon.gym{
+
+    color:#2faeff;
+    border-color:#2faeff;
+
+}
+
+/*=========================
+       SERIES
+=========================*/
+
+.workout-icon.series{
+
+    color:#25c8ff;
+    border-color:#25c8ff;
+
+}
+
+/*=========================
+       LARGA
+=========================*/
+
+.workout-icon.long{
+
+    color:var(--color-warning);
+    border-color:var(--color-warning);
+
+}
+
+/*=========================
+      DESCANSO
+=========================*/
+
+.workout-icon.rest{
+
+    color:var(--color-text-muted);
+    border-color:var(--color-text-muted);
+
+}
+
+/*=========================
+         LIBRE
+=========================*/
+
+.workout-icon.free{
+
+    color:var(--color-text-muted);
+    border-color:var(--color-text-muted);
+
+}
+
+/*=========================
+      COMPLETADO
+=========================*/
+
+.workout-icon.completed{
+
+   box-shadow:
+    0 0 8px currentColor;
+
+}
+
+/*=========================
+      SELECCIONADO
+=========================*/
+
+.workout-icon.selected{
+
+    transform:scale(1.04);
+
+    box-shadow:
+
+        0 0 8px currentColor,
+
+        0 0 18px color-mix(in srgb, var(--color-primary) 35%, transparent),
+
+        0 0 30px color-mix(in srgb, var(--color-primary) 12%, transparent);
+
+}
+
+/*=========================
+         HOVER
+=========================*/
+
+.timeline-day:hover .workout-icon{
+
+    transform:scale(1.05);
+
+}

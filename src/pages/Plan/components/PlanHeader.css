@@ -1,0 +1,383 @@
+.plan-header{
+
+    position:relative;
+
+    overflow:hidden;
+
+    border-radius:28px;
+
+    min-height:390px;
+
+    padding:34px;
+
+    isolation:isolate;
+
+    background:var(--color-background);
+
+}
+
+/* ==========================
+   IMAGEN
+========================== */
+
+.plan-background-image{
+
+    position:absolute;
+
+    inset:0;
+
+    width:100%;
+
+    height:100%;
+
+    object-fit:cover;
+
+    z-index:0;
+
+}
+
+/* ==========================
+   OVERLAY
+========================== */
+
+.plan-overlay{
+
+    position:absolute;
+
+    inset:0;
+
+    background:
+
+        linear-gradient(
+            180deg,
+            var(--hero-overlay-top) 0%,
+            var(--hero-overlay-middle) 40%,
+            var(--hero-overlay-bottom) 100%
+        );
+
+    z-index:1;
+
+}
+
+/* ==========================
+   GLOW
+========================== */
+
+.plan-glow{
+
+    position:absolute;
+
+    inset:0;
+
+    background:
+
+        radial-gradient(
+
+            circle at 50% 48%,
+
+            color-mix(in srgb, var(--color-glow) 34%, transparent),
+
+            color-mix(in srgb, var(--color-glow) 10%, transparent) 20%,
+
+            transparent 42%
+
+        );
+
+    z-index:2;
+
+}
+
+/* ==========================
+   CONTENIDO
+========================== */
+
+.plan-content{
+
+    position:relative;
+
+    z-index:3;
+
+    height:100%;
+
+    display:flex;
+
+    flex-direction:column;
+
+    justify-content:space-between;
+
+}
+
+/* ==========================
+   TOP
+========================== */
+
+.plan-header-top{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:flex-start;
+
+}
+
+.plan-title{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:10px;
+
+}
+
+.plan-header h1{
+
+    margin:0;
+
+    color:var(--text-primary);
+
+    font-size:78px;
+
+    line-height:.88;
+
+    font-weight:900;
+
+    letter-spacing:-.06em;
+
+}
+
+.plan-subtitle{
+
+    color:var(--text-secondary);
+
+    text-transform:uppercase;
+
+    letter-spacing:.12em;
+
+    font-size:14px;
+
+}
+
+/* ==========================
+   STATS
+========================== */
+
+.plan-stats{
+
+    display:grid;
+
+    grid-template-columns:1fr 170px 1fr;
+
+    align-items:center;
+
+    margin-top:56px;
+
+}
+
+/* ==========================
+   WEEK
+========================== */
+
+.plan-week{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:8px;
+
+}
+
+.week-label{
+
+    color:var(--color-primary);
+
+    font-size:15px;
+
+    font-weight:800;
+
+}
+
+.week-date{
+
+    color:var(--text-primary);
+
+    opacity:.82;
+
+    font-size:18px;
+
+}
+
+/* ==========================
+   PROGRESS
+========================== */
+
+.plan-progress{
+
+    display:flex;
+
+    flex-direction:column;
+
+    align-items:center;
+
+}
+
+.progress-ring{
+
+    width:145px;
+
+    height:145px;
+
+    border-radius:50%;
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+    color:var(--text-primary);
+
+    font-size:34px;
+
+    font-weight:900;
+
+    border:6px solid var(--color-primary);
+
+    box-shadow:
+        0 0 22px color-mix(in srgb, var(--color-glow) 45%, transparent),
+        0 0 60px color-mix(in srgb, var(--color-glow) 22%, transparent);
+
+}
+
+.plan-progress small{
+
+    margin-top:12px;
+
+    color:var(--text-primary);
+
+    opacity:.82;
+
+    font-size:13px;
+
+    letter-spacing:.08em;
+
+}
+
+/* ==========================
+   LOAD
+========================== */
+
+.plan-load{
+
+    display:flex;
+
+    flex-direction:column;
+
+    align-items:flex-end;
+
+    gap:10px;
+
+}
+
+.plan-load span{
+
+    color:var(--color-primary);
+
+    font-size:14px;
+
+    font-weight:700;
+
+}
+
+.plan-load strong{
+
+    color:var(--text-primary);
+
+    font-size:54px;
+
+    line-height:.95;
+
+}
+.load-bar{
+
+    width:150px;
+
+    height:8px;
+
+    border-radius:999px;
+
+    background:color-mix(in srgb, var(--text-primary) 16%, transparent);
+
+    overflow:hidden;
+
+    margin-top:2px;
+
+}
+
+.load-fill{
+
+    width:76%;
+
+    height:100%;
+
+    border-radius:999px;
+
+    background:linear-gradient(
+        90deg,
+        var(--color-primary),
+        var(--color-secondary)
+    );
+
+    box-shadow:0 0 18px color-mix(in srgb, var(--color-glow) 65%, transparent);
+
+}.plan-load::after{
+
+    content:"76%";
+
+    color:var(--text-primary);
+
+    opacity:.9;
+
+    font-size:14px;
+
+    margin-top:6px;
+
+}
+
+/* ==========================
+   BOTÓN +
+========================== */
+
+.plan-add-button{
+
+    width:62px;
+
+    height:62px;
+
+    border-radius:50%;
+
+    border:1px solid color-mix(in srgb, var(--card-border) 14%, transparent);
+
+    background:color-mix(in srgb, var(--card-background) 55%, transparent);
+
+    backdrop-filter:blur(18px);
+
+    color:var(--color-primary);
+
+    font-size:34px;
+
+    cursor:pointer;
+
+    transition:.25s;
+
+}
+
+.plan-add-button:hover{
+
+    transform:scale(1.05);
+
+    border-color:var(--color-primary);
+
+}

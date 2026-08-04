@@ -1,0 +1,106 @@
+/* ==========================================================
+   PÍLDORA FLOTANTE — separada de los bordes, mismo lenguaje neón
+   que las tarjetas pero un escalón por debajo de WeekSummary
+   (regla 3: acompaña, no compite con la MasterCard)
+========================================================== */
+
+.bottom-nav{
+    position:fixed;
+
+    /* position:fixed es siempre relativo al viewport, no a .home —
+       por eso se centra y se limita al mismo ancho máximo que .home
+       (520px, ver Home.css) menos sus 20px de margen a cada lado.
+       Si cambia ese max-width, este valor debe seguirlo. */
+    left:50%;
+    transform:translateX(-50%);
+    width:calc(100% - 40px);
+    max-width:480px;
+
+    bottom:calc(20px + env(safe-area-inset-bottom));
+
+    height:68px;
+
+    padding:0 8px;
+
+    display:flex;
+    align-items:center;
+    gap:4px;
+
+    border-radius:28px;
+
+    background:color-mix(in srgb, var(--navigation-background) 88%, transparent);
+    backdrop-filter:blur(20px);
+    -webkit-backdrop-filter:blur(20px);
+
+    border:1px solid color-mix(in srgb, var(--color-primary) 25%, transparent);
+
+    box-shadow:
+        0 8px 24px rgba(0,0,0,.25),
+        0 0 12px color-mix(in srgb, var(--color-glow) 12%, transparent);
+
+    z-index:100;
+}
+
+.nav-item{
+
+    flex:1;
+    min-width:0;
+
+    height:54px;
+
+    background:transparent;
+
+    border:none;
+
+    border-radius:18px;
+
+    color:var(--text-secondary);
+
+    display:flex;
+
+    flex-direction:column;
+
+    justify-content:center;
+
+    align-items:center;
+
+    gap:4px;
+
+    cursor:pointer;
+
+    transition:all .30s ease;
+
+}
+
+.nav-item iconify-icon{
+
+    font-size:30px;
+
+}
+
+.nav-item small{
+    font-size:11px;
+    font-weight:600;
+}
+
+.nav-item.active{
+
+    background:color-mix(in srgb, var(--navigation-active) 14%, transparent);
+
+    color:var(--navigation-active);
+
+    border:1px solid color-mix(in srgb, var(--navigation-active) 32%, transparent);
+
+    box-shadow:
+        0 0 14px color-mix(in srgb, var(--navigation-active) 22%, transparent),
+        inset 0 1px 0 rgba(255,255,255,.05);
+
+}
+
+.nav-item.active iconify-icon{
+
+    transform:translateY(-2px);
+
+    filter:drop-shadow(0 0 10px color-mix(in srgb, var(--navigation-active) 45%, transparent));
+
+}

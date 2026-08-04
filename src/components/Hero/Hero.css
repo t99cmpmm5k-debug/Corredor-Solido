@@ -1,0 +1,408 @@
+/* ==========================================================
+   HERO v3 - Corredor Sólido
+========================================================== */
+
+.hero{
+    position:relative;
+    width:100%;
+    height:760px;
+    overflow:hidden;
+}
+
+/* ==========================================================
+   IMAGEN
+========================================================== */
+
+.hero-image{
+    position:absolute;
+    inset:0;
+
+    width:100%;
+    height:100%;
+
+    object-fit:cover;
+
+    z-index:0;
+}
+
+/* ==========================================================
+   OVERLAY DINÁMICO
+========================================================== */
+
+/* ==========================================================
+   OVERLAY SUPERIOR
+========================================================== */
+
+.hero-overlay-top{
+
+    position:absolute;
+    inset:0;
+
+    background:
+        linear-gradient(
+            180deg,
+            var(--hero-overlay-top) 0%,
+            var(--hero-overlay-middle) 35%,
+            var(--hero-overlay-bottom) 100%
+        );
+
+    z-index:1;
+
+}
+
+/* ==========================================================
+   OVERLAY CENTRAL
+========================================================== */
+.hero-overlay-focus{
+
+    position:absolute;
+    inset:0;
+
+    background:
+        radial-gradient(
+            ellipse at 50% 18%,
+            color-mix(
+                in srgb,
+                var(--hero-overlay-top) 70%,
+                transparent
+            ),
+            transparent 72%
+        );
+
+    z-index:2;
+
+}
+
+/* ==========================================================
+   GLOW
+========================================================== */
+
+.hero-glow{
+
+    position:absolute;
+    inset:0;
+
+    pointer-events:none;
+
+    background:
+        radial-gradient(
+            circle at 50% 22%,
+            color-mix(
+                in srgb,
+                var(--color-glow) 35%,
+                transparent
+            ),
+            transparent 30%
+        );
+
+    z-index:3;
+
+}
+
+/* ==========================================================
+   HERO BOTTOM FADE
+========================================================== */
+
+.hero-bottom-fade{
+
+    position:absolute;
+
+    left:0;
+    right:0;
+    bottom:0;
+
+    height:180px;
+
+    pointer-events:none;
+
+    background:
+        linear-gradient(
+            180deg,
+            transparent 0%,
+            rgba(9,13,20,.15) 25%,
+            rgba(9,13,20,.45) 55%,
+            rgba(9,13,20,.82) 80%,
+            rgba(9,13,20,1) 100%
+        );
+
+    z-index:4;
+
+}
+/* ==========================================================
+   CONTENIDO
+========================================================== */
+
+.hero-content{
+    position:absolute;
+    inset:0;
+
+    display:flex;
+    flex-direction:column;
+
+    padding:42px 30px 120px;
+
+    color:#FFFFFF;
+
+    z-index:5;
+}
+
+.hero-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+}
+
+.hero-header-left{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+}
+
+.hero-greeting{
+
+    font-size:20px;
+    font-weight:800;
+
+    color:#FFFFFF;
+
+    letter-spacing:-0.02em;
+
+    text-shadow:
+        0 2px 6px rgba(0,0,0,.45),
+        0 6px 18px rgba(0,0,0,.35);
+
+}
+
+
+.hero-date{
+
+    font-size:14px;
+    font-weight:500;
+
+    color:rgba(255,255,255,.92);
+
+    text-shadow:
+        0 2px 6px rgba(0,0,0,.45);
+
+}
+
+/* ==========================================================
+   NOTIFICACIÓN
+========================================================== */
+
+.hero-notification{
+
+    width:46px;
+    height:46px;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    position:relative;
+
+    border-radius:50%;
+
+    background:var(--card-background);
+
+    border:1px solid var(--card-border);
+
+    backdrop-filter:blur(14px);
+
+    color:var(--text-primary);
+
+    box-shadow:var(--shadow-sm);
+
+}
+
+.hero-notification-dot{
+
+    position:absolute;
+
+    top:10px;
+    right:11px;
+
+    width:8px;
+    height:8px;
+
+    border-radius:50%;
+
+    background:var(--color-primary);
+
+    box-shadow:0 0 14px var(--color-glow);
+
+}
+
+/* ==========================================================
+   DIVISORES
+========================================================== */
+
+.hero-divider{
+
+    width:72px;
+    height:4px;
+
+    margin:42px 0 28px;
+
+    border-radius:999px;
+
+    background:var(--color-primary);
+
+    box-shadow:0 0 18px var(--color-glow);
+
+}
+
+.hero-divider-small{
+
+    width:52px;
+
+    margin:26px 0;
+
+}
+
+/* ==========================================================
+   TÍTULO
+========================================================== */
+
+.hero-title{
+
+    display:flex;
+    flex-direction:column;
+
+    gap:4px;
+
+    margin:0;
+
+    max-width:340px;
+
+    font-size:clamp(3rem,8vw,4.2rem);
+
+    line-height:.88;
+
+    letter-spacing:-.05em;
+
+    font-weight:900;
+
+    color:#FFFFFF;
+
+    text-shadow:
+    0 4px 12px rgba(0,0,0,.45),
+    0 12px 32px rgba(0,0,0,.55);
+
+}
+
+.hero-title span{
+
+    display:block;
+
+    color:var(--color-primary);
+
+    text-transform:uppercase;
+
+    font-weight:900;
+
+    letter-spacing:-.03em;
+
+}
+
+/* ==========================================================
+   COACH
+========================================================== */
+
+.hero-coach{
+
+    display:flex;
+
+    gap:16px;
+
+    max-width:360px;
+
+}
+
+.hero-coach-icon{
+
+    width:46px;
+    height:46px;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    border-radius:50%;
+
+    background:
+        color-mix(
+            in srgb,
+            var(--color-primary) 12%,
+            transparent
+        );
+
+    border:1px solid
+        color-mix(
+            in srgb,
+            var(--color-primary) 25%,
+            transparent
+        );
+
+    color:var(--color-primary);
+
+}
+
+.hero-coach-title{
+
+    display:block;
+
+    margin-bottom:10px;
+
+    font-size:1rem;
+
+    font-weight:800;
+
+    letter-spacing:-.02em;
+
+    color:#FFFFFF;
+
+    text-shadow:
+        0 2px 6px rgba(0,0,0,.40);
+
+}
+.hero-coach p{
+
+    margin:6px 0;
+
+   color:rgba(255,255,255,.93);
+
+text-shadow:
+    0 2px 8px rgba(0,0,0,.30);
+
+    line-height:1.55;
+
+    font-size:.95rem;
+
+}
+
+/* ==========================================================
+   RESPONSIVE
+========================================================== */
+
+@media (max-width:480px){
+
+    .hero{
+
+        height:700px;
+
+    }
+
+    .hero-content{
+
+        padding:36px 24px 110px;
+
+    }
+
+    .hero-title{
+
+        font-size:50px;
+
+    }
+
+}

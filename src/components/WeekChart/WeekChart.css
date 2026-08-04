@@ -1,0 +1,111 @@
+.week-chart{
+
+    display:flex;
+
+    align-items:flex-end;
+
+    justify-content:space-between;
+
+    gap:8px;
+
+}
+
+.week-chart-column{
+
+    flex:1;
+
+    display:flex;
+
+    flex-direction:column;
+
+    align-items:center;
+
+    justify-content:flex-end;
+
+    gap:8px;
+
+}
+
+.week-chart-bar{
+
+    width:100%;
+
+    border-radius:6px 6px 3px 3px;
+
+    transition:.25s;
+
+    background:var(--color-primary);
+
+    opacity:.6;
+
+}
+
+.week-chart-label{
+
+    font-size:.68rem;
+
+    font-weight:700;
+
+    color:var(--text-secondary);
+
+}
+
+/* Día sin sesión (rest/free) — apagado */
+
+.week-chart-bar.muted{
+
+    opacity:.25;
+
+}
+
+/* Día de hoy — único destacado */
+
+.week-chart-bar.highlighted{
+
+    opacity:1;
+
+    box-shadow:0 0 12px color-mix(in srgb, var(--color-primary) 45%, transparent);
+
+}
+
+/* ==========================================================
+   VARIANTE: card — tarjeta vertical (Home). Barras finas.
+========================================================== */
+
+.week-chart--card{
+
+    height:56px;
+
+}
+
+.week-chart--card .week-chart-bar{
+
+    max-width:14px;
+
+    border-radius:4px 4px 2px 2px;
+
+}
+
+/* ==========================================================
+   VARIANTE: strip — franja horizontal (Plan)
+========================================================== */
+
+.week-chart--strip{
+
+    height:40px;
+
+    gap:5px;
+
+}
+
+.week-chart--strip .week-chart-bar{
+
+    max-width:8px;
+
+}
+
+.week-chart--strip .week-chart-label{
+
+    font-size:.62rem;
+
+}

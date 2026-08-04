@@ -1,0 +1,28 @@
+.home{
+    min-height:100vh;
+}
+
+.hero{
+    height:260px;
+    background:#10253f;
+}
+
+.content{
+    padding:20px;
+}
+
+.card{
+    background:#152d4b;
+    border-radius:18px;
+    padding:20px;
+    margin-bottom:18px;
+}
+
+.card h2{
+    margin-bottom:10px;
+    font-size:20px;
+}
+
+.card p{
+    opacity:.8;
+}

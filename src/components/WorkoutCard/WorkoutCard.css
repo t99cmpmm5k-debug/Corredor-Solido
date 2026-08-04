@@ -1,0 +1,59 @@
+.workout-card{
+
+    margin-top:28px;
+
+    border-radius:28px;
+
+    background:var(--card-background);
+
+    border:1px solid color-mix(in srgb, var(--color-primary) 25%, transparent);
+
+    padding:28px;
+
+}
+
+.workout-day{
+
+    color:var(--color-primary);
+
+    font-size:.9rem;
+
+    font-weight:700;
+
+    text-transform:uppercase;
+
+    letter-spacing:.08em;
+
+}
+
+.workout-header h2{
+
+    margin-top:10px;
+
+    font-size:54px;
+
+    font-weight:800;
+
+    color:var(--text-primary);
+
+}
+
+.workout-header h2 span{
+
+    color:var(--color-primary);
+
+}
+
+.workout-header p{
+
+    margin-top:16px;
+
+    color:var(--text-secondary);
+
+    line-height:1.6;
+
+    font-size:18px;
+
+    max-width:520px;
+
+}

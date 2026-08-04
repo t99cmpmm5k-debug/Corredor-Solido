@@ -1,0 +1,46 @@
+.home {
+
+    min-height: 100vh;
+
+    background: #090b11;
+
+    color: #ffffff;
+
+    padding-bottom: 110px;
+
+    overflow-x: hidden;
+}
+
+.hero-layout {
+
+    position: relative;
+
+    width: 100%;
+}
+
+.week-chart-card {
+
+    margin: 0 20px 28px;
+}
+
+.home-content {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 24px;
+
+    padding: 0 18px 32px;
+}
+
+@media (min-width: 768px) {
+
+    .home {
+
+        max-width: 520px;
+
+        margin: 0 auto;
+    }
+
+}

@@ -1,0 +1,426 @@
+/* ==========================================================
+   MASTER CARD
+========================================================== */
+
+.master-card{
+
+    width:100%;
+
+    margin-top:-42px;
+
+    padding:0 20px 28px;
+
+    position:relative;
+
+    z-index:20;
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:14px;
+
+}
+
+/* ==========================================================
+   SESSION CARD
+========================================================== */
+.session-card{
+
+    position:relative;
+
+    min-height:270px;
+
+}
+
+/* ==========================================================
+   CRISTAL — superficie única, recortada por sessionCardOutline.js
+   con la silueta completa (muesca + esquinas + lados). Un solo
+   backdrop-filter para toda la tarjeta: no hay unión que disimular
+   porque no hay una segunda superficie.
+========================================================== */
+
+.session-glass{
+
+    position:absolute;
+
+    inset:0;
+
+    background:color-mix(in srgb, var(--card-background) 80%, transparent);
+
+    backdrop-filter:blur(26px);
+    -webkit-backdrop-filter:blur(26px);
+
+    z-index:0;
+
+}
+
+/* ==========================================================
+   REFLEJO SUPERIOR — recortado con la misma silueta para que no
+   pinte por encima de la muesca (donde no hay tarjeta, hay Hero)
+========================================================== */
+
+.session-highlight{
+
+    position:absolute;
+
+    left:2px;
+    right:2px;
+    top:2px;
+
+    height:75px;
+
+    background:
+
+        linear-gradient(
+
+            180deg,
+
+            rgba(255,255,255,.12) 0%,
+
+            rgba(255,255,255,.05) 35%,
+
+            rgba(255,255,255,.01) 70%,
+
+            transparent 100%
+
+        );
+
+    pointer-events:none;
+
+    z-index:1;
+
+}
+
+/* ==========================================================
+   CONTORNO — un solo trazo, mismo path que el cristal, siguiendo
+   TODO el contorno (esquinas, lados y muesca) sin excepciones
+========================================================== */
+
+.session-outline{
+
+    position:absolute;
+
+    inset:0;
+
+    width:100%;
+
+    height:100%;
+
+    overflow:visible;
+
+    pointer-events:none;
+
+    z-index:3;
+
+}
+
+.session-outline-stroke{
+
+    fill:none;
+
+    stroke:color-mix(in srgb, var(--color-primary) 85%, transparent);
+
+    stroke-width:2;
+
+    filter:
+
+        drop-shadow(0 10px 25px rgba(0,0,0,.20))
+        drop-shadow(0 30px 60px rgba(0,0,0,.35))
+        drop-shadow(0 0 7px color-mix(in srgb, var(--color-glow) 55%, transparent))
+        drop-shadow(0 0 36px color-mix(in srgb, var(--color-glow) 55%, transparent));
+
+}
+
+/* ==========================================================
+   CONTENIDO
+========================================================== */
+
+.session-content{
+
+    position:relative;
+
+    z-index:2;
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:18px;
+
+    padding:24px;
+
+    height:100%;
+
+}
+
+/* ==========================================================
+   HEADER
+========================================================== */
+
+.session-header{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+}
+
+.session-title{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+
+    font-size:11px;
+
+    font-weight:700;
+
+    letter-spacing:.20em;
+
+    text-transform:uppercase;
+
+    color:var(--text-primary);
+
+}
+
+.session-title svg{
+
+    width:16px;
+
+    height:16px;
+
+}
+
+/* ==========================================================
+   BOTÓN CAMBIAR
+========================================================== */
+
+.session-change{
+
+    display:inline-flex;
+
+    align-items:center;
+
+    gap:6px;
+
+    font-size:12px;
+
+    font-weight:700;
+
+    padding:8px 14px;
+
+    border-radius:999px;
+
+    background:color-mix(in srgb, var(--color-primary) 12%, transparent);
+
+    border:1px solid color-mix(in srgb, var(--color-primary) 25%, transparent);
+
+    color:var(--color-primary);
+
+    cursor:pointer;
+
+    opacity:.75;
+
+    transition:.25s;
+
+}
+
+.session-change:hover{
+
+    opacity:1;
+
+    background:color-mix(in srgb, var(--color-primary) 18%, transparent);
+
+}
+
+
+.session-change svg{
+
+    width:15px;
+
+    height:15px;
+
+}
+
+/* ==========================================================
+   CHIP ENTRENAMIENTO
+========================================================== */
+
+.session-type{
+
+    display:inline-flex;
+
+    align-items:center;
+
+    gap:10px;
+
+    width:max-content;
+
+    padding:12px 18px;
+    background:color-mix(in srgb, var(--color-primary) 12%, transparent);
+
+    border:1px solid color-mix(in srgb, var(--color-primary) 22%, transparent);
+
+    box-shadow:0 0 18px color-mix(in srgb, var(--color-primary) 8%, transparent);
+
+    color:var(--text-primary);
+
+    font-size:18px;
+
+    font-weight:700;
+
+}
+
+.session-type svg{
+
+    width:18px;
+
+    height:18px;
+
+}
+
+/* ==========================================================
+   MÉTRICAS
+========================================================== */
+
+.session-metrics{
+
+    display:flex;
+
+    align-items:stretch;
+
+    gap:0;
+
+}
+
+.metric{
+
+    flex:1;
+
+    display:flex;
+
+    flex-direction:column;
+
+    align-items:center;
+
+    justify-content:center;
+
+    gap:5px;
+
+    padding:0 10px;
+
+    border-right:1px solid color-mix(in srgb, var(--card-border) 60%, transparent);
+
+}
+
+.metric:last-child{
+
+    border-right:none;
+
+}
+
+.metric svg{
+
+    width:24px;
+
+    height:24px;
+
+    color:var(--color-primary);
+
+}
+
+.metric strong{
+
+    font-size:30px;
+
+    line-height:1;
+
+    font-weight:800;
+
+    color:var(--text-primary);
+
+    white-space:nowrap;
+
+}
+
+.metric-unit{
+
+    margin-left:3px;
+
+    font-size:14px;
+
+    font-weight:600;
+
+    color:var(--text-secondary);
+
+}
+
+.metric > span{
+
+    font-size:12px;
+
+    color:var(--text-secondary);
+
+}
+
+/* ==========================================================
+   BOTÓN INICIAR ENTRENAMIENTO
+========================================================== */
+
+.session-button{
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    gap:10px;
+
+    width:100%;
+
+    height:54px;
+
+    margin-top:8px;
+
+    border:none;
+
+    border-radius:18px;
+
+    background:linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--button-background) 100%, white 12%),
+        var(--button-background) 65%
+    );
+
+    color:var(--button-text);
+
+    font-size:15px;
+
+    font-weight:700;
+
+    cursor:pointer;
+
+    box-shadow:0 8px 20px rgba(0,0,0,.25);
+
+    transition:.25s;
+
+}
+
+.session-button:hover,
+.session-button:active{
+
+    transform:translateY(-2px);
+
+    filter:brightness(1.1);
+
+    box-shadow:
+        0 0 26px color-mix(in srgb, var(--color-glow) 55%, transparent),
+        0 8px 20px rgba(0,0,0,.25);
+
+}
