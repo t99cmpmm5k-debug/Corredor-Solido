@@ -6,6 +6,13 @@ export const weeklyGoal = 25; // TODO: objetivo a definir
 // Actualizar cada semana — de aquí se derivan las fechas de cada sesión.
 export const weekStartDate = "2026-08-03";
 
+export const weekEndDate = formatISODate(
+    (() => {
+        const start = parseISODate(weekStartDate);
+        return new Date(start.getFullYear(), start.getMonth(), start.getDate() + 6);
+    })()
+);
+
 export const week = [
 
 {
@@ -221,5 +228,20 @@ export function getVolume() {
         .reduce((sum, session) => sum + session.volume, 0);
 
     return { completed, goal: weeklyGoal };
+
+}
+
+// A diferencia del volumen (un objetivo que te propones), la carga es
+// una consecuencia de lo que el plan programa — el total no es un
+// objetivo declarado, es la suma de lo planificado esta semana.
+export function getLoad() {
+
+    const completed = week
+        .filter(session => session.status === "completed")
+        .reduce((sum, session) => sum + session.load, 0);
+
+    const total = week.reduce((sum, session) => sum + session.load, 0);
+
+    return { completed, total };
 
 }

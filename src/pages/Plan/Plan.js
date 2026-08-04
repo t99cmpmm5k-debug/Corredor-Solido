@@ -16,9 +16,7 @@ export function Plan() {
 
         <section class="plan-page">
 
-            ${PlanHeader()}
-
-            ${PlanTimeline(selectedWorkout)}
+            ${PlanHeader(PlanTimeline(selectedWorkout))}
 
             ${PlanWorkoutCard(selectedWorkout)}
             ${PlanLoadChart()}

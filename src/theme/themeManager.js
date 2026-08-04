@@ -2,6 +2,11 @@ import { THEMES, DEFAULT_THEME } from "./themes.js";
 
 const STORAGE_KEY = "corredor-solido-theme";
 
+// Distingue "elegiste este tema tú" de "lo puso applyAutomaticTheme()
+// según la hora" — sin esto, cada recarga pisa tu elección manual con
+// el tema que le toque a la hora real (ver setAutomaticTheme más abajo).
+const SOURCE_KEY = "corredor-solido-theme-source";
+
 class ThemeManager {
 
     constructor() {
@@ -34,10 +39,18 @@ class ThemeManager {
 
     }
 
+    hasManualTheme() {
+
+        return localStorage.getItem(SOURCE_KEY) === "manual";
+
+    }
+
     // ==========================
     // CAMBIO DE TEMA
     // ==========================
 
+    // Elección explícita (ThemeSwitcher, ajustes...): queda fijada y
+    // sobrevive a recargas — applyAutomaticTheme() ya no la pisa.
     setTheme(themeId) {
 
         if (!THEMES[themeId]) {
@@ -48,7 +61,30 @@ class ThemeManager {
 
         }
 
+        localStorage.setItem(SOURCE_KEY, "manual");
+
         if (themeId === this.currentTheme) {
+
+            return;
+
+        }
+
+        this.currentTheme = themeId;
+
+        localStorage.setItem(STORAGE_KEY, themeId);
+
+        this.apply();
+
+        this.notify();
+
+    }
+
+    // Uso exclusivo de applyAutomaticTheme(): igual que setTheme() pero
+    // sin marcar el origen como "manual", para que una elección manual
+    // previa se mantenga en la próxima recarga.
+    setAutomaticTheme(themeId) {
+
+        if (!THEMES[themeId] || themeId === this.currentTheme) {
 
             return;
 

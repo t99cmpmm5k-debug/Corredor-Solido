@@ -10,9 +10,13 @@
 
     flex:1;
 
-    transition:.30s ease;
+    min-width:0;
+
+    transition:transform .30s ease;
 
     user-select:none;
+
+    cursor:pointer;
 
 }
 
@@ -36,11 +40,11 @@
 
     color:var(--text-secondary);
 
-    font-size:11px;
+    font-size:9px;
 
     font-weight:700;
 
-    letter-spacing:.10em;
+    letter-spacing:.06em;
 
     text-transform:uppercase;
 
@@ -48,11 +52,13 @@
 
 .day-number{
 
-    font-size:24px;
+    color:var(--text-primary);
+
+    font-size:14px;
 
     font-weight:800;
 
-    line-height:.95;
+    line-height:1;
 
 }
 
@@ -62,7 +68,9 @@
 
 .day-center{
 
-    margin:10px 0 12px;
+    position:relative;
+
+    margin:6px 0 4px;
 
     display:flex;
 
@@ -72,57 +80,94 @@
 
 }
 
+/* Tamaño compacto del círculo dentro del timeline — los 7 caben en
+   390px de ancho sin scroll. WorkoutIcon expone --size para esto.
+   :is(.sm,.md,.lg) sube la especificidad a (0,3,0) a propósito: empata
+   con .workout-icon.md si no, y ese empate lo gana el orden de import
+   (no algo que quieras depender de para el layout). */
+.timeline-day .workout-icon:is(.sm,.md,.lg){
 
+    --size:34px;
 
-.day-icon{
+}
 
-    width:58px;
+.timeline-day .workout-icon iconify-icon{
 
-    height:58px;
+    font-size:16px;
 
-    margin:0 6px;
+}
+
+/*========================
+      CHECK COMPLETADO
+========================*/
+
+.day-check{
+
+    position:absolute;
+
+    bottom:-2px;
+
+    right:-2px;
+
+    width:14px;
+
+    height:14px;
 
     border-radius:50%;
 
     display:flex;
 
-    justify-content:center;
-
     align-items:center;
 
-    background:rgba(16,27,43,.95);
+    justify-content:center;
 
-    transition:.30s;
+    background:var(--color-success);
+
+    border:2px solid var(--card-background);
+
+    color:#FFFFFF;
 
 }
 
-.day-icon iconify-icon{
+.day-check iconify-icon{
 
-    font-size:28px;
+    font-size:9px;
 
 }
 
 /*========================
-        TEXTO
+        TEXTO (solo seleccionado)
 ========================*/
+
 .timeline-bottom{
+
+    margin-top:6px;
+
+    display:flex;
+
+    flex-direction:column;
+
+    align-items:center;
 
     gap:1px;
 
-    min-height:38px;
+    max-width:64px;
 
 }
+
 .timeline-title{
 
     color:var(--text-primary);
 
-    font-size:12px;
+    font-size:10px;
 
-    font-weight:600;
+    font-weight:700;
 
     line-height:1.2;
 
     text-align:center;
+
+    white-space:nowrap;
 
 }
 
@@ -130,113 +175,62 @@
 
     color:var(--text-secondary);
 
-    font-size:11px;
+    font-size:9px;
 
     line-height:1;
 
     text-align:center;
 
-}
-
-/*========================
-      COMPLETADO
-========================*/
-
-.timeline-day.completed .day-icon{
-
-    border:2px solid var(--color-success);
-
-    box-shadow:
-
-        0 0 10px color-mix(in srgb, var(--color-success) 25%, transparent);
+    white-space:nowrap;
 
 }
 
 /*========================
-      HOY
+          HOY
+   (más grande y con más brillo — independiente de si además
+   está seleccionado)
 ========================*/
 
-.timeline-day.today{
+.timeline-day.is-today{
 
     transform:translateY(-6px);
 
 }
 
-.timeline-day.today .day-icon{
+.timeline-day.is-today .workout-icon{
 
-    width:72px;
+    --size:50px;
 
-    height:72px;
-
-    border:3px solid var(--color-primary);
+    filter:brightness(1.18);
 
     box-shadow:
-
-        0 0 16px color-mix(in srgb, var(--color-glow) 55%, transparent),
-
-        0 0 36px color-mix(in srgb, var(--color-glow) 28%, transparent),
-
-        0 0 60px color-mix(in srgb, var(--color-glow) 10%, transparent);
+        0 0 10px color-mix(in srgb, currentColor 75%, transparent),
+        0 0 36px color-mix(in srgb, currentColor 50%, transparent);
 
 }
 
-.timeline-day.today .day-icon iconify-icon{
+.timeline-day.is-today .workout-icon iconify-icon{
 
-    font-size:34px;
+    font-size:20px;
 
 }
 
-.timeline-day.today::after{
+.timeline-day.is-today .day-number{
 
-    content:"";
-
-    position:absolute;
-
-    bottom:-10px;
-
-    width:0;
-
-    height:0;
-
-    border-left:8px solid transparent;
-
-    border-right:8px solid transparent;
-
-    border-top:9px solid var(--color-primary);
+    font-size:16px;
 
 }
 
 /*========================
-      FUTURO
+      SELECCIONADO
+   (el anillo en el color del tema ya lo pinta
+   WorkoutIcon.css vía .workout-icon.selected)
 ========================*/
 
-.timeline-day.future .day-icon{
+.timeline-day.is-selected .day-name,
+.timeline-day.is-selected .day-number{
 
-    border:2px solid rgba(255,255,255,.28);
-
-}
-
-/*========================
-      DESCANSO
-========================*/
-
-.timeline-day.rest .day-icon{
-
-    border-color:var(--color-text-muted);
-
-}
-
-/*========================
-      LARGA
-========================*/
-
-.timeline-day.long .day-icon{
-
-    border-color:var(--color-warning);
-
-    box-shadow:
-
-        0 0 10px color-mix(in srgb, var(--color-warning) 18%, transparent);
+    color:var(--color-primary);
 
 }
 
@@ -246,12 +240,12 @@
 
 .timeline-day:hover{
 
-    transform:translateY(-4px);
+    transform:translateY(-3px);
 
 }
 
-.timeline-day:hover .day-icon{
+.timeline-day.is-today:hover{
 
-    transform:scale(1.05);
+    transform:translateY(-9px);
 
 }

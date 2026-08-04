@@ -1,7 +1,29 @@
 import "./PlanHeader.css";
-import planHeader from "../../../assets/images/plan/plan-header.webp";
+import { themeManager } from "../../../theme/themeManager.js";
+import { PLAN_IMAGES } from "../../../assets/plan";
+import { week, weekStartDate, weekEndDate, getLoad } from "../../../data/planData.js";
+import { parseISODate, formatDayMonth, getISOWeekNumber } from "../../../utils/date.js";
 
-export function PlanHeader() {
+// Foto-por-tema propia del Plan, misma mecánica que el Hero
+// (themeManager decide el tema, un mapa de imágenes por tema
+// decide la foto) pero con su propio set de imágenes.
+export function PlanHeader(timelineHtml = "") {
+
+    const theme = themeManager.getTheme();
+
+    const weekNumber = getISOWeekNumber(parseISODate(weekStartDate));
+    const dateRange = `${formatDayMonth(weekStartDate)} · ${formatDayMonth(weekEndDate)}`;
+
+    const completedCount = week.filter(session => session.status === "completed").length;
+    const totalCount = week.length;
+    const completionPercent = totalCount
+        ? Math.round((completedCount / totalCount) * 100)
+        : 0;
+
+    const { completed: loadCompleted, total: loadTotal } = getLoad();
+    const loadPercent = loadTotal
+        ? Math.round((loadCompleted / loadTotal) * 100)
+        : 0;
 
     return `
 
@@ -9,13 +31,15 @@ export function PlanHeader() {
 
         <img
             class="plan-background-image"
-            src="${planHeader}"
+            src="${PLAN_IMAGES[theme.id]}"
             alt=""
         >
 
         <div class="plan-overlay"></div>
 
         <div class="plan-glow"></div>
+
+        <div class="plan-bottom-fade"></div>
 
         <div class="plan-content">
 
@@ -47,13 +71,13 @@ export function PlanHeader() {
 
                     <span class="week-label">
 
-                        SEMANA 30
+                        SEMANA ${weekNumber}
 
                     </span>
 
                     <span class="week-date">
 
-                        20 JUL · 26 JUL
+                        ${dateRange}
 
                     </span>
 
@@ -61,15 +85,15 @@ export function PlanHeader() {
 
                 <div class="plan-progress">
 
-                    <div class="progress-ring">
+                    <div class="progress-ring" style="--ring-percent:${completionPercent}">
 
-                        63%
+                        <span>${completionPercent}%</span>
 
                     </div>
 
                     <small>
 
-                        COMPLETADO
+                        ${completedCount}/${totalCount} SESIONES
 
                     </small>
 
@@ -85,19 +109,23 @@ export function PlanHeader() {
 
                     <strong>
 
-                        318 / 420
+                        ${loadCompleted} / ${loadTotal}
 
                     </strong>
 
                     <div class="load-bar">
 
-                        <div class="load-fill"></div>
+                        <div class="load-fill" style="width:${loadPercent}%"></div>
 
                     </div>
+
+                    <span class="load-percent">${loadPercent}%</span>
 
                 </div>
 
             </div>
+
+            ${timelineHtml}
 
         </div>
 

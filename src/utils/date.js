@@ -85,3 +85,24 @@ export function formatWeekday(iso) {
     return new Intl.DateTimeFormat("es-ES", { weekday:"long" }).format(parseISODate(iso));
 
 }
+
+/**
+ * ==========================================================
+ * Número de semana ISO 8601 (lunes=inicio, semana 1 = la que
+ * contiene el primer jueves del año)
+ * ==========================================================
+ */
+
+export function getISOWeekNumber(date) {
+
+    const target = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+    const dayNumber = target.getDay() || 7;
+
+    target.setDate(target.getDate() + 4 - dayNumber);
+
+    const yearStart = new Date(target.getFullYear(), 0, 1);
+
+    return Math.ceil((((target - yearStart) / 86400000) + 1) / 7);
+
+}

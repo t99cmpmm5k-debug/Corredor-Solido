@@ -34,9 +34,17 @@ export function getAutomaticTheme(date = new Date()) {
 
 export function applyAutomaticTheme() {
 
+    // Si ya hubo una elección manual (ThemeSwitcher), respétala —
+    // si no, sigue el reloj como siempre.
+    if (themeManager.hasManualTheme()) {
+
+        return;
+
+    }
+
     const theme = getAutomaticTheme();
 
-    themeManager.setTheme(theme);
+    themeManager.setAutomaticTheme(theme);
 
 }
 

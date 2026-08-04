@@ -1,13 +1,16 @@
 .plan-page{
 
     min-height:100vh;
+    min-height:100dvh;
 
-    padding:32px;
+    padding:20px 20px calc(110px + env(safe-area-inset-bottom));
 
-    background:#08111f;
+    background:var(--color-background);
 
-    color:white;
+    color:var(--text-primary);
 
     font-family:"Inter",sans-serif;
+
+    overflow-x:hidden;
 
 }

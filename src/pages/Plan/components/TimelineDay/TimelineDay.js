@@ -2,15 +2,18 @@ import "./TimelineDay.css";
 import { WorkoutIcon } from "../../../../components/WorkoutIcon/WorkoutIcon";
 import { formatDayNumber } from "../../../../utils/date.js";
 
-export function TimelineDay(session, selected, completed) {
+// isToday: fecha real de hoy (más grande + más brillo)
+// isSelected: día tocado en el timeline, controla lo que se ve abajo
+// isCompleted: session.status === "completed", muestra el check
+export function TimelineDay(session, { isToday, isSelected, isCompleted }) {
 
     return `
 
         <div
             class="
                 timeline-day
-                ${selected ? "today" : ""}
-                ${completed ? "completed" : ""}
+                ${isToday ? "is-today" : ""}
+                ${isSelected ? "is-selected" : ""}
             "
             data-day="${session.day}"
         >
@@ -33,37 +36,33 @@ export function TimelineDay(session, selected, completed) {
 
             <div class="day-center">
 
-                ${WorkoutIcon(
+                ${WorkoutIcon(session.type, { selected: isSelected })}
 
-                    session.type,
-
-                    {
-
-                        selected,
-
-                        completed
-
-                    }
-
-                )}
+                ${isCompleted ? `
+                    <span class="day-check">
+                        <iconify-icon icon="solar:check-circle-bold"></iconify-icon>
+                    </span>
+                ` : ""}
 
             </div>
 
-            <div class="timeline-bottom">
+            ${isSelected ? `
+                <div class="timeline-bottom">
 
-                <span class="timeline-title">
+                    <span class="timeline-title">
 
-                    ${session.title}
+                        ${session.title}
 
-                </span>
+                    </span>
 
-                <span class="timeline-subtitle">
+                    <span class="timeline-subtitle">
 
-                    ${session.subtitle}
+                        ${session.subtitle}
 
-                </span>
+                    </span>
 
-            </div>
+                </div>
+            ` : ""}
 
         </div>
 

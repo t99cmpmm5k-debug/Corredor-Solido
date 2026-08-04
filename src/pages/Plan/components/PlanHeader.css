@@ -6,9 +6,7 @@
 
     border-radius:28px;
 
-    min-height:390px;
-
-    padding:34px;
+    padding:24px 20px;
 
     isolation:isolate;
 
@@ -47,6 +45,19 @@
     inset:0;
 
     background:
+
+        /* Velo fijo (no depende del tema) concentrado donde vive el
+           texto de la cabecera (título + stats) — sin esto, una foto
+           clara (p.ej. hero-day a mediodía) deja "SEMANA X" / "CARGA
+           SEMANAL" prácticamente ilegibles pase lo que pase con el
+           color del texto. Se apaga antes de llegar al timeline. */
+        linear-gradient(
+            180deg,
+            rgba(0,0,0,.55) 0px,
+            rgba(0,0,0,.38) 160px,
+            rgba(0,0,0,.15) 260px,
+            transparent 320px
+        ),
 
         linear-gradient(
             180deg,
@@ -88,6 +99,36 @@
 }
 
 /* ==========================
+   BOTTOM FADE (funde la foto
+   hacia el fondo de la app)
+========================== */
+
+.plan-bottom-fade{
+
+    position:absolute;
+
+    left:0;
+    right:0;
+    bottom:0;
+
+    height:55%;
+
+    pointer-events:none;
+
+    background:
+        linear-gradient(
+            180deg,
+            transparent 0%,
+            color-mix(in srgb, var(--color-background) 40%, transparent) 45%,
+            color-mix(in srgb, var(--color-background) 80%, transparent) 75%,
+            var(--color-background) 100%
+        );
+
+    z-index:2;
+
+}
+
+/* ==========================
    CONTENIDO
 ========================== */
 
@@ -97,13 +138,11 @@
 
     z-index:3;
 
-    height:100%;
-
     display:flex;
 
     flex-direction:column;
 
-    justify-content:space-between;
+    gap:28px;
 
 }
 
@@ -131,31 +170,41 @@
 
 }
 
+/* Texto sobre la foto: blanco fijo + text-shadow, igual que el Hero
+   — no puede depender de --text-primary/--color-primary porque esos
+   varían por tema y algunas fotos (p.ej. hero-day, cielo claro) los
+   dejan casi ilegibles. */
 .plan-header h1{
 
     margin:0;
 
-    color:var(--text-primary);
+    color:#FFFFFF;
 
-    font-size:78px;
+    font-size:40px;
 
-    line-height:.88;
+    line-height:.9;
 
     font-weight:900;
 
-    letter-spacing:-.06em;
+    letter-spacing:-.04em;
+
+    text-shadow:
+        0 4px 12px rgba(0,0,0,.45),
+        0 12px 32px rgba(0,0,0,.55);
 
 }
 
 .plan-subtitle{
 
-    color:var(--text-secondary);
+    color:rgba(255,255,255,.85);
 
     text-transform:uppercase;
 
-    letter-spacing:.12em;
+    letter-spacing:.10em;
 
-    font-size:14px;
+    font-size:11px;
+
+    text-shadow:0 2px 6px rgba(0,0,0,.45);
 
 }
 
@@ -167,11 +216,11 @@
 
     display:grid;
 
-    grid-template-columns:1fr 170px 1fr;
+    grid-template-columns:1fr auto 1fr;
 
     align-items:center;
 
-    margin-top:56px;
+    gap:8px;
 
 }
 
@@ -191,21 +240,23 @@
 
 .week-label{
 
-    color:var(--color-primary);
+    color:#FFFFFF;
 
-    font-size:15px;
+    font-size:11px;
 
     font-weight:800;
+
+    text-shadow:0 2px 6px rgba(0,0,0,.45);
 
 }
 
 .week-date{
 
-    color:var(--text-primary);
+    color:rgba(255,255,255,.85);
 
-    opacity:.82;
+    font-size:12px;
 
-    font-size:18px;
+    text-shadow:0 2px 6px rgba(0,0,0,.45);
 
 }
 
@@ -223,11 +274,20 @@
 
 }
 
+/* Arco real, no un círculo uniforme — mismo truco que
+   .week-summary-ring: conic-gradient hasta --ring-percent (puesto
+   inline desde PlanHeader.js) + un relleno interior sólido que
+   perfora el centro, en vez de un border parejo que siempre se ve
+   "completo" sea cual sea el porcentaje. */
 .progress-ring{
 
-    width:145px;
+    --ring-percent:0;
 
-    height:145px;
+    position:relative;
+
+    width:84px;
+
+    height:84px;
 
     border-radius:50%;
 
@@ -237,31 +297,60 @@
 
     align-items:center;
 
-    color:var(--text-primary);
+    color:#FFFFFF;
 
-    font-size:34px;
+    font-size:20px;
 
     font-weight:900;
 
-    border:6px solid var(--color-primary);
+    text-shadow:
+        0 2px 6px rgba(0,0,0,.45),
+        0 6px 18px rgba(0,0,0,.35);
+
+    background:conic-gradient(
+        var(--color-primary) calc(var(--ring-percent) * 1%),
+        color-mix(in srgb, var(--card-border) 70%, transparent) 0
+    );
 
     box-shadow:
-        0 0 22px color-mix(in srgb, var(--color-glow) 45%, transparent),
-        0 0 60px color-mix(in srgb, var(--color-glow) 22%, transparent);
+        0 0 16px color-mix(in srgb, var(--color-glow) 45%, transparent),
+        0 0 36px color-mix(in srgb, var(--color-glow) 22%, transparent);
+
+}
+
+.progress-ring::before{
+
+    content:"";
+
+    position:absolute;
+
+    inset:6px;
+
+    border-radius:50%;
+
+    background:color-mix(in srgb, var(--color-background) 70%, transparent);
+
+}
+
+.progress-ring span{
+
+    position:relative;
+
+    z-index:1;
 
 }
 
 .plan-progress small{
 
-    margin-top:12px;
+    margin-top:8px;
 
-    color:var(--text-primary);
+    color:rgba(255,255,255,.85);
 
-    opacity:.82;
+    font-size:9px;
 
-    font-size:13px;
+    letter-spacing:.06em;
 
-    letter-spacing:.08em;
+    text-shadow:0 2px 6px rgba(0,0,0,.45);
 
 }
 
@@ -283,28 +372,38 @@
 
 .plan-load span{
 
-    color:var(--color-primary);
+    color:#FFFFFF;
 
-    font-size:14px;
+    font-size:10px;
 
     font-weight:700;
+
+    text-align:right;
+
+    text-shadow:0 2px 6px rgba(0,0,0,.45);
 
 }
 
 .plan-load strong{
 
-    color:var(--text-primary);
+    color:#FFFFFF;
 
-    font-size:54px;
+    font-size:26px;
 
     line-height:.95;
+
+    text-shadow:
+        0 2px 6px rgba(0,0,0,.45),
+        0 6px 18px rgba(0,0,0,.35);
 
 }
 .load-bar{
 
-    width:150px;
+    width:100%;
 
-    height:8px;
+    max-width:100px;
+
+    height:6px;
 
     border-radius:999px;
 
@@ -318,8 +417,6 @@
 
 .load-fill{
 
-    width:76%;
-
     height:100%;
 
     border-radius:999px;
@@ -332,17 +429,19 @@
 
     box-shadow:0 0 18px color-mix(in srgb, var(--color-glow) 65%, transparent);
 
-}.plan-load::after{
+}
 
-    content:"76%";
+/* .plan-load span (color blanco, text-align:right) ya afecta a
+   cualquier span dentro de .plan-load — .plan-load .load-percent
+   necesita dos clases para ganarle en especificidad, no una.
+   text-shadow lo hereda de esa misma regla, no hace falta repetirlo. */
+.plan-load .load-percent{
 
-    color:var(--text-primary);
+    color:rgba(255,255,255,.85);
 
-    opacity:.9;
+    font-size:10px;
 
-    font-size:14px;
-
-    margin-top:6px;
+    margin-top:4px;
 
 }
 
@@ -352,9 +451,11 @@
 
 .plan-add-button{
 
-    width:62px;
+    width:42px;
 
-    height:62px;
+    height:42px;
+
+    flex-shrink:0;
 
     border-radius:50%;
 
@@ -366,7 +467,7 @@
 
     color:var(--color-primary);
 
-    font-size:34px;
+    font-size:22px;
 
     cursor:pointer;
 

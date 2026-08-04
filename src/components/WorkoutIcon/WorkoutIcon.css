@@ -17,6 +17,13 @@
 
     border:2px solid;
 
+    /* Doble halo (mismo tratamiento que el trazo del MasterCard en la
+       Home): uno cerrado que ilumina el propio trazo, otro amplio que
+       tiñe el fondo — con currentColor hereda el color del tipo. */
+    box-shadow:
+        0 0 8px color-mix(in srgb, currentColor 50%, transparent),
+        0 0 24px color-mix(in srgb, currentColor 26%, transparent);
+
     transition:
         transform .25s,
         box-shadow .25s,
@@ -152,8 +159,9 @@
 
 .workout-icon.completed{
 
-   box-shadow:
-    0 0 8px currentColor;
+    box-shadow:
+        0 0 8px color-mix(in srgb, currentColor 70%, transparent),
+        0 0 26px color-mix(in srgb, currentColor 34%, transparent);
 
 }
 
@@ -169,9 +177,9 @@
 
         0 0 8px currentColor,
 
-        0 0 18px color-mix(in srgb, var(--color-primary) 35%, transparent),
+        0 0 20px color-mix(in srgb, currentColor 45%, transparent),
 
-        0 0 30px color-mix(in srgb, var(--color-primary) 12%, transparent);
+        0 0 34px color-mix(in srgb, currentColor 22%, transparent);
 
 }
 

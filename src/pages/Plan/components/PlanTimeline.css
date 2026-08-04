@@ -1,139 +1,42 @@
+/* ==========================================================
+   Sin fondo propio: vive dentro de .plan-content, sobre la foto
+   del PlanHeader (ver PlanHeader.js). Sin overflow-x — los 7 días
+   deben caber siempre en un móvil de 390px sin scroll.
+========================================================== */
+
 .plan-timeline{
 
     position:relative;
 
     display:flex;
 
-    justify-content:space-between;
-
     align-items:flex-start;
 
- padding:28px 18px 38px;
-
-    background:var(--card-background);
-
-    border-radius:28px;
-
-    overflow-x:auto;
-
-    overflow-y:hidden;
-
-    gap:0;
-
-}
-
-.plan-timeline::-webkit-scrollbar{
-
-    display:none;
+    gap:2px;
 
 }
 
 /*==================================
             LÍNEA
+   Un solo tramo de punta a punta: el degradado (montado en JS a
+   partir del tipo de cada día) es lo que la colorea, no un
+   "progreso" — por eso ya no hay track gris + relleno encima.
 ==================================*/
-.timeline-track{
+.timeline-line{
 
     position:absolute;
 
-    left:46px;
+    left:17px;
 
-    right:46px;
+    right:17px;
 
-    top:96px;
+    top:46px;
 
     height:3px;
 
     border-radius:999px;
 
-    background:rgba(255,255,255,.18);
-
-    overflow:hidden;
-
-}
-
-.timeline-progress{
-
-    height:100%;
-
-    width:0;
-
-    border-radius:999px;
-
-    background:linear-gradient(
-        90deg,
-        var(--color-primary),
-        var(--color-secondary)
-    );
-
-    transition:width .45s ease;
-
     box-shadow:
-        0 0 12px color-mix(in srgb, var(--color-glow) 35%, transparent);
-
-}
-
-/*==================================
-          ITEMS
-==================================*/
-
-.timeline-day{
-
-    position:relative;
-
-    z-index:2;
-
-    display:flex;
-
-    flex-direction:column;
-
-    align-items:center;
-
-    text-align:center;
-
-    min-width:105px;
-
-    flex:1;
-
-}
-
-/*==================================
-        EFECTO HOY
-==================================*/
-
-.timeline-day.today{
-
-    transform:translateY(-8px);
-
-}
-
-.timeline-day.today::after{
-
-    content:"";
-
-    position:absolute;
-
-    bottom:-12px;
-
-    width:0;
-
-    height:0;
-
-    border-left:10px solid transparent;
-
-    border-right:10px solid transparent;
-
-    border-top:9px solid var(--color-primary);
-
-}
-
-/*==================================
-          HOVER
-==================================*/
-
-.timeline-day:hover{
-
-    transform:translateY(-5px);
-
-    transition:.25s;
+        0 0 12px color-mix(in srgb, var(--color-glow) 45%, transparent);
 
 }
