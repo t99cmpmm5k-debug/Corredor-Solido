@@ -32,7 +32,12 @@ export function parse(text) {
     const fields = {};
 
     const date = U.first(raw, new RegExp(`\\b([0-3]?[0-9])\\s+(${U.MONTHS})(?:\\s+(20[0-9]{2}))?\\b`, "i"));
-    const time = date ? U.first(raw, /\b([0-2]?[0-9]):([0-5][0-9])\b/) : null;
+
+    // La hora debe leerse junto a la fecha (p. ej. "23 jul @ 07:37"), no la
+    // primera que aparezca en todo el texto — si no, coge el reloj del móvil.
+    const time = date
+        ? U.first(raw.slice(date.match.index, date.match.index + date.match[0].length + 15), /\b([0-2]?[0-9]):([0-5][0-9])\b/)
+        : null;
 
     const title = findTitle(lines);
     let location = null, activity = null;

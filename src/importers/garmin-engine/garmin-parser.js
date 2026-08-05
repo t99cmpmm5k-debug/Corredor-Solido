@@ -1,16 +1,21 @@
+import * as U from "./garmin-utils.js";
 import * as GarminScreenDetector from "./screen-detector.js";
 import * as GarminSummaryParser from "./parser-summary.js";
 import * as GarminStatisticsParser from "./parser-statistics.js";
 import * as GarminFusion from "./fusion.js";
 
 export function parse(text) {
-    const screen = GarminScreenDetector.detect(text);
+    // La primera línea de una captura del móvil es siempre la barra de
+    // estado del sistema (hora, wifi, batería) — nunca es dato del entreno.
+    const withoutStatusBar = U.linesOf(text).slice(1).join("\n");
+
+    const screen = GarminScreenDetector.detect(withoutStatusBar);
     let parsed;
 
     if (screen.type === "summary") {
-        parsed = GarminSummaryParser.parse(text);
+        parsed = GarminSummaryParser.parse(withoutStatusBar);
     } else {
-        parsed = GarminStatisticsParser.parse(text);
+        parsed = GarminStatisticsParser.parse(withoutStatusBar);
     }
 
     const data = Object.fromEntries(

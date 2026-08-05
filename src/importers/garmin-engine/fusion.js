@@ -7,8 +7,24 @@ const KEYS = [
     "temperature_c", "elevation_gain_m"
 ];
 
+function paceToSeconds(pace) {
+    const m = String(pace || "").match(/^([0-9]{1,2}):([0-5][0-9])$/);
+    return m ? Number(m[1]) * 60 + Number(m[2]) : null;
+}
+
+function durationToSeconds(duration) {
+    const parts = String(duration || "").split(":").map(Number);
+    if (!parts.length || parts.some(Number.isNaN)) return null;
+    if (parts.length === 2) return parts[0] * 60 + parts[1];
+    if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+    return null;
+}
+
 export function merge(results) {
     const fields = {};
+    const fieldParser = {};
+
+    const identity = ["title", "location", "activity", "date", "time"];
 
     results.forEach((result, index) => {
         Object.entries(result.fields || {}).forEach(([key, item]) => {
@@ -17,16 +33,35 @@ export function merge(results) {
             const current = fields[key];
 
             // Summary owns identity fields.
-            const identity = ["title", "location", "activity", "date", "time"];
             if (identity.includes(key)) {
                 if (result.parser.startsWith("summary") && (!current || candidate.confidence >= current.confidence)) {
                     fields[key] = candidate;
+                    fieldParser[key] = result.parser;
                 }
                 return;
             }
 
-            if (!current || candidate.confidence > current.confidence) {
+            // Métricas: Estadísticas manda sobre Resumen aunque la confianza
+            // empate o incluso sea menor — Resumen puede leer una fila que no
+            // es la suya (p. ej. el ritmo donde debería ir el tiempo total).
+            const candidateIsStatistics = result.parser.startsWith("statistics");
+            const currentIsStatistics = fieldParser[key]?.startsWith("statistics");
+            const currentIsSummary = fieldParser[key]?.startsWith("summary");
+
+            let replace;
+            if (!current) {
+                replace = true;
+            } else if (currentIsStatistics && !candidateIsStatistics) {
+                replace = false;
+            } else if (candidateIsStatistics && currentIsSummary) {
+                replace = true;
+            } else {
+                replace = candidate.confidence > current.confidence;
+            }
+
+            if (replace) {
                 fields[key] = candidate;
+                fieldParser[key] = result.parser;
             }
         });
     });
@@ -45,6 +80,24 @@ export function merge(results) {
     }
     if (data.distance_km != null && data.distance_km > 100) {
         warnings.push("La distancia parece demasiado alta y debe revisarse.");
+    }
+
+    // Señal casi segura de un error de lectura: el ritmo y el tiempo total
+    // no pueden coincidir letra a letra en una carrera real.
+    if (data.total_time != null && data.avg_pace_min_km != null && data.total_time === data.avg_pace_min_km) {
+        warnings.push("El tiempo total y el ritmo medio son idénticos — probable error de lectura.");
+    }
+
+    // Coherencia: distancia × ritmo medio debe aproximarse al tiempo total
+    // (10% de margen por redondeo de GPS/ritmo y paradas puntuales).
+    const paceSec = paceToSeconds(data.avg_pace_min_km);
+    const durationSec = durationToSeconds(data.total_time);
+    if (data.distance_km != null && paceSec != null && durationSec != null && durationSec > 0) {
+        const expectedSec = data.distance_km * paceSec;
+        const diffRatio = Math.abs(expectedSec - durationSec) / durationSec;
+        if (diffRatio > 0.1) {
+            warnings.push("La duración total no cuadra con distancia × ritmo medio — revisar.");
+        }
     }
 
     return {
