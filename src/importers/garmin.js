@@ -1,8 +1,11 @@
+import { MONTHS } from "./garmin-engine/garmin-utils.js";
+import { formatISODate } from "../utils/date.js";
+
 const NOT_FOUND = "No encontrado";
 
 function textOrNull(value) {
 
-    return value && value !== NOT_FOUND ? value : null;
+    return value == null || value === NOT_FOUND ? null : value;
 
 }
 
@@ -21,7 +24,7 @@ function parsePaceToSecPerKm(value) {
     const text = textOrNull(value);
     if (text === null) return null;
 
-    const [min, sec] = text.split(":").map(Number);
+    const [min, sec] = String(text).split(":").map(Number);
     if (Number.isNaN(min) || Number.isNaN(sec)) return null;
 
     return min * 60 + sec;
@@ -33,7 +36,7 @@ function parseDurationToSeconds(value) {
     const text = textOrNull(value);
     if (text === null) return null;
 
-    const parts = text.split(":").map(Number);
+    const parts = String(text).split(":").map(Number);
     if (parts.some(Number.isNaN)) return null;
 
     if (parts.length === 2) {
@@ -50,12 +53,51 @@ function parseDurationToSeconds(value) {
 
 }
 
-// Forma de raw.confidence / raw.warnings sin confirmar contra el motor real:
-// se asume raw.confidence[campo_crudo] = 0..1 y raw.warnings = [{ field, message }].
-// Ajustar cuando se integre parser-registry.js.
+const MONTH_INDEX = Object.fromEntries(
+    MONTHS.replace("sept?", "sep,sept").split("|").flatMap((token, i) => {
+        const names = token.includes(",") ? token.split(",") : [token];
+        return names.map(name => [name, i + 1]);
+    })
+);
+
+// Formato real del motor: "5 ago 2026" (día + mes abreviado en español + año
+// opcional — el motor no siempre lo detecta en la captura).
+function parseGarminDate(value) {
+
+    const text = textOrNull(value);
+    if (text === null) return { date: null, yearAssumed: false };
+
+    const match = String(text).match(new RegExp(`^([0-3]?[0-9])\\s+(${MONTHS})(?:\\s+(20[0-9]{2}))?$`, "i"));
+    if (!match) return { date: null, yearAssumed: false };
+
+    const day = Number(match[1]);
+    const month = MONTH_INDEX[match[2].toLowerCase()];
+    if (!month) return { date: null, yearAssumed: false };
+
+    const explicitYear = match[3] ? Number(match[3]) : null;
+    const now = new Date();
+
+    let year = explicitYear ?? now.getFullYear();
+    let candidate = new Date(year, month - 1, day);
+
+    const yearAssumed = explicitYear === null;
+
+    // Sin año en la captura: si el año actual da una fecha futura, fue el año pasado.
+    if (yearAssumed) {
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        if (candidate > today) {
+            year -= 1;
+            candidate = new Date(year, month - 1, day);
+        }
+    }
+
+    return { date: formatISODate(candidate), yearAssumed };
+
+}
+
 const RAW_FIELD_BY_NEUTRAL_KEY = {
 
-    date: "fecha",
+    date: "date",
     distanceKm: "distance_km",
     durationSec: "total_time",
     avgPaceSecPerKm: "avg_pace_min_km",
@@ -68,21 +110,16 @@ const RAW_FIELD_BY_NEUTRAL_KEY = {
 
 };
 
-function buildFieldMeta(raw) {
-
-    const warningByRawField = {};
-
-    (raw.warnings || []).forEach(w => {
-        if (w && w.field) warningByRawField[w.field] = w.message || true;
-    });
+// La confianza vive dentro de cada campo ya fusionado (merged.fields[campo].confidence).
+// merged.warnings es un aviso general del entrenamiento, no por campo.
+function buildFieldMeta(merged) {
 
     const fieldMeta = {};
 
     Object.entries(RAW_FIELD_BY_NEUTRAL_KEY).forEach(([neutralKey, rawKey]) => {
 
         fieldMeta[neutralKey] = {
-            confidence: raw.confidence?.[rawKey] ?? null,
-            warning: warningByRawField[rawKey] ?? null,
+            confidence: merged.fields?.[rawKey]?.confidence ?? null,
             corrected: false
         };
 
@@ -92,50 +129,41 @@ function buildFieldMeta(raw) {
 
 }
 
-// Formatos reconocidos por ahora: "AAAA-MM-DD" y "DD/MM/AAAA".
-// Sin confirmar contra el motor real todavía — ajustar cuando se integre.
-function parseGarminDate(value) {
+// raw = el resultado fusionado de varias capturas (GarminFusion.merge, ver
+// garmin-engine/recognize.js), no una única captura sin fusionar.
+export function parseGarminWorkout(merged) {
 
-    const text = textOrNull(value);
-    if (text === null) return null;
-
-    if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return text;
-
-    const dmy = text.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
-    if (dmy) {
-        const [, day, month, year] = dmy;
-        return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
-    }
-
-    return null;
-
-}
-
-export function parseGarminWorkout(raw) {
-
-    const date = parseGarminDate(raw.fecha);
+    const data = merged.data || {};
+    const { date, yearAssumed } = parseGarminDate(data.date);
 
     if (!date) {
-        throw new Error(`Fecha de Garmin no reconocida: "${raw.fecha}"`);
+        throw new Error(`Fecha de Garmin no reconocida: "${data.date}"`);
+    }
+
+    const importWarnings = [...(merged.warnings || [])];
+    if (yearAssumed) {
+        importWarnings.push(`Año no detectado en la captura — asumido ${date.slice(0, 4)}, revisar.`);
     }
 
     return {
 
         date,
-        distanceKm: parseNumber(raw.distance_km),
-        durationSec: parseDurationToSeconds(raw.total_time),
-        avgPaceSecPerKm: parsePaceToSecPerKm(raw.avg_pace_min_km),
-        avgHr: parseNumber(raw.avg_heart_rate_bpm),
-        maxHr: parseNumber(raw.max_heart_rate_bpm),
-        calories: parseNumber(raw.calories_kcal),
-        avgCadence: parseNumber(raw.cadence_spm),
-        temperatureC: parseNumber(raw.temperature_c),
-        elevationGainM: parseNumber(raw.elevation_gain_m),
+        distanceKm: parseNumber(data.distance_km),
+        durationSec: parseDurationToSeconds(data.total_time),
+        avgPaceSecPerKm: parsePaceToSecPerKm(data.avg_pace_min_km),
+        avgHr: parseNumber(data.avg_heart_rate_bpm),
+        maxHr: parseNumber(data.max_heart_rate_bpm),
+        calories: parseNumber(data.calories_kcal),
+        avgCadence: parseNumber(data.cadence_spm),
+        temperatureC: parseNumber(data.temperature_c),
+        elevationGainM: parseNumber(data.elevation_gain_m),
 
-        // parser-splits.js todavía no está integrado — llega vacío hasta entonces.
+        // parser-splits.js existe en el motor pero recognize.js todavía no
+        // despacha capturas de la pantalla "Vueltas" — llega vacío hasta entonces.
         splits: [],
 
-        fieldMeta: buildFieldMeta(raw)
+        fieldMeta: buildFieldMeta(merged),
+        importWarnings
 
     };
 

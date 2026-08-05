@@ -16,6 +16,7 @@
     "@fontsource/plus-jakarta-sans": "^5.3.0",
     "iconify-icon": "^3.0.2",
     "lucide": "^1.27.0",
-    "lucide-static": "^1.27.0"
+    "lucide-static": "^1.27.0",
+    "tesseract.js": "^7.0.0"
   }
 }
