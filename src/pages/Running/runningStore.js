@@ -10,7 +10,8 @@ const initial = () => ({
     selectedShoeId: null,
     addingNewShoe: false,
     saveError: null,
-    savedWorkout: null
+    savedWorkout: null,
+    duplicateWarning: null
 
 });
 
@@ -159,6 +160,18 @@ export function getSavedWorkout() {
 export function setSavedWorkout(workout) {
 
     wizard.savedWorkout = workout;
+
+}
+
+export function getDuplicateWarning() {
+
+    return wizard.duplicateWarning;
+
+}
+
+export function setDuplicateWarning(existingWorkout) {
+
+    wizard.duplicateWarning = existingWorkout;
 
 }
 

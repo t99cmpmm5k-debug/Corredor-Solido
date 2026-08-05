@@ -127,11 +127,9 @@
 
     display:flex;
 
-    align-items:center;
+    flex-direction:column;
 
-    justify-content:space-between;
-
-    gap:14px;
+    gap:12px;
 
     padding:16px 18px;
 
@@ -140,6 +138,32 @@
     background:color-mix(in srgb, var(--card-background) 70%, transparent);
 
     border:1px solid var(--card-border);
+
+}
+
+.history-header{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+
+}
+
+.history-header-main{
+
+    flex:1;
+
+    min-width:0;
+
+    display:flex;
+
+    align-items:baseline;
+
+    justify-content:space-between;
+
+    gap:12px;
 
 }
 
@@ -155,31 +179,111 @@
 
     letter-spacing:.04em;
 
-}
-
-.history-main{
-
-    display:flex;
-
-    flex-direction:column;
-
-    align-items:flex-end;
+    flex-shrink:0;
 
 }
 
-.history-main strong{
+.history-headline{
 
     color:var(--text-primary);
 
-    font-size:1.1rem;
+    font-size:1.05rem;
+
+    font-weight:800;
+
+    text-align:right;
 
 }
 
-.history-main span{
+/* TODO: sustituir el confirm() nativo del borrado por el patrón "pulsa
+   otra vez para confirmar" dentro de la fila — el cuadro gris del
+   navegador desentona con el resto de la app. Pendiente a propósito. */
+.history-delete{
 
-    color:var(--text-secondary);
+    flex-shrink:0;
+
+    background:none;
+
+    border:none;
+
+    padding:4px;
+
+    cursor:pointer;
+
+    display:flex;
+
+}
+
+.history-delete iconify-icon{
+
+    font-size:18px;
+
+    color:var(--color-text-muted);
+
+}
+
+.history-delete:hover iconify-icon{
+
+    color:var(--color-danger);
+
+}
+
+.history-metrics{
+
+    display:flex;
+
+    align-items:stretch;
+
+    border-top:1px solid color-mix(in srgb, var(--card-border) 70%, transparent);
+    border-bottom:1px solid color-mix(in srgb, var(--card-border) 70%, transparent);
+
+    padding:10px 0;
+
+}
+
+.history-metric{
+
+    flex:1;
+
+    min-width:0;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    gap:6px;
+
+    border-right:1px solid color-mix(in srgb, var(--card-border) 70%, transparent);
+
+}
+
+.history-metric:last-child{
+
+    border-right:none;
+
+}
+
+.history-metric iconify-icon{
+
+    color:var(--color-primary);
+
+    font-size:16px;
+
+    flex-shrink:0;
+
+}
+
+.history-metric span{
+
+    color:var(--text-primary);
 
     font-size:.85rem;
+
+    font-weight:700;
+
+    white-space:nowrap;
 
 }
 
@@ -189,13 +293,13 @@
 
     align-items:center;
 
-    gap:6px;
+    gap:8px;
 
     color:var(--text-secondary);
 
-    font-size:.8rem;
+    font-size:.82rem;
 
-    flex-shrink:0;
+    min-width:0;
 
 }
 
@@ -204,6 +308,20 @@
     color:var(--color-primary);
 
     font-size:16px;
+
+    flex-shrink:0;
+
+}
+
+.history-shoe span{
+
+    min-width:0;
+
+    overflow:hidden;
+
+    text-overflow:ellipsis;
+
+    white-space:nowrap;
 
 }
 

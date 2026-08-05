@@ -1,6 +1,64 @@
 import "./RunningShoeStep.css";
 
-export function RunningShoeStep({ shoes, selectedShoeId, addingNewShoe, saveError }) {
+import { formatDayMonth } from "../../../utils/date.js";
+import { formatSecondsAsClock } from "../../../utils/format.js";
+
+function workoutSummary(workout) {
+
+    const distance = workout.distanceKm != null ? `${workout.distanceKm} km` : "—";
+    const duration = workout.durationSec != null ? formatSecondsAsClock(workout.durationSec) : "—";
+
+    return `${formatDayMonth(workout.date)} · ${distance} · ${duration}`;
+
+}
+
+function DuplicateWarning(existingWorkout, newWorkout) {
+
+    return `
+
+        <div class="wizard-banner wizard-banner-warning">
+
+            <iconify-icon icon="solar:copy-bold-duotone"></iconify-icon>
+
+            <div class="duplicate-summary">
+
+                <strong>Ya existe un entrenamiento parecido</strong>
+
+                <p>Guardado: ${workoutSummary(existingWorkout)}</p>
+
+                <p>Este: ${workoutSummary(newWorkout)}</p>
+
+            </div>
+
+        </div>
+
+        <div class="duplicate-actions">
+
+            <button class="wizard-primary-button" data-action="replace-duplicate">
+
+                Sustituir el existente
+
+            </button>
+
+            <button class="wizard-secondary-button" data-action="save-anyway">
+
+                Guardar de todas formas
+
+            </button>
+
+            <button class="shoe-add-toggle" data-action="cancel-duplicate">
+
+                Cancelar
+
+            </button>
+
+        </div>
+
+    `;
+
+}
+
+export function RunningShoeStep({ shoes, selectedShoeId, addingNewShoe, saveError, duplicateWarning, workout }) {
 
     return `
 
@@ -30,69 +88,73 @@ export function RunningShoeStep({ shoes, selectedShoeId, addingNewShoe, saveErro
 
             ` : ""}
 
-            ${shoes.length ? `
+            ${duplicateWarning ? DuplicateWarning(duplicateWarning, workout) : `
 
-                <div class="shoe-list">
+                ${shoes.length ? `
 
-                    ${shoes.map(shoe => `
+                    <div class="shoe-list">
 
-                        <button class="shoe-chip ${shoe.id === selectedShoeId ? "is-selected" : ""}" data-action="select-shoe" data-shoe-id="${shoe.id}">
+                        ${shoes.map(shoe => `
 
-                            <iconify-icon icon="solar:running-round-bold-duotone"></iconify-icon>
+                            <button class="shoe-chip ${shoe.id === selectedShoeId ? "is-selected" : ""}" data-action="select-shoe" data-shoe-id="${shoe.id}">
 
-                            <span>${shoe.brand} ${shoe.model}</span>
+                                <iconify-icon icon="solar:running-round-bold-duotone"></iconify-icon>
+
+                                <span>${shoe.brand} ${shoe.model}</span>
+
+                            </button>
+
+                        `).join("")}
+
+                    </div>
+
+                ` : `
+
+                    <p class="shoe-empty">Todavía no has añadido ninguna zapatilla.</p>
+
+                `}
+
+                ${addingNewShoe ? `
+
+                    <div class="shoe-add-form">
+
+                        <input type="text" data-shoe-field="brand" placeholder="Marca (p. ej. Saucony)">
+
+                        <input type="text" data-shoe-field="model" placeholder="Modelo (p. ej. Endorphin Speed 3)">
+
+                        <button class="wizard-secondary-button" data-action="save-new-shoe">
+
+                            Añadir zapatilla
 
                         </button>
 
-                    `).join("")}
+                    </div>
 
-                </div>
+                ` : `
 
-            ` : `
+                    <button class="shoe-add-toggle" data-action="toggle-add-shoe">
 
-                <p class="shoe-empty">Todavía no has añadido ninguna zapatilla.</p>
-
-            `}
-
-            ${addingNewShoe ? `
-
-                <div class="shoe-add-form">
-
-                    <input type="text" data-shoe-field="brand" placeholder="Marca (p. ej. Saucony)">
-
-                    <input type="text" data-shoe-field="model" placeholder="Modelo (p. ej. Endorphin Speed 3)">
-
-                    <button class="wizard-secondary-button" data-action="save-new-shoe">
+                        <iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon>
 
                         Añadir zapatilla
 
                     </button>
 
-                </div>
+                `}
 
-            ` : `
+                <p class="shoe-skip-hint">
 
-                <button class="shoe-add-toggle" data-action="toggle-add-shoe">
+                    Puedes guardarlo sin zapatilla y asignarla más tarde.
 
-                    <iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon>
+                </p>
 
-                    Añadir zapatilla
+                <button class="wizard-primary-button" data-action="save-workout">
+
+                    Guardar entrenamiento
 
                 </button>
 
             `}
-
-            <p class="shoe-skip-hint">
-
-                Puedes guardarlo sin zapatilla y asignarla más tarde.
-
-            </p>
-
-            <button class="wizard-primary-button" data-action="save-workout">
-
-                Guardar entrenamiento
-
-            </button>
 
         </section>
 

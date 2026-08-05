@@ -14,7 +14,8 @@ import {
     getWorkout,
     getSelectedShoeId,
     getAddingNewShoe,
-    getSaveError
+    getSaveError,
+    getDuplicateWarning
 } from "./runningStore.js";
 
 import { RunningUploadStep } from "./components/RunningUploadStep.js";
@@ -28,23 +29,67 @@ function shoeLabel(shoeId, shoes) {
 
 }
 
+function formatDistance(distanceKm) {
+
+    return distanceKm != null ? `${distanceKm.toFixed(2).replace(".", ",")} km` : "—";
+
+}
+
 function RunningHistoryItem(workout, shoes) {
+
+    const distance = formatDistance(workout.distanceKm);
+    const duration = workout.durationSec != null ? formatSecondsAsClock(workout.durationSec) : "—";
+    const pace = workout.avgPaceSecPerKm != null ? `${formatSecondsAsClock(workout.avgPaceSecPerKm)}/km` : "—";
+    const hr = workout.avgHr != null ? `${workout.avgHr} ppm` : "—";
+    const temperature = workout.temperatureC != null ? `${workout.temperatureC}°C` : "—";
 
     return `
 
         <article class="running-history-item">
 
-            <div class="history-date">
+            <header class="history-header">
 
-                ${formatDayMonth(workout.date)}
+                <div class="history-header-main">
 
-            </div>
+                    <span class="history-date">${formatDayMonth(workout.date)}</span>
 
-            <div class="history-main">
+                    <span class="history-headline">${distance} · ${duration}</span>
 
-                <strong>${workout.distanceKm != null ? `${workout.distanceKm} km` : "—"}</strong>
+                </div>
 
-                <span>${workout.durationSec != null ? formatSecondsAsClock(workout.durationSec) : "—"}</span>
+                <button class="history-delete" data-action="delete-workout" data-workout-id="${workout.id}">
+
+                    <iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon>
+
+                </button>
+
+            </header>
+
+            <div class="history-metrics">
+
+                <div class="history-metric">
+
+                    <iconify-icon icon="solar:speedometer-bold-duotone"></iconify-icon>
+
+                    <span>${pace}</span>
+
+                </div>
+
+                <div class="history-metric">
+
+                    <iconify-icon icon="solar:heart-pulse-bold-duotone"></iconify-icon>
+
+                    <span>${hr}</span>
+
+                </div>
+
+                <div class="history-metric">
+
+                    <iconify-icon icon="solar:temperature-bold-duotone"></iconify-icon>
+
+                    <span>${temperature}</span>
+
+                </div>
 
             </div>
 
@@ -52,7 +97,7 @@ function RunningHistoryItem(workout, shoes) {
 
                 <iconify-icon icon="solar:running-round-bold-duotone"></iconify-icon>
 
-                ${shoeLabel(workout.shoeId, shoes)}
+                <span>${shoeLabel(workout.shoeId, shoes)}</span>
 
             </div>
 
@@ -143,7 +188,9 @@ export function Running() {
             shoes: getShoes(),
             selectedShoeId: getSelectedShoeId(),
             addingNewShoe: getAddingNewShoe(),
-            saveError: getSaveError()
+            saveError: getSaveError(),
+            duplicateWarning: getDuplicateWarning(),
+            workout: getWorkout()
         });
 
     } else {

@@ -1,5 +1,5 @@
 import { rerender } from "../../core/router.js";
-import { addWorkout, addShoe } from "../../data/workoutStore.js";
+import { addWorkout, addShoe, deleteWorkout, findSimilarWorkout } from "../../data/workoutStore.js";
 import { parseGarminScreenshots } from "../../importers/garmin-engine/recognize.js";
 import { importWorkout } from "../../importers/index.js";
 import { REVIEW_FIELDS, parseFieldValue } from "./components/RunningReviewStep.js";
@@ -18,8 +18,31 @@ import {
     setSelectedShoeId,
     setAddingNewShoe,
     setSaveError,
-    setSavedWorkout
+    setSavedWorkout,
+    getDuplicateWarning,
+    setDuplicateWarning
 } from "./runningStore.js";
+
+function performSave() {
+
+    const workout = getWorkout();
+    if (!workout) return;
+
+    try {
+
+        const saved = addWorkout({ ...workout, shoeId: getSelectedShoeId() });
+        setSavedWorkout(saved);
+        resetWizard();
+
+    } catch (err) {
+
+        setSaveError(err.message);
+
+    }
+
+    rerender();
+
+}
 
 async function handleFilesSelected(fileList) {
 
@@ -190,18 +213,62 @@ export function initRunningEvents() {
             const workout = getWorkout();
             if (!workout) return;
 
-            try {
+            const existing = findSimilarWorkout(workout.date, workout.distanceKm, workout.durationSec);
 
-                const saved = addWorkout({ ...workout, shoeId: getSelectedShoeId() });
-                setSavedWorkout(saved);
-                resetWizard();
-
-            } catch (err) {
-
-                setSaveError(err.message);
-
+            if (existing) {
+                setDuplicateWarning(existing);
+                rerender();
+                return;
             }
 
+            performSave();
+
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="replace-duplicate"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+
+            const existing = getDuplicateWarning();
+            if (existing) deleteWorkout(existing.id);
+
+            setDuplicateWarning(null);
+            performSave();
+
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="save-anyway"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+            setDuplicateWarning(null);
+            performSave();
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="cancel-duplicate"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+            setDuplicateWarning(null);
+            rerender();
+        });
+
+    });
+
+    // TODO: sustituir este confirm() nativo por el patrón "pulsa otra vez
+    // para confirmar" dentro de la propia fila — pendiente a propósito,
+    // ver nota en Running.css junto a .history-delete.
+    document.querySelectorAll('[data-action="delete-workout"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+
+            if (!window.confirm("¿Borrar este entrenamiento? No se puede deshacer.")) return;
+
+            deleteWorkout(button.dataset.workoutId);
             rerender();
 
         });

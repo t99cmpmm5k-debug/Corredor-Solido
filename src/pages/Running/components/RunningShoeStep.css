@@ -139,3 +139,41 @@
     text-align:center;
 
 }
+
+/* =========================
+   AVISO DE DUPLICADO
+========================= */
+
+.duplicate-summary{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:4px;
+
+}
+
+.duplicate-summary strong{
+
+    color:var(--text-primary);
+
+}
+
+.duplicate-summary p{
+
+    color:var(--text-secondary);
+
+    font-size:.85rem;
+
+}
+
+.duplicate-actions{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:10px;
+
+}

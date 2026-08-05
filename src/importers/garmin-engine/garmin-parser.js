@@ -2,6 +2,7 @@ import * as U from "./garmin-utils.js";
 import * as GarminScreenDetector from "./screen-detector.js";
 import * as GarminSummaryParser from "./parser-summary.js";
 import * as GarminStatisticsParser from "./parser-statistics.js";
+import * as GarminSplitsParser from "./parser-splits.js";
 import * as GarminFusion from "./fusion.js";
 
 export function parse(text) {
@@ -21,6 +22,8 @@ export function parse(text) {
         parsed = GarminSummaryParser.parse(withoutStatusBar);
     } else if (screen.type === "statistics") {
         parsed = GarminStatisticsParser.parse(withoutStatusBar);
+    } else if (screen.type === "splits") {
+        parsed = GarminSplitsParser.parse(withoutStatusBar);
     } else {
         parsed = { parser: "unknown-screen", fields: {} };
     }
@@ -35,6 +38,9 @@ export function parse(text) {
         found: Object.values(data).filter(v => v != null).length,
         data,
         fields: parsed.fields,
+        // Los parciales de Vueltas viven aquí, no en fields — sin pasarlo
+        // se pierden aunque el despacho a GarminSplitsParser sea correcto.
+        extras: parsed.extras,
         raw_text: text
     };
 }

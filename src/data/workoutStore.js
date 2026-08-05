@@ -1,4 +1,4 @@
-import { STORES, getAll, put } from "./db.js";
+import { STORES, getAll, put, remove } from "./db.js";
 import { week, weekStartDate } from "./planData.js";
 import { parseISODate, formatISODate } from "../utils/date.js";
 
@@ -150,6 +150,28 @@ export function getShoeTotalKm(shoeId) {
 
 }
 
+const SIMILAR_DISTANCE_TOLERANCE_KM = 0.1;
+const SIMILAR_DURATION_TOLERANCE_SEC = 30;
+
+// Misma fecha + distancia y duración a poca distancia entre sí — no exige
+// coincidencia exacta (el mismo OCR puede leer un segundo distinto entre
+// dos pasadas), pero dos carreras de verdad distintas casi nunca coinciden
+// en las dos cosas a la vez. Si falta un dato en cualquiera de los dos
+// lados, no se puede comparar con fiabilidad y no se marca como duplicado.
+export function findSimilarWorkout(date, distanceKm, durationSec) {
+
+    if (distanceKm == null || durationSec == null) return null;
+
+    return workouts.find(w =>
+        w.date === date &&
+        w.distanceKm != null &&
+        w.durationSec != null &&
+        Math.abs(w.distanceKm - distanceKm) <= SIMILAR_DISTANCE_TOLERANCE_KM &&
+        Math.abs(w.durationSec - durationSec) <= SIMILAR_DURATION_TOLERANCE_SEC
+    ) || null;
+
+}
+
 // --- Escrituras ---
 
 function findMatchingSessionId(date) {
@@ -172,6 +194,16 @@ export function addWorkout(workoutInput) {
     upsertInto(workouts, STORES.workouts, workout);
 
     return workout;
+
+}
+
+export function deleteWorkout(id) {
+
+    const index = workouts.findIndex(w => w.id === id);
+    if (index === -1) return;
+
+    workouts.splice(index, 1);
+    remove(STORES.workouts, id).catch(() => {});
 
 }
 

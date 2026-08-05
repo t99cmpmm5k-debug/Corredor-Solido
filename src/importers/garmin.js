@@ -158,9 +158,13 @@ export function parseGarminWorkout(merged) {
         temperatureC: parseNumber(data.temperature_c),
         elevationGainM: parseNumber(data.elevation_gain_m),
 
-        // parser-splits.js existe en el motor pero recognize.js todavía no
-        // despacha capturas de la pantalla "Vueltas" — llega vacío hasta entonces.
-        splits: [],
+        // Solo lap/distancia/ritmo — es lo único que captura el regex de
+        // parser-splits.js hoy. FC/desnivel por vuelta requerirían tocarlo.
+        splits: (merged.laps || []).map(lap => ({
+            lap: lap.lap,
+            distanceKm: lap.distance_km,
+            paceSecPerKm: parsePaceToSecPerKm(lap.pace_min_km)
+        })),
 
         fieldMeta: buildFieldMeta(merged),
         importWarnings

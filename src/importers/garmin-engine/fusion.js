@@ -70,6 +70,19 @@ export function merge(results) {
     const data = Object.fromEntries(KEYS.map(k => [k, fields[k].value]));
     const warnings = [];
 
+    // Parciales: se juntan los de TODAS las capturas de Vueltas (una
+    // carrera larga puede no caber en una sola pantalla), sin duplicar
+    // por número de vuelta (por si se sube la misma captura dos veces)
+    // y ordenados, por si las capturas no llegan en orden.
+    const lapsByNumber = new Map();
+    results
+        .filter(r => Array.isArray(r.extras?.laps))
+        .flatMap(r => r.extras.laps)
+        .forEach(lap => {
+            if (!lapsByNumber.has(lap.lap)) lapsByNumber.set(lap.lap, lap);
+        });
+    const laps = [...lapsByNumber.values()].sort((a, b) => a.lap - b.lap);
+
     if (!data.title) warnings.push("Falta el título del entrenamiento.");
     if (!data.date) warnings.push("Falta la fecha del entrenamiento.");
     if (data.calories_kcal != null && data.distance_km != null && data.calories_kcal < data.distance_km * 25) {
@@ -103,6 +116,6 @@ export function merge(results) {
     return {
         parser: "garmin-final-v4.2.2",
         found: Object.values(data).filter(v => v != null).length,
-        data, fields, warnings
+        data, fields, warnings, laps
     };
 }
