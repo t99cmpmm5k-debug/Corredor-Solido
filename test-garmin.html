@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>TEMPORAL - prueba motor Garmin</title>
+</head>
+<body>
+
+<h1>TEMPORAL - PANTALLA DE PRUEBA, QUITAR</h1>
+<p>Prueba manual del motor OCR de Garmin contra capturas reales. Selecciona una o varias capturas del mismo entrenamiento (p. ej. Resumen + Estadísticas).</p>
+
+<input type="file" id="files" accept="image/*" multiple>
+<p id="status"></p>
+<pre id="output" style="white-space:pre-wrap;word-break:break-word;border:1px solid #999;padding:8px;"></pre>
+
+<script type="module" src="/src/dev/test-garmin-ocr.js"></script>
+
+</body>
+</html>

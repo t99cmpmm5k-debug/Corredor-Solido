@@ -5,6 +5,9 @@ import { getState } from "../../core/state.js";
 
 import { Home } from "../../pages/Home/Home.js";
 import { Plan } from "../../pages/Plan/Plan.js";
+import { Running } from "../../pages/Running/Running.js";
+
+const PAGES = { home: Home, plan: Plan, running: Running };
 
 export function BottomNavigation() {
 
@@ -29,7 +32,7 @@ export function BottomNavigation() {
 
             </button>
 
-            <button class="nav-item">
+            <button class="nav-item ${currentPage === Running ? "active" : ""}" data-page="running">
 
                 <iconify-icon icon="solar:running-bold-duotone"></iconify-icon>
 
@@ -65,9 +68,7 @@ export function initBottomNavigationEvents() {
 
         button.addEventListener("click", () => {
 
-            const page = button.dataset.page === "home" ? Home : Plan;
-
-            navigate(page);
+            navigate(PAGES[button.dataset.page]);
 
         });
 

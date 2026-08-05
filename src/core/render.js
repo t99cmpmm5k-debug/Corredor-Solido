@@ -4,6 +4,7 @@ import { initPlanEvents } from "../pages/Plan/initPlanEvents";
 import { initBottomNavigationEvents } from "../components/Navigation/BottomNavigation.js";
 import { initSessionCardOutline } from "../components/MasterCard/sessionCardOutline.js";
 import { initPlanConnector } from "../pages/Plan/components/PlanConnector.js";
+import { initRunningEvents } from "../pages/Running/initRunningEvents.js";
 
 export function render() {
 
@@ -24,5 +25,7 @@ export function render() {
     initSessionCardOutline();
 
     initPlanConnector();
+
+    initRunningEvents();
 
 }

@@ -12,10 +12,17 @@ export function parse(text) {
     const screen = GarminScreenDetector.detect(withoutStatusBar);
     let parsed;
 
+    // "unknown" NO es "estadísticas" — antes caía en el else y se
+    // parseaba como si lo fuera, quedando etiquetada "statistics-v4-engine"
+    // con casi todo en null. Con la prioridad de fusion.js (Estadísticas
+    // manda sobre Resumen en las métricas), esa etiqueta falsa le daba
+    // vía libre para ganarle a un Resumen correcto con basura.
     if (screen.type === "summary") {
         parsed = GarminSummaryParser.parse(withoutStatusBar);
-    } else {
+    } else if (screen.type === "statistics") {
         parsed = GarminStatisticsParser.parse(withoutStatusBar);
+    } else {
+        parsed = { parser: "unknown-screen", fields: {} };
     }
 
     const data = Object.fromEntries(
