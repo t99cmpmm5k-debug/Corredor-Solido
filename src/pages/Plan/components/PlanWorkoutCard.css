@@ -8,7 +8,7 @@
 
     overflow:hidden;
 
-    margin-top:28px;
+    margin-top:0;
 
     padding:26px;
 
@@ -81,6 +81,25 @@
 
 }
 
+/* Sin min-width:0 un flex item no se encoge por debajo del ancho de su
+   contenido — con títulos largos ("Fuerza"+"Gimnasio", "Descanso"+
+   "Activo"...) la fila entera se ensancha más que la tarjeta y empuja
+   el orbe (flex-shrink:0) fuera del borde derecho. flex:1 para que sea
+   ella la que ceda espacio, nunca el orbe.
+   container-type:inline-size habilita las unidades cqi de abajo, para
+   que el tamaño del título responda al ancho REAL de esta columna
+   (que cambia con el tamaño del orbe/paddings) en vez de a una
+   proporción del viewport adivinada a ojo. */
+.workout-title-block{
+
+    flex:1;
+
+    min-width:0;
+
+    container-type:inline-size;
+
+}
+
 .workout-day{
 
     color:var(--color-primary);
@@ -95,6 +114,10 @@
 
 }
 
+/* clamp(mínimo legible, se ajusta al ancho real de la columna, tope
+   para columnas anchas) — el título se achica hasta que quepa entero;
+   solo puede partir por espacios entre palabras (comportamiento por
+   defecto), nunca a mitad de una palabra. */
 .workout-header h2{
 
     margin:8px 0 0;
@@ -107,7 +130,7 @@
 
     color:var(--text-primary);
 
-    font-size:3rem;
+    font-size:clamp(1.3rem, 17cqi, 3rem);
 
     line-height:.95;
 
@@ -123,30 +146,29 @@
 
 /*=========================
         ICONO
+   Orbe grande — el icono/color/halo real de la sesión vienen de
+   WorkoutIcon.css (mismo tratamiento que los nodos del timeline).
+   .workout-badge ya no dibuja su propio círculo, solo lo posiciona
+   y lo agranda a tamaño "fuente de luz" (mismo truco que TimelineDay.css
+   para el tamaño compacto: :is(.sm,.md,.lg) gana el empate con el
+   preset compartido sin tocarlo).
 =========================*/
 
 .workout-badge{
 
-    width:74px;
+    flex-shrink:0;
 
-    height:74px;
+}
 
-    display:flex;
+.workout-badge .workout-icon:is(.sm,.md,.lg){
 
-    justify-content:center;
+    --size:96px;
 
-    align-items:center;
+}
 
-    border-radius:50%;
+.workout-badge .workout-icon iconify-icon{
 
-    border:2px solid var(--color-primary);
-
-    color:var(--color-primary);
-
-    font-size:34px;
-
-    box-shadow:
-        0 0 20px color-mix(in srgb, var(--color-glow) 35%, transparent);
+    font-size:42px;
 
 }
 
@@ -182,7 +204,7 @@
 
 .workout-item{
 
-    padding:16px;
+    padding:14px;
 
     border-radius:16px;
 
@@ -192,27 +214,44 @@
 
 }
 
+/* min-height reserva el espacio de 2 líneas siempre, quepa el texto en
+   una o no — así los 4 recuadros miden lo mismo aunque "SERIE
+   PRINCIPAL" ocupe dos líneas y "ZONA" solo una. align-items:flex-start
+   (no center) para que el icono se quede arriba, junto a la primera
+   línea, en vez de flotar centrado en medio de un bloque de 2 líneas. */
 .item-label{
 
     display:flex;
 
-    align-items:center;
+    align-items:flex-start;
 
-    gap:8px;
+    gap:6px;
 
     color:var(--text-secondary);
 
-    font-size:.82rem;
+    font-size:.7rem;
 
-    margin-bottom:10px;
+    line-height:1.3;
+
+    min-height:1.82rem;
+
+    margin-bottom:8px;
 
     text-transform:uppercase;
 
 }
 
+.item-label span{
+
+    min-width:0;
+
+}
+
 .item-icon{
 
-    font-size:18px;
+    flex-shrink:0;
+
+    font-size:16px;
 
 }
 

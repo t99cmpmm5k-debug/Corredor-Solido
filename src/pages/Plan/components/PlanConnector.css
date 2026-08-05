@@ -1,0 +1,66 @@
+/* Posicionado por initPlanConnector.js (left en px, medido en runtime).
+   El color de --connector-color también lo pone ese script, leído del
+   --stem-color real del día seleccionado. */
+.plan-connector{
+
+    position:relative;
+
+    height:32px;
+
+    margin-top:4px;
+
+    pointer-events:none;
+
+}
+
+.plan-connector-line{
+
+    position:absolute;
+
+    top:0;
+
+    bottom:8px;
+
+    left:0;
+
+    width:2px;
+
+    transform:translateX(-50%);
+
+    border-radius:999px;
+
+    background:var(--connector-color, var(--color-primary));
+
+    box-shadow:
+        0 0 6px color-mix(in srgb, var(--connector-color, var(--color-primary)) 70%, transparent),
+        0 0 20px color-mix(in srgb, var(--connector-color, var(--color-primary)) 35%, transparent);
+
+    transition:left .3s ease;
+
+}
+
+.plan-connector-arrow{
+
+    position:absolute;
+
+    bottom:0;
+
+    left:0;
+
+    transform:translateX(-50%);
+
+    width:0;
+
+    height:0;
+
+    border-left:5px solid transparent;
+
+    border-right:5px solid transparent;
+
+    border-top:7px solid var(--connector-color, var(--color-primary));
+
+    filter:drop-shadow(0 0 6px var(--connector-color, var(--color-primary)));
+
+    transition:left .3s ease;
+
+}

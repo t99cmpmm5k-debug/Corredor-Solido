@@ -98,6 +98,72 @@
 }
 
 /*========================
+        TALLO
+   Trazo corto bajo cada nodo, en el color de su tipo — mismo doble
+   halo que WorkoutIcon.css (cerrado + amplio), da el aspecto de "mapa"
+   del subtítulo. Termina en un punto salvo en el seleccionado, donde
+   sigue hacia .timeline-bottom (mismo color, misma columna, se lee
+   como una sola pieza que continúa bajando).
+========================*/
+
+.day-stem.easy{ --stem-color:var(--color-success); }
+.day-stem.gym{ --stem-color:#2faeff; }
+.day-stem.series{ --stem-color:#25c8ff; }
+.day-stem.long{ --stem-color:var(--color-warning); }
+.day-stem.rest{ --stem-color:var(--color-text-muted); }
+.day-stem.free{ --stem-color:var(--color-text-muted); }
+
+.day-stem{
+
+    width:2px;
+
+    height:10px;
+
+    margin:0 auto;
+
+    border-radius:999px;
+
+    position:relative;
+
+    background:var(--stem-color);
+
+    box-shadow:
+        0 0 6px color-mix(in srgb, var(--stem-color) 70%, transparent),
+        0 0 16px color-mix(in srgb, var(--stem-color) 35%, transparent);
+
+}
+
+.day-stem::after{
+
+    content:"";
+
+    position:absolute;
+
+    left:50%;
+
+    bottom:-2px;
+
+    transform:translateX(-50%);
+
+    width:5px;
+
+    height:5px;
+
+    border-radius:50%;
+
+    background:var(--stem-color);
+
+    box-shadow:0 0 6px var(--stem-color);
+
+}
+
+.day-stem.is-selected::after{
+
+    display:none;
+
+}
+
+/*========================
       CHECK COMPLETADO
 ========================*/
 

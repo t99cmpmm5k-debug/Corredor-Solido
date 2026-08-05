@@ -46,6 +46,8 @@ export function TimelineDay(session, { isToday, isSelected, isCompleted }) {
 
             </div>
 
+            <div class="day-stem ${session.type} ${isSelected ? "is-selected" : ""}"></div>
+
             ${isSelected ? `
                 <div class="timeline-bottom">
 

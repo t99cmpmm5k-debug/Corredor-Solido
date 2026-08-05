@@ -2,6 +2,7 @@ import "./Plan.css";
 
 import { PlanHeader } from "./components/PlanHeader";
 import { PlanTimeline } from "./components/PlanTimeline";
+import { PlanConnector } from "./components/PlanConnector";
 import { PlanWorkoutCard } from "./components/PlanWorkoutCard";
 
 import { getSelectedWorkout } from "./planStore";
@@ -17,6 +18,8 @@ export function Plan() {
         <section class="plan-page">
 
             ${PlanHeader(PlanTimeline(selectedWorkout))}
+
+            ${PlanConnector()}
 
             ${PlanWorkoutCard(selectedWorkout)}
             ${PlanLoadChart()}
