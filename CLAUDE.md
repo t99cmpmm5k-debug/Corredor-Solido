@@ -38,6 +38,23 @@ When adding a new page or navigation flow, use `src/core/router.js` + `src/core/
 - `src/assets/` — hero images per time-of-day (day/night/sunrise/sunset/rain/snow) plus plan header image.
 - `public/` — served as-is (`favicon.svg`, `icons.svg` sprite sheet).
 
+### Persistencia (IndexedDB)
+- `src/data/db.js` — única pieza que toca `indexedDB` directamente. Stores: `workouts`, `shoes`, `plannedSessions` (todas keyPath `id`, con índices por `date`/`shoeId`/`linkedSessionId`/`weekStartDate` según la tabla) y `meta` (keyPath `key`, bookkeeping de la app, p. ej. `lastExportAt`). Expone `isStorageAvailable()`.
+- `src/data/workoutStore.js` — caché en memoria + API síncrona que consumen páginas (`getWorkouts`, `getShoes`, `getPlannedSessions`, `getSessionStatus`, `getShoeTotalKm`, `addWorkout`, `addShoe`, `restoreWorkout`/`restoreShoe`/`restorePlannedSession`...). `hydrate()` (llamada una vez desde `main.js`) carga todo a memoria y **nunca rechaza** — si IndexedDB falla, la app arranca igual sin persistencia. `syncPlanSnapshot()` copia cada semana de `planData.js` a la tabla `plannedSessions` (histórico permanente e independiente del archivo fuente), re-sincronizando en cada arranque solo las sesiones sin workout enlazado — las ya completadas quedan congeladas.
+- `src/importers/` — adaptadores por marca de reloj que traducen su formato crudo al schema neutral de `Workout` (`garmin.js` hoy; añadir otro reloj es un archivo nuevo + registrarlo en `index.js`, sin tocar `workoutStore.js` ni páginas). Cada campo neutral guarda además `fieldMeta` (`confidence`/`warning`/`corrected`) para la futura pantalla de revisión post-importación.
+- `src/utils/backup.js` — `exportData()`/`importData()` (JSON, merge por `id`) y `getBackupStatus()` (aviso discreto a partir de 14 días sin exportar, solo si hay algo que perder).
+- `main.js` espera `hydrate()` + `hydrateBackupMeta()` (con timeout de 1.5 s) antes de la primera pantalla, para no bloquear el arranque si IndexedDB tarda o falla.
+
+**PENDIENTE — no migrar a medias.** `planData.js` sigue con su campo `status` hardcodeado (no derivado de `workoutStore`) a propósito: todavía no existe pantalla de importación, y conectarlo ahora dejaría Home y Plan mostrando "0 completados" siempre con la base vacía. En cuanto exista una forma real de importar entrenamientos, migrar **en un solo cambio** estos 6 puntos, que hoy leen `session.status` directamente y deben pasar a leer el estado derivado de `workoutStore.getSessionStatus()`:
+- `src/pages/Home/Home.js`
+- `src/utils/weekInsight.js`
+- `src/data/planData.js` (`getVolume()`, `getLoad()`)
+- `src/pages/Plan/components/PlanHeader.js`
+- `src/pages/Plan/components/PlanTimeline.js`
+- `src/pages/Plan/components/TimelineDay/TimelineDay.js`
+
+Migrar solo alguno de estos rompe la app en silencio (unos sitios mostrarían completado y otros no, sin ningún error).
+
 ### Known duplication / dead code (do not extend, safe to ignore or consolidate)
 - `src/router/router.js` is a near-duplicate of `src/core/router.js` (own local `currentPage` variable, calls `initPlanEvents()` directly). Not imported by `main.js`.
 - `src/pages/Home.js` duplicates `src/pages/Home/Home.js` with off-by-one relative import paths.

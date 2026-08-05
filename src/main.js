@@ -19,15 +19,43 @@ import { Home } from "./pages/Home/Home.js";
 import { Plan } from "./pages/Plan/Plan.js";
 
 import { applyAutomaticTheme } from "./theme/timeTheme.js";
-import { start } from "./core/router.js";
+import { start, rerender } from "./core/router.js";
+
+import { hydrate } from "./data/workoutStore.js";
+import { hydrateBackupMeta } from "./utils/backup.js";
 
 // TEMPORAL - QUITAR ANTES DE PRODUCCIÓN
 import { mountThemeSwitcher } from "./dev/ThemeSwitcher.js";
 
-applyAutomaticTheme();
+// Si IndexedDB no responde en este plazo (cuota bloqueada, otra pestaña
+// reteniendo la conexión, etc.) arrancamos igualmente sin esperar más.
+const HYDRATE_TIMEOUT_MS = 1500;
 
-start(Home);
+function boot() {
 
-// TEMPORAL - QUITAR ANTES DE PRODUCCIÓN
-mountThemeSwitcher();
+    let readyBeforeTimeout = false;
+
+    const ready = Promise.all([hydrate(), hydrateBackupMeta()])
+        .then(() => { readyBeforeTimeout = true; });
+
+    const timedOut = new Promise(resolve => setTimeout(resolve, HYDRATE_TIMEOUT_MS));
+
+    return Promise.race([ready, timedOut]).then(() => {
+
+        applyAutomaticTheme();
+
+        start(Home);
+
+        // TEMPORAL - QUITAR ANTES DE PRODUCCIÓN
+        mountThemeSwitcher();
+
+        // Si ganó el timeout, la hidratación sigue en marcha de fondo:
+        // en cuanto termine, repintamos con los datos ya cargados.
+        if (!readyBeforeTimeout) ready.then(rerender);
+
+    });
+
+}
+
+boot();
 
