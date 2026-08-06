@@ -1,6 +1,6 @@
 import "./RunningUploadStep.css";
 
-export function RunningUploadStep({ progress, ocrError, parseError }) {
+export function RunningUploadStep({ progress, ocrError, parseError, timingLog }) {
 
     return `
 
@@ -83,6 +83,19 @@ export function RunningUploadStep({ progress, ocrError, parseError }) {
                 </label>
 
             `}
+
+            ${timingLog?.length ? `
+
+                <!-- TEMPORAL - mientras se mide el rendimiento del OCR, quitar luego -->
+                <div class="upload-timing-log">
+
+                    <p class="upload-timing-log-title">Tiempos (temporal, para medir)</p>
+
+                    ${timingLog.map(line => `<div>${line}</div>`).join("")}
+
+                </div>
+
+            ` : ""}
 
         </section>
 

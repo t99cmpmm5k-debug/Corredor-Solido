@@ -1,6 +1,7 @@
 import { STORES, getAll, put, remove } from "./db.js";
 import { week, weekStartDate } from "./planData.js";
 import { parseISODate, formatISODate } from "../utils/date.js";
+import { generateId } from "../utils/id.js";
 
 const workouts = [];
 const shoes = [];
@@ -46,7 +47,7 @@ function syncPlanSnapshot() {
 
         const record = {
 
-            id: existing ? existing.id : crypto.randomUUID(),
+            id: existing ? existing.id : generateId(),
             date: session.date,
             slot,
             weekStartDate,
@@ -186,7 +187,7 @@ export function addWorkout(workoutInput) {
     const workout = {
 
         ...workoutInput,
-        id: crypto.randomUUID(),
+        id: generateId(),
         linkedSessionId: findMatchingSessionId(workoutInput.date)
 
     };
@@ -213,7 +214,7 @@ export function addShoe(shoeInput) {
 
         status: "active",
         ...shoeInput,
-        id: crypto.randomUUID()
+        id: generateId()
 
     };
 

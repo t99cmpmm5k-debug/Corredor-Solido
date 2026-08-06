@@ -1,6 +1,6 @@
 import { rerender } from "../../core/router.js";
 import { addWorkout, addShoe, deleteWorkout, findSimilarWorkout } from "../../data/workoutStore.js";
-import { parseGarminScreenshots } from "../../importers/garmin-engine/recognize.js";
+import { parseGarminScreenshots, warmUpWorker } from "../../importers/garmin-engine/recognize.js";
 import { importWorkout } from "../../importers/index.js";
 import { REVIEW_FIELDS, parseFieldValue } from "./components/RunningReviewStep.js";
 
@@ -20,7 +20,8 @@ import {
     setSaveError,
     setSavedWorkout,
     getDuplicateWarning,
-    setDuplicateWarning
+    setDuplicateWarning,
+    appendTiming
 } from "./runningStore.js";
 
 function performSave() {
@@ -73,12 +74,21 @@ async function handleFilesSelected(fileList) {
 
     };
 
+    // TEMPORAL - MIENTRAS SE MIDE EL RENDIMIENTO DEL OCR, QUITAR LUEGO.
+    // En pantalla porque conectar el móvil a Safari/Chrome DevTools para
+    // mirar la consola no es una opción real aquí.
+    const onTiming = (line) => {
+        appendTiming(line);
+        rerender();
+    };
+
     let merged, captures;
 
     try {
-        ({ merged, captures } = await parseGarminScreenshots(files, onProgress));
+        ({ merged, captures } = await parseGarminScreenshots(files, onProgress, onTiming));
     } catch (err) {
         setOcrError(err.message);
+        setProgress(null);
         setWizardStep("upload");
         rerender();
         return;
@@ -106,6 +116,7 @@ async function handleFilesSelected(fileList) {
 
     } catch (err) {
         setParseError(err.message);
+        setProgress(null);
         setWizardStep("upload");
     }
 
@@ -114,6 +125,13 @@ async function handleFilesSelected(fileList) {
 }
 
 export function initRunningEvents() {
+
+    // Arranca el worker de Tesseract en cuanto se entra en Running, no al
+    // pulsar Importar — warmUpWorker() memoiza, así que en renders
+    // sucesivos dentro de la misma página no hace nada de más.
+    if (document.querySelector(".running")) {
+        warmUpWorker();
+    }
 
     document.querySelectorAll('[data-action="open-wizard"]').forEach(button => {
 

@@ -11,7 +11,8 @@ const initial = () => ({
     addingNewShoe: false,
     saveError: null,
     savedWorkout: null,
-    duplicateWarning: null
+    duplicateWarning: null,
+    timingLog: []
 
 });
 
@@ -172,6 +173,25 @@ export function getDuplicateWarning() {
 export function setDuplicateWarning(existingWorkout) {
 
     wizard.duplicateWarning = existingWorkout;
+
+}
+
+// TEMPORAL - MIENTRAS SE MIDE EL RENDIMIENTO DEL OCR, QUITAR LUEGO
+const MAX_TIMING_LINES = 40;
+
+export function getTimingLog() {
+
+    return wizard.timingLog;
+
+}
+
+export function appendTiming(line) {
+
+    wizard.timingLog.push(line);
+
+    if (wizard.timingLog.length > MAX_TIMING_LINES) {
+        wizard.timingLog.shift();
+    }
 
 }
 

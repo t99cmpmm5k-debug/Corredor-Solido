@@ -88,7 +88,11 @@ export function avgPace(raw) {
     return findAnchored(
         raw,
         [
-            "ritmo medio(?: en movimiento)?",
+            // "ritmo medio" es prefijo de sus propias variantes ("ritmo
+            // medio en movimiento", "...adapt pend", "...de carrera") — sin
+            // esta negativa, cualquiera de esas cuela como si fuera la
+            // etiqueta buena. Solo debe valer "ritmo medio" a secas.
+            "ritmo medio(?!\\s+(?:en movimiento|adapt|de carrera))",
             "ritmo promedio",
             "ritmo del recorrido",
             "ritmo medio de carrera"

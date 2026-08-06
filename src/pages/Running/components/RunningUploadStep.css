@@ -136,3 +136,42 @@
     text-align:center;
 
 }
+
+/* TEMPORAL - mientras se mide el rendimiento del OCR, quitar luego */
+.upload-timing-log{
+
+    max-height:220px;
+
+    overflow-y:auto;
+
+    padding:12px 14px;
+
+    border-radius:var(--radius-md);
+
+    background:color-mix(in srgb, var(--card-background) 60%, transparent);
+
+    border:1px dashed color-mix(in srgb, var(--color-warning) 40%, transparent);
+
+    font-family:monospace;
+
+    font-size:.72rem;
+
+    line-height:1.5;
+
+    color:var(--text-secondary);
+
+}
+
+.upload-timing-log-title{
+
+    color:var(--color-warning);
+
+    font-weight:700;
+
+    text-transform:uppercase;
+
+    letter-spacing:.04em;
+
+    margin-bottom:6px;
+
+}

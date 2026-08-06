@@ -15,7 +15,8 @@ import {
     getSelectedShoeId,
     getAddingNewShoe,
     getSaveError,
-    getDuplicateWarning
+    getDuplicateWarning,
+    getTimingLog
 } from "./runningStore.js";
 
 import { RunningUploadStep } from "./components/RunningUploadStep.js";
@@ -175,7 +176,8 @@ export function Running() {
         content = RunningUploadStep({
             progress: getProgress(),
             ocrError: getOcrError(),
-            parseError: getParseError()
+            parseError: getParseError(),
+            timingLog: getTimingLog()
         });
 
     } else if (step === "review") {
