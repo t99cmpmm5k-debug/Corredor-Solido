@@ -12,7 +12,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `npm run build` — production build
 - `npm run preview` — preview the production build
 
-No lint, test, or type-check scripts are configured. No `vite.config.js` exists — the project runs on Vite's zero-config defaults for a plain JS SPA.
+No lint, test, or type-check scripts are configured. `vite.config.js` sets `base: "/Corredor-Solido/"` so built asset URLs resolve correctly on GitHub Pages (project site, not a custom domain) — otherwise the project runs on Vite's zero-config defaults for a plain JS SPA. Deploy is automatic via `.github/workflows/deploy.yml` (build + `actions/deploy-pages`) on push to `main`/`master`; Pages must be set to source "GitHub Actions" in repo settings.
 
 ## Architecture
 
@@ -36,7 +36,7 @@ When adding a new page or navigation flow, use `src/core/router.js` + `src/core/
 - `src/design/HOME.md` — design-philosophy doc for the Home screen (Spanish): the Hero is untouchable, one master card, time-of-day theming applies everywhere, minimalism ("Hoy entrenas").
 - `src/utils/` — `format.js`, `storage.js`, `date.js`.
 - `src/assets/` — hero images per time-of-day (day/night/sunrise/sunset/rain/snow) plus plan header image.
-- `public/` — served as-is (`favicon.svg`, `icons.svg` sprite sheet).
+- `public/` — served as-is: `favicon.svg`, `icons.svg` sprite sheet, `manifest.json` (PWA manifest, `start_url`/`scope`/icon `src` are relative so it works under any base path), `sw.js` (stale-while-revalidate cache for same-origin GET requests, registered from `main.js` only when `import.meta.env.PROD`), `icons/` (`icon-192.png`, `icon-512.png`, `apple-touch-icon.png` — generated from `favicon.svg` composited onto `#061226`). Both `manifest.json` and `sw.js` must stay in `public/`, not the project root: Vite's html plugin content-hashes and relocates root-level files referenced via `<link>` (breaking the manifest's relative icon paths) and silently drops files only referenced at runtime via a JS string (the service worker) — files in `public/` are copied to the build output verbatim instead.
 
 ### Persistencia (IndexedDB)
 - `src/data/db.js` — única pieza que toca `indexedDB` directamente. Stores: `workouts`, `shoes`, `plannedSessions` (todas keyPath `id`, con índices por `date`/`shoeId`/`linkedSessionId`/`weekStartDate` según la tabla) y `meta` (keyPath `key`, bookkeeping de la app, p. ej. `lastExportAt`). Expone `isStorageAvailable()`.
@@ -63,5 +63,4 @@ Migrar solo alguno de estos rompe la app en silencio (unos sitios mostrarían co
 - `src/pages/Home.js` duplicates `src/pages/Home/Home.js` with off-by-one relative import paths.
 - `src/design-system/*.css` defines `--color-*`/`--radius-*`/`--space-*` tokens that overlap with, and differ in value from, `src/styles/variables.css` — an in-progress/unfinished consolidation.
 - Root-level `js/`, `css/`, `legacy/`, `data/`, `images/` are **not part of the build** — `index.html` only loads `/src/main.js`. `js/app.js` even imports a nonexistent path (`../components/Hero.js`). Most files in `js/` and `css/` are empty stubs; `legacy/`, `data/`, `images/` (root) are empty directories.
-- `manifest.json` and `sw.js` at the root are empty (0 bytes) despite PWA-flavored meta tags in `index.html` — no manifest content, no service worker registration, and no `<link rel="manifest">` tag exist yet. PWA support is not implemented.
 - `src/components/DesignSystem/MasterCard/` contains versioned experiments (`MasterCard.js`, `MasterCard.css`, `MasterCard_v2.css`, `master-card-v3.svg`) — design iteration scratch space, not necessarily the version in active use (check `src/components/MasterCard/` for the live one).
