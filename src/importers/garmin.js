@@ -1,5 +1,6 @@
 import { MONTHS } from "./garmin-engine/garmin-utils.js";
 import { formatISODate } from "../utils/date.js";
+import { inferWorkoutType } from "./classifyWorkoutType.js";
 
 const NOT_FOUND = "No encontrado";
 
@@ -98,6 +99,8 @@ function parseGarminDate(value) {
 const RAW_FIELD_BY_NEUTRAL_KEY = {
 
     date: "date",
+    time: "time",
+    title: "title",
     distanceKm: "distance_km",
     durationSec: "total_time",
     avgPaceSecPerKm: "avg_pace_min_km",
@@ -136,19 +139,45 @@ export function parseGarminWorkout(merged) {
     const data = merged.data || {};
     const { date, yearAssumed } = parseGarminDate(data.date);
 
-    if (!date) {
-        throw new Error(`Fecha de Garmin no reconocida: "${data.date}"`);
-    }
+    // Sin fecha no se bloquea la importación: el resto de datos (distancia,
+    // ritmo, FC...) se leyó bien igualmente. Se deja en blanco y se avisa
+    // para que el usuario la rellene a mano en el paso de Revisar — ver
+    // el guard en initRunningEvents.js que impide guardar sin fecha.
+    const importWarnings = (merged.warnings || [])
+        .filter(w => w !== "Falta la fecha del entrenamiento.");
 
-    const importWarnings = [...(merged.warnings || [])];
-    if (yearAssumed) {
+    if (!date) {
+        importWarnings.unshift("No se detectó la fecha del entrenamiento — indícala tú abajo.");
+    } else if (yearAssumed) {
         importWarnings.push(`Año no detectado en la captura — asumido ${date.slice(0, 4)}, revisar.`);
     }
+
+    const title = textOrNull(data.title);
+    const distanceKm = parseNumber(data.distance_km);
+
+    // Solo lap/distancia/ritmo — es lo único que captura el regex de
+    // parser-splits.js hoy. FC/desnivel por vuelta requerirían tocarlo.
+    const splits = (merged.laps || []).map(lap => ({
+        lap: lap.lap,
+        distanceKm: lap.distance_km,
+        paceSecPerKm: parsePaceToSecPerKm(lap.pace_min_km)
+    }));
+
+    const { type, confidence: typeConfidence } = inferWorkoutType({ title, distanceKm, splits });
+
+    // type es un campo calculado (heurística de clasificación), no una
+    // lectura directa del OCR — no vive en RAW_FIELD_BY_NEUTRAL_KEY, así
+    // que su fieldMeta se añade a mano en vez de salir de buildFieldMeta.
+    const fieldMeta = buildFieldMeta(merged);
+    fieldMeta.type = { confidence: typeConfidence, corrected: false };
 
     return {
 
         date,
-        distanceKm: parseNumber(data.distance_km),
+        time: textOrNull(data.time),
+        title,
+        type,
+        distanceKm,
         durationSec: parseDurationToSeconds(data.total_time),
         avgPaceSecPerKm: parsePaceToSecPerKm(data.avg_pace_min_km),
         avgHr: parseNumber(data.avg_heart_rate_bpm),
@@ -158,15 +187,9 @@ export function parseGarminWorkout(merged) {
         temperatureC: parseNumber(data.temperature_c),
         elevationGainM: parseNumber(data.elevation_gain_m),
 
-        // Solo lap/distancia/ritmo — es lo único que captura el regex de
-        // parser-splits.js hoy. FC/desnivel por vuelta requerirían tocarlo.
-        splits: (merged.laps || []).map(lap => ({
-            lap: lap.lap,
-            distanceKm: lap.distance_km,
-            paceSecPerKm: parsePaceToSecPerKm(lap.pace_min_km)
-        })),
+        splits,
 
-        fieldMeta: buildFieldMeta(merged),
+        fieldMeta,
         importWarnings
 
     };

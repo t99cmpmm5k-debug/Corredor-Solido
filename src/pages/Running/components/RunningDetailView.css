@@ -1,0 +1,380 @@
+.running-detail{
+
+    padding:24px;
+
+    padding-bottom:calc(110px + env(safe-area-inset-bottom));
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:20px;
+
+}
+
+.detail-title{
+
+    flex:1;
+
+    min-width:0;
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:2px;
+
+}
+
+.detail-type-select{
+
+    flex-shrink:0;
+
+    padding:8px 14px;
+
+    border-radius:999px;
+
+    border:1px solid color-mix(in srgb, var(--color-primary) 30%, transparent);
+
+    background:color-mix(in srgb, var(--color-primary) 12%, transparent);
+
+    color:var(--color-primary);
+
+    font-size:.78rem;
+
+    font-weight:700;
+
+}
+
+.detail-title h2{
+
+    color:var(--text-primary);
+
+    font-size:1.2rem;
+
+    font-weight:800;
+
+}
+
+.detail-time{
+
+    color:var(--color-primary);
+
+    font-size:.82rem;
+
+    font-weight:700;
+
+}
+
+/*==========================
+       RESUMEN RÁPIDO
+==========================*/
+
+.detail-summary{
+
+    display:flex;
+
+    border-radius:var(--radius-lg);
+
+    background:color-mix(in srgb, var(--card-background) 70%, transparent);
+
+    border:1px solid var(--card-border);
+
+    padding:16px 0;
+
+}
+
+.detail-summary-item{
+
+    flex:1;
+
+    min-width:0;
+
+    display:flex;
+
+    flex-direction:column;
+
+    align-items:center;
+
+    gap:4px;
+
+    border-right:1px solid color-mix(in srgb, var(--card-border) 70%, transparent);
+
+}
+
+.detail-summary-item:last-child{
+
+    border-right:none;
+
+}
+
+.detail-summary-value{
+
+    color:var(--text-primary);
+
+    font-size:1.05rem;
+
+    font-weight:800;
+
+}
+
+.detail-summary-label{
+
+    color:var(--text-secondary);
+
+    font-size:.72rem;
+
+}
+
+/*==========================
+       GRÁFICO DE RITMO
+==========================*/
+
+.pace-chart{
+
+    position:relative;
+
+    overflow:hidden;
+
+    padding:22px;
+
+    border-radius:26px;
+
+    background:color-mix(in srgb, var(--card-background) 80%, transparent);
+
+    backdrop-filter:blur(16px);
+    -webkit-backdrop-filter:blur(16px);
+
+    border:1px solid color-mix(in srgb, var(--color-primary) 50%, transparent);
+
+    box-shadow:
+        0 8px 20px rgba(0,0,0,.18),
+        0 0 8px color-mix(in srgb, var(--color-glow) 30%, transparent),
+        0 0 30px color-mix(in srgb, var(--color-glow) 18%, transparent);
+
+}
+
+.pace-chart-header{
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:space-between;
+
+    gap:12px;
+
+    margin-bottom:20px;
+
+}
+
+.pace-chart-title{
+
+    margin:0;
+
+    color:var(--text-primary);
+
+    font-size:.9rem;
+
+    font-weight:800;
+
+    letter-spacing:.05em;
+
+}
+
+.pace-chart-avg-badge{
+
+    flex-shrink:0;
+
+    padding:6px 12px;
+
+    border-radius:999px;
+
+    background:color-mix(in srgb, var(--color-primary) 12%, transparent);
+
+    color:var(--color-primary);
+
+    font-size:.7rem;
+
+    font-weight:700;
+
+    white-space:nowrap;
+
+}
+
+.pace-chart-track{
+
+    position:relative;
+
+    height:160px;
+
+}
+
+.pace-chart-refline{
+
+    position:absolute;
+
+    left:0;
+    right:0;
+
+    border-top:1px dashed color-mix(in srgb, var(--text-secondary) 45%, transparent);
+
+    z-index:0;
+
+}
+
+.pace-chart-bars{
+
+    position:relative;
+
+    z-index:1;
+
+    height:100%;
+
+    display:flex;
+
+    align-items:flex-end;
+
+    gap:4px;
+
+}
+
+.pace-chart-column{
+
+    flex:1;
+
+    min-width:0;
+
+    height:100%;
+
+    display:flex;
+
+    flex-direction:column;
+
+    align-items:center;
+
+    justify-content:flex-end;
+
+    gap:6px;
+
+}
+
+.pace-chart-value{
+
+    color:var(--text-secondary);
+
+    font-size:.68rem;
+
+    font-weight:700;
+
+    white-space:nowrap;
+
+}
+
+.pace-chart-bar{
+
+    width:100%;
+
+    max-width:20px;
+
+    border-radius:6px 6px 3px 3px;
+
+    background:var(--color-primary);
+
+    transition:.25s;
+
+}
+
+.pace-chart-bar.is-fastest{
+
+    background:var(--color-success);
+
+    box-shadow:0 0 14px color-mix(in srgb, var(--color-success) 55%, transparent);
+
+}
+
+.pace-chart-bar.is-slowest{
+
+    background:var(--color-warning);
+
+}
+
+.pace-chart-lap{
+
+    color:var(--color-text-muted);
+
+    font-size:.68rem;
+
+    font-weight:700;
+
+}
+
+/*==========================
+     DATOS ADICIONALES
+==========================*/
+
+.detail-stats{
+
+    display:grid;
+
+    grid-template-columns:1fr 1fr;
+
+    gap:12px;
+
+}
+
+.detail-stat{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:12px;
+
+    padding:14px 16px;
+
+    border-radius:var(--radius-lg);
+
+    background:color-mix(in srgb, var(--card-background) 70%, transparent);
+
+    border:1px solid var(--card-border);
+
+}
+
+.detail-stat iconify-icon{
+
+    color:var(--color-primary);
+
+    font-size:22px;
+
+    flex-shrink:0;
+
+}
+
+.detail-stat-text{
+
+    display:flex;
+
+    flex-direction:column;
+
+    min-width:0;
+
+}
+
+.detail-stat-value{
+
+    color:var(--text-primary);
+
+    font-size:.95rem;
+
+    font-weight:800;
+
+}
+
+.detail-stat-label{
+
+    color:var(--text-secondary);
+
+    font-size:.72rem;
+
+}

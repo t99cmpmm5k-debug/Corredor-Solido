@@ -1,11 +1,12 @@
 import { rerender } from "../../core/router.js";
-import { addWorkout, addShoe, deleteWorkout, findSimilarWorkout } from "../../data/workoutStore.js";
+import { addWorkout, addShoe, deleteWorkout, findSimilarWorkout, updateWorkoutType } from "../../data/workoutStore.js";
 import { parseGarminScreenshots, warmUpWorker } from "../../importers/garmin-engine/recognize.js";
 import { importWorkout } from "../../importers/index.js";
 import { REVIEW_FIELDS, parseFieldValue } from "./components/RunningReviewStep.js";
 
 import {
     resetWizard,
+    getWizardStep,
     setWizardStep,
     setFiles,
     setProgress,
@@ -21,8 +22,54 @@ import {
     setSavedWorkout,
     getDuplicateWarning,
     setDuplicateWarning,
-    appendTiming
+    appendTiming,
+    setDetailWorkoutId
 } from "./runningStore.js";
+
+const DETAIL_HISTORY_STATE = { runningDetail: true };
+
+function openDetail(workoutId) {
+
+    setDetailWorkoutId(workoutId);
+    setWizardStep("detail");
+
+    // Sin esto, el gesto de atrás del móvil no tiene una entrada de
+    // historial propia que consumir y se sale directo de la app.
+    history.pushState(DETAIL_HISTORY_STATE, "");
+
+    rerender();
+
+}
+
+function closeDetail() {
+
+    // Si el detalle se abrió con pushState, retroceder por ahí dispara
+    // handlePopState() y hace lo mismo que este botón — así el gesto de
+    // atrás y la X quedan sincronizados y no dejan una entrada fantasma.
+    if (history.state?.runningDetail) {
+        history.back();
+        return;
+    }
+
+    setDetailWorkoutId(null);
+    setWizardStep("idle");
+    rerender();
+
+}
+
+// Registrado una sola vez a nivel de módulo (no dentro de initRunningEvents,
+// que se vuelve a llamar en cada render) — si no, se acumularía un listener
+// de window por cada rerender y un solo gesto de atrás cerraría el detalle
+// varias veces de golpe.
+window.addEventListener("popstate", () => {
+
+    if (getWizardStep() !== "detail") return;
+
+    setDetailWorkoutId(null);
+    setWizardStep("idle");
+    rerender();
+
+});
 
 function performSave() {
 
@@ -184,6 +231,16 @@ export function initRunningEvents() {
 
     });
 
+    document.querySelectorAll('[data-action="back-to-review"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+            setSaveError(null);
+            setWizardStep("review");
+            rerender();
+        });
+
+    });
+
     document.querySelectorAll('[data-action="select-shoe"]').forEach(button => {
 
         button.addEventListener("click", () => {
@@ -230,6 +287,12 @@ export function initRunningEvents() {
 
             const workout = getWorkout();
             if (!workout) return;
+
+            if (!workout.date) {
+                setSaveError("Falta la fecha del entrenamiento — vuelve a Revisar y rellénala.");
+                rerender();
+                return;
+            }
 
             const existing = findSimilarWorkout(workout.date, workout.distanceKm, workout.durationSec);
 
@@ -282,11 +345,40 @@ export function initRunningEvents() {
     // ver nota en Running.css junto a .history-delete.
     document.querySelectorAll('[data-action="delete-workout"]').forEach(button => {
 
-        button.addEventListener("click", () => {
+        button.addEventListener("click", (event) => {
+
+            // La fila entera abre el detalle (ver [data-action="open-detail"]
+            // más abajo) — sin esto, borrar también abriría el detalle.
+            event.stopPropagation();
 
             if (!window.confirm("¿Borrar este entrenamiento? No se puede deshacer.")) return;
 
             deleteWorkout(button.dataset.workoutId);
+            rerender();
+
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="open-detail"]').forEach(article => {
+
+        article.addEventListener("click", () => {
+            openDetail(article.dataset.workoutId);
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="close-detail"]').forEach(button => {
+
+        button.addEventListener("click", closeDetail);
+
+    });
+
+    document.querySelectorAll('[data-action="set-workout-type"]').forEach(select => {
+
+        select.addEventListener("change", () => {
+
+            updateWorkoutType(select.dataset.workoutId, select.value);
             rerender();
 
         });

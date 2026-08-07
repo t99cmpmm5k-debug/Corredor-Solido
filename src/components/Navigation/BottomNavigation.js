@@ -6,8 +6,10 @@ import { getState } from "../../core/state.js";
 import { Home } from "../../pages/Home/Home.js";
 import { Plan } from "../../pages/Plan/Plan.js";
 import { Running } from "../../pages/Running/Running.js";
+import { Profile } from "../../pages/Profile/Profile.js";
+import { Gym } from "../../pages/Gym/Gym.js";
 
-const PAGES = { home: Home, plan: Plan, running: Running };
+const PAGES = { home: Home, plan: Plan, running: Running, profile: Profile, gym: Gym };
 
 export function BottomNavigation() {
 
@@ -40,7 +42,7 @@ export function BottomNavigation() {
 
             </button>
 
-            <button class="nav-item">
+            <button class="nav-item ${currentPage === Gym ? "active" : ""}" data-page="gym">
 
                 <iconify-icon icon="solar:dumbbell-large-bold-duotone"></iconify-icon>
 
@@ -48,7 +50,7 @@ export function BottomNavigation() {
 
             </button>
 
-            <button class="nav-item">
+            <button class="nav-item ${currentPage === Profile ? "active" : ""}" data-page="profile">
 
                 <iconify-icon icon="solar:user-rounded-bold-duotone"></iconify-icon>
 

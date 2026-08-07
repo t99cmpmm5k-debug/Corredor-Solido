@@ -1,6 +1,7 @@
 import "./RunningReviewStep.css";
 
 import { formatSecondsAsClock, parseClockToSeconds } from "../../../utils/format.js";
+import { RUNNING_WORKOUT_TYPES } from "../../../data/runningWorkoutTypes.js";
 
 export const LOW_CONFIDENCE_THRESHOLD = 0.9;
 
@@ -8,6 +9,8 @@ export const LOW_CONFIDENCE_THRESHOLD = 0.9;
 // initRunningEvents.js para parsear de vuelta lo que se edite aquí.
 export const REVIEW_FIELDS = [
     { key: "date", label: "Fecha", type: "date" },
+    { key: "time", label: "Hora", type: "text" },
+    { key: "type", label: "Tipo", type: "select", options: RUNNING_WORKOUT_TYPES },
     { key: "distanceKm", label: "Distancia", unit: "km", type: "number", step: "0.01" },
     { key: "durationSec", label: "Duración", unit: "min:seg", type: "clock" },
     { key: "avgPaceSecPerKm", label: "Ritmo medio", unit: "/km", type: "clock" },
@@ -23,7 +26,7 @@ export function parseFieldValue(field, rawText) {
 
     const trimmed = String(rawText ?? "").trim();
 
-    if (field.type === "date") return trimmed || null;
+    if (field.type === "date" || field.type === "text" || field.type === "select") return trimmed || null;
     if (field.type === "clock") return parseClockToSeconds(trimmed);
 
     if (trimmed === "") return null;
@@ -39,6 +42,44 @@ function displayValue(field, workout) {
     if (raw == null) return "";
 
     return field.type === "clock" ? formatSecondsAsClock(raw) : raw;
+
+}
+
+function renderFieldControl(field, workout, value, isMissing) {
+
+    if (field.type === "select") {
+
+        return `
+
+            <select data-field="${field.key}">
+
+                ${field.options.map(option => `
+
+                    <option value="${option.id}" ${value === option.id ? "selected" : ""}>
+
+                        ${option.label}
+
+                    </option>
+
+                `).join("")}
+
+            </select>
+
+        `;
+
+    }
+
+    return `
+
+        <input
+            type="${field.type === "clock" ? "text" : field.type}"
+            data-field="${field.key}"
+            value="${value}"
+            placeholder="${isMissing ? "No detectado" : ""}"
+            ${field.step ? `step="${field.step}"` : ""}
+        >
+
+    `;
 
 }
 
@@ -65,13 +106,7 @@ function renderField(field, workout) {
 
             <span class="review-field-input">
 
-                <input
-                    type="${field.type === "clock" ? "text" : field.type}"
-                    data-field="${field.key}"
-                    value="${value}"
-                    placeholder="${isMissing ? "No detectado" : ""}"
-                    ${field.step ? `step="${field.step}"` : ""}
-                >
+                ${renderFieldControl(field, workout, value, isMissing)}
 
                 ${field.unit ? `<span class="review-field-unit">${field.unit}</span>` : ""}
 

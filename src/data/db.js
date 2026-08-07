@@ -1,12 +1,13 @@
 const DB_NAME = "corredor-solido";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 export const STORES = {
 
     workouts: "workouts",
     shoes: "shoes",
     plannedSessions: "plannedSessions",
-    meta: "meta"
+    meta: "meta",
+    gymSessions: "gymSessions"
 
 };
 
@@ -19,21 +20,49 @@ export function isStorageAvailable() {
 
 }
 
+// Cada store se crea solo si no existe ya — onupgradeneeded se dispara con
+// TODAS las stores anteriores ya presentes en una DB real (no solo en una
+// nueva), así que crear sin comprobar revienta con "store already exists"
+// en cuanto se sube DB_VERSION para añadir una store nueva.
 function upgrade(db) {
 
-    const workouts = db.createObjectStore(STORES.workouts, { keyPath: "id" });
-    workouts.createIndex("date", "date", { unique: false });
-    workouts.createIndex("shoeId", "shoeId", { unique: false });
-    workouts.createIndex("linkedSessionId", "linkedSessionId", { unique: false });
+    if (!db.objectStoreNames.contains(STORES.workouts)) {
 
-    const shoes = db.createObjectStore(STORES.shoes, { keyPath: "id" });
-    shoes.createIndex("status", "status", { unique: false });
+        const workouts = db.createObjectStore(STORES.workouts, { keyPath: "id" });
+        workouts.createIndex("date", "date", { unique: false });
+        workouts.createIndex("shoeId", "shoeId", { unique: false });
+        workouts.createIndex("linkedSessionId", "linkedSessionId", { unique: false });
 
-    const plannedSessions = db.createObjectStore(STORES.plannedSessions, { keyPath: "id" });
-    plannedSessions.createIndex("date", "date", { unique: false });
-    plannedSessions.createIndex("weekStartDate", "weekStartDate", { unique: false });
+    }
 
-    db.createObjectStore(STORES.meta, { keyPath: "key" });
+    if (!db.objectStoreNames.contains(STORES.shoes)) {
+
+        const shoes = db.createObjectStore(STORES.shoes, { keyPath: "id" });
+        shoes.createIndex("status", "status", { unique: false });
+
+    }
+
+    if (!db.objectStoreNames.contains(STORES.plannedSessions)) {
+
+        const plannedSessions = db.createObjectStore(STORES.plannedSessions, { keyPath: "id" });
+        plannedSessions.createIndex("date", "date", { unique: false });
+        plannedSessions.createIndex("weekStartDate", "weekStartDate", { unique: false });
+
+    }
+
+    if (!db.objectStoreNames.contains(STORES.meta)) {
+
+        db.createObjectStore(STORES.meta, { keyPath: "key" });
+
+    }
+
+    if (!db.objectStoreNames.contains(STORES.gymSessions)) {
+
+        const gymSessions = db.createObjectStore(STORES.gymSessions, { keyPath: "id" });
+        gymSessions.createIndex("date", "date", { unique: false });
+        gymSessions.createIndex("dayId", "dayId", { unique: false });
+
+    }
 
 }
 

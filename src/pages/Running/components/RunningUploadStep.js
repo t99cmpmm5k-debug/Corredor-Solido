@@ -78,7 +78,7 @@ export function RunningUploadStep({ progress, ocrError, parseError, timingLog })
 
                     <strong>Seleccionar capturas</strong>
 
-                    <span>Sube una o varias capturas del mismo entrenamiento (Resumen, Estadísticas...)</span>
+                    <span>Sube una o varias capturas del mismo entrenamiento (Resumen, Estadísticas...). Incluye la de Resumen — es la única que trae fecha y hora.</span>
 
                 </label>
 

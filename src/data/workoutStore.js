@@ -236,6 +236,28 @@ export function updateShoe(id, patch) {
 
 }
 
+// Asignación retroactiva del tipo de entrenamiento (easy/series/tempo/
+// long/race) desde el detalle de una carrera ya guardada — sin
+// reimportar. corrected:true igual que cuando se edita a mano en
+// Revisar: en ambos casos el valor viene del usuario, no de la
+// heurística de clasifyWorkoutType.js.
+export function updateWorkoutType(id, type) {
+
+    const workout = workouts.find(w => w.id === id);
+    if (!workout) return null;
+
+    workout.type = type;
+    workout.fieldMeta = {
+        ...(workout.fieldMeta || {}),
+        type: { confidence: null, corrected: true }
+    };
+
+    put(STORES.workouts, workout).catch(() => {});
+
+    return workout;
+
+}
+
 export function retireShoe(id) {
 
     return updateShoe(id, { status: "retired", retiredDate: formatISODate(new Date()) });

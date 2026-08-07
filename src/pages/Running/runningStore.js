@@ -12,7 +12,8 @@ const initial = () => ({
     saveError: null,
     savedWorkout: null,
     duplicateWarning: null,
-    timingLog: []
+    timingLog: [],
+    detailWorkoutId: null
 
 });
 
@@ -192,6 +193,18 @@ export function appendTiming(line) {
     if (wizard.timingLog.length > MAX_TIMING_LINES) {
         wizard.timingLog.shift();
     }
+
+}
+
+export function getDetailWorkoutId() {
+
+    return wizard.detailWorkoutId;
+
+}
+
+export function setDetailWorkoutId(id) {
+
+    wizard.detailWorkoutId = id;
 
 }
 

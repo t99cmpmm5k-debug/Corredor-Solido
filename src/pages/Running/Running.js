@@ -16,12 +16,14 @@ import {
     getAddingNewShoe,
     getSaveError,
     getDuplicateWarning,
-    getTimingLog
+    getTimingLog,
+    getDetailWorkoutId
 } from "./runningStore.js";
 
 import { RunningUploadStep } from "./components/RunningUploadStep.js";
 import { RunningReviewStep } from "./components/RunningReviewStep.js";
 import { RunningShoeStep } from "./components/RunningShoeStep.js";
+import { RunningDetailView } from "./components/RunningDetailView.js";
 
 function shoeLabel(shoeId, shoes) {
 
@@ -46,7 +48,7 @@ function RunningHistoryItem(workout, shoes) {
 
     return `
 
-        <article class="running-history-item">
+        <article class="running-history-item" data-action="open-detail" data-workout-id="${workout.id}">
 
             <header class="history-header">
 
@@ -194,6 +196,11 @@ export function Running() {
             duplicateWarning: getDuplicateWarning(),
             workout: getWorkout()
         });
+
+    } else if (step === "detail") {
+
+        const workout = getWorkouts().find(w => w.id === getDetailWorkoutId());
+        content = RunningDetailView(workout);
 
     } else {
 

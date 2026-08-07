@@ -32,6 +32,19 @@ export function getAutomaticTheme(date = new Date()) {
  * ==========================================================
  */
 
+/**
+ * ==========================================================
+ * Borra una elección manual guardada (ThemeSwitcher) para que
+ * applyAutomaticTheme() deje de respetarla y vuelva a mandar la hora
+ * ==========================================================
+ */
+
+export function clearManualTheme() {
+
+    themeManager.clearManualTheme();
+
+}
+
 export function applyAutomaticTheme() {
 
     // Si ya hubo una elección manual (ThemeSwitcher), respétala —

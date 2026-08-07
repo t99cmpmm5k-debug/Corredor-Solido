@@ -86,7 +86,8 @@
 
 }
 
-.review-field-input input{
+.review-field-input input,
+.review-field-input select{
 
     flex:1;
 
@@ -103,6 +104,21 @@
     font-size:1.05rem;
 
     font-weight:700;
+
+}
+
+.review-field-input select{
+
+    /* El desplegable nativo necesita un color explícito para sus propias
+       opciones — heredar var(--text-primary) no llega al popup en todos
+       los navegadores móviles. */
+    color-scheme:dark light;
+
+}
+
+.review-field-input select option{
+
+    color:#000;
 
 }
 

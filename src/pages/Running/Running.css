@@ -139,6 +139,8 @@
 
     border:1px solid var(--card-border);
 
+    cursor:pointer;
+
 }
 
 .history-header{
@@ -365,21 +367,44 @@
 
 .wizard-close{
 
-    background:none;
+    width:44px;
 
-    border:none;
+    height:44px;
 
-    padding:0;
+    flex-shrink:0;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    border-radius:50%;
+
+    border:1px solid color-mix(in srgb, var(--card-border) 14%, transparent);
+
+    background:color-mix(in srgb, var(--card-background) 55%, transparent);
+
+    backdrop-filter:blur(18px);
+    -webkit-backdrop-filter:blur(18px);
 
     cursor:pointer;
 
-    display:flex;
+    transition:.25s;
+
+}
+
+.wizard-close:hover{
+
+    transform:scale(1.05);
+
+    border-color:var(--color-primary);
 
 }
 
 .wizard-close iconify-icon{
 
-    font-size:28px;
+    font-size:24px;
 
     color:var(--text-secondary);
 

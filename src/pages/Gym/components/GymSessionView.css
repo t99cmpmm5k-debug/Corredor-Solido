@@ -1,0 +1,274 @@
+.gym-exercise-list{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:14px;
+
+}
+
+.gym-exercise-card{
+
+    padding:18px;
+
+    border-radius:var(--radius-xl);
+
+    background:color-mix(in srgb, var(--card-background) 70%, transparent);
+
+    border:1px solid var(--card-border);
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:14px;
+
+}
+
+.gym-exercise-header{
+
+    display:flex;
+
+    align-items:flex-start;
+
+    justify-content:space-between;
+
+    gap:12px;
+
+}
+
+.gym-exercise-header h3{
+
+    color:var(--text-primary);
+
+    font-size:1.02rem;
+
+    font-weight:800;
+
+}
+
+.gym-exercise-target{
+
+    color:var(--text-secondary);
+
+    font-size:.82rem;
+
+}
+
+.gym-exercise-badge{
+
+    flex-shrink:0;
+
+    padding:6px 12px;
+
+    border-radius:999px;
+
+    background:color-mix(in srgb, var(--color-primary) 12%, transparent);
+
+    color:var(--color-primary);
+
+    font-size:.7rem;
+
+    font-weight:700;
+
+    white-space:nowrap;
+
+    text-align:right;
+
+}
+
+/*==========================
+        FILA DE SERIE
+==========================*/
+
+.gym-set-row{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+
+    padding:8px 0;
+
+    border-top:1px solid color-mix(in srgb, var(--card-border) 70%, transparent);
+
+}
+
+.gym-set-row:first-child{
+
+    border-top:none;
+
+}
+
+.gym-set-label{
+
+    flex-shrink:0;
+
+    width:20px;
+
+    text-align:center;
+
+    color:var(--color-text-muted);
+
+    font-size:.85rem;
+
+    font-weight:800;
+
+}
+
+.gym-set-steppers{
+
+    flex:1;
+
+    min-width:0;
+
+    display:flex;
+
+    gap:8px;
+
+}
+
+/* Cada stepper (peso o reps) — botones grandes de 44px a cada lado del
+   valor, pensado para tocar sin mirar mucho ni acertar a la primera. */
+.gym-stepper{
+
+    flex:1;
+
+    min-width:0;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:space-between;
+
+    gap:4px;
+
+    padding:2px;
+
+    border-radius:999px;
+
+    background:color-mix(in srgb, var(--card-background) 90%, transparent);
+
+    border:1px solid color-mix(in srgb, var(--card-border) 70%, transparent);
+
+}
+
+.gym-stepper-btn{
+
+    flex-shrink:0;
+
+    width:40px;
+
+    height:40px;
+
+    border:none;
+
+    border-radius:50%;
+
+    background:color-mix(in srgb, var(--color-primary) 14%, transparent);
+
+    color:var(--color-primary);
+
+    font-size:1.3rem;
+
+    font-weight:800;
+
+    line-height:1;
+
+    cursor:pointer;
+
+}
+
+.gym-stepper-btn:active{
+
+    background:color-mix(in srgb, var(--color-primary) 28%, transparent);
+
+}
+
+.gym-stepper-value{
+
+    flex:1;
+
+    min-width:0;
+
+    text-align:center;
+
+    color:var(--text-primary);
+
+    font-size:1rem;
+
+    font-weight:800;
+
+    white-space:nowrap;
+
+}
+
+.gym-stepper-value small{
+
+    margin-left:2px;
+
+    color:var(--text-secondary);
+
+    font-size:.68rem;
+
+    font-weight:700;
+
+}
+
+/* Botón "Hecho" — el más importante de la fila, el que más se toca. */
+.gym-set-done{
+
+    flex-shrink:0;
+
+    width:44px;
+
+    height:44px;
+
+    border:none;
+
+    border-radius:50%;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    background:color-mix(in srgb, var(--card-border) 25%, transparent);
+
+    cursor:pointer;
+
+    transition:.2s;
+
+}
+
+.gym-set-done iconify-icon{
+
+    font-size:26px;
+
+    color:var(--color-text-muted);
+
+}
+
+.gym-set-done.is-done{
+
+    background:color-mix(in srgb, var(--color-success) 20%, transparent);
+
+    box-shadow:0 0 14px color-mix(in srgb, var(--color-success) 45%, transparent);
+
+}
+
+.gym-set-done.is-done iconify-icon{
+
+    color:var(--color-success);
+
+}
+
+.gym-set-row.is-done{
+
+    opacity:.85;
+
+}

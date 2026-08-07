@@ -18,10 +18,11 @@ import "./styles/hero.css";
 import { Home } from "./pages/Home/Home.js";
 import { Plan } from "./pages/Plan/Plan.js";
 
-import { applyAutomaticTheme } from "./theme/timeTheme.js";
+import { applyAutomaticTheme, clearManualTheme } from "./theme/timeTheme.js";
 import { start, rerender } from "./core/router.js";
 
 import { hydrate } from "./data/workoutStore.js";
+import { hydrate as hydrateGymSessions } from "./data/gymSessionStore.js";
 import { hydrateBackupMeta } from "./utils/backup.js";
 
 // TEMPORAL - QUITAR ANTES DE PRODUCCIÓN
@@ -35,19 +36,29 @@ function boot() {
 
     let readyBeforeTimeout = false;
 
-    const ready = Promise.all([hydrate(), hydrateBackupMeta()])
+    const ready = Promise.all([hydrate(), hydrateGymSessions(), hydrateBackupMeta()])
         .then(() => { readyBeforeTimeout = true; });
 
     const timedOut = new Promise(resolve => setTimeout(resolve, HYDRATE_TIMEOUT_MS));
 
     return Promise.race([ready, timedOut]).then(() => {
 
+        // Mientras el ThemeSwitcher esté desactivado (ver más abajo), una
+        // elección manual de una sesión anterior se queda grabada en
+        // localStorage y bloquea el tema automático para siempre — se
+        // limpia aquí. Quitar esta línea a la vez que se reactive
+        // mountThemeSwitcher(), para que una elección manual sí sobreviva.
+        clearManualTheme();
+
         applyAutomaticTheme();
 
         start(Home);
 
-        // TEMPORAL - QUITAR ANTES DE PRODUCCIÓN
-        mountThemeSwitcher();
+        // Desactivado a propósito mientras se usa la app en real esta semana
+        // (probando el tema automático por hora) — con el selector delante
+        // siempre se acababa tocando. No borrar mountThemeSwitcher ni su
+        // import: descomentar esta línea para volver a activarlo.
+        // mountThemeSwitcher();
 
         // Si ganó el timeout, la hidratación sigue en marcha de fondo:
         // en cuanto termine, repintamos con los datos ya cargados.

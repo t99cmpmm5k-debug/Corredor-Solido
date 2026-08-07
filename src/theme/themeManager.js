@@ -45,6 +45,15 @@ class ThemeManager {
 
     }
 
+    // Borra la marca de elección manual — así applyAutomaticTheme() vuelve
+    // a mandar en la próxima llamada, aunque quedara una elección manual
+    // grabada de una sesión anterior con el ThemeSwitcher.
+    clearManualTheme() {
+
+        localStorage.removeItem(SOURCE_KEY);
+
+    }
+
     // ==========================
     // CAMBIO DE TEMA
     // ==========================

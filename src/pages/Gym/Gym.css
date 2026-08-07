@@ -1,0 +1,225 @@
+.gym-page{
+
+    width:100%;
+
+    min-height:100vh;
+    min-height:100dvh;
+
+}
+
+.gym-content,
+.gym-session{
+
+    padding:24px;
+
+    padding-bottom:calc(110px + env(safe-area-inset-bottom));
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:16px;
+
+}
+
+.gym-header h1{
+
+    color:var(--text-primary);
+
+    font-size:1.6rem;
+
+    font-weight:800;
+
+}
+
+/*==========================
+      SELECCIÓN DE DÍA
+==========================*/
+
+.gym-day-list{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:14px;
+
+}
+
+.gym-day-card{
+
+    padding:20px;
+
+    border-radius:var(--radius-xl);
+
+    background:color-mix(in srgb, var(--card-background) 70%, transparent);
+
+    border:1px solid var(--card-border);
+
+    cursor:pointer;
+
+}
+
+.gym-day-card-header{
+
+    display:flex;
+
+    align-items:baseline;
+
+    justify-content:space-between;
+
+    gap:12px;
+
+    margin-bottom:10px;
+
+}
+
+.gym-day-card-header h2{
+
+    color:var(--text-primary);
+
+    font-size:1.1rem;
+
+    font-weight:800;
+
+}
+
+.gym-day-card-count{
+
+    flex-shrink:0;
+
+    padding:4px 10px;
+
+    border-radius:999px;
+
+    background:color-mix(in srgb, var(--color-primary) 12%, transparent);
+
+    color:var(--color-primary);
+
+    font-size:.72rem;
+
+    font-weight:700;
+
+    white-space:nowrap;
+
+}
+
+.gym-day-card-list{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:4px;
+
+}
+
+.gym-day-card-list li{
+
+    color:var(--text-secondary);
+
+    font-size:.85rem;
+
+}
+
+/*==========================
+    CABECERA DE SESIÓN
+   (compartida con GymSessionView.js)
+==========================*/
+
+.gym-session-header{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:12px;
+
+}
+
+.gym-session-header h2{
+
+    color:var(--text-primary);
+
+    font-size:1.2rem;
+
+    font-weight:800;
+
+}
+
+.gym-close{
+
+    width:44px;
+
+    height:44px;
+
+    flex-shrink:0;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    border-radius:50%;
+
+    border:1px solid color-mix(in srgb, var(--card-border) 14%, transparent);
+
+    background:color-mix(in srgb, var(--card-background) 55%, transparent);
+
+    backdrop-filter:blur(18px);
+    -webkit-backdrop-filter:blur(18px);
+
+    cursor:pointer;
+
+    transition:.25s;
+
+}
+
+.gym-close:hover{
+
+    transform:scale(1.05);
+
+    border-color:var(--color-primary);
+
+}
+
+.gym-close iconify-icon{
+
+    font-size:24px;
+
+    color:var(--text-secondary);
+
+}
+
+.gym-finish-button{
+
+    width:100%;
+
+    height:56px;
+
+    border:none;
+
+    border-radius:var(--radius-md);
+
+    background:linear-gradient(90deg, var(--color-primary), var(--color-secondary));
+
+    color:var(--button-text);
+
+    font-size:1rem;
+
+    font-weight:800;
+
+    cursor:pointer;
+
+    box-shadow:0 8px 20px rgba(0,0,0,.25);
+
+}
+
+.gym-finish-button:hover{
+
+    box-shadow:
+        0 0 26px color-mix(in srgb, var(--color-glow) 55%, transparent),
+        0 8px 20px rgba(0,0,0,.25);
+
+}

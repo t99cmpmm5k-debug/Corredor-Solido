@@ -7,8 +7,9 @@ function workoutSummary(workout) {
 
     const distance = workout.distanceKm != null ? `${workout.distanceKm} km` : "—";
     const duration = workout.durationSec != null ? formatSecondsAsClock(workout.durationSec) : "—";
+    const date = workout.date ? formatDayMonth(workout.date) : "Sin fecha";
 
-    return `${formatDayMonth(workout.date)} · ${distance} · ${duration}`;
+    return `${date} · ${distance} · ${duration}`;
 
 }
 
@@ -85,6 +86,12 @@ export function RunningShoeStep({ shoes, selectedShoeId, addingNewShoe, saveErro
                     <span>${saveError}</span>
 
                 </div>
+
+                <button class="shoe-add-toggle" data-action="back-to-review">
+
+                    Volver a revisar
+
+                </button>
 
             ` : ""}
 
