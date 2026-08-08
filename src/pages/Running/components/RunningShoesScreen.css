@@ -1,0 +1,429 @@
+.running-step-shoes{
+
+    padding:24px;
+
+    padding-bottom:calc(110px + env(safe-area-inset-bottom));
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:20px;
+
+}
+
+/* =========================
+   TOTAL
+========================= */
+
+.shoes-total{
+
+    display:flex;
+
+    flex-direction:column;
+
+    align-items:center;
+
+    gap:2px;
+
+    padding:20px;
+
+    border-radius:var(--radius-lg);
+
+    background:color-mix(in srgb, var(--card-background) 70%, transparent);
+
+    border:1px solid var(--card-border);
+
+}
+
+.shoes-total-value{
+
+    color:var(--text-primary);
+
+    font-size:1.6rem;
+
+    font-weight:800;
+
+}
+
+.shoes-total-label{
+
+    color:var(--text-secondary);
+
+    font-size:.8rem;
+
+    text-transform:uppercase;
+
+    letter-spacing:.04em;
+
+}
+
+/* =========================
+   LISTA / TARJETA
+========================= */
+
+.shoes-list{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:12px;
+
+}
+
+.shoes-section-title{
+
+    color:var(--text-secondary);
+
+    font-size:.8rem;
+
+    text-transform:uppercase;
+
+    letter-spacing:.04em;
+
+}
+
+.shoe-card{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:12px;
+
+    padding:16px 18px;
+
+    border-radius:var(--radius-lg);
+
+    background:color-mix(in srgb, var(--card-background) 70%, transparent);
+
+    border:1px solid var(--card-border);
+
+}
+
+.shoe-card--retired{
+
+    opacity:.6;
+
+}
+
+.shoe-card-main{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:14px;
+
+}
+
+.shoe-photo{
+
+    flex-shrink:0;
+
+    width:56px;
+
+    height:56px;
+
+    border-radius:var(--radius-md);
+
+    background:color-mix(in srgb, var(--color-primary) 12%, transparent);
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    overflow:hidden;
+
+}
+
+.shoe-photo img{
+
+    width:100%;
+
+    height:100%;
+
+    object-fit:cover;
+
+}
+
+.shoe-photo iconify-icon{
+
+    font-size:26px;
+
+    color:var(--color-primary);
+
+}
+
+.shoe-card-body{
+
+    flex:1;
+
+    min-width:0;
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:6px;
+
+}
+
+.shoe-card-name{
+
+    color:var(--text-primary);
+
+    font-weight:700;
+
+    font-size:.95rem;
+
+}
+
+.shoe-km-plain{
+
+    color:var(--text-secondary);
+
+    font-size:.85rem;
+
+}
+
+/* =========================
+   BARRA DE KILOMETRAJE
+========================= */
+
+.shoe-bar{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:4px;
+
+}
+
+.shoe-bar-track{
+
+    width:100%;
+
+    height:8px;
+
+    border-radius:999px;
+
+    background:color-mix(in srgb, var(--card-border) 60%, transparent);
+
+    overflow:hidden;
+
+}
+
+.shoe-bar-fill{
+
+    width:var(--progress, 0%);
+
+    height:100%;
+
+    border-radius:999px;
+
+    background:linear-gradient(90deg, var(--color-primary), var(--color-secondary));
+
+    transition:width .2s ease;
+
+}
+
+.shoe-bar-fill--warning{
+
+    background:var(--color-warning);
+
+}
+
+.shoe-bar-fill--danger{
+
+    background:var(--color-danger);
+
+}
+
+.shoe-bar-label{
+
+    color:var(--text-secondary);
+
+    font-size:.78rem;
+
+}
+
+.shoe-limit-warning{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:6px;
+
+    color:var(--color-danger);
+
+    font-size:.78rem;
+
+}
+
+/* =========================
+   ACCIONES DE TARJETA
+========================= */
+
+.shoe-card-actions{
+
+    display:flex;
+
+    gap:10px;
+
+}
+
+.shoe-card-action{
+
+    padding:8px 14px;
+
+    border-radius:999px;
+
+    background:transparent;
+
+    border:1px solid var(--card-border);
+
+    color:var(--text-secondary);
+
+    font-size:.82rem;
+
+    font-weight:600;
+
+    cursor:pointer;
+
+}
+
+/* =========================
+   FORMULARIOS (alta / edición)
+========================= */
+
+.shoes-add-form, .shoe-edit-form{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:10px;
+
+    padding:16px;
+
+    border-radius:var(--radius-md);
+
+    background:color-mix(in srgb, var(--card-background) 60%, transparent);
+
+    border:1px solid var(--card-border);
+
+}
+
+.shoes-add-form input, .shoe-edit-form input[type="number"]{
+
+    padding:12px 14px;
+
+    border-radius:var(--radius-sm);
+
+    background:color-mix(in srgb, var(--color-surface) 70%, transparent);
+
+    border:1px solid var(--card-border);
+
+    color:var(--text-primary);
+
+    font-size:.95rem;
+
+    outline:none;
+
+}
+
+.shoes-add-form input::placeholder, .shoe-edit-form input::placeholder{
+
+    color:var(--color-text-muted);
+
+}
+
+.shoe-photo-picker{
+
+    display:inline-flex;
+
+    align-items:center;
+
+    gap:8px;
+
+    padding:10px 14px;
+
+    border-radius:999px;
+
+    background:transparent;
+
+    border:1px dashed color-mix(in srgb, var(--color-primary) 40%, transparent);
+
+    color:var(--color-primary);
+
+    font-size:.85rem;
+
+    font-weight:600;
+
+    cursor:pointer;
+
+    width:max-content;
+
+}
+
+.shoe-photo-preview{
+
+    width:72px;
+
+    height:72px;
+
+    border-radius:var(--radius-md);
+
+    object-fit:cover;
+
+}
+
+.shoes-add-form-actions{
+
+    display:flex;
+
+    gap:10px;
+
+}
+
+.shoes-add-toggle{
+
+    display:inline-flex;
+
+    align-items:center;
+
+    gap:8px;
+
+    padding:10px 16px;
+
+    border-radius:999px;
+
+    background:transparent;
+
+    border:1px dashed color-mix(in srgb, var(--color-primary) 40%, transparent);
+
+    color:var(--color-primary);
+
+    font-size:.9rem;
+
+    font-weight:600;
+
+    cursor:pointer;
+
+    width:max-content;
+
+}
+
+.shoes-empty{
+
+    color:var(--text-secondary);
+
+    font-size:.9rem;
+
+}

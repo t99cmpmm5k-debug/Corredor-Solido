@@ -14,7 +14,9 @@ const initial = () => ({
     savedWorkout: null,
     duplicateWarning: null,
     timingLog: [],
-    detailWorkoutId: null
+    detailWorkoutId: null,
+    newShoePhoto: null,
+    editingShoeId: null
 
 });
 
@@ -236,6 +238,34 @@ export function getDetailWorkoutId() {
 export function setDetailWorkoutId(id) {
 
     wizard.detailWorkoutId = id;
+
+}
+
+// Foto pendiente del formulario de alta/edición de zapatilla — hace
+// falta guardarla en el store (no solo en el DOM) porque render()
+// reconstruye el HTML en cada rerender y se perdería el preview.
+export function getNewShoePhoto() {
+
+    return wizard.newShoePhoto;
+
+}
+
+export function setNewShoePhoto(dataUrl) {
+
+    wizard.newShoePhoto = dataUrl;
+
+}
+
+export function getEditingShoeId() {
+
+    return wizard.editingShoeId;
+
+}
+
+export function setEditingShoeId(id) {
+
+    wizard.editingShoeId = id;
+    wizard.newShoePhoto = null;
 
 }
 

@@ -1,6 +1,7 @@
 import { rerender } from "../../core/router.js";
-import { addWorkout, addShoe, deleteWorkout, findSimilarWorkout, updateWorkoutType } from "../../data/workoutStore.js";
+import { addWorkout, addShoe, deleteWorkout, findSimilarWorkout, updateWorkoutType, retireShoe, updateShoe } from "../../data/workoutStore.js";
 import { parseGarminScreenshots, warmUpWorker } from "../../importers/garmin-engine/recognize.js";
+import { readShoePhotoAsDataUrl } from "./shoePhoto.js";
 import { importWorkout } from "../../importers/index.js";
 import { REVIEW_FIELDS, parseFieldValue } from "./components/RunningReviewStep.js";
 
@@ -18,6 +19,7 @@ import {
     updateWorkoutField,
     getSelectedShoeId,
     setSelectedShoeId,
+    getAddingNewShoe,
     setAddingNewShoe,
     setSaveError,
     setSavedWorkout,
@@ -25,10 +27,15 @@ import {
     setDuplicateWarning,
     appendTiming,
     setDetailWorkoutId,
-    setTypeFilter
+    setTypeFilter,
+    getEditingShoeId,
+    setEditingShoeId,
+    getNewShoePhoto,
+    setNewShoePhoto
 } from "./runningStore.js";
 
 const DETAIL_HISTORY_STATE = { runningDetail: true };
+const SHOES_HISTORY_STATE = { runningShoes: true };
 
 function openDetail(workoutId) {
 
@@ -59,17 +66,50 @@ function closeDetail() {
 
 }
 
-// Registrado una sola vez a nivel de módulo (no dentro de initRunningEvents,
-// que se vuelve a llamar en cada render) — si no, se acumularía un listener
-// de window por cada rerender y un solo gesto de atrás cerraría el detalle
-// varias veces de golpe.
-window.addEventListener("popstate", () => {
+function openShoes() {
 
-    if (getWizardStep() !== "detail") return;
+    // Estado limpio siempre que se entra — sin esto, quedarse a medias
+    // editando/añadiendo una zapatilla y volver a entrar dejaría el
+    // formulario abierto sin que el usuario haya hecho nada esta vez.
+    setAddingNewShoe(false);
+    setEditingShoeId(null);
+    setNewShoePhoto(null);
+    setWizardStep("shoes");
 
-    setDetailWorkoutId(null);
+    history.pushState(SHOES_HISTORY_STATE, "");
+
+    rerender();
+
+}
+
+function closeShoes() {
+
+    if (history.state?.runningShoes) {
+        history.back();
+        return;
+    }
+
     setWizardStep("idle");
     rerender();
+
+}
+
+// Registrado una sola vez a nivel de módulo (no dentro de initRunningEvents,
+// que se vuelve a llamar en cada render) — si no, se acumularía un listener
+// de window por cada rerender y un solo gesto de atrás cerraría estas
+// pantallas varias veces de golpe.
+window.addEventListener("popstate", () => {
+
+    const step = getWizardStep();
+
+    if (step === "detail") {
+        setDetailWorkoutId(null);
+        setWizardStep("idle");
+        rerender();
+    } else if (step === "shoes") {
+        setWizardStep("idle");
+        rerender();
+    }
 
 });
 
@@ -425,6 +465,147 @@ export function initRunningEvents() {
             updateWorkoutType(select.dataset.workoutId, select.value);
             rerender();
 
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="open-shoes"]').forEach(button => {
+
+        button.addEventListener("click", openShoes);
+
+    });
+
+    document.querySelectorAll('[data-action="close-shoes"]').forEach(button => {
+
+        button.addEventListener("click", closeShoes);
+
+    });
+
+    // Compartido por el formulario de alta y el de edición — solo uno de
+    // los dos está abierto a la vez, así que un único hueco en el store
+    // para "la foto que se acaba de elegir" basta.
+    document.querySelectorAll(".shoe-photo-input").forEach(input => {
+
+        input.addEventListener("change", async () => {
+
+            const file = input.files?.[0];
+            if (!file) return;
+
+            try {
+                const dataUrl = await readShoePhotoAsDataUrl(file);
+                setNewShoePhoto(dataUrl);
+                rerender();
+            } catch {
+                // Sin bloqueo si falla leer la imagen — la zapatilla se
+                // puede guardar igual sin foto.
+            }
+
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="open-add-shoe-form"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+            setAddingNewShoe(true);
+            setEditingShoeId(null);
+            setNewShoePhoto(null);
+            rerender();
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="cancel-add-shoe"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+            setAddingNewShoe(false);
+            setNewShoePhoto(null);
+            rerender();
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="add-shoe"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+
+            const brand = document.querySelector('.shoes-add-form [data-shoe-field="brand"]')?.value.trim();
+            const model = document.querySelector('.shoes-add-form [data-shoe-field="model"]')?.value.trim();
+
+            if (!brand || !model) return;
+
+            const lifetimeKmRaw = document.querySelector('.shoes-add-form [data-shoe-field="lifetimeKm"]')?.value;
+            const lifetimeKm = lifetimeKmRaw ? Number(lifetimeKmRaw) : null;
+
+            addShoe({
+                brand,
+                model,
+                photo: getNewShoePhoto(),
+                lifetimeKm: Number.isFinite(lifetimeKm) && lifetimeKm > 0 ? lifetimeKm : null
+            });
+
+            setAddingNewShoe(false);
+            setNewShoePhoto(null);
+            rerender();
+
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="edit-shoe"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+
+            const id = button.dataset.shoeId;
+
+            setEditingShoeId(getEditingShoeId() === id ? null : id);
+            setAddingNewShoe(false);
+            setNewShoePhoto(null);
+            rerender();
+
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="save-shoe-edit"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+
+            const id = button.dataset.shoeId;
+            const lifetimeKmRaw = document.querySelector('.shoe-edit-form [data-shoe-field="lifetimeKm"]')?.value;
+            const lifetimeKm = lifetimeKmRaw ? Number(lifetimeKmRaw) : null;
+
+            const patch = { lifetimeKm: Number.isFinite(lifetimeKm) && lifetimeKm > 0 ? lifetimeKm : null };
+
+            // Solo se pisa la foto si se eligió una nueva en esta edición —
+            // si no, la zapatilla conserva la que ya tenía.
+            const photo = getNewShoePhoto();
+            if (photo) patch.photo = photo;
+
+            updateShoe(id, patch);
+
+            setEditingShoeId(null);
+            setNewShoePhoto(null);
+            rerender();
+
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="retire-shoe"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+            retireShoe(button.dataset.shoeId);
+            rerender();
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="reactivate-shoe"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+            updateShoe(button.dataset.shoeId, { status: "active", retiredDate: null });
+            rerender();
         });
 
     });

@@ -41,6 +41,16 @@
 
 }
 
+.running-header-actions{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+
+}
+
 .running-import-button{
 
     display:inline-flex;
@@ -66,6 +76,32 @@
     cursor:pointer;
 
     box-shadow:0 8px 20px rgba(0,0,0,.25);
+
+}
+
+.running-shoes-button{
+
+    display:inline-flex;
+
+    align-items:center;
+
+    gap:8px;
+
+    padding:10px 16px;
+
+    border-radius:999px;
+
+    background:transparent;
+
+    border:1px solid var(--card-border);
+
+    color:var(--text-secondary);
+
+    font-weight:600;
+
+    font-size:.9rem;
+
+    cursor:pointer;
 
 }
 

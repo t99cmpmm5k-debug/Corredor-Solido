@@ -20,7 +20,9 @@ import {
     getDuplicateWarning,
     getTimingLog,
     getDetailWorkoutId,
-    getTypeFilter
+    getTypeFilter,
+    getEditingShoeId,
+    getNewShoePhoto
 } from "./runningStore.js";
 
 import { RunningUploadStep } from "./components/RunningUploadStep.js";
@@ -28,6 +30,7 @@ import { RunningReviewStep } from "./components/RunningReviewStep.js";
 import { RunningShoeStep } from "./components/RunningShoeStep.js";
 import { RunningDetailView } from "./components/RunningDetailView.js";
 import { RunningProgressCard } from "./components/RunningProgressCard.js";
+import { RunningShoesScreen } from "./components/RunningShoesScreen.js";
 
 function shoeLabel(shoeId, shoes) {
 
@@ -197,13 +200,25 @@ function RunningIdleView() {
 
                 <h1>Running</h1>
 
-                <button class="running-import-button" data-action="open-wizard">
+                <div class="running-header-actions">
 
-                    <iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon>
+                    <button class="running-shoes-button" data-action="open-shoes">
 
-                    Importar
+                        <iconify-icon icon="solar:running-round-bold-duotone"></iconify-icon>
 
-                </button>
+                        Zapatillas
+
+                    </button>
+
+                    <button class="running-import-button" data-action="open-wizard">
+
+                        <iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon>
+
+                        Importar
+
+                    </button>
+
+                </div>
 
             </header>
 
@@ -279,7 +294,10 @@ export function Running() {
     } else if (step === "shoe") {
 
         content = RunningShoeStep({
-            shoes: getShoes(),
+            // Una zapatilla retirada no debe poder elegirse para una carrera
+            // nueva — su histórico ya guardado no se toca, solo deja de
+            // salir aquí.
+            shoes: getShoes().filter(s => s.status !== "retired"),
             selectedShoeId: getSelectedShoeId(),
             addingNewShoe: getAddingNewShoe(),
             saveError: getSaveError(),
@@ -291,6 +309,15 @@ export function Running() {
 
         const workout = getWorkouts().find(w => w.id === getDetailWorkoutId());
         content = RunningDetailView(workout);
+
+    } else if (step === "shoes") {
+
+        content = RunningShoesScreen({
+            shoes: getShoes(),
+            addingNewShoe: getAddingNewShoe(),
+            editingShoeId: getEditingShoeId(),
+            newShoePhoto: getNewShoePhoto()
+        });
 
     } else {
 
