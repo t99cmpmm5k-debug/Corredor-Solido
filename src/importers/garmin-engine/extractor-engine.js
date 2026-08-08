@@ -42,7 +42,11 @@ const HR_NUM = "(?:[3-9][0-9]|1[0-9]{2}|2[0-4][0-9])";
 // p. ej. "172 pom" en vez de "172 ppm". Exigir la unidad letra a letra
 // dejaba caer el número real al fallback y fusionaba el de otra fila.
 // Basta con que arranque por b/p y tenga un par de letras más pegadas.
-const HR_UNIT = "[bp][a-z]{1,4}";
+const PPM_UNIT = "[bp][a-z]{1,4}";
+// Cadencia además puede venir en "spm" (pasos/carreras por minuto), que
+// PPM_UNIT no cubre por arrancar en "s" — mismo criterio de tolerancia.
+const CADENCE_NUM = "[0-9]{2,3}";
+const CADENCE_UNIT = "[bsp][a-z]{1,4}";
 
 export function distance(raw) {
     return findAnchored(
@@ -57,10 +61,10 @@ export function distance(raw) {
 export function avgHeartRate(raw) {
     const text = compact(raw);
     const patterns = [
-        new RegExp(`frecuencia cardiaca media[\\s\\S]{0,35}?(${HR_NUM}\\s*${HR_UNIT})`, "i"),
-        new RegExp(`(${HR_NUM}\\s*${HR_UNIT})[\\s\\S]{0,35}?frecuencia cardiaca media`, "i"),
-        new RegExp(`fc media[\\s\\S]{0,25}?(${HR_NUM}\\s*${HR_UNIT})`, "i"),
-        new RegExp(`(${HR_NUM}\\s*${HR_UNIT})[\\s\\S]{0,25}?fc media`, "i")
+        new RegExp(`frecuencia cardiaca media[\\s\\S]{0,35}?(${HR_NUM}\\s*${PPM_UNIT})`, "i"),
+        new RegExp(`(${HR_NUM}\\s*${PPM_UNIT})[\\s\\S]{0,35}?frecuencia cardiaca media`, "i"),
+        new RegExp(`fc media[\\s\\S]{0,25}?(${HR_NUM}\\s*${PPM_UNIT})`, "i"),
+        new RegExp(`(${HR_NUM}\\s*${PPM_UNIT})[\\s\\S]{0,25}?fc media`, "i")
     ];
 
     for (const regex of patterns) {
@@ -81,9 +85,9 @@ export function maxHeartRate(raw) {
         // el número más cercano a la etiqueta "máx." es en realidad el de
         // "media" — hay que exigir las dos etiquetas seguidas y saltar al
         // segundo número.
-        new RegExp(`frecuencia cardiaca media[\\s\\S]{0,10}?(?:frecuencia cardiaca maxima|frec\\s*cardiaca\\s*max|fc maxima)[\\s\\S]{0,15}?${HR_NUM}\\s*${HR_UNIT}[\\s\\S]{0,15}?(${HR_NUM}\\s*${HR_UNIT})`, "i"),
-        new RegExp(`(?:frecuencia cardiaca maxima|frec\\s*cardiaca\\s*max|fc maxima)[\\s\\S]{0,45}?(${HR_NUM}\\s*${HR_UNIT})`, "i"),
-        new RegExp(`(${HR_NUM}\\s*${HR_UNIT})[\\s\\S]{0,45}?(?:frecuencia cardiaca maxima|frec\\s*cardiaca\\s*max|fc maxima)`, "i")
+        new RegExp(`frecuencia cardiaca media[\\s\\S]{0,10}?(?:frecuencia cardiaca maxima|frec\\s*cardiaca\\s*max|fc maxima)[\\s\\S]{0,15}?${HR_NUM}\\s*${PPM_UNIT}[\\s\\S]{0,15}?(${HR_NUM}\\s*${PPM_UNIT})`, "i"),
+        new RegExp(`(?:frecuencia cardiaca maxima|frec\\s*cardiaca\\s*max|fc maxima)[\\s\\S]{0,45}?(${HR_NUM}\\s*${PPM_UNIT})`, "i"),
+        new RegExp(`(${HR_NUM}\\s*${PPM_UNIT})[\\s\\S]{0,45}?(?:frecuencia cardiaca maxima|frec\\s*cardiaca\\s*max|fc maxima)`, "i")
     ];
 
     for (const regex of patterns) {
@@ -178,14 +182,70 @@ export function calories(raw) {
     return null;
 }
 
+// Alias de la etiqueta de cadencia máxima — el OCR la trunca a "máx." tan
+// a menudo como la deja completa ("máxima"); tras normalizeLabel ambas
+// pierden el acento y el punto, así que hace falta cubrir las dos formas.
+const MAX_CADENCE_LABEL = "(?:cadencia maxima de carrera|cadencia max de carrera|cadencia maxima|cadencia max)";
+
 export function cadence(raw) {
-    return findAnchored(
-        raw,
-        ["cadencia media de carrera", "cadencia media"],
-        ["[0-9]{2,3}\\s*(?:ppm|spm)"],
-        numberParser,
-        V.cadence
-    );
+    const text = normalizeLabel(compact(raw));
+
+    // Layout de dos columnas (mismo caso que maxCadence/maxHeartRate):
+    // ambas etiquetas seguidas, valores en la fila de abajo — el primer
+    // número tras saltar las dos etiquetas es el propio de "media". Va
+    // fuera del bucle de abajo porque, a diferencia de los demás patrones,
+    // este SÍ atraviesa a propósito la etiqueta "máx." para llegar a él.
+    const twoColumn = text.match(new RegExp(
+        `cadencia media[\\s\\S]{0,10}?${MAX_CADENCE_LABEL}[\\s\\S]{0,15}?(${CADENCE_NUM}\\s*${CADENCE_UNIT})`,
+        "i"
+    ));
+    if (twoColumn) {
+        const value = numberParser(twoColumn[1]);
+        if (V.cadence(value)) return { value, source: twoColumn[0], confidence: .99 };
+    }
+
+    const patterns = [
+        new RegExp(`cadencia media de carrera[\\s\\S]{0,35}?(${CADENCE_NUM}\\s*${CADENCE_UNIT})`, "i"),
+        new RegExp(`(${CADENCE_NUM}\\s*${CADENCE_UNIT})[\\s\\S]{0,35}?cadencia media de carrera`, "i"),
+        new RegExp(`cadencia media[\\s\\S]{0,25}?(${CADENCE_NUM}\\s*${CADENCE_UNIT})`, "i"),
+        new RegExp(`(${CADENCE_NUM}\\s*${CADENCE_UNIT})[\\s\\S]{0,25}?cadencia media`, "i")
+    ];
+
+    for (const regex of patterns) {
+        const m = text.match(regex);
+        if (!m) continue;
+        if (/max/.test(m[0])) continue;
+        const value = numberParser(m[1]);
+        if (V.cadence(value)) return { value, source: m[0], confidence: .99 };
+    }
+    return null;
+}
+
+export function maxCadence(raw) {
+    const text = normalizeLabel(compact(raw));
+    const patterns = [
+        // Mismo layout de dos columnas que maxHeartRate: media y máx. en
+        // la misma fila de etiquetas, valores en la fila de abajo.
+        new RegExp(`cadencia media[\\s\\S]{0,10}?${MAX_CADENCE_LABEL}[\\s\\S]{0,15}?${CADENCE_NUM}\\s*${CADENCE_UNIT}[\\s\\S]{0,15}?(${CADENCE_NUM}\\s*${CADENCE_UNIT})`, "i"),
+        new RegExp(`${MAX_CADENCE_LABEL}[\\s\\S]{0,45}?(${CADENCE_NUM}\\s*${CADENCE_UNIT})`, "i"),
+        new RegExp(`(${CADENCE_NUM}\\s*${CADENCE_UNIT})[\\s\\S]{0,45}?${MAX_CADENCE_LABEL}`, "i")
+    ];
+
+    for (const regex of patterns) {
+        const match = text.match(regex);
+        if (!match) continue;
+
+        // Mismo filtro que maxHeartRate: si el número del patrón invertido
+        // viene pegado a "media", es el de la cadencia media, no la máxima.
+        const before = text.slice(Math.max(0, match.index - 20), match.index);
+        if (/media\s*$/.test(before)) continue;
+
+        const value = numberParser(match[1]);
+        if (V.cadence(value)) {
+            return { value, source: match[0], confidence: .99 };
+        }
+    }
+    return null;
 }
 
 export function temperature(raw) {

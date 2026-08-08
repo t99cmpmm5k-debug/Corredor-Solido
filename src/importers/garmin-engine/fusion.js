@@ -4,7 +4,7 @@ const KEYS = [
     "source", "screen_type", "title", "location", "activity", "date", "time",
     "distance_km", "avg_heart_rate_bpm", "max_heart_rate_bpm",
     "avg_pace_min_km", "total_time", "calories_kcal", "cadence_spm",
-    "temperature_c", "elevation_gain_m"
+    "max_cadence_spm", "temperature_c", "elevation_gain_m"
 ];
 
 function paceToSeconds(pace) {

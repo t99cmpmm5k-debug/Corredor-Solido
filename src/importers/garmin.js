@@ -108,6 +108,7 @@ const RAW_FIELD_BY_NEUTRAL_KEY = {
     maxHr: "max_heart_rate_bpm",
     calories: "calories_kcal",
     avgCadence: "cadence_spm",
+    maxCadence: "max_cadence_spm",
     temperatureC: "temperature_c",
     elevationGainM: "elevation_gain_m"
 
@@ -184,6 +185,7 @@ export function parseGarminWorkout(merged) {
         maxHr: parseNumber(data.max_heart_rate_bpm),
         calories: parseNumber(data.calories_kcal),
         avgCadence: parseNumber(data.cadence_spm),
+        maxCadence: parseNumber(data.max_cadence_spm),
         temperatureC: parseNumber(data.temperature_c),
         elevationGainM: parseNumber(data.elevation_gain_m),
 

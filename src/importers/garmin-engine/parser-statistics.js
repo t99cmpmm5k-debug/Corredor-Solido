@@ -12,6 +12,7 @@ export function parse(text) {
     const total = E.totalTime(raw);
     const calories = E.calories(raw);
     const cadence = E.cadence(raw);
+    const maxCadence = E.maxCadence(raw);
     const temp = E.temperature(raw);
     const elevation = E.elevation(raw);
 
@@ -24,6 +25,7 @@ export function parse(text) {
     fields.total_time = U.field(total?.value ?? null, total?.source, total?.confidence || 0);
     fields.calories_kcal = U.field(calories?.value ?? null, calories?.source, calories?.confidence || 0);
     fields.cadence_spm = U.field(cadence?.value ?? null, cadence?.source, cadence?.confidence || 0);
+    fields.max_cadence_spm = U.field(maxCadence?.value ?? null, maxCadence?.source, maxCadence?.confidence || 0);
     fields.temperature_c = U.field(temp?.value ?? null, temp?.source, temp?.confidence || 0);
     fields.elevation_gain_m = U.field(elevation?.value ?? null, elevation?.source, elevation?.confidence || 0);
 

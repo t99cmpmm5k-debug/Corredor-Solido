@@ -19,6 +19,7 @@ export const REVIEW_FIELDS = [
     { key: "maxHr", label: "FC máxima", unit: "ppm", type: "number", step: "1" },
     { key: "calories", label: "Calorías", unit: "kcal", type: "number", step: "1" },
     { key: "avgCadence", label: "Cadencia", unit: "spm", type: "number", step: "1" },
+    { key: "maxCadence", label: "Cadencia máx.", unit: "spm", type: "number", step: "1" },
     { key: "temperatureC", label: "Temperatura", unit: "°C", type: "number", step: "0.1" },
     { key: "elevationGainM", label: "Desnivel +", unit: "m", type: "number", step: "1" }
 ];
