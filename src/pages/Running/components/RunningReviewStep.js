@@ -2,6 +2,7 @@ import "./RunningReviewStep.css";
 
 import { formatSecondsAsClock, parseClockToSeconds } from "../../../utils/format.js";
 import { RUNNING_WORKOUT_TYPES } from "../../../data/runningWorkoutTypes.js";
+import { getCaptures } from "../runningStore.js";
 
 export const LOW_CONFIDENCE_THRESHOLD = 0.9;
 
@@ -118,6 +119,50 @@ function renderField(field, workout) {
 
 }
 
+function escapeHtml(text) {
+
+    return String(text ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+
+}
+
+// TEMPORAL - para poder diagnosticar fallos de OCR/parsing mandando el
+// texto crudo, sin depender de devtools en el móvil. Quitar cuando exista
+// una pantalla de revisión post-importación más completa.
+function renderOcrDebug() {
+
+    const captures = getCaptures();
+    if (!captures.length) return "";
+
+    return `
+
+        <details class="review-ocr-debug">
+
+            <summary>Ver texto OCR</summary>
+
+            ${captures.map(c => `
+
+                <div class="review-ocr-capture">
+
+                    <p class="review-ocr-capture-meta">
+                        ${escapeHtml(c.file)} — pantalla: ${escapeHtml(c.parsed.screen.type)},
+                        confianza OCR: ${c.ocr_confidence}%
+                    </p>
+
+                    <pre>${escapeHtml(c.text)}</pre>
+
+                </div>
+
+            `).join("")}
+
+        </details>
+
+    `;
+
+}
+
 export function RunningReviewStep(workout) {
 
     const warnings = workout.importWarnings || [];
@@ -159,6 +204,8 @@ export function RunningReviewStep(workout) {
                 ${REVIEW_FIELDS.map(field => renderField(field, workout)).join("")}
 
             </div>
+
+            ${renderOcrDebug()}
 
             <button class="wizard-primary-button" data-action="go-to-shoe">
 

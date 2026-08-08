@@ -11,8 +11,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `npm run dev` — start Vite dev server
 - `npm run build` — production build
 - `npm run preview` — preview the production build
+- `npm run test` — run the vitest suite (`vitest run`)
 
-No lint, test, or type-check scripts are configured. `vite.config.js` sets `base: "/Corredor-Solido/"` so built asset URLs resolve correctly on GitHub Pages (project site, not a custom domain) — otherwise the project runs on Vite's zero-config defaults for a plain JS SPA. Deploy is automatic via `.github/workflows/deploy.yml` (build + `actions/deploy-pages`) on push to `main`/`master`; Pages must be set to source "GitHub Actions" in repo settings.
+No lint or type-check scripts are configured. `vite.config.js` sets `base: "/Corredor-Solido/"` so built asset URLs resolve correctly on GitHub Pages (project site, not a custom domain) — otherwise the project runs on Vite's zero-config defaults for a plain JS SPA. Deploy is automatic via `.github/workflows/deploy.yml` (build + `actions/deploy-pages`) on push to `main`/`master`; Pages must be set to source "GitHub Actions" in repo settings. Tests are co-located as `*.test.js` next to the code they cover (e.g. `src/importers/garmin-engine/extractor-engine.test.js`) — there's no separate `test/` tree.
 
 ## Architecture
 

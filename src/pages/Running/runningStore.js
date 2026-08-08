@@ -5,6 +5,7 @@ const initial = () => ({
     progress: null,
     ocrError: null,
     merged: null,
+    captures: [],
     workout: null,
     parseError: null,
     selectedShoeId: null,
@@ -76,6 +77,18 @@ export function getMerged() {
 export function setMerged(merged) {
 
     wizard.merged = merged;
+
+}
+
+export function getCaptures() {
+
+    return wizard.captures;
+
+}
+
+export function setCaptures(captures) {
+
+    wizard.captures = captures;
 
 }
 

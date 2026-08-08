@@ -139,3 +139,71 @@
     flex-shrink:0;
 
 }
+
+.review-ocr-debug{
+
+    margin-top:12px;
+
+    padding:10px 14px;
+
+    border-radius:var(--radius-md);
+
+    border:1px dashed var(--card-border);
+
+    color:var(--text-secondary);
+
+    font-size:.8rem;
+
+}
+
+.review-ocr-debug summary{
+
+    cursor:pointer;
+
+    font-weight:600;
+
+    text-transform:uppercase;
+
+    letter-spacing:.04em;
+
+    font-size:.78rem;
+
+}
+
+.review-ocr-capture{
+
+    margin-top:10px;
+
+}
+
+.review-ocr-capture-meta{
+
+    margin:0 0 4px;
+
+    color:var(--text-secondary);
+
+}
+
+.review-ocr-debug pre{
+
+    margin:0;
+
+    padding:10px;
+
+    border-radius:var(--radius-sm, 8px);
+
+    background:color-mix(in srgb, var(--card-background) 80%, transparent);
+
+    color:var(--text-primary);
+
+    font-size:.75rem;
+
+    white-space:pre-wrap;
+
+    word-break:break-word;
+
+    max-height:240px;
+
+    overflow-y:auto;
+
+}

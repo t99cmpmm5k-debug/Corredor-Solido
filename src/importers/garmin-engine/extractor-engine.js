@@ -37,6 +37,13 @@ function numberParser(value) { return U.num(value); }
 function paceParser(value) { return U.pace(value); }
 function durationParser(value) { return U.duration(value); }
 
+const HR_NUM = "(?:[3-9][0-9]|1[0-9]{2}|2[0-4][0-9])";
+// "ppm"/"bpm" salen mal leídos con frecuencia (p<->o, p<->r, m<->rn/in) —
+// p. ej. "172 pom" en vez de "172 ppm". Exigir la unidad letra a letra
+// dejaba caer el número real al fallback y fusionaba el de otra fila.
+// Basta con que arranque por b/p y tenga un par de letras más pegadas.
+const HR_UNIT = "[bp][a-z]{1,4}";
+
 export function distance(raw) {
     return findAnchored(
         raw,
@@ -50,10 +57,10 @@ export function distance(raw) {
 export function avgHeartRate(raw) {
     const text = compact(raw);
     const patterns = [
-        /frecuencia cardiaca media[\s\S]{0,35}?((?:[3-9][0-9]|1[0-9]{2}|2[0-4][0-9])\s*(?:ppm|bpm))/i,
-        /((?:[3-9][0-9]|1[0-9]{2}|2[0-4][0-9])\s*(?:ppm|bpm))[\s\S]{0,35}?frecuencia cardiaca media/i,
-        /fc media[\s\S]{0,25}?((?:[3-9][0-9]|1[0-9]{2}|2[0-4][0-9])\s*(?:ppm|bpm))/i,
-        /((?:[3-9][0-9]|1[0-9]{2}|2[0-4][0-9])\s*(?:ppm|bpm))[\s\S]{0,25}?fc media/i
+        new RegExp(`frecuencia cardiaca media[\\s\\S]{0,35}?(${HR_NUM}\\s*${HR_UNIT})`, "i"),
+        new RegExp(`(${HR_NUM}\\s*${HR_UNIT})[\\s\\S]{0,35}?frecuencia cardiaca media`, "i"),
+        new RegExp(`fc media[\\s\\S]{0,25}?(${HR_NUM}\\s*${HR_UNIT})`, "i"),
+        new RegExp(`(${HR_NUM}\\s*${HR_UNIT})[\\s\\S]{0,25}?fc media`, "i")
     ];
 
     for (const regex of patterns) {
@@ -69,13 +76,29 @@ export function avgHeartRate(raw) {
 export function maxHeartRate(raw) {
     const text = normalizeLabel(compact(raw));
     const patterns = [
-        /(?:frecuencia cardiaca maxima|frec\s*cardiaca\s*max|fc maxima)[\s\S]{0,45}?((?:[3-9][0-9]|1[0-9]{2}|2[0-4][0-9])\s*(?:ppm|bpm))/i,
-        /((?:[3-9][0-9]|1[0-9]{2}|2[0-4][0-9])\s*(?:ppm|bpm))[\s\S]{0,45}?(?:frecuencia cardiaca maxima|frec\s*cardiaca\s*max|fc maxima)/i
+        // Layout de dos columnas (media y máx. en la misma fila, valores
+        // en la fila de abajo): tras aplanar saltos de línea a espacios,
+        // el número más cercano a la etiqueta "máx." es en realidad el de
+        // "media" — hay que exigir las dos etiquetas seguidas y saltar al
+        // segundo número.
+        new RegExp(`frecuencia cardiaca media[\\s\\S]{0,10}?(?:frecuencia cardiaca maxima|frec\\s*cardiaca\\s*max|fc maxima)[\\s\\S]{0,15}?${HR_NUM}\\s*${HR_UNIT}[\\s\\S]{0,15}?(${HR_NUM}\\s*${HR_UNIT})`, "i"),
+        new RegExp(`(?:frecuencia cardiaca maxima|frec\\s*cardiaca\\s*max|fc maxima)[\\s\\S]{0,45}?(${HR_NUM}\\s*${HR_UNIT})`, "i"),
+        new RegExp(`(${HR_NUM}\\s*${HR_UNIT})[\\s\\S]{0,45}?(?:frecuencia cardiaca maxima|frec\\s*cardiaca\\s*max|fc maxima)`, "i")
     ];
 
     for (const regex of patterns) {
         const match = text.match(regex);
         if (!match) continue;
+
+        // El último patrón acepta "número + etiqueta máx." en cualquier
+        // orden (para el layout donde el número sale antes) — pero si ese
+        // número viene precedido de "media" a poca distancia, no es el de
+        // "máxima": es el de la frecuencia media, y la etiqueta "máx." que
+        // el OCR sí leyó pertenece a un número que se perdió en la lectura.
+        // Sin este filtro se fusiona el valor medio como si fuera el máximo.
+        const before = text.slice(Math.max(0, match.index - 20), match.index);
+        if (/media\s*$/.test(before)) continue;
+
         const value = numberParser(match[1]);
         if (V.heartRate(value)) {
             return { value, source: match[0], confidence: .99 };

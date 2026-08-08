@@ -26,6 +26,12 @@ export function merge(results) {
 
     const identity = ["title", "location", "activity", "date", "time"];
 
+    // Calorías totales (Resumen) y activas (Estadísticas) son magnitudes
+    // distintas, no dos lecturas del mismo dato — a diferencia del resto
+    // de métricas, aquí Estadísticas NO debe pisar a Resumen; solo sirve
+    // de fallback si Resumen no detectó nada.
+    const summaryPreferredMetrics = ["calories_kcal"];
+
     results.forEach((result, index) => {
         Object.entries(result.fields || {}).forEach(([key, item]) => {
             if (item?.value == null) return;
@@ -33,8 +39,11 @@ export function merge(results) {
             const current = fields[key];
 
             // Summary owns identity fields.
-            if (identity.includes(key)) {
+            if (identity.includes(key) || summaryPreferredMetrics.includes(key)) {
                 if (result.parser.startsWith("summary") && (!current || candidate.confidence >= current.confidence)) {
+                    fields[key] = candidate;
+                    fieldParser[key] = result.parser;
+                } else if (!current && !result.parser.startsWith("summary")) {
                     fields[key] = candidate;
                     fieldParser[key] = result.parser;
                 }

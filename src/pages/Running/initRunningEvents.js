@@ -12,6 +12,7 @@ import {
     setProgress,
     setOcrError,
     setParseError,
+    setCaptures,
     setWorkout,
     getWorkout,
     updateWorkoutField,
@@ -146,6 +147,39 @@ async function handleFilesSelected(fileList) {
     // para no meter basura en la fusión, pero hay que decírselo al usuario,
     // no dejar que se pregunte por qué faltan datos en silencio.
     const unrecognized = captures.filter(c => c.parsed.screen.type === "unknown");
+
+    // Se guarda para el desplegable "Ver texto OCR" de la pantalla de
+    // revisión — sin esto, diagnosticar un fallo de parsing en real exige
+    // devtools en el móvil, que no es una opción real ahí.
+    setCaptures(captures);
+
+    // TEMPORAL - para depurar el bug de FC máxima con datos de la
+    // ejecución real en vez de texto reconstruido a mano. Quitar en
+    // cuanto se cierre ese bug.
+    // JSON.stringify en vez del objeto suelto: en consola móvil (captura
+    // de pantalla) un objeto colapsado no se puede expandir para copiarlo.
+    console.log("[DEBUG maxHR] por captura:", JSON.stringify(captures.map(c => ({
+        file: c.file,
+        screen: c.parsed.screen.type,
+        max: c.parsed.data.max_heart_rate_bpm,
+        avg: c.parsed.data.avg_heart_rate_bpm
+    })), null, 2));
+    console.log("[DEBUG maxHR] fusionado:", JSON.stringify(merged.fields.max_heart_rate_bpm, null, 2));
+
+    // TEMPORAL - mismo motivo que el bloque de arriba, para el bug de
+    // fecha/hora no detectadas. Quitar en cuanto se cierre ese bug.
+    console.log("[DEBUG date] por captura:", JSON.stringify(captures.map(c => ({
+        file: c.file,
+        screen: c.parsed.screen.type,
+        date: c.parsed.data.date,
+        time: c.parsed.data.time,
+        rawDate: c.parsed.fields.date?.source,
+        rawTime: c.parsed.fields.time?.source
+    })), null, 2));
+    console.log("[DEBUG date] fusionado:", JSON.stringify({
+        date: merged.fields.date,
+        time: merged.fields.time
+    }, null, 2));
 
     try {
 

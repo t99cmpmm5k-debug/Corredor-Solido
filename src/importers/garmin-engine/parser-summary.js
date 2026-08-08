@@ -31,12 +31,14 @@ export function parse(text) {
     const raw = U.cleanText(text), lines = U.linesOf(raw);
     const fields = {};
 
-    const date = U.first(raw, new RegExp(`\\b([0-3]?[0-9])\\s+(${U.MONTHS})(?:\\s+(20[0-9]{2}))?\\b`, "i"));
+    // El espacio entre día y mes no siempre lo lee el OCR ("7ago" en vez
+    // de "7 ago") — exigir \s+ ahí dejaba caer la fecha entera a null.
+    const date = U.first(raw, new RegExp(`\\b([0-3]?[0-9])\\s*(${U.MONTHS})(?:\\s+(20[0-9]{2}))?\\b`, "i"));
 
     // La hora debe leerse junto a la fecha (p. ej. "23 jul @ 07:37"), no la
     // primera que aparezca en todo el texto — si no, coge el reloj del móvil.
     const time = date
-        ? U.first(raw.slice(date.match.index, date.match.index + date.match[0].length + 15), /\b([0-2]?[0-9]):([0-5][0-9])\b/)
+        ? U.first(raw.slice(date.match.index, date.match.index + date.match[0].length + 15), /\b([0-2]?[0-9])[:.]([0-5][0-9])\b/)
         : null;
 
     const title = findTitle(lines);
