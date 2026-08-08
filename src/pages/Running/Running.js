@@ -1,8 +1,10 @@
 import "./Running.css";
 
 import { getWorkouts, getShoes } from "../../data/workoutStore.js";
+import { RUNNING_WORKOUT_TYPES } from "../../data/runningWorkoutTypes.js";
 import { formatDayMonth } from "../../utils/date.js";
 import { formatSecondsAsClock } from "../../utils/format.js";
+import { buildTypeProgressInsight } from "./runningProgress.js";
 
 import { BottomNavigation } from "../../components/Navigation/BottomNavigation.js";
 
@@ -17,13 +19,15 @@ import {
     getSaveError,
     getDuplicateWarning,
     getTimingLog,
-    getDetailWorkoutId
+    getDetailWorkoutId,
+    getTypeFilter
 } from "./runningStore.js";
 
 import { RunningUploadStep } from "./components/RunningUploadStep.js";
 import { RunningReviewStep } from "./components/RunningReviewStep.js";
 import { RunningShoeStep } from "./components/RunningShoeStep.js";
 import { RunningDetailView } from "./components/RunningDetailView.js";
+import { RunningProgressCard } from "./components/RunningProgressCard.js";
 
 function shoeLabel(shoeId, shoes) {
 
@@ -110,12 +114,80 @@ function RunningHistoryItem(workout, shoes) {
 
 }
 
+function RunningTypeFilters(activeType) {
+
+    const chips = [{ id: "", label: "Todos" }, ...RUNNING_WORKOUT_TYPES];
+
+    return `
+
+        <div class="type-filter-list">
+
+            ${chips.map(chip => `
+
+                <button
+                    class="type-filter-chip ${activeType === (chip.id || null) ? "is-selected" : ""}"
+                    data-action="filter-by-type"
+                    data-type="${chip.id}"
+                >
+
+                    ${chip.label}
+
+                </button>
+
+            `).join("")}
+
+        </div>
+
+    `;
+
+}
+
+function RunningHistorySummary({ count, totalKm, totalDurationSec }) {
+
+    return `
+
+        <div class="running-summary">
+
+            <div class="running-summary-item">
+                <span class="running-summary-value">${count}</span>
+                <span class="running-summary-label">${count === 1 ? "entrenamiento" : "entrenamientos"}</span>
+            </div>
+
+            <div class="running-summary-item">
+                <span class="running-summary-value">${formatDistance(totalKm)}</span>
+                <span class="running-summary-label">distancia</span>
+            </div>
+
+            <div class="running-summary-item">
+                <span class="running-summary-value">${totalDurationSec > 0 ? formatSecondsAsClock(totalDurationSec) : "—"}</span>
+                <span class="running-summary-label">tiempo</span>
+            </div>
+
+        </div>
+
+    `;
+
+}
+
 function RunningIdleView() {
 
     const workouts = getWorkouts();
     const shoes = getShoes();
+    const typeFilter = getTypeFilter();
 
     const sorted = [...workouts].sort((a, b) => b.date.localeCompare(a.date));
+    const filtered = typeFilter ? sorted.filter(w => w.type === typeFilter) : sorted;
+
+    // Solo tiene sentido comparar ritmo dentro de un mismo tipo — con
+    // "Todos" seleccionado no hay una forma no arbitraria de elegir de
+    // cuál hablar, así que la tarjeta no se muestra.
+    const progressInsight = typeFilter ? buildTypeProgressInsight(workouts, { type: typeFilter }) : null;
+
+    const summary = {
+        count: filtered.length,
+        totalKm: filtered.reduce((sum, w) => sum + (w.distanceKm || 0), 0),
+        totalDurationSec: filtered.reduce((sum, w) => sum + (w.durationSec || 0), 0)
+    };
 
     return `
 
@@ -153,11 +225,29 @@ function RunningIdleView() {
 
             ` : `
 
-                <div class="running-history">
+                ${RunningTypeFilters(typeFilter)}
 
-                    ${sorted.map(workout => RunningHistoryItem(workout, shoes)).join("")}
+                ${RunningProgressCard(progressInsight)}
 
-                </div>
+                ${RunningHistorySummary(summary)}
+
+                ${filtered.length === 0 ? `
+
+                    <div class="running-empty-filtered">
+
+                        <p>No hay entrenamientos de este tipo.</p>
+
+                    </div>
+
+                ` : `
+
+                    <div class="running-history">
+
+                        ${filtered.map(workout => RunningHistoryItem(workout, shoes)).join("")}
+
+                    </div>
+
+                `}
 
             `}
 

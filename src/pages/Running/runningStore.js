@@ -20,6 +20,24 @@ const initial = () => ({
 
 let wizard = initial();
 
+// Filtro de tipo de la lista de Running — aparte de `wizard` a propósito:
+// resetWizard() se llama tanto al terminar una importación como al pulsar
+// "Importar", y meter el filtro ahí lo borraría sin que el usuario lo
+// haya tocado.
+let typeFilter = null;
+
+export function getTypeFilter() {
+
+    return typeFilter;
+
+}
+
+export function setTypeFilter(type) {
+
+    typeFilter = type || null;
+
+}
+
 export function getWizardStep() {
 
     return wizard.step;

@@ -24,7 +24,8 @@ import {
     getDuplicateWarning,
     setDuplicateWarning,
     appendTiming,
-    setDetailWorkoutId
+    setDetailWorkoutId,
+    setTypeFilter
 } from "./runningStore.js";
 
 const DETAIL_HISTORY_STATE = { runningDetail: true };
@@ -219,6 +220,15 @@ export function initRunningEvents() {
         button.addEventListener("click", () => {
             resetWizard();
             setWizardStep("upload");
+            rerender();
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="filter-by-type"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+            setTypeFilter(button.dataset.type || null);
             rerender();
         });
 
