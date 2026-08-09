@@ -12,6 +12,11 @@ dist
 dist-ssr
 *.local
 
+# Datos reales de entrenamiento (GPS/salud de terceros) usados como
+# referencia durante el desarrollo — nunca a un repo público.
+*.tcx
+*.fit
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

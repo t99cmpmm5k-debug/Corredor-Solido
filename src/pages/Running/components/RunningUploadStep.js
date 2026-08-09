@@ -72,13 +72,13 @@ export function RunningUploadStep({ progress, ocrError, parseError, timingLog })
 
                 <label class="upload-trigger">
 
-                    <input type="file" id="running-file-input" accept="image/*" multiple hidden>
+                    <input type="file" id="running-file-input" accept="image/*,.tcx" multiple hidden>
 
                     <iconify-icon icon="solar:gallery-add-bold-duotone"></iconify-icon>
 
-                    <strong>Seleccionar capturas</strong>
+                    <strong>Seleccionar capturas o archivo TCX</strong>
 
-                    <span>Sube una o varias capturas del mismo entrenamiento (Resumen, Estadísticas...). Incluye la de Resumen — es la única que trae fecha y hora.</span>
+                    <span>Sube una o varias capturas del mismo entrenamiento (Resumen, Estadísticas...) o un único archivo .tcx exportado desde tu reloj/app (Amazfit, etc.).</span>
 
                 </label>
 

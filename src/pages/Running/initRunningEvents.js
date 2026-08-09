@@ -134,10 +134,41 @@ function performSave() {
 
 }
 
+// Un .tcx es un archivo de actividad ya completo por sí solo (a
+// diferencia de las capturas, que necesitan varias para fusionarse) —
+// no pasa por Tesseract ni por el paso "processing", el parseo XML es
+// instantáneo. Selección múltiple sigue yendo siempre por capturas.
+async function handleTcxFileSelected(file) {
+
+    setOcrError(null);
+    setParseError(null);
+
+    try {
+
+        const xmlText = await file.text();
+        const workout = importWorkout("tcx", xmlText);
+
+        setWorkout(workout);
+        setWizardStep("review");
+
+    } catch (err) {
+
+        setParseError(err.message);
+
+    }
+
+    rerender();
+
+}
+
 async function handleFilesSelected(fileList) {
 
     const files = [...(fileList || [])];
     if (!files.length) return;
+
+    if (files.length === 1 && files[0].name.toLowerCase().endsWith(".tcx")) {
+        return handleTcxFileSelected(files[0]);
+    }
 
     setFiles(files);
     setOcrError(null);
