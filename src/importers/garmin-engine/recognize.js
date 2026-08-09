@@ -101,7 +101,13 @@ function logTiming(onTiming, label, ms) {
 function hasEnoughFields(parsed) {
 
     if (parsed.screen.type === "summary") {
-        return parsed.data.title != null && parsed.data.date != null;
+        // calories_kcal se cuela aquí a propósito: es el campo que la
+        // fusión trata como exclusivo de Resumen (fusion.js no deja que
+        // Estadísticas lo pise salvo que Resumen no leyera nada), así que
+        // si sale mal en la primera pasada no hay ninguna otra pantalla
+        // que lo corrija después — merece su propia segunda oportunidad
+        // en vez de darse por bueno solo con título y fecha.
+        return parsed.data.title != null && parsed.data.date != null && parsed.data.calories_kcal != null;
     }
 
     if (parsed.screen.type === "statistics") {

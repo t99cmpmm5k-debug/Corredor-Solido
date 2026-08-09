@@ -183,6 +183,14 @@ export function calories(raw) {
 
     // Highest priority: total calories. Accents and punctuation are already removed.
     const totalPatterns = [
+        // Layout de dos columnas visto en real: los valores salen ANTES
+        // que sus etiquetas ("42:19 420" arriba, "Tiempo total Calorías
+        // totales" debajo) — hay que saltar el primer número (duración)
+        // y quedarse con el segundo. Sin esto, normalizeLabel() ya le ha
+        // quitado los ":" a "42:19" (queda "4219") antes de que corra
+        // cualquier regex, y el patrón genérico de abajo lo cogía a él
+        // en vez del 420 real, por ser el primer número disponible.
+        /(?:[0-9]{2,5})[\s\S]{0,10}?([0-9]{2,5})[\s\S]{0,15}?tiempo total[\s\S]{0,10}?(?:calorias totales|total de calorias quemadas|total de calorias|total calorias)/i,
         /(?:calorias totales|total de calorias quemadas|total de calorias|total calorias)[\s\S]{0,45}?([0-9]{2,5})(?:\s*kcal)?/i,
         /([0-9]{2,5})(?:\s*kcal)?[\s\S]{0,45}?(?:calorias totales|total de calorias quemadas|total de calorias|total calorias)/i
     ];

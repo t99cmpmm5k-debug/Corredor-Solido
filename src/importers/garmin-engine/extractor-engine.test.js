@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { maxHeartRate, cadence, maxCadence } from "./extractor-engine.js";
+import { maxHeartRate, cadence, maxCadence, calories } from "./extractor-engine.js";
 
 describe("maxHeartRate", () => {
 
@@ -80,6 +80,40 @@ describe("cadence / maxCadence", () => {
         const text = "Cadencia media de carrera 162 ppm";
 
         expect(maxCadence(text)).toBeNull();
+
+    });
+
+});
+
+describe("calories", () => {
+
+    it("no coge el tiempo total como si fueran calorías en el layout de dos columnas", () => {
+
+        // Caso real: normalizeLabel() le quita los ":" a "42:19" antes de
+        // que corra el regex ("4219"), y sin el patrón de dos columnas
+        // ese "4219" se colaba como si fueran las calorías reales (420).
+        const text = [
+            "137 ppm @ 7:05 /km @",
+            "Frecuencia cardiaca media Ritmo medio",
+            "42:19 420",
+            "Tiempo total Calorías totales"
+        ].join("\n");
+
+        expect(calories(text).value).toBe(420);
+
+    });
+
+    it("sigue leyendo bien el caso normal, con la etiqueta pegada al número", () => {
+
+        expect(calories("Total de calorias quemadas 420").value).toBe(420);
+
+    });
+
+    it("ignora las calorías en reposo y coge las totales cuando aparecen las tres juntas", () => {
+
+        const text = "Calorias en reposo 56 Calorias activas 364 Total de calorias quemadas 420";
+
+        expect(calories(text).value).toBe(420);
 
     });
 
