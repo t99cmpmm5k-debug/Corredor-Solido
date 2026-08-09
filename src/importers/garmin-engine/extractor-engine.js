@@ -48,14 +48,27 @@ const PPM_UNIT = "[bp][a-z]{1,4}";
 const CADENCE_NUM = "[0-9]{2,3}";
 const CADENCE_UNIT = "[bsp][a-z]{1,4}";
 
+const DISTANCE_NUM = "[0-9]{1,3}[,.][0-9]{1,2}";
+
+// "km" se lee mal con bastante frecuencia ("in", "kin", "krn", "irn"...)
+// — a diferencia de FC/cadencia no hay una unidad alternativa razonable
+// que enumerar, así que aquí directamente no se exige ninguna. La
+// etiqueta "distancia" (a veces en la línea de después del número, no
+// antes) es la señal fiable y basta como ancla por sí sola.
 export function distance(raw) {
-    return findAnchored(
-        raw,
-        ["distancia(?: recorrida| real)?"],
-        ["[0-9]{1,3}[,.][0-9]{1,2}\\s*km"],
-        numberParser,
-        V.distance
-    );
+    const text = compact(raw);
+    const patterns = [
+        new RegExp(`distancia(?:\\s+recorrida|\\s+real)?[\\s\\S]{0,45}?(${DISTANCE_NUM})`, "i"),
+        new RegExp(`(${DISTANCE_NUM})[\\s\\S]{0,45}?distancia(?:\\s+recorrida|\\s+real)?`, "i")
+    ];
+
+    for (const regex of patterns) {
+        const m = text.match(regex);
+        if (!m) continue;
+        const value = numberParser(m[1]);
+        if (V.distance(value)) return { value, source: m[0], confidence: .98 };
+    }
+    return null;
 }
 
 export function avgHeartRate(raw) {
@@ -124,25 +137,45 @@ export function avgPace(raw) {
             "ritmo del recorrido",
             "ritmo medio de carrera"
         ],
-        ["[0-9]{1,2}\\s*[:.]\\s*[0-5][0-9]\\s*\\/\\s*km"],
+        // La barra de "m:ss/km" es un trazo fino que el OCR pierde con
+        // frecuencia (mismo caso que "km" en distancia y "ppm" en FC) —
+        // se hace opcional. "km" sigue siendo obligatorio: sin barra,
+        // es lo único que distingue un ritmo de una duración con el
+        // mismo formato m:ss, ya que la etiqueta "ritmo medio" ancla el
+        // resto.
+        ["[0-9]{1,2}\\s*[:.]\\s*[0-5][0-9]\\s*\\/?\\s*km"],
         paceParser,
         V.pace
     );
 }
 
+// Solo "etiqueta -> número", nunca al revés. findAnchored() también
+// prueba "número -> etiqueta" para levantar los layouts de dos columnas
+// (como en FC media/máxima) — pero cuando el OCR se salta del todo la
+// fila de números bajo "Tiempo total" (etiqueta leída, cifra no), esa
+// dirección hacia atrás cuela el número de la fila anterior (el ritmo)
+// como si fuera la duración. Mejor devolver null que un dato inventado.
+const TIME_VALUE = "(?:[0-9]{1,2}:)?[0-9]{1,3}:[0-5][0-9]";
+
 export function totalTime(raw) {
-    return findAnchored(
-        raw,
-        [
-            "tiempo total",
-            "duracion total",
-            "tiempo de actividad",
-            "tiempo del recorrido"
-        ],
-        ["(?:[0-9]{1,2}:)?[0-9]{1,3}:[0-5][0-9]"],
-        durationParser,
-        V.duration
-    );
+    const text = compact(raw);
+    const labels = [
+        "tiempo total",
+        "duracion total",
+        "tiempo de actividad",
+        "tiempo del recorrido"
+    ];
+
+    for (const label of labels) {
+        const regex = new RegExp(`(?:${label})[\\s\\S]{0,45}?(${TIME_VALUE})`, "i");
+        const m = text.match(regex);
+        if (!m) continue;
+        const value = durationParser(m[1]);
+        if (value != null && V.duration(value)) {
+            return { value, source: m[0], confidence: .98 };
+        }
+    }
+    return null;
 }
 
 export function calories(raw) {
