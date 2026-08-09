@@ -22,6 +22,10 @@ const MIN_BAR_HEIGHT_PX = 4;
 const LAP_LABEL_SPACE_PX = 20;
 const REFLINE_BOTTOM_PX = LAP_LABEL_SPACE_PX + CHART_HEIGHT_PX / 2;
 
+// Misma idea que PACE_WINDOW_SEC pero para FC: ventana fija alrededor de
+// la FC media propia de la carrera, no del rango min/max real.
+const HR_WINDOW_BPM = 15;
+
 function capitalize(text) {
 
     return text ? text.charAt(0).toUpperCase() + text.slice(1) : text;
@@ -64,11 +68,103 @@ function barHeightPx(paceSecPerKm, avgPaceRef) {
 
 }
 
-function RunningPaceChart(splits, avgPaceRef) {
+function averageHr(workout, splits) {
+
+    if (workout.avgHr != null) return workout.avgHr;
+
+    const values = splits.map(s => s.avgHr).filter(v => v != null);
+    if (!values.length) return null;
+
+    return values.reduce((sum, v) => sum + v, 0) / values.length;
+
+}
+
+// % vertical (0 = abajo del todo, 100 = arriba del todo) dentro de la
+// misma zona donde crecen las barras — FC alta sube, igual que un ritmo
+// rápido sube en barHeightPx(), para que las dos series "suban" cuando
+// hay más esfuerzo y se lean con el mismo lenguaje visual.
+export function hrPointPercent(avgHr, avgHrRef) {
+
+    const clamped = Math.min(
+        Math.max(avgHr, avgHrRef - HR_WINDOW_BPM),
+        avgHrRef + HR_WINDOW_BPM
+    );
+
+    const fraction = (clamped - (avgHrRef - HR_WINDOW_BPM)) / (HR_WINDOW_BPM * 2);
+
+    return fraction * 100;
+
+}
+
+// Agrupa los splits con FC válida en tramos contiguos — cada hueco
+// (sensor perdido, o split sin FC porque viene de Garmin OCR) cierra el
+// tramo anterior en vez de dejar que la línea salte por encima
+// interpolando un dato que no existe.
+export function hrSegments(splits) {
+
+    const segments = [];
+    let current = [];
+
+    splits.forEach((split, index) => {
+
+        if (split.avgHr == null) {
+            if (current.length) segments.push(current);
+            current = [];
+            return;
+        }
+
+        current.push({ index, avgHr: split.avgHr });
+
+    });
+
+    if (current.length) segments.push(current);
+
+    return segments;
+
+}
+
+function RunningHrOverlay(splits, avgHrRef) {
+
+    const segments = hrSegments(splits);
+    if (!segments.length) return "";
+
+    const xPercent = index => ((index + 0.5) / splits.length) * 100;
+    const point = p => ({ x: xPercent(p.index), y: hrPointPercent(p.avgHr, avgHrRef) });
+
+    const lines = segments
+        .filter(seg => seg.length >= 2)
+        .map(seg => `<polyline class="pace-chart-hr-line" points="${seg.map(p => {
+            const { x, y } = point(p);
+            return `${x},${100 - y}`;
+        }).join(" ")}" />`)
+        .join("");
+
+    const dots = segments.flat().map(p => {
+        const { x, y } = point(p);
+        return `<span class="pace-chart-hr-dot" style="left:${x}%;bottom:${y}%"></span>`;
+    }).join("");
+
+    return `
+
+        <svg class="pace-chart-hr-lines" viewBox="0 0 100 100" preserveAspectRatio="none">${lines}</svg>
+
+        ${dots}
+
+    `;
+
+}
+
+function RunningPaceChart(splits, avgPaceRef, avgHrRef) {
 
     const fastestPace = Math.min(...splits.map(s => s.paceSecPerKm));
     const slowestPace = Math.max(...splits.map(s => s.paceSecPerKm));
     const hasVariation = fastestPace !== slowestPace;
+
+    // avgHrRef puede venir de workout.avgHr (media OCR de todo el
+    // entreno) aunque ningún split traiga FC propia (caso Garmin) — la
+    // insignia/línea solo tienen sentido si hay al menos un punto real
+    // que dibujar, no solo un número medio suelto sin nada que graficar.
+    const hasHr = avgHrRef != null && splits.some(s => s.avgHr != null);
 
     return `
 
@@ -78,7 +174,13 @@ function RunningPaceChart(splits, avgPaceRef) {
 
                 <h3 class="pace-chart-title">RITMO POR KILÓMETRO</h3>
 
-                <span class="pace-chart-avg-badge">${formatSecondsAsClock(avgPaceRef)}/km medio</span>
+                <div class="pace-chart-badges">
+
+                    <span class="pace-chart-avg-badge">${formatSecondsAsClock(avgPaceRef)}/km medio</span>
+
+                    ${hasHr ? `<span class="pace-chart-avg-badge pace-chart-avg-badge--hr">${Math.round(avgHrRef)} ppm medio</span>` : ""}
+
+                </div>
 
             </div>
 
@@ -115,7 +217,29 @@ function RunningPaceChart(splits, avgPaceRef) {
 
                 </div>
 
+                ${hasHr ? `
+
+                    <div class="pace-chart-hr-overlay" style="bottom:${LAP_LABEL_SPACE_PX}px;height:${CHART_HEIGHT_PX}px">
+
+                        ${RunningHrOverlay(splits, avgHrRef)}
+
+                    </div>
+
+                ` : ""}
+
             </div>
+
+            ${hasHr ? `
+
+                <div class="pace-chart-legend">
+
+                    <span class="pace-chart-legend-item"><i class="pace-chart-legend-dot pace-chart-legend-dot--pace"></i>Ritmo</span>
+
+                    <span class="pace-chart-legend-item"><i class="pace-chart-legend-dot pace-chart-legend-dot--hr"></i>FC</span>
+
+                </div>
+
+            ` : ""}
 
         </div>
 
@@ -184,6 +308,7 @@ export function RunningDetailView(workout) {
 
     const splits = chartSplits(workout);
     const avgPaceRef = averagePace(workout, splits);
+    const avgHrRef = averageHr(workout, splits);
     const warnings = workout.importWarnings || [];
 
     return `
@@ -245,7 +370,7 @@ export function RunningDetailView(workout) {
 
             </div>
 
-            ${splits.length >= MIN_SPLITS_FOR_CHART ? RunningPaceChart(splits, avgPaceRef) : ""}
+            ${splits.length >= MIN_SPLITS_FOR_CHART ? RunningPaceChart(splits, avgPaceRef, avgHrRef) : ""}
 
             <div class="detail-stats">
 

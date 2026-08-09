@@ -182,6 +182,20 @@
 
 }
 
+.pace-chart-badges{
+
+    flex-shrink:0;
+
+    display:flex;
+
+    flex-direction:column;
+
+    align-items:flex-end;
+
+    gap:6px;
+
+}
+
 .pace-chart-avg-badge{
 
     flex-shrink:0;
@@ -199,6 +213,14 @@
     font-weight:700;
 
     white-space:nowrap;
+
+}
+
+.pace-chart-avg-badge--hr{
+
+    background:color-mix(in srgb, var(--color-danger) 14%, transparent);
+
+    color:var(--color-danger);
 
 }
 
@@ -306,6 +328,123 @@
     font-size:.68rem;
 
     font-weight:700;
+
+}
+
+/*==========================
+     FC POR KILÓMETRO (overlay)
+==========================*/
+
+.pace-chart-hr-overlay{
+
+    position:absolute;
+
+    left:0;
+    right:0;
+
+    z-index:2;
+
+    pointer-events:none;
+
+}
+
+.pace-chart-hr-lines{
+
+    position:absolute;
+
+    inset:0;
+
+    width:100%;
+
+    height:100%;
+
+    overflow:visible;
+
+}
+
+.pace-chart-hr-line{
+
+    fill:none;
+
+    stroke:var(--color-danger);
+
+    stroke-width:2;
+
+    vector-effect:non-scaling-stroke;
+
+    stroke-linecap:round;
+
+    stroke-linejoin:round;
+
+}
+
+.pace-chart-hr-dot{
+
+    position:absolute;
+
+    width:6px;
+
+    height:6px;
+
+    border-radius:50%;
+
+    background:var(--color-danger);
+
+    box-shadow:0 0 6px color-mix(in srgb, var(--color-danger) 60%, transparent);
+
+    transform:translate(-50%, 50%);
+
+}
+
+.pace-chart-legend{
+
+    display:flex;
+
+    justify-content:center;
+
+    gap:18px;
+
+    margin-top:14px;
+
+}
+
+.pace-chart-legend-item{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:6px;
+
+    color:var(--text-secondary);
+
+    font-size:.72rem;
+
+    font-weight:600;
+
+}
+
+.pace-chart-legend-dot{
+
+    width:8px;
+
+    height:8px;
+
+    border-radius:50%;
+
+    display:inline-block;
+
+}
+
+.pace-chart-legend-dot--pace{
+
+    background:var(--color-primary);
+
+}
+
+.pace-chart-legend-dot--hr{
+
+    background:var(--color-danger);
 
 }
 
