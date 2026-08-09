@@ -5,6 +5,7 @@ import { RUNNING_WORKOUT_TYPES } from "../../data/runningWorkoutTypes.js";
 import { formatDayMonth } from "../../utils/date.js";
 import { formatSecondsAsClock } from "../../utils/format.js";
 import { buildTypeProgressInsight } from "./runningProgress.js";
+import { buildTypeSummary } from "./runningSummary.js";
 
 import { BottomNavigation } from "../../components/Navigation/BottomNavigation.js";
 
@@ -117,6 +118,24 @@ function RunningHistoryItem(workout, shoes) {
 
 }
 
+// Mismos iconos que ya usa WorkoutIcon.js para easy/series/long (un rodaje
+// se ve igual aquí que en el calendario de Plan); tempo/race son propios de
+// Running y no tienen entrada ahí. No se reutiliza WorkoutIcon() en sí —
+// está pensado para el badge circular grande del calendario, no para un
+// icono pequeño dentro de un chip o de una columna del resumen.
+const TYPE_ICON = {
+    "": "solar:widget-5-bold-duotone",
+    easy: "solar:running-bold-duotone",
+    series: "solar:bolt-bold-duotone",
+    tempo: "solar:clock-circle-bold-duotone",
+    long: "solar:mountains-bold-duotone",
+    race: "solar:flag-2-bold-duotone"
+};
+
+function typeLabel(type) {
+    return type ? (RUNNING_WORKOUT_TYPES.find(t => t.id === type)?.label || type) : "Todos";
+}
+
 function RunningTypeFilters(activeType) {
 
     const chips = [{ id: "", label: "Todos" }, ...RUNNING_WORKOUT_TYPES];
@@ -133,6 +152,8 @@ function RunningTypeFilters(activeType) {
                     data-type="${chip.id}"
                 >
 
+                    <iconify-icon icon="${TYPE_ICON[chip.id]}"></iconify-icon>
+
                     ${chip.label}
 
                 </button>
@@ -145,25 +166,65 @@ function RunningTypeFilters(activeType) {
 
 }
 
-function RunningHistorySummary({ count, totalKm, totalDurationSec }) {
+// Resumen del filtro activo (o de todo, con "Todos") — "" si no hay ni un
+// entreno en el conjunto filtrado, para no mostrar un resumen a guiones al
+// lado del estado vacío.
+function RunningTypeSummary(typeFilter, summary) {
+
+    if (!summary) return "";
+
+    const pace = summary.avgPaceSecPerKm != null ? `${formatSecondsAsClock(summary.avgPaceSecPerKm)}/km` : "—";
+    const hr = summary.avgHr != null ? `${summary.avgHr} ppm` : "—";
+    const bestPace = summary.bestPaceSecPerKm != null ? `${formatSecondsAsClock(summary.bestPaceSecPerKm)}/km` : "—";
 
     return `
 
         <div class="running-summary">
 
-            <div class="running-summary-item">
-                <span class="running-summary-value">${count}</span>
-                <span class="running-summary-label">${count === 1 ? "entrenamiento" : "entrenamientos"}</span>
+            <div class="running-summary-header">
+
+                <span class="running-summary-header-icon">
+
+                    <iconify-icon icon="${TYPE_ICON[typeFilter || ""]}"></iconify-icon>
+
+                </span>
+
+                <div class="running-summary-header-text">
+
+                    <span class="running-summary-header-label">Filtro activo</span>
+
+                    <span class="running-summary-header-value">${typeLabel(typeFilter)}</span>
+
+                </div>
+
             </div>
 
-            <div class="running-summary-item">
-                <span class="running-summary-value">${formatDistance(totalKm)}</span>
-                <span class="running-summary-label">distancia</span>
-            </div>
+            <div class="running-summary-stats">
 
-            <div class="running-summary-item">
-                <span class="running-summary-value">${totalDurationSec > 0 ? formatSecondsAsClock(totalDurationSec) : "—"}</span>
-                <span class="running-summary-label">tiempo</span>
+                <div class="running-summary-item">
+                    <iconify-icon icon="solar:running-round-bold-duotone"></iconify-icon>
+                    <span class="running-summary-value">${summary.count}</span>
+                    <span class="running-summary-label">${summary.count === 1 ? "entrenamiento" : "entrenos"}</span>
+                </div>
+
+                <div class="running-summary-item">
+                    <iconify-icon icon="solar:clock-circle-bold-duotone"></iconify-icon>
+                    <span class="running-summary-value">${pace}</span>
+                    <span class="running-summary-label">ritmo medio</span>
+                </div>
+
+                <div class="running-summary-item">
+                    <iconify-icon icon="solar:heart-bold-duotone"></iconify-icon>
+                    <span class="running-summary-value">${hr}</span>
+                    <span class="running-summary-label">FC media</span>
+                </div>
+
+                <div class="running-summary-item">
+                    <iconify-icon icon="solar:cup-star-bold-duotone"></iconify-icon>
+                    <span class="running-summary-value">${bestPace}</span>
+                    <span class="running-summary-label">mejor ritmo</span>
+                </div>
+
             </div>
 
         </div>
@@ -185,12 +246,7 @@ function RunningIdleView() {
     // "Todos" seleccionado no hay una forma no arbitraria de elegir de
     // cuál hablar, así que la tarjeta no se muestra.
     const progressInsight = typeFilter ? buildTypeProgressInsight(workouts, { type: typeFilter }) : null;
-
-    const summary = {
-        count: filtered.length,
-        totalKm: filtered.reduce((sum, w) => sum + (w.distanceKm || 0), 0),
-        totalDurationSec: filtered.reduce((sum, w) => sum + (w.durationSec || 0), 0)
-    };
+    const typeSummary = buildTypeSummary(filtered);
 
     return `
 
@@ -240,15 +296,17 @@ function RunningIdleView() {
 
             ` : `
 
+                ${RunningTypeSummary(typeFilter, typeSummary)}
+
                 ${RunningTypeFilters(typeFilter)}
 
                 ${RunningProgressCard(progressInsight)}
 
-                ${RunningHistorySummary(summary)}
-
                 ${filtered.length === 0 ? `
 
                     <div class="running-empty-filtered">
+
+                        <iconify-icon icon="solar:running-2-bold-duotone"></iconify-icon>
 
                         <p>No hay entrenamientos de este tipo.</p>
 
