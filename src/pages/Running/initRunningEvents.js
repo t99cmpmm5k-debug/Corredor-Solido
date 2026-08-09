@@ -134,18 +134,33 @@ function performSave() {
 
 }
 
+const IMAGE_NAME_PATTERN = /\.(jpe?g|png|heic|heif|webp|gif|bmp)$/i;
+
+// Safari en iOS no interpreta bien accept=".tcx" (extensiones sueltas sin
+// tipo MIME estándar) — puede dejar el archivo en gris y sin poder
+// seleccionarlo, aunque sea válido. En vez de perseguir qué MIME asigna
+// cada plataforma a un TCX (varía, a veces ni siquiera lo asigna), el
+// input ya no restringe por accept y aquí se decide por el contenido real
+// del archivo, no por su nombre.
+function looksLikeImage(file) {
+    return file.type.startsWith("image/") || IMAGE_NAME_PATTERN.test(file.name);
+}
+
+function looksLikeTcx(text) {
+    return /^\s*<\?xml/i.test(text) && text.includes("TrainingCenterDatabase");
+}
+
 // Un .tcx es un archivo de actividad ya completo por sí solo (a
 // diferencia de las capturas, que necesitan varias para fusionarse) —
 // no pasa por Tesseract ni por el paso "processing", el parseo XML es
 // instantáneo. Selección múltiple sigue yendo siempre por capturas.
-async function handleTcxFileSelected(file) {
+async function handleTcxFileSelected(xmlText) {
 
     setOcrError(null);
     setParseError(null);
 
     try {
 
-        const xmlText = await file.text();
         const workout = importWorkout("tcx", xmlText);
 
         setWorkout(workout);
@@ -161,13 +176,41 @@ async function handleTcxFileSelected(file) {
 
 }
 
+// Con un solo archivo que no es reconocible como imagen (captura), se lee
+// su contenido para decidir: si es un TCX válido se importa directo; si
+// no, se avisa con claridad en vez de intentar el OCR sobre algo que no
+// es una captura — mejor eso que un fallo confuso dentro de Tesseract.
+async function handleSingleNonImageFile(file) {
+
+    setOcrError(null);
+    setParseError(null);
+
+    let text;
+
+    try {
+        text = await file.text();
+    } catch {
+        setParseError(`No se pudo leer "${file.name}".`);
+        rerender();
+        return;
+    }
+
+    if (looksLikeTcx(text)) {
+        return handleTcxFileSelected(text);
+    }
+
+    setParseError(`"${file.name}" no es un archivo compatible — sube una captura de pantalla o un .tcx exportado desde tu reloj.`);
+    rerender();
+
+}
+
 async function handleFilesSelected(fileList) {
 
     const files = [...(fileList || [])];
     if (!files.length) return;
 
-    if (files.length === 1 && files[0].name.toLowerCase().endsWith(".tcx")) {
-        return handleTcxFileSelected(files[0]);
+    if (files.length === 1 && !looksLikeImage(files[0])) {
+        return handleSingleNonImageFile(files[0]);
     }
 
     setFiles(files);

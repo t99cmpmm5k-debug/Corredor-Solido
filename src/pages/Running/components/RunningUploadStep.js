@@ -72,7 +72,12 @@ export function RunningUploadStep({ progress, ocrError, parseError, timingLog })
 
                 <label class="upload-trigger">
 
-                    <input type="file" id="running-file-input" accept="image/*,.tcx" multiple hidden>
+                    <!-- Sin "accept": Safari en iOS no interpreta bien extensiones
+                         sueltas como ".tcx" (sin tipo MIME estándar) y puede dejar
+                         el archivo válido en gris, sin poder seleccionarlo. Se
+                         valida el contenido real ya elegido en initRunningEvents.js
+                         en vez de restringir aquí qué se puede ni siquiera tocar. -->
+                    <input type="file" id="running-file-input" multiple hidden>
 
                     <iconify-icon icon="solar:gallery-add-bold-duotone"></iconify-icon>
 
