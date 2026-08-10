@@ -31,6 +31,16 @@
 
 }
 
+.running-header-title{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:2px;
+
+}
+
 .running-header h1{
 
     color:var(--text-primary);
@@ -38,6 +48,14 @@
     font-size:1.6rem;
 
     font-weight:800;
+
+}
+
+.running-subtitle{
+
+    color:var(--text-secondary);
+
+    font-size:.85rem;
 
 }
 
@@ -405,7 +423,9 @@
 
 .running-history{
 
-    display:flex;
+    /* Tarjetas: solo se ven por debajo de 340px de ancho (media query al
+       final de este archivo) — la tabla es la vista por defecto ahora. */
+    display:none;
 
     flex-direction:column;
 
@@ -614,6 +634,327 @@
     text-overflow:ellipsis;
 
     white-space:nowrap;
+
+}
+
+/* =========================
+   TABLA DE ENTRENOS — vista por defecto ahora (ver media query al
+   final de este archivo: .running-history, las tarjetas, solo vuelve
+   por debajo de 340px de ancho, como red de seguridad).
+========================= */
+
+.running-history-table{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:12px;
+
+}
+
+.history-table-title{
+
+    color:var(--color-primary);
+
+    font-size:.85rem;
+
+    font-weight:800;
+
+    letter-spacing:.05em;
+
+}
+
+.history-table{
+
+    display:flex;
+
+    flex-direction:column;
+
+    border-radius:var(--radius-lg);
+
+    background:color-mix(in srgb, var(--card-background) 70%, transparent);
+
+    border:1px solid var(--card-border);
+
+    overflow:hidden;
+
+}
+
+.history-table-row{
+
+    display:grid;
+
+    grid-template-columns:64px 64px 68px 76px 56px 1fr 18px;
+
+    align-items:center;
+
+    gap:8px;
+
+    padding:12px 16px;
+
+    border-bottom:1px solid color-mix(in srgb, var(--card-border) 70%, transparent);
+
+    cursor:pointer;
+
+}
+
+.history-table-row:last-child{
+
+    border-bottom:none;
+
+}
+
+.history-table-header{
+
+    cursor:default;
+
+    background:color-mix(in srgb, var(--card-background) 40%, transparent);
+
+}
+
+.history-table-header .history-table-cell{
+
+    color:var(--text-secondary);
+
+    font-size:.68rem;
+
+    font-weight:700;
+
+    text-transform:uppercase;
+
+    letter-spacing:.03em;
+
+}
+
+.history-table-cell{
+
+    min-width:0;
+
+    color:var(--text-primary);
+
+    font-size:.82rem;
+
+    font-weight:600;
+
+    overflow:hidden;
+
+    text-overflow:ellipsis;
+
+    white-space:nowrap;
+
+}
+
+.history-table-cell--pace{
+
+    color:var(--color-primary);
+
+    font-weight:800;
+
+}
+
+.history-table-cell--shoe{
+
+    color:var(--text-secondary);
+
+    font-weight:500;
+
+}
+
+.history-table-chevron, .history-table-chevron-spacer{
+
+    width:18px;
+
+    text-align:right;
+
+}
+
+.history-table-chevron{
+
+    color:var(--color-text-muted);
+
+    font-size:16px;
+
+}
+
+/* =========================
+   KILOMETRAJE DE ZAPATILLAS (resumen compacto, debajo de la lista)
+========================= */
+
+.shoe-mileage-summary{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:12px;
+
+    padding:16px;
+
+    border-radius:var(--radius-lg);
+
+    background:color-mix(in srgb, var(--card-background) 70%, transparent);
+
+    border:1px solid var(--card-border);
+
+    cursor:pointer;
+
+}
+
+.shoe-mileage-header{
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:space-between;
+
+    gap:12px;
+
+}
+
+.shoe-mileage-title{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:8px;
+
+    color:var(--color-primary);
+
+    font-size:.8rem;
+
+    font-weight:800;
+
+    letter-spacing:.04em;
+
+}
+
+.shoe-mileage-total{
+
+    flex-shrink:0;
+
+    padding:6px 12px;
+
+    border-radius:999px;
+
+    border:1px solid var(--card-border);
+
+    color:var(--text-secondary);
+
+    font-size:.72rem;
+
+    font-weight:700;
+
+    white-space:nowrap;
+
+}
+
+.shoe-mileage-row{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:12px;
+
+}
+
+.shoe-mileage-row .shoe-photo{
+
+    width:40px;
+
+    height:40px;
+
+}
+
+.shoe-mileage-name{
+
+    flex-shrink:0;
+
+    width:88px;
+
+    color:var(--text-primary);
+
+    font-size:.82rem;
+
+    font-weight:600;
+
+    overflow:hidden;
+
+    text-overflow:ellipsis;
+
+    white-space:nowrap;
+
+}
+
+.shoe-mileage-bar-track{
+
+    flex:1;
+
+    min-width:0;
+
+    height:6px;
+
+    border-radius:999px;
+
+    background:color-mix(in srgb, var(--card-border) 60%, transparent);
+
+    overflow:hidden;
+
+}
+
+.shoe-mileage-bar-fill{
+
+    width:var(--progress, 0%);
+
+    height:100%;
+
+    border-radius:999px;
+
+    background:var(--color-primary);
+
+}
+
+.shoe-mileage-bar-fill--warning{
+
+    background:var(--color-warning);
+
+}
+
+.shoe-mileage-bar-fill--danger{
+
+    background:var(--color-danger);
+
+}
+
+.shoe-mileage-km{
+
+    flex-shrink:0;
+
+    color:var(--text-primary);
+
+    font-size:.8rem;
+
+    font-weight:700;
+
+    white-space:nowrap;
+
+}
+
+/* Red de seguridad para pantallas muy estrechas de verdad — no debería
+   dispararse en ningún móvil actual normal (el más estrecho habitual
+   mide 360-375px). Por debajo de eso, vuelven las tarjetas. */
+@media (max-width:340px){
+
+    .running-history{
+        display:flex;
+    }
+
+    .running-history-table{
+        display:none;
+    }
 
 }
 

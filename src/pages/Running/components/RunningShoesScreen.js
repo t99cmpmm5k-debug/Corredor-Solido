@@ -2,7 +2,7 @@ import "./RunningShoesScreen.css";
 
 import { getShoeTotalKm } from "../../../data/workoutStore.js";
 
-function formatKm(km) {
+export function formatKm(km) {
 
     return `${km.toFixed(2).replace(".", ",")} km`;
 
@@ -11,15 +11,30 @@ function formatKm(km) {
 // Barra solo si hay límite de vida útil (opcional, lo pone el usuario al
 // crear la zapatilla) — sin límite no hay denominador con el que calcular
 // un %, así que se muestra solo el número de km, nunca un % inventado.
-function ShoeBar(shoe, km) {
+// Exportada porque el resumen compacto de Running (RunningShoeMileageSummary
+// en Running.js) necesita el mismo umbral de aviso (80%/100%) sin duplicar
+// el cálculo — un solo sitio decide "esto ya está gastada", no dos.
+export function shoeBarPercent(shoe, km) {
 
-    if (shoe.lifetimeKm == null) {
-        return `<p class="shoe-km-plain">${formatKm(km)}</p>`;
-    }
+    if (shoe.lifetimeKm == null) return null;
 
     const percent = (km / shoe.lifetimeKm) * 100;
-    const fillPercent = Math.min(100, percent);
-    const tier = percent >= 100 ? "danger" : percent >= 80 ? "warning" : "normal";
+
+    return {
+        percent,
+        fillPercent: Math.min(100, percent),
+        tier: percent >= 100 ? "danger" : percent >= 80 ? "warning" : "normal"
+    };
+
+}
+
+function ShoeBar(shoe, km) {
+
+    const bar = shoeBarPercent(shoe, km);
+
+    if (!bar) {
+        return `<p class="shoe-km-plain">${formatKm(km)}</p>`;
+    }
 
     return `
 
@@ -27,7 +42,7 @@ function ShoeBar(shoe, km) {
 
             <div class="shoe-bar-track">
 
-                <div class="shoe-bar-fill shoe-bar-fill--${tier}" style="--progress:${fillPercent}%"></div>
+                <div class="shoe-bar-fill shoe-bar-fill--${bar.tier}" style="--progress:${bar.fillPercent}%"></div>
 
             </div>
 
@@ -35,7 +50,7 @@ function ShoeBar(shoe, km) {
 
         </div>
 
-        ${percent >= 100 ? `
+        ${bar.percent >= 100 ? `
 
             <p class="shoe-limit-warning">
 
@@ -51,7 +66,7 @@ function ShoeBar(shoe, km) {
 
 }
 
-function ShoePhoto(photoSrc) {
+export function ShoePhoto(photoSrc) {
 
     return `
 

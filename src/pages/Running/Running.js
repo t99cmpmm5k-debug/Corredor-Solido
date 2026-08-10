@@ -1,6 +1,6 @@
 import "./Running.css";
 
-import { getWorkouts, getShoes, getPossibleDataLoss } from "../../data/workoutStore.js";
+import { getWorkouts, getShoes, getPossibleDataLoss, getShoeTotalKm } from "../../data/workoutStore.js";
 import { RUNNING_WORKOUT_TYPES } from "../../data/runningWorkoutTypes.js";
 import { formatDayMonth } from "../../utils/date.js";
 import { formatSecondsAsClock } from "../../utils/format.js";
@@ -31,7 +31,7 @@ import { RunningReviewStep } from "./components/RunningReviewStep.js";
 import { RunningShoeStep } from "./components/RunningShoeStep.js";
 import { RunningDetailView } from "./components/RunningDetailView.js";
 import { RunningProgressCard } from "./components/RunningProgressCard.js";
-import { RunningShoesScreen } from "./components/RunningShoesScreen.js";
+import { RunningShoesScreen, ShoePhoto, shoeBarPercent, formatKm } from "./components/RunningShoesScreen.js";
 
 function shoeLabel(shoeId, shoes) {
 
@@ -118,6 +118,41 @@ function RunningHistoryItem(workout, shoes) {
 
 }
 
+// Vista de tabla para landscape (ver RunningHistoryTable) — misma fila,
+// mismos datos y mismo criterio de "—"/"Sin zapatilla" que RunningHistoryItem,
+// sin duración (esa columna no está en el mockup) y sin botón de borrar (el
+// mockup tampoco lo lleva ahí — borrar sigue disponible desde el detalle).
+function RunningHistoryRow(workout, shoes) {
+
+    const distance = formatDistance(workout.distanceKm);
+    const pace = workout.avgPaceSecPerKm != null ? `${formatSecondsAsClock(workout.avgPaceSecPerKm)}/km` : "—";
+    const hr = workout.avgHr != null ? `${workout.avgHr} ppm` : "—";
+    const temperature = workout.temperatureC != null ? `${workout.temperatureC}°C` : "—";
+
+    return `
+
+        <div class="history-table-row" data-action="open-detail" data-workout-id="${workout.id}">
+
+            <span class="history-table-cell">${formatDayMonth(workout.date)}</span>
+
+            <span class="history-table-cell">${distance}</span>
+
+            <span class="history-table-cell history-table-cell--pace">${pace}</span>
+
+            <span class="history-table-cell">${hr}</span>
+
+            <span class="history-table-cell">${temperature}</span>
+
+            <span class="history-table-cell history-table-cell--shoe">${shoeLabel(workout.shoeId, shoes)}</span>
+
+            <iconify-icon icon="solar:alt-arrow-right-bold-duotone" class="history-table-chevron"></iconify-icon>
+
+        </div>
+
+    `;
+
+}
+
 // Mismos iconos que ya usa WorkoutIcon.js para easy/series/long (un rodaje
 // se ve igual aquí que en el calendario de Plan); tempo/race son propios de
 // Running y no tienen entrada ahí. No se reutiliza WorkoutIcon() en sí —
@@ -134,6 +169,127 @@ const TYPE_ICON = {
 
 function typeLabel(type) {
     return type ? (RUNNING_WORKOUT_TYPES.find(t => t.id === type)?.label || type) : "Todos";
+}
+
+// "ENTRENOS RODAJE (Z2)" con la etiqueta ya establecida en
+// RUNNING_WORKOUT_TYPES (no "ZONA 2" tal cual dice el mockup de ejemplo —
+// ese vocabulario no es el nuestro, ya lo usan los chips y el resumen).
+function tableTitle(typeFilter) {
+    return typeFilter
+        ? `ENTRENOS ${typeLabel(typeFilter).toUpperCase()}`
+        : "TODOS LOS ENTRENOS";
+}
+
+// Vista por defecto de la lista (ver Running.css) — .running-history
+// (tarjetas) solo se ve por debajo de los 340px de ancho, como red de
+// seguridad para pantallas muy estrechas.
+function RunningHistoryTable(filtered, shoes, typeFilter) {
+
+    return `
+
+        <div class="running-history-table">
+
+            <h3 class="history-table-title">${tableTitle(typeFilter)}</h3>
+
+            <div class="history-table">
+
+                <div class="history-table-row history-table-header">
+
+                    <span class="history-table-cell">FECHA</span>
+
+                    <span class="history-table-cell">KM</span>
+
+                    <span class="history-table-cell">RITMO</span>
+
+                    <span class="history-table-cell">FC MEDIA</span>
+
+                    <span class="history-table-cell">TEMP.</span>
+
+                    <span class="history-table-cell">ZAPATILLA</span>
+
+                    <span class="history-table-chevron-spacer"></span>
+
+                </div>
+
+                ${filtered.map(workout => RunningHistoryRow(workout, shoes)).join("")}
+
+            </div>
+
+        </div>
+
+    `;
+
+}
+
+// Fila compacta de solo lectura — reutiliza ShoePhoto/shoeBarPercent de
+// RunningShoesScreen.js para no duplicar ni la foto ni el umbral de aviso
+// de vida útil. Gestionar (añadir/retirar/foto) sigue siendo exclusivo de
+// esa pantalla completa; aquí solo se enseña el kilometraje de un vistazo.
+function ShoeMileageRow(shoe, km) {
+
+    const bar = shoeBarPercent(shoe, km);
+
+    return `
+
+        <div class="shoe-mileage-row">
+
+            ${ShoePhoto(shoe.photo)}
+
+            <span class="shoe-mileage-name">${shoe.brand} ${shoe.model}</span>
+
+            <div class="shoe-mileage-bar-track">
+
+                <div class="shoe-mileage-bar-fill ${bar ? `shoe-mileage-bar-fill--${bar.tier}` : ""}" style="--progress:${bar ? bar.fillPercent : 0}%"></div>
+
+            </div>
+
+            <span class="shoe-mileage-km">${formatKm(km)}</span>
+
+            <iconify-icon icon="solar:alt-arrow-right-bold-duotone" class="history-table-chevron"></iconify-icon>
+
+        </div>
+
+    `;
+
+}
+
+// Resumen de kilometraje embebido en Running, debajo de la lista de
+// carreras — versión compacta de RunningShoesScreen.js (que sigue siendo
+// la única pantalla para añadir/retirar/subir foto). "" si no hay ninguna
+// zapatilla, igual que RunningProgressCard: nada que mostrar, nada inventado.
+function RunningShoeMileageSummary(shoes) {
+
+    const active = shoes.filter(s => s.status !== "retired");
+    if (!active.length) return "";
+
+    // "Todas las zapatillas juntas" incluye las retiradas, igual que en
+    // RunningShoesScreen — ese kilometraje se corrió igual.
+    const totalKm = shoes.reduce((sum, s) => sum + getShoeTotalKm(s.id), 0);
+
+    return `
+
+        <div class="shoe-mileage-summary" data-action="open-shoes">
+
+            <div class="shoe-mileage-header">
+
+                <span class="shoe-mileage-title">
+
+                    <iconify-icon icon="solar:running-round-bold-duotone"></iconify-icon>
+
+                    KILOMETRAJE DE ZAPATILLAS
+
+                </span>
+
+                <span class="shoe-mileage-total">Total: ${formatKm(totalKm)}</span>
+
+            </div>
+
+            ${active.map(shoe => ShoeMileageRow(shoe, getShoeTotalKm(shoe.id))).join("")}
+
+        </div>
+
+    `;
+
 }
 
 function RunningTypeFilters(activeType) {
@@ -254,7 +410,13 @@ function RunningIdleView() {
 
             <header class="running-header">
 
-                <h1>Running</h1>
+                <div class="running-header-title">
+
+                    <h1>Running</h1>
+
+                    <p class="running-subtitle">Compara tu progreso</p>
+
+                </div>
 
                 <div class="running-header-actions">
 
@@ -338,7 +500,11 @@ function RunningIdleView() {
 
                     </div>
 
+                    ${RunningHistoryTable(filtered, shoes, typeFilter)}
+
                 `}
+
+                ${RunningShoeMileageSummary(shoes)}
 
             `}
 
