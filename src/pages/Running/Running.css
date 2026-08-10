@@ -671,7 +671,9 @@
 
 .running-history-table{
 
-    display:none;
+    /* Ya no alterna con .running-history — solo vive en su propia
+       pantalla (RunningFullTableView), donde debe verse siempre. */
+    display:flex;
 
     flex-direction:column;
 

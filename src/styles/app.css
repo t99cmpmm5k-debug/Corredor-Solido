@@ -15,6 +15,15 @@ html{
 
     background:#061226;
 
+    /* Desactiva el zoom accidental por doble toque sin tocar el
+       pellizco-para-ampliar (ese sí debe seguir funcionando por
+       accesibilidad — iOS Safari desde la 10 ignora a propósito
+       user-scalable=no/maximum-scale en el <meta viewport> para
+       proteger justo eso, así que tocar el viewport no serviría de
+       nada en los iPhone de esta beta; esta es la vía que sí funciona
+       en cualquier plataforma sin ese efecto secundario). */
+    touch-action:manipulation;
+
 }
 
 body{
