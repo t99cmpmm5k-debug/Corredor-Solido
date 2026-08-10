@@ -145,6 +145,20 @@
 
 }
 
+.running-empty--warning iconify-icon{
+
+    color:var(--color-danger);
+
+}
+
+.running-empty-hint{
+
+    font-size:.8rem;
+
+    opacity:.8;
+
+}
+
 /* =========================
    FILTRO POR TIPO
 ========================= */

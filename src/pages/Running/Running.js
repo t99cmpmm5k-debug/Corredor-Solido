@@ -1,6 +1,6 @@
 import "./Running.css";
 
-import { getWorkouts, getShoes } from "../../data/workoutStore.js";
+import { getWorkouts, getShoes, getPossibleDataLoss } from "../../data/workoutStore.js";
 import { RUNNING_WORKOUT_TYPES } from "../../data/runningWorkoutTypes.js";
 import { formatDayMonth } from "../../utils/date.js";
 import { formatSecondsAsClock } from "../../utils/format.js";
@@ -278,7 +278,25 @@ function RunningIdleView() {
 
             </header>
 
-            ${workouts.length === 0 ? `
+            ${workouts.length === 0 ? (getPossibleDataLoss() ? `
+
+                <div class="running-empty running-empty--warning">
+
+                    <iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon>
+
+                    <p>No se pudo acceder a tus entrenos guardados — puede que el navegador haya eliminado los datos de la app.</p>
+
+                    <p class="running-empty-hint">Si exportaste una copia de seguridad, puedes recuperarla desde Perfil → Importar copia.</p>
+
+                    <button class="wizard-primary-button" data-action="open-wizard">
+
+                        Importar de nuevo
+
+                    </button>
+
+                </div>
+
+            ` : `
 
                 <div class="running-empty">
 
@@ -294,7 +312,7 @@ function RunningIdleView() {
 
                 </div>
 
-            ` : `
+            `) : `
 
                 ${RunningTypeSummary(typeFilter, typeSummary)}
 

@@ -8,6 +8,29 @@ const shoes = [];
 const plannedSessions = [];
 
 let hydrated = null;
+let possibleDataLoss = false;
+
+// Señal aparte de IndexedDB a propósito: si el motor de IndexedDB del
+// navegador es el que falla o se vacía (sospecha real en iOS Safari), un
+// flag guardado en la propia IndexedDB desaparecería con el resto — no
+// serviría para detectar el borrado. localStorage es un almacén distinto.
+const HAD_DATA_KEY = "corredor-solido-had-data";
+
+function markHadData() {
+    try {
+        localStorage.setItem(HAD_DATA_KEY, "true");
+    } catch {
+        // Privado/cuota agotada — no es motivo para romper el guardado.
+    }
+}
+
+function hadDataBefore() {
+    try {
+        return localStorage.getItem(HAD_DATA_KEY) === "true";
+    } catch {
+        return false;
+    }
+}
 
 function todayMidnight() {
 
@@ -87,15 +110,30 @@ export function hydrate() {
         shoes.push(...loadedShoes);
         plannedSessions.push(...loadedPlannedSessions);
 
+        // Si antes hubo entrenos guardados (localStorage lo recuerda) y
+        // ahora IndexedDB viene vacía, no es "primera vez" — es sospechoso
+        // de que el navegador ha vaciado el almacenamiento por su cuenta.
+        possibleDataLoss = workouts.length === 0 && hadDataBefore();
+
         return syncPlanSnapshot();
 
     }).catch(err => {
 
         console.warn("No se pudo cargar el almacenamiento local — la app sigue sin persistencia.", err);
+        possibleDataLoss = hadDataBefore();
 
     });
 
     return hydrated;
+
+}
+
+// true si hubo entrenos guardados en algún momento y ahora no hay
+// ninguno — señal de posible borrado del navegador, no de que el
+// usuario nunca haya importado nada. Se calcula una vez en hydrate().
+export function getPossibleDataLoss() {
+
+    return possibleDataLoss;
 
 }
 
@@ -193,6 +231,7 @@ export function addWorkout(workoutInput) {
     };
 
     upsertInto(workouts, STORES.workouts, workout);
+    markHadData();
 
     return workout;
 
@@ -268,6 +307,7 @@ export function retireShoe(id) {
 
 export function restoreWorkout(workout) {
 
+    markHadData();
     return upsertInto(workouts, STORES.workouts, workout);
 
 }

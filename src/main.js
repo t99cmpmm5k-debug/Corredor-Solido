@@ -70,6 +70,16 @@ function boot() {
 
 boot();
 
+// Pide almacenamiento persistente al navegador — sin esto, iOS Safari
+// puede vaciar IndexedDB de una PWA instalada bajo presión de espacio o
+// tras cierto tiempo sin uso, sin avisar (causa sospechada de una pérdida
+// de datos real reportada por un usuario de Amazfit/TCX). Es "best
+// effort": no bloquea el arranque ni garantiza que el navegador lo
+// conceda, pero reduce el riesgo — y no hay downside a pedirlo siempre.
+if (navigator.storage?.persist) {
+    navigator.storage.persist().catch(() => {});
+}
+
 if (import.meta.env.PROD && "serviceWorker" in navigator) {
     window.addEventListener("load", () => {
         navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`);
