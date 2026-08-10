@@ -284,6 +284,14 @@ function RunningShoeMileageSummary(shoes) {
 
             </div>
 
+            <span class="shoe-mileage-manage">
+
+                Gestionar zapatillas
+
+                <iconify-icon icon="solar:alt-arrow-right-bold-duotone"></iconify-icon>
+
+            </span>
+
             ${active.map(shoe => ShoeMileageRow(shoe, getShoeTotalKm(shoe.id))).join("")}
 
         </div>
@@ -420,14 +428,6 @@ function RunningIdleView() {
 
                 <div class="running-header-actions">
 
-                    <button class="running-shoes-button" data-action="open-shoes">
-
-                        <iconify-icon icon="solar:running-round-bold-duotone"></iconify-icon>
-
-                        Zapatillas
-
-                    </button>
-
                     <button class="running-import-button" data-action="open-wizard">
 
                         <iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon>
@@ -494,13 +494,23 @@ function RunningIdleView() {
 
                 ` : `
 
+                    <div class="running-history-header">
+
+                        <button class="running-history-expand" data-action="open-history-table">
+
+                            <iconify-icon icon="solar:full-screen-bold-duotone"></iconify-icon>
+
+                            Ver tabla completa
+
+                        </button>
+
+                    </div>
+
                     <div class="running-history">
 
                         ${filtered.map(workout => RunningHistoryItem(workout, shoes)).join("")}
 
                     </div>
-
-                    ${RunningHistoryTable(filtered, shoes, typeFilter)}
 
                 `}
 
@@ -509,6 +519,58 @@ function RunningIdleView() {
             `}
 
         </div>
+
+    `;
+
+}
+
+// Pantalla propia y aislada para la tabla — al girar el móvil aquí dentro
+// no afecta a ninguna otra pantalla de la app, porque no comparten
+// ninguna regla de CSS ligada al ancho/orientación (esa es la razón de
+// que exista esta vista aparte, en vez de alternar tabla/tarjetas dentro
+// de la propia RunningIdleView según el giro). Reutiliza tal cual
+// RunningTypeFilters()/RunningHistoryTable() — mismo marcado, no se
+// duplica nada.
+function RunningFullTableView() {
+
+    const workouts = getWorkouts();
+    const shoes = getShoes();
+    const typeFilter = getTypeFilter();
+
+    const sorted = [...workouts].sort((a, b) => b.date.localeCompare(a.date));
+    const filtered = typeFilter ? sorted.filter(w => w.type === typeFilter) : sorted;
+
+    return `
+
+        <section class="running-wizard running-step-history-table">
+
+            <header class="wizard-header">
+
+                <button class="wizard-close" data-action="close-history-table">
+
+                    <iconify-icon icon="solar:close-circle-bold-duotone"></iconify-icon>
+
+                </button>
+
+                <h2>Tabla de entrenos</h2>
+
+            </header>
+
+            ${RunningTypeFilters(typeFilter)}
+
+            ${filtered.length === 0 ? `
+
+                <div class="running-empty-filtered">
+
+                    <iconify-icon icon="solar:running-2-bold-duotone"></iconify-icon>
+
+                    <p>No hay entrenamientos de este tipo.</p>
+
+                </div>
+
+            ` : RunningHistoryTable(filtered, shoes, typeFilter)}
+
+        </section>
 
     `;
 
@@ -560,6 +622,10 @@ export function Running() {
             editingShoeId: getEditingShoeId(),
             newShoePhoto: getNewShoePhoto()
         });
+
+    } else if (step === "historyTable") {
+
+        content = RunningFullTableView();
 
     } else {
 

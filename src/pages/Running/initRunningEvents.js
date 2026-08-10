@@ -36,6 +36,7 @@ import {
 
 const DETAIL_HISTORY_STATE = { runningDetail: true };
 const SHOES_HISTORY_STATE = { runningShoes: true };
+const HISTORY_TABLE_HISTORY_STATE = { runningHistoryTable: true };
 
 function openDetail(workoutId) {
 
@@ -94,6 +95,31 @@ function closeShoes() {
 
 }
 
+// Pantalla propia para la tabla (ver Running.js, RunningFullTableView) —
+// aislada a propósito para que girar el móvil ahí dentro no afecte a
+// ninguna otra pantalla de la app.
+function openHistoryTable() {
+
+    setWizardStep("historyTable");
+
+    history.pushState(HISTORY_TABLE_HISTORY_STATE, "");
+
+    rerender();
+
+}
+
+function closeHistoryTable() {
+
+    if (history.state?.runningHistoryTable) {
+        history.back();
+        return;
+    }
+
+    setWizardStep("idle");
+    rerender();
+
+}
+
 // Registrado una sola vez a nivel de módulo (no dentro de initRunningEvents,
 // que se vuelve a llamar en cada render) — si no, se acumularía un listener
 // de window por cada rerender y un solo gesto de atrás cerraría estas
@@ -106,7 +132,7 @@ window.addEventListener("popstate", () => {
         setDetailWorkoutId(null);
         setWizardStep("idle");
         rerender();
-    } else if (step === "shoes") {
+    } else if (step === "shoes" || step === "historyTable") {
         setWizardStep("idle");
         rerender();
     }
@@ -552,6 +578,18 @@ export function initRunningEvents() {
     document.querySelectorAll('[data-action="close-shoes"]').forEach(button => {
 
         button.addEventListener("click", closeShoes);
+
+    });
+
+    document.querySelectorAll('[data-action="open-history-table"]').forEach(button => {
+
+        button.addEventListener("click", openHistoryTable);
+
+    });
+
+    document.querySelectorAll('[data-action="close-history-table"]').forEach(button => {
+
+        button.addEventListener("click", closeHistoryTable);
 
     });
 

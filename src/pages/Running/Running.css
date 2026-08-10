@@ -97,32 +97,6 @@
 
 }
 
-.running-shoes-button{
-
-    display:inline-flex;
-
-    align-items:center;
-
-    gap:8px;
-
-    padding:10px 16px;
-
-    border-radius:999px;
-
-    background:transparent;
-
-    border:1px solid var(--card-border);
-
-    color:var(--text-secondary);
-
-    font-weight:600;
-
-    font-size:.9rem;
-
-    cursor:pointer;
-
-}
-
 /* =========================
    ESTADO VACÍO
 ========================= */
@@ -185,13 +159,27 @@
 
     display:flex;
 
-    flex-wrap:wrap;
+    flex-wrap:nowrap;
+
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
 
     gap:10px;
+
+    /* Scroll deslizable sin barra visible, mismo look que el mockup. */
+    scrollbar-width:none;
+
+}
+
+.type-filter-list::-webkit-scrollbar{
+
+    display:none;
 
 }
 
 .type-filter-chip{
+
+    flex-shrink:0;
 
     display:inline-flex;
 
@@ -421,11 +409,49 @@
    HISTORIAL
 ========================= */
 
+.running-history-header{
+
+    display:flex;
+
+    justify-content:flex-end;
+
+}
+
+.running-history-expand{
+
+    display:inline-flex;
+
+    align-items:center;
+
+    gap:6px;
+
+    padding:8px 14px;
+
+    border-radius:999px;
+
+    background:transparent;
+
+    border:1px solid var(--card-border);
+
+    color:var(--text-secondary);
+
+    font-size:.78rem;
+
+    font-weight:600;
+
+    cursor:pointer;
+
+}
+
+.running-history-expand iconify-icon{
+
+    font-size:15px;
+
+}
+
 .running-history{
 
-    /* Tarjetas: solo se ven por debajo de 340px de ancho (media query al
-       final de este archivo) — la tabla es la vista por defecto ahora. */
-    display:none;
+    display:flex;
 
     flex-direction:column;
 
@@ -645,7 +671,7 @@
 
 .running-history-table{
 
-    display:flex;
+    display:none;
 
     flex-direction:column;
 
@@ -851,6 +877,30 @@
 
 }
 
+.shoe-mileage-manage{
+
+    display:inline-flex;
+
+    align-items:center;
+
+    gap:4px;
+
+    align-self:flex-end;
+
+    color:var(--color-primary);
+
+    font-size:.75rem;
+
+    font-weight:700;
+
+}
+
+.shoe-mileage-manage iconify-icon{
+
+    font-size:14px;
+
+}
+
 .shoe-mileage-row{
 
     display:flex;
@@ -940,21 +990,6 @@
     font-weight:700;
 
     white-space:nowrap;
-
-}
-
-/* Red de seguridad para pantallas muy estrechas de verdad — no debería
-   dispararse en ningún móvil actual normal (el más estrecho habitual
-   mide 360-375px). Por debajo de eso, vuelven las tarjetas. */
-@media (max-width:340px){
-
-    .running-history{
-        display:flex;
-    }
-
-    .running-history-table{
-        display:none;
-    }
 
 }
 
