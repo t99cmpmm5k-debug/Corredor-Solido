@@ -20,20 +20,52 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
 
 const MIN_TEXT_LENGTH = 20;
 
+// TEMPORAL — mientras se diagnostica el bug real de iPhone (Safari da
+// "undefined is not a function" sin stack trace útil y no hay Mac a mano
+// para el inspector remoto). Envuelve el error original con la etapa
+// exacta en la que ha saltado, en vez de dejar que solo llegue el mensaje
+// genérico de Safari (que no dice si fue leer el archivo, iniciar
+// pdfjs-dist o procesar una página). Quitar en cuanto quede resuelto.
+function describeError(stage, err) {
+
+    const name = err?.name || typeof err;
+    const message = err?.message || String(err);
+    const stack = err?.stack ? ` | stack: ${String(err.stack).slice(0, 300)}` : "";
+
+    return new Error(`[${stage}] ${name}: ${message}${stack}`);
+
+}
+
 // Solo extrae texto de la capa de texto real del PDF (PDF "nativo
 // digital") — no hace OCR ni renderiza páginas como imagen, así que un
 // PDF escaneado/fotografiado no producirá texto útil aquí.
 export async function extractPdfText(file) {
 
-    const arrayBuffer = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    let arrayBuffer;
+    try {
+        arrayBuffer = await file.arrayBuffer();
+    } catch (err) {
+        throw describeError("leer archivo", err);
+    }
+
+    let pdf;
+    try {
+        pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    } catch (err) {
+        throw describeError("getDocument", err);
+    }
 
     const pageTexts = [];
 
     for (let i = 1; i <= pdf.numPages; i++) {
 
-        const page = await pdf.getPage(i);
-        const content = await page.getTextContent();
+        let content;
+        try {
+            const page = await pdf.getPage(i);
+            content = await page.getTextContent();
+        } catch (err) {
+            throw describeError(`página ${i}`, err);
+        }
 
         pageTexts.push(content.items.map(item => item.str).join("\n"));
 

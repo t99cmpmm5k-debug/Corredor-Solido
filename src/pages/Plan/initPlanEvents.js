@@ -77,8 +77,10 @@ async function handlePlanFileSelected(file) {
 
     try {
         signature = await file.slice(0, PDF_SIGNATURE.length).text();
-    } catch {
-        setImportParseError(`No se pudo leer "${file.name}".`);
+    } catch (err) {
+        // TEMPORAL — ver comentario en pdfText.js, mismo diagnóstico del
+        // bug real de iPhone. Quitar el prefijo [firma] cuando se resuelva.
+        setImportParseError(`[firma] ${err?.name || typeof err}: ${err?.message || err}`);
         rerender();
         return;
     }
@@ -118,9 +120,20 @@ async function handlePlanFileSelected(file) {
 // verdad se elige un PDF, para no engordar el chunk principal.
 async function handlePdfFileSelected(file) {
 
+    // TEMPORAL — diagnóstico del bug real de iPhone (ver pdfText.js):
+    // separado del resto para saber si el fallo es cargar el propio
+    // módulo (import() dinámico) o algo dentro de él.
+    let extractPdfText;
+    try {
+        ({ extractPdfText } = await import("../../importers/plan/pdfText.js"));
+    } catch (err) {
+        setImportParseError(`[carga del módulo PDF] ${err?.name || typeof err}: ${err?.message || err}`);
+        rerender();
+        return;
+    }
+
     try {
 
-        const { extractPdfText } = await import("../../importers/plan/pdfText.js");
         const text = await extractPdfText(file);
         const plan = importPlan("pdf", text);
 
