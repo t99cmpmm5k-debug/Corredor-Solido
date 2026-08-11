@@ -88,10 +88,21 @@
 }
 
 /*=========================
-        RODAJE
+        RECUPERACIÓN
 =========================*/
 
-.workout-icon.easy{
+.workout-icon.recovery{
+
+    color:var(--color-text-muted);
+    border-color:var(--color-text-muted);
+
+}
+
+/*=========================
+        ZONA 2
+=========================*/
+
+.workout-icon.z2{
 
     color:var(--color-success);
     border-color:var(--color-success);
@@ -99,13 +110,13 @@
 }
 
 /*=========================
-        GYM
+        TEMPO
 =========================*/
 
-.workout-icon.gym{
+.workout-icon.tempo{
 
-    color:#2faeff;
-    border-color:#2faeff;
+    color:var(--color-primary);
+    border-color:var(--color-primary);
 
 }
 
@@ -113,7 +124,7 @@
        SERIES
 =========================*/
 
-.workout-icon.series{
+.workout-icon.intervals{
 
     color:#25c8ff;
     border-color:#25c8ff;
@@ -121,10 +132,10 @@
 }
 
 /*=========================
-       LARGA
+       TIRADA LARGA
 =========================*/
 
-.workout-icon.long{
+.workout-icon.longRun{
 
     color:var(--color-warning);
     border-color:var(--color-warning);
@@ -132,13 +143,24 @@
 }
 
 /*=========================
-      DESCANSO
+       CARRERA
 =========================*/
 
-.workout-icon.rest{
+.workout-icon.race{
 
-    color:var(--color-text-muted);
-    border-color:var(--color-text-muted);
+    color:var(--color-danger);
+    border-color:var(--color-danger);
+
+}
+
+/*=========================
+        FUERZA
+=========================*/
+
+.workout-icon.strength{
+
+    color:#2faeff;
+    border-color:#2faeff;
 
 }
 
@@ -147,6 +169,17 @@
 =========================*/
 
 .workout-icon.free{
+
+    color:var(--color-text-muted);
+    border-color:var(--color-text-muted);
+
+}
+
+/*=========================
+        GENERAL
+=========================*/
+
+.workout-icon.generic{
 
     color:var(--color-text-muted);
     border-color:var(--color-text-muted);

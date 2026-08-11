@@ -1,40 +1,62 @@
 import "./WorkoutIcon.css";
 
+// Ids de WORKOUT_TYPES (src/data/workoutTypes.js). Todos verificados uno
+// a uno contra el set real de iconos Solar antes de usarlos — "circle"
+// (libre) y "mountains" (tirada larga) que había antes NO existen de
+// verdad en Solar, se sustituyen aquí de paso.
 const ICONS = {
 
-    easy: {
+    recovery: {
+
+        icon: "solar:heart-pulse-bold-duotone"
+
+    },
+
+    z2: {
 
         icon: "solar:running-bold-duotone"
 
     },
 
-    gym: {
+    tempo: {
 
-        icon: "solar:dumbbell-large-bold-duotone"
+        icon: "solar:playback-speed-bold-duotone"
 
     },
 
-    series: {
+    intervals: {
 
         icon: "solar:bolt-bold-duotone"
 
     },
 
-    rest: {
+    longRun: {
 
-        icon: "solar:moon-bold-duotone"
+        icon: "solar:route-bold-duotone"
 
     },
 
-    long: {
+    race: {
 
-        icon: "solar:mountains-bold-duotone"
+        icon: "solar:flag-bold-duotone"
+
+    },
+
+    strength: {
+
+        icon: "solar:dumbbell-large-bold-duotone"
 
     },
 
     free: {
 
-        icon: "solar:circle-bold-duotone"
+        icon: "solar:cup-hot-bold-duotone"
+
+    },
+
+    generic: {
+
+        icon: "solar:widget-bold-duotone"
 
     }
 
@@ -56,13 +78,14 @@ export function WorkoutIcon(
 
 ) {
 
-    const workout = ICONS[type] || ICONS.free;
+    const resolvedType = ICONS[type] ? type : "generic";
+    const workout = ICONS[resolvedType];
 
     const classes = [
 
         "workout-icon",
 
-        type,
+        resolvedType,
 
         size
 

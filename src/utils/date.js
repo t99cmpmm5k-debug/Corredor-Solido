@@ -106,3 +106,38 @@ export function getISOWeekNumber(date) {
     return Math.ceil((((target - yearStart) / 86400000) + 1) / 7);
 
 }
+
+/**
+ * ==========================================================
+ * Lunes de la semana ISO-8601 que contiene la fecha dada
+ * (misma convención lunes=inicio que getISOWeekNumber).
+ * ==========================================================
+ */
+
+export function getWeekStartDate(iso) {
+
+    const date = parseISODate(iso);
+    const dayNumber = date.getDay() || 7; // domingo (0) pasa a 7
+
+    date.setDate(date.getDate() - (dayNumber - 1));
+
+    return formatISODate(date);
+
+}
+
+/**
+ * ==========================================================
+ * Abreviatura de día de la semana (LUN..DOM) a partir de una
+ * fecha — mismas claves que DAY_INITIALS, en sentido inverso
+ * (ahí se va de abreviatura a letra suelta, no de fecha a
+ * abreviatura).
+ * ==========================================================
+ */
+
+const WEEKDAY_ABBREVIATIONS = ["DOM", "LUN", "MAR", "MIÉ", "JUE", "VIE", "SÁB"];
+
+export function getDayAbbreviation(iso) {
+
+    return WEEKDAY_ABBREVIATIONS[parseISODate(iso).getDay()];
+
+}

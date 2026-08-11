@@ -15,7 +15,7 @@ export function TimelineDay(session, { isToday, isSelected, isCompleted }) {
                 ${isToday ? "is-today" : ""}
                 ${isSelected ? "is-selected" : ""}
             "
-            data-day="${session.day}"
+            data-date="${session.date}"
         >
 
             <div class="timeline-top">
@@ -46,22 +46,26 @@ export function TimelineDay(session, { isToday, isSelected, isCompleted }) {
 
             </div>
 
-            <div class="day-stem ${session.type} ${isSelected ? "is-selected" : ""}"></div>
+            <div class="day-stem ${session.type ?? "generic"} ${isSelected ? "is-selected" : ""}"></div>
 
             ${isSelected ? `
                 <div class="timeline-bottom">
 
-                    <span class="timeline-title">
+                    ${session.title ? `
+                        <span class="timeline-title">
 
-                        ${session.title}
+                            ${session.title}
 
-                    </span>
+                        </span>
+                    ` : ""}
 
-                    <span class="timeline-subtitle">
+                    ${session.subtitle ? `
+                        <span class="timeline-subtitle">
 
-                        ${session.subtitle}
+                            ${session.subtitle}
 
-                    </span>
+                        </span>
+                    ` : ""}
 
                 </div>
             ` : ""}

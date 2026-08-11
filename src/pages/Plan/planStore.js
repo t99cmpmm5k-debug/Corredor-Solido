@@ -1,6 +1,5 @@
 import { getState, setState } from "../../core/state";
-import { week } from "../../data/planData";
-import { isToday } from "../../utils/date";
+import { getTodaySession, getCurrentWeekSessions } from "../../data/workoutStore.js";
 
 export function getSelectedWorkout() {
 
@@ -8,9 +7,11 @@ export function getSelectedWorkout() {
 
     if (!state.selectedWorkout) {
 
+        const sessions = getCurrentWeekSessions();
+
         setState(
             "selectedWorkout",
-            week.find(session => isToday(session.date)) || week[0]
+            getTodaySession() ?? sessions[0] ?? null
         );
 
     }

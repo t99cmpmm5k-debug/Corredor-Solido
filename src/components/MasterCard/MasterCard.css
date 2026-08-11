@@ -33,6 +33,34 @@
 
 }
 
+/* Sin la muesca/cristal recortado por sessionCardOutline.js a propósito
+   — es un estado sin datos, no la tarjeta de sesión real, no necesita el
+   mismo tratamiento visual elaborado. */
+.session-card--empty{
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    min-height:140px;
+
+    padding:24px;
+
+    border-radius:26px;
+
+    background:color-mix(in srgb, var(--card-background) 80%, transparent);
+
+    backdrop-filter:blur(26px);
+    -webkit-backdrop-filter:blur(26px);
+
+    color:var(--text-secondary);
+
+    text-align:center;
+
+}
+
 /* ==========================================================
    CRISTAL — superficie única, recortada por sessionCardOutline.js
    con la silueta completa (muesca + esquinas + lados). Un solo

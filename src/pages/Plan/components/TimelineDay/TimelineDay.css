@@ -106,12 +106,15 @@
    como una sola pieza que continúa bajando).
 ========================*/
 
-.day-stem.easy{ --stem-color:var(--color-success); }
-.day-stem.gym{ --stem-color:#2faeff; }
-.day-stem.series{ --stem-color:#25c8ff; }
-.day-stem.long{ --stem-color:var(--color-warning); }
-.day-stem.rest{ --stem-color:var(--color-text-muted); }
+.day-stem.recovery{ --stem-color:var(--color-text-muted); }
+.day-stem.z2{ --stem-color:var(--color-success); }
+.day-stem.tempo{ --stem-color:var(--color-primary); }
+.day-stem.intervals{ --stem-color:#25c8ff; }
+.day-stem.longRun{ --stem-color:var(--color-warning); }
+.day-stem.race{ --stem-color:var(--color-danger); }
+.day-stem.strength{ --stem-color:#2faeff; }
 .day-stem.free{ --stem-color:var(--color-text-muted); }
+.day-stem.generic{ --stem-color:var(--color-text-muted); }
 
 .day-stem{
 

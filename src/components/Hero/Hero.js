@@ -3,7 +3,7 @@ import "./Hero.css";
 import { themeManager } from "../../theme/themeManager.js";
 import { getHeroData } from "../../data/heroData.js";
 import { WORKOUT_TYPES } from "../../data/workoutTypes.js";
-import { getTodayWorkout } from "../../data/planData.js";
+import { getTodaySession } from "../../data/workoutStore.js";
 import { formatCurrentDate } from "../../utils/date.js";
 import { HERO_IMAGES } from "../../assets/hero";
 
@@ -11,11 +11,11 @@ export function Hero() {
 
     const theme = themeManager.getTheme();
 
-    const todayWorkout = getTodayWorkout();
+    const todaySession = getTodaySession();
 
-    const workout = WORKOUT_TYPES[todayWorkout?.heroType] ?? WORKOUT_TYPES.generic;
+    const workout = WORKOUT_TYPES[todaySession?.type] ?? WORKOUT_TYPES.generic;
 
-    const hero = getHeroData(todayWorkout?.heroType);
+    const hero = getHeroData(todaySession?.type);
 
     return `
 

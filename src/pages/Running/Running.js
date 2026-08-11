@@ -153,11 +153,12 @@ function RunningHistoryRow(workout, shoes) {
 
 }
 
-// Mismos iconos que ya usa WorkoutIcon.js para easy/series/long (un rodaje
-// se ve igual aquí que en el calendario de Plan); tempo/race son propios de
-// Running y no tienen entrada ahí. No se reutiliza WorkoutIcon() en sí —
-// está pensado para el badge circular grande del calendario, no para un
-// icono pequeño dentro de un chip o de una columna del resumen.
+// Mapa propio de Running, independiente de WorkoutIcon.js — no se
+// reutiliza WorkoutIcon() en sí, está pensado para el badge circular
+// grande del calendario de Plan, no para un icono pequeño dentro de un
+// chip o de una columna del resumen. (Ojo: WorkoutIcon.js ya no usa estos
+// mismos ids desde la migración a WORKOUT_TYPES — easy/series/long eran
+// de Plan, aquí siguen siendo los propios de Running.)
 const TYPE_ICON = {
     "": "solar:widget-5-bold-duotone",
     easy: "solar:running-bold-duotone",

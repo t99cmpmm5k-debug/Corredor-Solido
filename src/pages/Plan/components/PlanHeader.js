@@ -1,8 +1,8 @@
 import "./PlanHeader.css";
 import { themeManager } from "../../../theme/themeManager.js";
 import { PLAN_IMAGES } from "../../../assets/plan";
-import { week, weekStartDate, weekEndDate, getLoad } from "../../../data/planData.js";
-import { parseISODate, formatDayMonth, getISOWeekNumber } from "../../../utils/date.js";
+import { getCurrentWeekSessions } from "../../../data/workoutStore.js";
+import { parseISODate, formatISODate, formatDayMonth, getISOWeekNumber, getWeekStartDate } from "../../../utils/date.js";
 
 // Foto-por-tema propia del Plan, misma mecánica que el Hero
 // (themeManager decide el tema, un mapa de imágenes por tema
@@ -11,18 +11,22 @@ export function PlanHeader(timelineHtml = "") {
 
     const theme = themeManager.getTheme();
 
+    const weekStartDate = getWeekStartDate(formatISODate(new Date()));
+    const weekEndDate = formatISODate(
+        (() => {
+            const start = parseISODate(weekStartDate);
+            return new Date(start.getFullYear(), start.getMonth(), start.getDate() + 6);
+        })()
+    );
+
     const weekNumber = getISOWeekNumber(parseISODate(weekStartDate));
     const dateRange = `${formatDayMonth(weekStartDate)} · ${formatDayMonth(weekEndDate)}`;
 
-    const completedCount = week.filter(session => session.status === "completed").length;
-    const totalCount = week.length;
+    const sessions = getCurrentWeekSessions();
+    const completedCount = sessions.filter(session => session.status === "completed").length;
+    const totalCount = sessions.length;
     const completionPercent = totalCount
         ? Math.round((completedCount / totalCount) * 100)
-        : 0;
-
-    const { completed: loadCompleted, total: loadTotal } = getLoad();
-    const loadPercent = loadTotal
-        ? Math.round((loadCompleted / loadTotal) * 100)
         : 0;
 
     return `
@@ -57,7 +61,7 @@ export function PlanHeader(timelineHtml = "") {
 
                 </div>
 
-                <button class="plan-add-button">
+                <button class="plan-add-button" data-action="open-plan-import">
 
                     +
 
@@ -96,30 +100,6 @@ export function PlanHeader(timelineHtml = "") {
                         ${completedCount}/${totalCount} SESIONES
 
                     </small>
-
-                </div>
-
-                <div class="plan-load">
-
-                    <span>
-
-                        CARGA SEMANAL
-
-                    </span>
-
-                    <strong>
-
-                        ${loadCompleted} / ${loadTotal}
-
-                    </strong>
-
-                    <div class="load-bar">
-
-                        <div class="load-fill" style="width:${loadPercent}%"></div>
-
-                    </div>
-
-                    <span class="load-percent">${loadPercent}%</span>
 
                 </div>
 

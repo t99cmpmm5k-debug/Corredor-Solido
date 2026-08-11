@@ -1,5 +1,4 @@
-/* Manda sobre PlanLoadChart, igual que MasterCard manda sobre
-   WeekSummary en la Home — mismo lenguaje (cristal + borde en
+/* Mismo lenguaje visual que MasterCard en la Home (cristal + borde en
    --color-primary + doble halo con --color-glow + franja de luz
    superior), a la intensidad "principal" en vez de la "acompaña". */
 .plan-workout-card{
@@ -176,6 +175,22 @@
       DESCRIPCIÓN
 =========================*/
 
+.plan-workout-card--empty{
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    min-height:120px;
+
+    color:var(--text-secondary);
+
+    text-align:center;
+
+}
+
 .workout-description{
 
     margin:22px 0 28px;
@@ -185,6 +200,11 @@
     line-height:1.65;
 
     font-size:.96rem;
+
+    /* El PDF concatena Objetivo/Estructura/Intensidad/Clave con saltos de
+       línea reales (pdf.js) — sin esto, HTML los colapsa a un solo
+       párrafo corrido. */
+    white-space:pre-wrap;
 
 }
 

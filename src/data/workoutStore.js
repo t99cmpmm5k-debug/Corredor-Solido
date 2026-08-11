@@ -1,6 +1,5 @@
 import { STORES, getAll, put, remove } from "./db.js";
-import { week, weekStartDate } from "./planData.js";
-import { parseISODate, formatISODate } from "../utils/date.js";
+import { parseISODate, formatISODate, getWeekStartDate, getDayAbbreviation } from "../utils/date.js";
 import { generateId } from "../utils/id.js";
 
 const workouts = [];
@@ -49,53 +48,6 @@ function upsertInto(list, storeName, record) {
 
 }
 
-function syncPlanSnapshot() {
-
-    const slotByDate = {};
-    const writes = [];
-
-    week.forEach(session => {
-
-        const slot = slotByDate[session.date] ?? 0;
-        slotByDate[session.date] = slot + 1;
-
-        const existing = plannedSessions.find(
-            ps => ps.date === session.date && ps.slot === slot
-        );
-
-        const isFrozen = existing &&
-            workouts.some(w => w.linkedSessionId === existing.id);
-
-        if (isFrozen) return;
-
-        const record = {
-
-            id: existing ? existing.id : generateId(),
-            date: session.date,
-            slot,
-            weekStartDate,
-
-            day: session.day,
-            type: session.type,
-            title: session.title,
-            subtitle: session.subtitle,
-            heroType: session.heroType,
-            volume: session.volume,
-            load: session.load,
-            metrics: session.metrics,
-            description: session.description,
-            details: session.details
-
-        };
-
-        writes.push(upsertInto(plannedSessions, STORES.plannedSessions, record));
-
-    });
-
-    return Promise.all(writes);
-
-}
-
 export function hydrate() {
 
     if (hydrated) return hydrated;
@@ -114,8 +66,6 @@ export function hydrate() {
         // ahora IndexedDB viene vacía, no es "primera vez" — es sospechoso
         // de que el navegador ha vaciado el almacenamiento por su cuenta.
         possibleDataLoss = workouts.length === 0 && hadDataBefore();
-
-        return syncPlanSnapshot();
 
     }).catch(err => {
 
@@ -178,6 +128,63 @@ export function getSessionStatus(sessionId) {
     if (!session) return "pending";
 
     return parseISODate(session.date) > todayMidnight() ? "upcoming" : "pending";
+
+}
+
+// Enriquece una plannedSession con 3 campos derivados, nunca inventados:
+// day (para mostrar, se deriva de date — no todo origen lo trae ya),
+// status (getSessionStatus ya existente) y volume (distanceKm si lo hay,
+// 0 si no — misma semántica que un día de gimnasio/descanso sin
+// distancia real que aportar al total semanal).
+function withDerivedFields(session) {
+
+    return {
+
+        ...session,
+        day: getDayAbbreviation(session.date),
+        status: getSessionStatus(session.id),
+        volume: session.distanceKm ?? 0
+
+    };
+
+}
+
+export function getCurrentWeekSessions() {
+
+    const currentWeekStart = getWeekStartDate(formatISODate(new Date()));
+
+    return plannedSessions
+        .filter(ps => ps.weekStartDate === currentWeekStart)
+        .sort((a, b) => a.date.localeCompare(b.date) || a.slot - b.slot)
+        .map(withDerivedFields);
+
+}
+
+// null si no hay ninguna sesión planificada hoy — a diferencia del viejo
+// planData.js (que garantizaba una sesión por cada día de la semana), un
+// plan importado no tiene por qué cubrir todos los días.
+export function getTodaySession() {
+
+    const sessions = getSessionsForDate(formatISODate(new Date()));
+    if (sessions.length === 0) return null;
+
+    return withDerivedFields(sessions[0]);
+
+}
+
+// Sustituye a getVolume() de planData.js: goal = suma de volume
+// (distanceKm real) de toda la semana actual, completed = la parte de
+// esa suma ya con status "completed".
+export function getWeekVolume() {
+
+    const sessions = getCurrentWeekSessions();
+
+    const goal = sessions.reduce((sum, s) => sum + s.volume, 0);
+    const completed = sessions
+        .filter(s => s.status === "completed")
+        .reduce((sum, s) => sum + s.volume, 0);
+
+    return { completed, goal };
 
 }
 
@@ -300,6 +307,63 @@ export function updateWorkoutType(id, type) {
 export function retireShoe(id) {
 
     return updateShoe(id, { status: "retired", retiredDate: formatISODate(new Date()) });
+
+}
+
+// Importación de un plan (ver src/importers/plan/): cada sesión ya trae su
+// propia fecha, así que weekStartDate se deriva (lunes de esa semana) en
+// vez de depender del weekStartDate fijo de planData.js. Mismo criterio de
+// slot y de "sesión congelada" que syncPlanSnapshot, para no pisar una
+// sesión que ya tiene un entreno real enlazado — pero mirando también las
+// plannedSessions ya existentes en memoria (no solo el lote importado), no
+// solo las que trae este propio import.
+export function importPlannedSessions(sessions) {
+
+    const slotByDate = {};
+    const writes = [];
+    let written = 0;
+    let skippedFrozen = 0;
+
+    sessions.forEach(session => {
+
+        const slot = slotByDate[session.date] ?? 0;
+        slotByDate[session.date] = slot + 1;
+
+        const existing = plannedSessions.find(
+            ps => ps.date === session.date && ps.slot === slot
+        );
+
+        const isFrozen = existing &&
+            workouts.some(w => w.linkedSessionId === existing.id);
+
+        if (isFrozen) {
+            skippedFrozen += 1;
+            return;
+        }
+
+        const record = {
+
+            id: existing ? existing.id : generateId(),
+            date: session.date,
+            slot,
+            weekStartDate: getWeekStartDate(session.date),
+
+            type: session.type,
+            title: session.title,
+            distanceKm: session.distanceKm,
+            durationSec: session.durationSec,
+            targetPaceSecPerKm: session.targetPaceSecPerKm,
+            targetHrZone: session.targetHrZone,
+            description: session.description
+
+        };
+
+        writes.push(upsertInto(plannedSessions, STORES.plannedSessions, record));
+        written += 1;
+
+    });
+
+    return Promise.all(writes).then(() => ({ written, skippedFrozen }));
 
 }
 

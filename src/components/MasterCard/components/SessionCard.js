@@ -1,4 +1,35 @@
+import { formatSecondsAsClock } from "../../../utils/format.js";
+
+// Mismos iconos Lucide que ya usaba planData.js en sus arrays "metrics"
+// hardcodeados — aquí se construyen desde los campos reales presentes en
+// vez de venir ya hechos, mostrando solo los que de verdad tengan valor.
+function buildMetrics(workout) {
+
+    const metrics = [];
+
+    if (workout.distanceKm != null) {
+        metrics.push({ icon: "map-pinned", label: "Distancia", value: workout.distanceKm, unit: "km" });
+    }
+
+    if (workout.durationSec != null) {
+        metrics.push({ icon: "clock-3", label: "Duración", value: formatSecondsAsClock(workout.durationSec) });
+    }
+
+    if (workout.targetPaceSecPerKm != null) {
+        metrics.push({ icon: "gauge", label: "Ritmo objetivo", value: formatSecondsAsClock(workout.targetPaceSecPerKm), unit: "/km" });
+    }
+
+    if (workout.targetHrZone != null) {
+        metrics.push({ icon: "heart", label: "Zona FC", value: workout.targetHrZone });
+    }
+
+    return metrics;
+
+}
+
 export function SessionCard(workout) {
+
+    const metrics = buildMetrics(workout);
 
     return `
 
@@ -40,27 +71,31 @@ export function SessionCard(workout) {
 
             <i data-lucide="footprints"></i>
 
-            <span>${workout.title}</span>
+            <span>${workout.title ?? "Entrenamiento"}</span>
 
         </div>
 
-        <div class="session-metrics">
+        ${metrics.length ? `
 
-            ${workout.metrics.map(metric => `
+            <div class="session-metrics">
 
-                <div class="metric">
+                ${metrics.map(metric => `
 
-                    <i data-lucide="${metric.icon}"></i>
+                    <div class="metric">
 
-                    <strong>${metric.value}${metric.unit ? `<span class="metric-unit">${metric.unit}</span>` : ""}</strong>
+                        <i data-lucide="${metric.icon}"></i>
 
-                    <span>${metric.label}</span>
+                        <strong>${metric.value}${metric.unit ? `<span class="metric-unit">${metric.unit}</span>` : ""}</strong>
 
-                </div>
+                        <span>${metric.label}</span>
 
-            `).join("")}
+                    </div>
 
-        </div>
+                `).join("")}
+
+            </div>
+
+        ` : ""}
 
         <button class="session-button">
 

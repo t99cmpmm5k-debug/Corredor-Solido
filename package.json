@@ -20,6 +20,7 @@
     "iconify-icon": "^3.0.2",
     "lucide": "^1.27.0",
     "lucide-static": "^1.27.0",
+    "pdfjs-dist": "^6.2.108",
     "tesseract.js": "^7.0.0"
   }
 }

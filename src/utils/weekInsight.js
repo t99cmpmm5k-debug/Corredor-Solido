@@ -1,17 +1,22 @@
 import { isToday, formatWeekday } from "./date.js";
 
 // Etiqueta natural por tipo de sesión, para construir frases legibles.
+// Ids de WORKOUT_TYPES (src/data/workoutTypes.js) — frases conversacionales
+// propias, distintas de las etiquetas de la pantalla de revisión a propósito.
 const TYPE_LABEL = {
-    long:"la tirada larga",
-    easy:"un rodaje",
-    series:"series",
-    gym:"fuerza",
-    rest:"descanso",
-    free:"día libre"
+    longRun:"la tirada larga",
+    z2:"un rodaje",
+    intervals:"series",
+    tempo:"un tempo",
+    strength:"fuerza",
+    recovery:"descanso",
+    race:"la carrera",
+    free:"día libre",
+    generic:"tu entrenamiento"
 };
 
 function labelFor(session) {
-    return TYPE_LABEL[session.type] ?? session.title.toLowerCase();
+    return TYPE_LABEL[session.type] ?? session.title?.toLowerCase() ?? "tu sesión";
 }
 
 // Coletilla según cuánto pesa esa sesión sobre el objetivo semanal.
@@ -54,7 +59,7 @@ export function buildWeekInsight(week, { completed, goal }) {
 
         parts.push(`Hoy toca ${labelFor(todaySession)} de ${todaySession.volume} km.`);
 
-    } else if (todaySession.type === "gym") {
+    } else if (todaySession.type === "strength") {
 
         parts.push(`Hoy toca ${labelFor(todaySession)}: no suma kilómetros, pero suma.`);
 
