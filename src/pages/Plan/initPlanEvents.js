@@ -66,6 +66,58 @@ function looksLikeJson(text) {
 
 const PDF_SIGNATURE = "%PDF-";
 
+// TEMPORAL — diagnóstico del bug real de iPhone. El issue de pdf.js más
+// parecido al nuestro lo describe como "Unhandled Promise Rejection", no
+// como un rechazo normal de la promesa que awaiteamos — puede que el
+// fallo salte dentro de una promesa interna de pdfjs-dist (p. ej. al
+// arrancar el Worker) que nunca se conecta con la que esperamos, y por
+// tanto ningún try/catch normal lo vea. Esto captura cualquier error o
+// promesa sin capturar que ocurra mientras dura `run()`, venga de donde
+// venga, y lo convierte en un rechazo normal que sí podemos mostrar.
+function withGlobalErrorCapture(run) {
+
+    return new Promise((resolve, reject) => {
+
+        let settled = false;
+
+        function finish(fn, value) {
+            if (settled) return;
+            settled = true;
+            window.removeEventListener("error", onError);
+            window.removeEventListener("unhandledrejection", onRejection);
+            fn(value);
+        }
+
+        function onError(event) {
+            finish(reject, describeGlobalError("error global", event.error ?? event.message));
+        }
+
+        function onRejection(event) {
+            finish(reject, describeGlobalError("promesa sin capturar", event.reason));
+        }
+
+        window.addEventListener("error", onError);
+        window.addEventListener("unhandledrejection", onRejection);
+
+        run().then(
+            value => finish(resolve, value),
+            err => finish(reject, err)
+        );
+
+    });
+
+}
+
+function describeGlobalError(stage, err) {
+
+    const name = err?.name || typeof err;
+    const message = err?.message || String(err);
+    const stack = err?.stack ? ` | stack: ${String(err.stack).slice(0, 300)}` : "";
+
+    return new Error(`[${stage}] ${name}: ${message}${stack}`);
+
+}
+
 // Un PDF es binario — leerlo entero con file.text() como JSON/CSV
 // produciría texto corrupto. Se lee primero solo la firma (5 bytes,
 // barato) para decidir la rama antes de tocar el resto del archivo.
@@ -134,7 +186,7 @@ async function handlePdfFileSelected(file) {
 
     try {
 
-        const text = await extractPdfText(file);
+        const text = await withGlobalErrorCapture(() => extractPdfText(file));
         const plan = importPlan("pdf", text);
 
         setParsedPlan(plan);
