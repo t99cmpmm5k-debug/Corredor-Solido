@@ -2,7 +2,20 @@ import { normalizeText } from "./text.js";
 
 const WEEKDAYS = ["lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"];
 
-const DAY_HEADER_RE = /^([A-Za-zÁÉÍÓÚáéíóú]+)\s+(\d{1,2})\s*-\s*(.+)$/;
+// Cabecera de sesión — dos formas confirmadas contra dos PDFs reales de
+// distinta generación del mismo generador (ChatGPT), probadas en este
+// orden (la ambigua es más específica, debe intentarse primero):
+// "Sábado 15 o domingo 16 de agosto - Tirada larga - 13 km" (dos días
+// posibles reales, no un error de formato) y "Jueves 6 de agosto -
+// Rodaje fácil de recuperación - 7 km" / "Martes 11 - 8 km en Zona 2"
+// (con o sin mes dentro de la propia cabecera).
+const AMBIGUOUS_HEADER_RE = /^([A-Za-zÁÉÍÓÚáéíóú]+)\s+(\d{1,2})\s+o\s+([A-Za-zÁÉÍÓÚáéíóú]+)\s+(\d{1,2})\s+de\s+([A-Za-zÁÉÍÓÚáéíóú]+)\s*-\s*(.+)$/i;
+const SIMPLE_HEADER_RE = /^([A-Za-zÁÉÍÓÚáéíóú]+)\s+(\d{1,2})(?:\s+de\s+([A-Za-zÁÉÍÓÚáéíóú]+))?\s*-\s*(.+)$/i;
+
+// El número de sesión ("1", "2"...), cuando aparece, vive en su propia
+// línea justo antes de la cabecera — no pegado a la fecha en la misma
+// línea (confirmado contra el segundo PDF real).
+const SESSION_NUMBER_RE = /^\d{1,2}$/;
 
 const MONTH_YEAR_RE = /(\d{1,2})\s*-\s*(\d{1,2})\s+([A-Za-zÁÉÍÓÚáéíóú]+)\s+(\d{4})/;
 
@@ -17,26 +30,59 @@ const MONTH_NAMES_ES = {
 // en la misma línea.
 const KNOWN_LABELS = ["objetivo", "estructura", "intensidad", "clave"];
 
-// Heurística de cierre de sección (p. ej. "REGLAS DE AJUSTE") — la única
-// del parser que es una suposición, no una lectura literal. Se aplica
-// solo al cuerpo de la ÚLTIMA sesión (las demás ya están perfectamente
-// acotadas por la siguiente cabecera) para no cortar por error el texto
-// legítimo de una sesión intermedia que use mayúsculas para énfasis.
+// Heurística de cierre de sección (p. ej. "REGLAS DE AJUSTE",
+// "ORGANIZACIÓN CON EL GIMNASIO", "TIRADA LARGA SIGUIENTE") — la única
+// del parser que es una suposición, no una lectura literal. Se aplica a
+// TODAS las sesiones (no solo la última: confirmado contra un segundo
+// PDF real que un heading de este tipo puede aparecer también ENTRE dos
+// sesiones, no solo al final del documento) — con dos PDFs reales de
+// evidencia y cero casos donde una sesión legítima tuviera una frase
+// corta en mayúsculas dentro de su propio texto, el riesgo de recortar
+// contenido real de una sesión intermedia por error se acepta.
 const HEADING_LIKE_RE = /^[A-ZÁÉÍÓÚÑ\s]{4,40}$/;
 
 function isKnownLabelLine(line) {
     return KNOWN_LABELS.includes(normalizeText(line));
 }
 
+// Devuelve null si la línea no es una cabecera real. Si lo es:
+// - Ambigua: { titleText, ambiguous:true, ambiguousText }
+// - Simple: { titleText, ambiguous:false, dayNumber, monthName }
+//   (monthName es null si la cabecera no trae mes propio)
 function isDayHeaderLine(line) {
 
-    const match = line.match(DAY_HEADER_RE);
-    if (!match) return null;
+    const ambiguous = line.match(AMBIGUOUS_HEADER_RE);
+    if (ambiguous) {
 
-    const weekday = normalizeText(match[1]);
-    if (!WEEKDAYS.includes(weekday)) return null;
+        const weekday1 = normalizeText(ambiguous[1]);
+        const weekday2 = normalizeText(ambiguous[3]);
 
-    return { dayNumber: Number(match[2]), titleText: match[3].trim() };
+        if (WEEKDAYS.includes(weekday1) && WEEKDAYS.includes(weekday2)) {
+            return {
+                titleText: ambiguous[6].trim(),
+                ambiguous: true,
+                ambiguousText: `${ambiguous[1]} ${ambiguous[2]} o ${ambiguous[3]} ${ambiguous[4]} de ${ambiguous[5]}`
+            };
+        }
+
+    }
+
+    const simple = line.match(SIMPLE_HEADER_RE);
+    if (simple) {
+
+        const weekday = normalizeText(simple[1]);
+        if (!WEEKDAYS.includes(weekday)) return null;
+
+        return {
+            titleText: simple[4].trim(),
+            ambiguous: false,
+            dayNumber: Number(simple[2]),
+            monthName: simple[3] || null
+        };
+
+    }
+
+    return null;
 
 }
 
@@ -52,11 +98,8 @@ function extractMonthYear(text) {
 
 }
 
-function buildIsoDate(monthYear, dayNumber) {
+function buildIsoDate(month, year, dayNumber) {
 
-    if (!monthYear) return null;
-
-    const { month, year } = monthYear;
     const date = new Date(year, month - 1, dayNumber);
 
     // Descarta fechas que no existen de verdad (p. ej. día 31 en un mes
@@ -94,8 +137,8 @@ function extractDistanceKm(titleText) {
 // el orden en que aparezcan, por si la extracción de una tabla de 2
 // columnas las intercalase de forma distinta al orden visual). Devuelve
 // también el texto que quedó detrás del corte de cierre de sección
-// (`trailingText`), si `detectTrailingHeading` está activo y se detectó.
-function parseSessionBody(bodyLines, detectTrailingHeading) {
+// (`trailingText`), si se detectó uno.
+function parseSessionBody(bodyLines) {
 
     const sectionLines = { objetivo: [], estructura: [], intensidad: [], clave: [] };
     const trailingLines = [];
@@ -115,7 +158,7 @@ function parseSessionBody(bodyLines, detectTrailingHeading) {
             return;
         }
 
-        if (detectTrailingHeading && currentLabel && HEADING_LIKE_RE.test(line)) {
+        if (currentLabel && HEADING_LIKE_RE.test(line)) {
             stopped = true;
             trailingLines.push(line);
             return;
@@ -174,47 +217,101 @@ export function parsePlanFromPdfText(text) {
 
     const planName = lines.slice(0, titleLineCount).join(" ");
 
+    // Si la línea justo antes de una cabecera es un número suelto (el
+    // número de sesión, en su propia línea), no pertenece al cuerpo de
+    // la sesión ANTERIOR — precedingBoundary excluye esa línea al
+    // calcular dónde termina esa sesión previa.
     const headers = [];
     lines.forEach((line, index) => {
+
         const parsed = isDayHeaderLine(line);
-        if (parsed) headers.push({ ...parsed, lineIndex: index });
+        if (!parsed) return;
+
+        const hasNumberPrefix = index > 0 && SESSION_NUMBER_RE.test(lines[index - 1]);
+
+        headers.push({
+            ...parsed,
+            lineIndex: index,
+            precedingBoundary: hasNumberPrefix ? index - 1 : index
+        });
+
     });
 
     if (headers.length === 0) {
         throw new Error("No se han reconocido sesiones en este PDF — puede que el formato no coincida con lo esperado.");
     }
 
-    // Mes/año se buscan en el TEXTO COMPLETO sin dividir en líneas: en el
-    // documento real el año queda en la línea siguiente al mes ("AGOSTO"
-    // / "2026"), y \s ya incluye el salto de línea entre ambos.
-    const monthYear = extractMonthYear(text);
+    // Mes/año a nivel de documento se buscan en el TEXTO COMPLETO sin
+    // dividir en líneas (el año a veces queda en la línea siguiente al
+    // mes, y \s ya incluye el salto de línea entre ambos) — sigue siendo
+    // el único sitio de donde puede salir el AÑO: ninguno de los PDFs
+    // reales vistos hasta ahora lo trae dentro de una cabecera de sesión.
+    const documentMonthYear = extractMonthYear(text);
 
     const planWarnings = [];
 
-    const preHeaderText = lines.slice(titleLineCount, headers[0].lineIndex).join(" ").trim();
+    const preHeaderText = lines.slice(titleLineCount, headers[0].precedingBoundary).join(" ").trim();
     if (preHeaderText) {
         planWarnings.push(`Contexto general del documento, no asignado a ninguna sesión: "${preHeaderText}"`);
     }
 
-    if (!monthYear) {
-        planWarnings.push("No se pudo determinar el mes y el año del plan a partir del título — revisa la fecha de cada sesión.");
-    }
+    // Dos motivos de "sin fecha" bien distintos, con avisos de plan
+    // separados — no basta con "falta alguna fecha": una sesión ambigua
+    // (ya tiene su propio aviso por sesión) no debe disparar el aviso de
+    // "falta el año" si el año sí se conocía.
+    let anyMissingDueToYear = false;
+    let anyDateUnresolvable = false;
 
     const sessions = headers.map((header, index) => {
 
         const isLast = index === headers.length - 1;
         const bodyStart = header.lineIndex + 1;
-        const bodyEnd = isLast ? lines.length : headers[index + 1].lineIndex;
+        const bodyEnd = isLast ? lines.length : headers[index + 1].precedingBoundary;
         const bodyLines = lines.slice(bodyStart, bodyEnd);
 
-        const { description, trailingText } = parseSessionBody(bodyLines, isLast);
+        const { description, trailingText } = parseSessionBody(bodyLines);
 
-        if (isLast && trailingText) {
-            planWarnings.push(`Contenido adicional al final del documento, no asignado a ninguna sesión: "${trailingText}"`);
+        if (trailingText) {
+            planWarnings.push(`Contenido adicional no asignado a ninguna sesión: "${trailingText}"`);
         }
 
-        const date = buildIsoDate(monthYear, header.dayNumber);
         const distanceKm = extractDistanceKm(header.titleText);
+        const importWarnings = [];
+
+        let date = null;
+        let dateConfidence = null;
+
+        if (header.ambiguous) {
+
+            importWarnings.push(`Fecha ambigua: "${header.ambiguousText}" — hay más de un día posible, indícala tú abajo.`);
+
+        } else {
+
+            const month = header.monthName
+                ? MONTH_NAMES_ES[normalizeText(header.monthName)] ?? null
+                : documentMonthYear?.month ?? null;
+
+            const year = documentMonthYear?.year ?? null;
+
+            if (month != null && year != null) {
+                date = buildIsoDate(month, year, header.dayNumber);
+            }
+
+            if (!date) {
+
+                if (month != null && year == null) {
+                    anyMissingDueToYear = true;
+                } else {
+                    anyDateUnresolvable = true;
+                }
+
+                importWarnings.push("No se pudo determinar la fecha completa de esta sesión — indícala tú abajo.");
+
+            } else {
+                dateConfidence = 0.7;
+            }
+
+        }
 
         const session = {
             date,
@@ -227,21 +324,24 @@ export function parsePlanFromPdfText(text) {
             description
         };
 
-        const importWarnings = [];
-        if (!date) {
-            importWarnings.push("No se pudo determinar la fecha completa de esta sesión — indícala tú abajo.");
-        }
-
         return {
             ...session,
             fieldMeta: buildFieldMeta({
-                dateConfidence: date != null ? 0.7 : null,
+                dateConfidence,
                 distanceConfidence: distanceKm != null ? 0.85 : null
             }),
             importWarnings
         };
 
     });
+
+    if (anyMissingDueToYear) {
+        planWarnings.push("Se reconoce el día y el mes de cada sesión, pero no se ha encontrado el año en ningún sitio del documento — revisa las fechas.");
+    }
+
+    if (anyDateUnresolvable) {
+        planWarnings.push("No se pudo determinar el mes y el año del plan a partir del título — revisa la fecha de cada sesión.");
+    }
 
     return { planName, sessions, planWarnings };
 
