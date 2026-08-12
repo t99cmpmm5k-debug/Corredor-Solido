@@ -19,14 +19,14 @@ export const PLAN_SESSION_REVIEW_FIELDS = [
     { key: "durationSec", label: "Duración", unit: "min:seg", type: "clock" },
     { key: "targetPaceSecPerKm", label: "Ritmo objetivo", unit: "/km", type: "clock" },
     { key: "targetHrZone", label: "Zona de FC", type: "text" },
-    { key: "description", label: "Descripción", type: "text" }
+    { key: "description", label: "Descripción", type: "textarea" }
 ];
 
 export function parseSessionFieldValue(field, rawText) {
 
     const trimmed = String(rawText ?? "").trim();
 
-    if (field.type === "date" || field.type === "text" || field.type === "select") return trimmed || null;
+    if (field.type === "date" || field.type === "text" || field.type === "textarea" || field.type === "select") return trimmed || null;
     if (field.type === "clock") return parseClockToSeconds(trimmed);
 
     if (trimmed === "") return null;
@@ -66,6 +66,32 @@ function renderFieldControl(field, sessionIndex, value, isMissing) {
                 `).join("")}
 
             </select>
+
+        `;
+
+    }
+
+    if (field.type === "textarea") {
+
+        // Contenido entre etiquetas, no un atributo value — un <input> de
+        // una sola línea recorta visualmente un texto largo (el bug real:
+        // la descripción del PDF concatena Objetivo/Estructura/Intensidad/
+        // Clave, mucho más larga que una línea). Altura real la ajusta
+        // autoResizeTextarea() en initPlanEvents.js tras cada render.
+        // </textarea> literal escapado — es lo único que rompería el
+        // contenido en bruto de un textarea, el resto de caracteres no
+        // se interpretan como marcado ahí dentro.
+        const safeValue = String(value).replace(/<\/textarea/gi, "&lt;/textarea");
+
+        return `
+
+            <textarea
+                class="review-textarea"
+                data-session="${sessionIndex}"
+                data-field="${field.key}"
+                rows="1"
+                placeholder="${isMissing ? "Sin dato" : ""}"
+            >${safeValue}</textarea>
 
         `;
 

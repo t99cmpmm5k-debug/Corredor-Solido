@@ -202,6 +202,17 @@ async function handlePdfFileSelected(file) {
 
 }
 
+// Un <textarea> de una sola fila no muestra el texto completo cuando es
+// largo (recorta visualmente, bug real con la descripción concatenada de
+// un PDF) — se ajusta la altura a mano al contenido real en vez de fiarlo
+// a una propiedad CSS (field-sizing:content) sin soporte fiable en Safari.
+function autoResizeTextarea(textarea) {
+
+    textarea.style.height = "auto";
+    textarea.style.height = `${textarea.scrollHeight}px`;
+
+}
+
 function performPlanImport() {
 
     const plan = getParsedPlan();
@@ -292,6 +303,13 @@ export function initPlanEvents() {
     document.querySelectorAll('[data-action="confirm-plan-import"]').forEach(button => {
 
         button.addEventListener("click", performPlanImport);
+
+    });
+
+    document.querySelectorAll(".review-textarea").forEach(textarea => {
+
+        autoResizeTextarea(textarea);
+        textarea.addEventListener("input", () => autoResizeTextarea(textarea));
 
     });
 
