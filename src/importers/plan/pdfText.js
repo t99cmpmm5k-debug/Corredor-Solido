@@ -20,6 +20,37 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
 
 const MIN_TEXT_LENGTH = 20;
 
+// page.getTextContent() de pdfjs-dist usa internamente
+// "for await (const value of readableStream)" — depende de que
+// ReadableStream sea iterable de forma asíncrona (Symbol.asyncIterator),
+// una característica de la API de Streams del navegador (no del lenguaje
+// JS, así que el polyfill de Promise.withResolvers de la build legacy no
+// la cubre) con soporte históricamente tardío y parcheado en Safari.
+// Verificado leyendo el propio código fuente instalado
+// (node_modules/pdfjs-dist/legacy/build/pdf.mjs) tras un stack trace real
+// de un iPhone que señalaba exactamente a getTextContent. Se evita del
+// todo llamando a streamTextContent() (mismo dato, expone el
+// ReadableStream en crudo) y leyéndolo a mano con .getReader()/.read(),
+// la forma universal de consumir un stream — no depende del iterador
+// asíncrono.
+async function readPageText(page) {
+
+    const reader = page.streamTextContent({}).getReader();
+    const items = [];
+
+    for (;;) {
+
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        items.push(...value.items);
+
+    }
+
+    return items;
+
+}
+
 // TEMPORAL — mientras se diagnostica el bug real de iPhone (Safari da
 // "undefined is not a function" sin stack trace útil y no hay Mac a mano
 // para el inspector remoto). Envuelve el error original con la etapa
@@ -59,15 +90,15 @@ export async function extractPdfText(file) {
 
     for (let i = 1; i <= pdf.numPages; i++) {
 
-        let content;
+        let items;
         try {
             const page = await pdf.getPage(i);
-            content = await page.getTextContent();
+            items = await readPageText(page);
         } catch (err) {
             throw describeError(`página ${i}`, err);
         }
 
-        pageTexts.push(content.items.map(item => item.str).join("\n"));
+        pageTexts.push(items.map(item => item.str).join("\n"));
 
     }
 
