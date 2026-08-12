@@ -113,6 +113,18 @@ export function getSessionsForDate(date) {
 
 }
 
+// Sesiones semanales recurrentes (date:null + weekday por diseño, p. ej.
+// una tabla de gimnasio importada de un PDF) — todavía no se muestran en
+// ningún sitio de la UI (Plan/Home solo leen getCurrentWeekSessions(),
+// que las ignora al no tener weekStartDate); este getter existe para
+// poder verificar que se guardaron bien y como base de una fase futura
+// que sí las muestre.
+export function getRecurringSessions() {
+
+    return plannedSessions.filter(ps => ps.date == null && ps.weekday != null);
+
+}
+
 export function getWorkoutForSession(sessionId) {
 
     return workouts.find(w => w.linkedSessionId === sessionId) || null;
@@ -310,6 +322,20 @@ export function retireShoe(id) {
 
 }
 
+function sharedSessionFields(session) {
+
+    return {
+        type: session.type,
+        title: session.title,
+        distanceKm: session.distanceKm,
+        durationSec: session.durationSec,
+        targetPaceSecPerKm: session.targetPaceSecPerKm,
+        targetHrZone: session.targetHrZone,
+        description: session.description
+    };
+
+}
+
 // Importación de un plan (ver src/importers/plan/): cada sesión ya trae su
 // propia fecha, así que weekStartDate se deriva (lunes de esa semana) en
 // vez de depender del weekStartDate fijo de planData.js. Mismo criterio de
@@ -317,14 +343,50 @@ export function retireShoe(id) {
 // sesión que ya tiene un entreno real enlazado — pero mirando también las
 // plannedSessions ya existentes en memoria (no solo el lote importado), no
 // solo las que trae este propio import.
+//
+// Una sesión puede venir sin fecha A PROPÓSITO (date:null + weekday, p. ej.
+// una tabla de gimnasio semanal de un PDF — "los lunes, en general...", no
+// una fecha real) — no es lo mismo que "no se pudo determinar la fecha".
+// No tiene weekStartDate (no hay fecha de la que derivarlo) ni puede
+// "congelarse" (no hay fecha con la que un entreno real pueda enlazarse),
+// así que usa su propia clave de deduplicado, por weekday en vez de por
+// date.
 export function importPlannedSessions(sessions) {
 
     const slotByDate = {};
+    const slotByWeekday = {};
     const writes = [];
     let written = 0;
     let skippedFrozen = 0;
 
     sessions.forEach(session => {
+
+        const isRecurring = session.date == null && session.weekday != null;
+
+        if (isRecurring) {
+
+            const slot = slotByWeekday[session.weekday] ?? 0;
+            slotByWeekday[session.weekday] = slot + 1;
+
+            const existing = plannedSessions.find(
+                ps => ps.date == null && ps.weekday === session.weekday && ps.slot === slot
+            );
+
+            const record = {
+                id: existing ? existing.id : generateId(),
+                date: null,
+                weekday: session.weekday,
+                slot,
+                weekStartDate: null,
+                ...sharedSessionFields(session)
+            };
+
+            writes.push(upsertInto(plannedSessions, STORES.plannedSessions, record));
+            written += 1;
+
+            return;
+
+        }
 
         const slot = slotByDate[session.date] ?? 0;
         slotByDate[session.date] = slot + 1;
@@ -342,20 +404,11 @@ export function importPlannedSessions(sessions) {
         }
 
         const record = {
-
             id: existing ? existing.id : generateId(),
             date: session.date,
             slot,
             weekStartDate: getWeekStartDate(session.date),
-
-            type: session.type,
-            title: session.title,
-            distanceKm: session.distanceKm,
-            durationSec: session.durationSec,
-            targetPaceSecPerKm: session.targetPaceSecPerKm,
-            targetHrZone: session.targetHrZone,
-            description: session.description
-
+            ...sharedSessionFields(session)
         };
 
         writes.push(upsertInto(plannedSessions, STORES.plannedSessions, record));

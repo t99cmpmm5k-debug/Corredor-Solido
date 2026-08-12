@@ -296,8 +296,8 @@ describe("parsePlanFromPdfText — segundo PDF real, formato distinto (número d
 
     const result = parsePlanFromPdfText(REAL_PDF2_TEXT);
 
-    it("reconoce las 4 sesiones pese al número de sesión en línea separada", () => {
-        expect(result.sessions).toHaveLength(4);
+    it("reconoce las 4 sesiones numeradas más las 3 sesiones de gimnasio recurrentes", () => {
+        expect(result.sessions).toHaveLength(7);
     });
 
     it("el nombre del plan es la primera línea, sin arrastrar el número de la primera sesión", () => {
@@ -347,17 +347,47 @@ describe("parsePlanFromPdfText — segundo PDF real, formato distinto (número d
         expect(result.planWarnings.some(w => w.includes("TIRADA LARGA SIGUIENTE"))).toBe(true);
     });
 
-    it("\"ORGANIZACIÓN CON EL GIMNASIO\" y \"REGLAS DE AJUSTE\" no quedan dentro de la sesión 4, salen como planWarning aparte", () => {
+    it("\"ORGANIZACIÓN CON EL GIMNASIO\" no queda dentro de la sesión 4 ni como planWarning — se reconoce como tabla de gimnasio real", () => {
         const sesion4 = result.sessions[3];
         expect(sesion4.description).not.toContain("ORGANIZACIÓN CON EL GIMNASIO");
         expect(sesion4.description).not.toContain("REGLAS DE AJUSTE");
         expect(sesion4.description).toContain("Clave:");
-        expect(result.planWarnings.some(w => w.includes("ORGANIZACIÓN CON EL GIMNASIO"))).toBe(true);
+        expect(result.planWarnings.some(w => w.includes("ORGANIZACIÓN CON EL GIMNASIO"))).toBe(false);
+    });
+
+    it("\"REGLAS DE AJUSTE\" (tras la tabla de gimnasio) sigue sin asignarse a ninguna sesión, como planWarning", () => {
+        expect(result.planWarnings.some(w => w.includes("REGLAS DE AJUSTE"))).toBe(true);
     });
 
     it("hay dos avisos de \"contenido adicional\" distintos, no uno solo mezclando ambos bloques", () => {
         const contenidoAdicional = result.planWarnings.filter(w => w.startsWith("Contenido adicional"));
         expect(contenidoAdicional).toHaveLength(2);
+    });
+
+    it("las 3 sesiones de gimnasio son recurrentes: date null, weekday correcto, type strength, sin el aviso de \"no se pudo determinar la fecha\"", () => {
+
+        const gymSessions = result.sessions.slice(4);
+        expect(gymSessions).toHaveLength(3);
+
+        const lunes = gymSessions.find(s => s.weekday === "lunes");
+        const miercoles = gymSessions.find(s => s.weekday === "miercoles");
+        const viernes = gymSessions.find(s => s.weekday === "viernes");
+
+        expect(lunes.description).toBe("Descanso de carrera. Torso moderado si te encuentras recuperado.");
+        expect(miercoles.description).toBe("Pierna con una serie menos en prensa, peso muerto rumano y zancadas.");
+        expect(viernes.description).toBe("Full body moderado, evitando llegar al fallo antes de la tirada larga.");
+
+        gymSessions.forEach(s => {
+            expect(s.date).toBeNull();
+            expect(s.type).toBe("strength");
+            expect(s.title).toBeNull();
+            expect(s.distanceKm).toBeNull();
+            expect(s.fieldMeta.date.confidence).toBeNull();
+            expect(s.importWarnings).toHaveLength(1);
+            expect(s.importWarnings[0]).toContain("recurrente");
+            expect(s.importWarnings[0]).not.toContain("No se pudo determinar la fecha completa");
+        });
+
     });
 
 });

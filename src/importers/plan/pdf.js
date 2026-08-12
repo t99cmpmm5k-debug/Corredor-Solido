@@ -136,8 +136,9 @@ function extractDistanceKm(titleText) {
 // conocidas (en el orden fijo Objetivo/Estructura/Intensidad/Clave, no en
 // el orden en que aparezcan, por si la extracción de una tabla de 2
 // columnas las intercalase de forma distinta al orden visual). Devuelve
-// también el texto que quedó detrás del corte de cierre de sección
-// (`trailingText`), si se detectó uno.
+// también las líneas que quedaron detrás del corte de cierre de sección
+// (`trailingLines`, sin unir — el llamador decide si son una tabla de
+// gimnasio reconocible o solo contenido genérico a citar en un aviso).
 function parseSessionBody(bodyLines) {
 
     const sectionLines = { objetivo: [], estructura: [], intensidad: [], clave: [] };
@@ -178,7 +179,65 @@ function parseSessionBody(bodyLines) {
         .filter(Boolean)
         .join("\n") || null;
 
-    return { description, trailingText: trailingLines.join(" ").trim() };
+    return { description, trailingLines };
+
+}
+
+// "ORGANIZACIÓN CON EL GIMNASIO" (único patrón de tabla de gimnasio
+// confirmado hasta ahora) trae pares {día de la semana} → {recomendación},
+// con las cabeceras de columna propias de la tabla ("Día", "Trabajo
+// recomendado") intercaladas — se ignoran sin más porque no son un día
+// de la semana real ni pertenecen a una fila ya abierta. Mismo patrón de
+// acumular-hasta-el-siguiente-marcador que parseSessionBody(), para no
+// perder una descripción que se reparta en más de una línea.
+function parseGymTable(lines) {
+
+    const rows = [];
+    const leftoverLines = [];
+
+    let currentWeekday = null;
+    let currentLines = [];
+    let stopped = false;
+
+    function flush() {
+        if (currentWeekday) {
+            const description = currentLines.join(" ").trim();
+            if (description) rows.push({ weekday: currentWeekday, description });
+        }
+        currentLines = [];
+    }
+
+    lines.forEach(line => {
+
+        if (stopped) {
+            leftoverLines.push(line);
+            return;
+        }
+
+        if (HEADING_LIKE_RE.test(line)) {
+            flush();
+            stopped = true;
+            leftoverLines.push(line);
+            return;
+        }
+
+        const normalized = normalizeText(line);
+
+        if (WEEKDAYS.includes(normalized)) {
+            flush();
+            currentWeekday = normalized;
+            return;
+        }
+
+        if (currentWeekday) {
+            currentLines.push(line);
+        }
+
+    });
+
+    flush();
+
+    return { rows, leftoverLines };
 
 }
 
@@ -262,18 +321,16 @@ export function parsePlanFromPdfText(text) {
     let anyMissingDueToYear = false;
     let anyDateUnresolvable = false;
 
-    const sessions = headers.map((header, index) => {
+    const sessions = [];
+
+    headers.forEach((header, index) => {
 
         const isLast = index === headers.length - 1;
         const bodyStart = header.lineIndex + 1;
         const bodyEnd = isLast ? lines.length : headers[index + 1].precedingBoundary;
         const bodyLines = lines.slice(bodyStart, bodyEnd);
 
-        const { description, trailingText } = parseSessionBody(bodyLines);
-
-        if (trailingText) {
-            planWarnings.push(`Contenido adicional no asignado a ninguna sesión: "${trailingText}"`);
-        }
+        const { description, trailingLines } = parseSessionBody(bodyLines);
 
         const distanceKm = extractDistanceKm(header.titleText);
         const importWarnings = [];
@@ -324,14 +381,65 @@ export function parsePlanFromPdfText(text) {
             description
         };
 
-        return {
+        sessions.push({
             ...session,
             fieldMeta: buildFieldMeta({
                 dateConfidence,
                 distanceConfidence: distanceKm != null ? 0.85 : null
             }),
             importWarnings
-        };
+        });
+
+        // Se procesa DESPUÉS de empujar la sesión propia de esta cabecera,
+        // no antes — el texto sobrante viene textualmente después de ella
+        // en el documento (p. ej. la tabla de gimnasio aparece tras la
+        // última sesión numerada), así que el orden del array de salida
+        // coincide con el orden de lectura real.
+        if (trailingLines.length > 0) {
+
+            // Único patrón de "sección adicional" con estructura propia
+            // reconocida hasta ahora — el resto de headings (REGLAS DE
+            // AJUSTE, TIRADA LARGA SIGUIENTE...) siguen siendo solo texto
+            // a citar en un aviso, no datos a importar.
+            const isGymTable = HEADING_LIKE_RE.test(trailingLines[0]) && normalizeText(trailingLines[0]).includes("gimnasio");
+
+            if (isGymTable) {
+
+                const { rows, leftoverLines } = parseGymTable(trailingLines.slice(1));
+
+                rows.forEach(row => {
+
+                    sessions.push({
+                        date: null,
+                        weekday: row.weekday,
+                        type: "strength",
+                        title: null,
+                        distanceKm: null,
+                        durationSec: null,
+                        targetPaceSecPerKm: null,
+                        targetHrZone: null,
+                        description: row.description,
+                        fieldMeta: buildFieldMeta({ dateConfidence: null, distanceConfidence: null }),
+                        importWarnings: [`Sesión semanal recurrente ("${row.weekday}") — no tiene una fecha concreta en el documento, se repite cada semana.`]
+                    });
+
+                });
+
+                const leftoverText = leftoverLines.join(" ").trim();
+                if (leftoverText) {
+                    planWarnings.push(`Contenido adicional no asignado a ninguna sesión: "${leftoverText}"`);
+                }
+
+            } else {
+
+                const trailingText = trailingLines.join(" ").trim();
+                if (trailingText) {
+                    planWarnings.push(`Contenido adicional no asignado a ninguna sesión: "${trailingText}"`);
+                }
+
+            }
+
+        }
 
     });
 
