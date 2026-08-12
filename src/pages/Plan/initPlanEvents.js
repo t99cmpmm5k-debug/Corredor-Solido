@@ -1,9 +1,11 @@
 import { setSelectedWorkout } from "./planStore";
-import { rerender } from "../../core/router";
+import { rerender, navigate } from "../../core/router";
 
 import { importPlan } from "../../importers/plan/index.js";
 import { importPlannedSessions, getCurrentWeekSessions } from "../../data/workoutStore.js";
 import { PLAN_SESSION_REVIEW_FIELDS, parseSessionFieldValue } from "./components/PlanImportReviewStep.js";
+import { Running } from "../Running/Running.js";
+import { openDetail as openRunningDetail } from "../Running/initRunningEvents.js";
 
 import {
     getImportStep,
@@ -156,6 +158,16 @@ function autoResizeTextarea(textarea) {
 
 }
 
+// Salta de página (router global) y, ya en Running, abre directamente su
+// vista de detalle (estado propio de runningStore.js, ajeno al router) —
+// dos renders seguidos, mismo patrón que ya encadena el resto de la app.
+function viewSessionWorkout(workoutId) {
+
+    navigate(Running);
+    openRunningDetail(workoutId);
+
+}
+
 function performPlanImport() {
 
     const plan = getParsedPlan();
@@ -242,6 +254,14 @@ export function initPlanEvents() {
             updateImportSessionField(sessionIndex, field.key, parseSessionFieldValue(field, input.value));
             rerender();
 
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="view-session-workout"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+            viewSessionWorkout(button.dataset.workoutId);
         });
 
     });

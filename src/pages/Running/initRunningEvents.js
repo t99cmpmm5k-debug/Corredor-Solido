@@ -38,7 +38,7 @@ const DETAIL_HISTORY_STATE = { runningDetail: true };
 const SHOES_HISTORY_STATE = { runningShoes: true };
 const HISTORY_TABLE_HISTORY_STATE = { runningHistoryTable: true };
 
-function openDetail(workoutId) {
+export function openDetail(workoutId) {
 
     setDetailWorkoutId(workoutId);
     setWizardStep("detail");

@@ -3,6 +3,7 @@ import "./PlanWorkoutCard.css";
 import { isToday, formatDayMonth } from "../../../utils/date.js";
 import { formatSecondsAsClock } from "../../../utils/format.js";
 import { WorkoutIcon } from "../../../components/WorkoutIcon/WorkoutIcon.js";
+import { getWorkoutForSession } from "../../../data/workoutStore.js";
 
 // Icono por lo que dice la etiqueta, no por posición — cada tipo de
 // sesión trae las suyas (planData.js) y antes se pintaban con un array
@@ -74,6 +75,11 @@ export function PlanWorkoutCard(workout) {
     }
 
     const details = buildDetails(workout);
+
+    // Solo hay "detalle" real que mostrar cuando la sesión ya tiene un
+    // entreno de verdad enlazado (linkedSessionId) — antes de eso la
+    // tarjeta ya enseña todo lo que hay (título/descripción/tipo).
+    const linkedWorkout = getWorkoutForSession(workout.id);
 
     return `
 
@@ -151,11 +157,19 @@ export function PlanWorkoutCard(workout) {
 
             ` : ""}
 
-            <button class="workout-button">
+            ${linkedWorkout ? `
 
-                VER DETALLES DE LA SESIÓN
+                <button
+                    class="workout-button"
+                    data-action="view-session-workout"
+                    data-workout-id="${linkedWorkout.id}"
+                >
 
-            </button>
+                    VER DETALLES DE LA SESIÓN
+
+                </button>
+
+            ` : ""}
 
         </section>
 
