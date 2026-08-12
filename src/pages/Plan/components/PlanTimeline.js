@@ -13,7 +13,7 @@ const TIMELINE_TYPE_COLOR = {
     recovery: "var(--color-text-muted)",
     z2: "var(--color-success)",
     tempo: "var(--color-primary)",
-    intervals: "#25c8ff",
+    intervals: "#ff7a33",
     longRun: "var(--color-warning)",
     race: "var(--color-danger)",
     strength: "#2faeff",

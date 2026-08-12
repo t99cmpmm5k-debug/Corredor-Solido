@@ -206,6 +206,14 @@
 
     font-size:.96rem;
 
+    /* Explícito a propósito: no encontré ninguna regla en este archivo ni
+       en los estilos globales que centre este párrafo, pero se ve
+       centrado/descuadrado en un iPhone real — puede ser un caso más de
+       comportamiento distinto en Safari móvil que no puedo reproducir sin
+       el dispositivo. Fijarlo aquí no tiene coste y lo deja a salvo de
+       cualquier herencia que se me haya escapado. */
+    text-align:left;
+
     /* El PDF concatena Objetivo/Estructura/Intensidad/Clave con saltos de
        línea reales (pdf.js) — sin esto, HTML los colapsa a un solo
        párrafo corrido. */

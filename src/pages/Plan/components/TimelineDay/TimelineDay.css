@@ -109,7 +109,7 @@
 .day-stem.recovery{ --stem-color:var(--color-text-muted); }
 .day-stem.z2{ --stem-color:var(--color-success); }
 .day-stem.tempo{ --stem-color:var(--color-primary); }
-.day-stem.intervals{ --stem-color:#25c8ff; }
+.day-stem.intervals{ --stem-color:#ff7a33; }
 .day-stem.longRun{ --stem-color:var(--color-warning); }
 .day-stem.race{ --stem-color:var(--color-danger); }
 .day-stem.strength{ --stem-color:#2faeff; }
