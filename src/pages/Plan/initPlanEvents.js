@@ -161,7 +161,10 @@ function performPlanImport() {
     const plan = getParsedPlan();
     if (!plan) return;
 
-    const missingDate = plan.sessions.some(s => !s.date);
+    // Una sesión recurrente (weekday, p. ej. una tabla de gimnasio semanal
+    // de un PDF) no tiene fecha A PROPÓSITO — no cuenta como "sin fecha"
+    // para este guard, solo las que de verdad no se pudieron determinar.
+    const missingDate = plan.sessions.some(s => !s.date && !s.weekday);
 
     if (missingDate) {
         setImportSaveError("Hay sesiones sin fecha — rellénala en todas antes de confirmar.");

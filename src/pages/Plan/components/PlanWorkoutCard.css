@@ -116,7 +116,12 @@
 /* clamp(mínimo legible, se ajusta al ancho real de la columna, tope
    para columnas anchas) — el título se achica hasta que quepa entero;
    solo puede partir por espacios entre palabras (comportamiento por
-   defecto), nunca a mitad de una palabra. */
+   defecto), nunca a mitad de una palabra. Tope reducido (antes 3rem):
+   pensado en su día para títulos cortos y curados ("Fuerza", "Rodaje
+   Z2") que siempre tocaban el máximo — con un título real importado de
+   un PDF ("Rodaje fácil de recuperación - 7 km"), el mismo tope
+   partía el texto en varias líneas enormes y disparaba la altura de
+   toda la tarjeta. */
 .workout-header h2{
 
     margin:8px 0 0;
@@ -129,9 +134,9 @@
 
     color:var(--text-primary);
 
-    font-size:clamp(1.3rem, 17cqi, 3rem);
+    font-size:clamp(1.3rem, 8cqi, 1.75rem);
 
-    line-height:.95;
+    line-height:1.15;
 
     font-weight:800;
 
@@ -205,6 +210,16 @@
        línea reales (pdf.js) — sin esto, HTML los colapsa a un solo
        párrafo corrido. */
     white-space:pre-wrap;
+
+    /* Una descripción larga (el caso normal ahora, viene de un PDF real)
+       ya no estira la tarjeta entera hasta ocupar toda la pantalla —
+       el scroll queda contenido aquí dentro, no se pierde nada del
+       texto, solo deja de dictar la altura de toda la tarjeta. */
+    max-height:32vh;
+
+    overflow-y:auto;
+
+    padding-right:4px;
 
 }
 
