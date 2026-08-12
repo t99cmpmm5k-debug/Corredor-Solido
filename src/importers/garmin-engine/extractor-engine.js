@@ -50,6 +50,13 @@ const CADENCE_UNIT = "[bsp][a-z]{1,4}";
 
 const DISTANCE_NUM = "[0-9]{1,3}[,.][0-9]{1,2}";
 
+// Reserva del caso en que el OCR pierde la coma decimal y lee la distancia
+// como un entero en metros pegado a un punto suelto sin dígitos detrás
+// ("4770." en vez de "5,98 km") — visto real en la pantalla Resumen de un
+// Entrenamiento en pista. Solo se prueba si el patrón en km de arriba ya
+// falló (si hubiera un separador real, DISTANCE_NUM ya lo habría cogido).
+const DISTANCE_METERS_NUM = "[0-9]{3,5}";
+
 // "km" se lee mal con bastante frecuencia ("in", "kin", "krn", "irn"...)
 // — a diferencia de FC/cadencia no hay una unidad alternativa razonable
 // que enumerar, así que aquí directamente no se exige ninguna. La
@@ -68,6 +75,16 @@ export function distance(raw) {
         const value = numberParser(m[1]);
         if (V.distance(value)) return { value, source: m[0], confidence: .98 };
     }
+
+    // Confianza por debajo del umbral de aviso (.9): convertir un entero en
+    // metros sin separador es menos fiable que haber leído la coma real.
+    const meterMatch = text.match(new RegExp(`(${DISTANCE_METERS_NUM})\\.?[\\s\\S]{0,10}?distancia`, "i"));
+    if (meterMatch) {
+        const meters = numberParser(meterMatch[1]);
+        const value = meters != null ? meters / 1000 : null;
+        if (V.distance(value)) return { value, source: meterMatch[0], confidence: .85 };
+    }
+
     return null;
 }
 

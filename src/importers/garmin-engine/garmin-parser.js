@@ -3,6 +3,7 @@ import * as GarminScreenDetector from "./screen-detector.js";
 import * as GarminSummaryParser from "./parser-summary.js";
 import * as GarminStatisticsParser from "./parser-statistics.js";
 import * as GarminSplitsParser from "./parser-splits.js";
+import * as GarminIntervalsParser from "./parser-intervals.js";
 import * as GarminFusion from "./fusion.js";
 
 export function parse(text) {
@@ -24,6 +25,8 @@ export function parse(text) {
         parsed = GarminStatisticsParser.parse(withoutStatusBar);
     } else if (screen.type === "splits") {
         parsed = GarminSplitsParser.parse(withoutStatusBar);
+    } else if (screen.type === "intervals") {
+        parsed = GarminIntervalsParser.parse(withoutStatusBar);
     } else {
         parsed = { parser: "unknown-screen", fields: {} };
     }

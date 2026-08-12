@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { maxHeartRate, cadence, maxCadence, calories } from "./extractor-engine.js";
+import { maxHeartRate, cadence, maxCadence, calories, distance } from "./extractor-engine.js";
 
 describe("maxHeartRate", () => {
 
@@ -114,6 +114,46 @@ describe("calories", () => {
         const text = "Calorias en reposo 56 Calorias activas 364 Total de calorias quemadas 420";
 
         expect(calories(text).value).toBe(420);
+
+    });
+
+});
+
+describe("distance", () => {
+
+    it("cae al patrón de reserva en metros cuando el OCR pierde la coma decimal (bug real, Resumen de un Entrenamiento en pista)", () => {
+
+        // Fragmento real: "4770." — entero en metros pegado a un punto
+        // suelto sin dígitos detrás, en vez de "5,98 km" — DISTANCE_NUM
+        // (que exige separador + dígitos) no lo coge, de ahí la reserva.
+        const text = [
+            "Puerto Lumbreras - Series",
+            "Añadir notas...",
+            "4770.",
+            "Distancia",
+            "164 ppm Y 5:24 km @",
+            "Frecuencia cardiaca media Ritmo medio"
+        ].join("\n");
+
+        const result = distance(text);
+
+        expect(result.value).toBeCloseTo(4.77);
+        expect(result.confidence).toBe(.85);
+
+    });
+
+    it("prefiere el patrón en km normal (coma decimal real) antes que la reserva en metros", () => {
+
+        const result = distance("Distancia recorrida 5,98 km");
+
+        expect(result.value).toBe(5.98);
+        expect(result.confidence).toBe(.98);
+
+    });
+
+    it("devuelve null si no hay ninguna etiqueta de distancia cerca", () => {
+
+        expect(distance("164 ppm 25:46 394 kcal")).toBeNull();
 
     });
 

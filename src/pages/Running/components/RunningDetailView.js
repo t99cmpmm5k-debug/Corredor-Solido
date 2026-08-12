@@ -37,8 +37,12 @@ function chartSplits(workout) {
     const splits = (workout.splits || []).filter(s => s.paceSecPerKm != null);
     if (!splits.length) return [];
 
+    // El heurístico de "vuelta remanente" asume una Vuelta normal cortada a
+    // medias al parar el cronómetro — una Recuperación corta de Intervalos
+    // (segmentType) es dato real, no un remanente, y nunca debe descartarse
+    // por su distancia.
     const last = splits[splits.length - 1];
-    const trimmed = last.distanceKm != null && last.distanceKm < RESIDUAL_LAP_THRESHOLD_KM
+    const trimmed = last.segmentType == null && last.distanceKm != null && last.distanceKm < RESIDUAL_LAP_THRESHOLD_KM
         ? splits.slice(0, -1)
         : splits;
 
@@ -47,6 +51,16 @@ function chartSplits(workout) {
 }
 
 function averagePace(workout, splits) {
+
+    // Un entreno de Intervalos mezcla ritmos de Carrera y Recuperación muy
+    // distintos entre sí — el ritmo medio de Resumen (workout.avgPaceSecPerKm)
+    // también los mezcla, porque la distancia y el tiempo totales de Garmin
+    // incluyen el descanso. Aquí interesa el ritmo real del esfuerzo, así
+    // que se calcula aparte solo con los tramos de Carrera.
+    const workSplits = splits.filter(s => s.segmentType === "work");
+    if (workSplits.length) {
+        return workSplits.reduce((sum, s) => sum + s.paceSecPerKm, 0) / workSplits.length;
+    }
 
     if (workout.avgPaceSecPerKm != null) return workout.avgPaceSecPerKm;
     if (!splits.length) return null;
@@ -156,8 +170,15 @@ function RunningHrOverlay(splits, avgHrRef) {
 
 function RunningPaceChart(splits, avgPaceRef, avgHrRef) {
 
-    const fastestPace = Math.min(...splits.map(s => s.paceSecPerKm));
-    const slowestPace = Math.max(...splits.map(s => s.paceSecPerKm));
+    // Con Recuperación de por medio, "más lento" sería siempre un tramo de
+    // descanso — obvio y sin interés. El destacado de más rápido/más lento
+    // solo compara los tramos de Carrera entre sí cuando hay segmentType.
+    const paceSplits = splits.some(s => s.segmentType)
+        ? splits.filter(s => s.segmentType === "work")
+        : splits;
+
+    const fastestPace = Math.min(...paceSplits.map(s => s.paceSecPerKm));
+    const slowestPace = Math.max(...paceSplits.map(s => s.paceSecPerKm));
     const hasVariation = fastestPace !== slowestPace;
 
     // avgHrRef puede venir de workout.avgHr (media OCR de todo el
@@ -192,8 +213,9 @@ function RunningPaceChart(splits, avgPaceRef, avgHrRef) {
 
                     ${splits.map(split => {
 
-                        const isFastest = hasVariation && split.paceSecPerKm === fastestPace;
-                        const isSlowest = hasVariation && split.paceSecPerKm === slowestPace;
+                        const isRest = split.segmentType === "rest";
+                        const isFastest = !isRest && hasVariation && split.paceSecPerKm === fastestPace;
+                        const isSlowest = !isRest && hasVariation && split.paceSecPerKm === slowestPace;
                         const showValue = isFastest || isSlowest;
 
                         return `
@@ -203,7 +225,7 @@ function RunningPaceChart(splits, avgPaceRef, avgHrRef) {
                                 <span class="pace-chart-value">${showValue ? formatSecondsAsClock(split.paceSecPerKm) : ""}</span>
 
                                 <div
-                                    class="pace-chart-bar ${isFastest ? "is-fastest" : ""} ${isSlowest ? "is-slowest" : ""}"
+                                    class="pace-chart-bar ${isFastest ? "is-fastest" : ""} ${isSlowest ? "is-slowest" : ""} ${isRest ? "is-rest" : ""}"
                                     style="height:${barHeightPx(split.paceSecPerKm, avgPaceRef)}px"
                                 ></div>
 

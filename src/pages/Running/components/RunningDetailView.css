@@ -321,6 +321,15 @@
 
 }
 
+/* Tramo de Recuperación (Intervalos) — mismo lugar en el eje que una
+   Carrera, pero visualmente apagado: no compite con is-fastest/is-slowest,
+   que ya solo se asignan a tramos de Carrera. */
+.pace-chart-bar.is-rest{
+
+    background:color-mix(in srgb, var(--color-text-muted) 45%, transparent);
+
+}
+
 .pace-chart-lap{
 
     color:var(--color-text-muted);

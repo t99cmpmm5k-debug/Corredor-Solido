@@ -2,6 +2,7 @@ import * as GarminSummaryParser from "./parser-summary.js";
 import * as GarminStatisticsParser from "./parser-statistics.js";
 import * as GarminTrainingEffectParser from "./parser-training-effect.js";
 import * as GarminSplitsParser from "./parser-splits.js";
+import * as GarminIntervalsParser from "./parser-intervals.js";
 
 function available(parser) {
     return parser && typeof parser.parse === "function";
@@ -12,7 +13,8 @@ export function get(type) {
         summary: GarminSummaryParser,
         statistics: GarminStatisticsParser,
         training_effect: GarminTrainingEffectParser,
-        splits: GarminSplitsParser
+        splits: GarminSplitsParser,
+        intervals: GarminIntervalsParser
     }[type];
 
     if (available(requested)) return requested;
@@ -29,6 +31,7 @@ export function registered() {
         ["summary", GarminSummaryParser],
         ["statistics", GarminStatisticsParser],
         ["training_effect", GarminTrainingEffectParser],
-        ["splits", GarminSplitsParser]
+        ["splits", GarminSplitsParser],
+        ["intervals", GarminIntervalsParser]
     ].filter(([, parser]) => available(parser)).map(([name]) => name);
 }

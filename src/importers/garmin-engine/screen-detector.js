@@ -7,6 +7,15 @@ export function detect(text) {
         return { type: "summary", confidence: .99 };
     }
 
+    // Pantalla "Intervalos" de un Entrenamiento en pista (Carrera/Recuperación
+    // por tramo). "intervalos" solo también está en la barra de pestañas de
+    // Resumen/Estadísticas de esa misma actividad — se exige además al menos
+    // una fila real con forma de Carrera (nº + tiempo + distancia en metros
+    // + ritmo), el mismo patrón que usa parser-intervals.js para leerlas.
+    if (/\bintervalos\b/.test(n) && /\brecuperacion\b/.test(n) && /\b[0-9]{1,2}\s+carrera\s+[0-9]{1,2}:[0-5][0-9](?:[.,][0-9]+)?\s+[0-9]{1,4}\s+[0-9]{1,2}:[0-5][0-9]\b/.test(n)) {
+        return { type: "intervals", confidence: .97 };
+    }
+
     // "estadisticas" solo no basta — esa palabra aparece en la barra de
     // pestañas de CUALQUIER pantalla (Vueltas, Gráficos, Equipo...), no
     // solo en la propia pantalla de Estadísticas. Igual que "resumen"
