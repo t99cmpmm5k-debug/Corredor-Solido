@@ -2,6 +2,7 @@ import "./MasterCard.css";
 
 import { SessionCard } from "./components/SessionCard.js";
 import { getTodaySession } from "../../data/workoutStore.js";
+import { getState } from "../../core/state.js";
 
 function EmptySessionCard() {
 
@@ -19,7 +20,12 @@ function EmptySessionCard() {
 
 export function MasterCard(){
 
-    const workout = getTodaySession();
+    // Lectura directa de state en vez de planStore.getSelectedWorkout():
+    // ese getter auto-inicializa la selección a sessions[0] si no hay
+    // sesión hoy, y aquí eso mostraría el lunes como si fuera "hoy" en
+    // un día de descanso real. Solo se sustituye getTodaySession() cuando
+    // el usuario ha elegido otro día de verdad (botón "Cambiar").
+    const workout = getState().selectedWorkout ?? getTodaySession();
 
     return `
 

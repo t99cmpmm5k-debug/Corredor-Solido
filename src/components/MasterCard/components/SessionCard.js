@@ -1,5 +1,6 @@
 import { formatSecondsAsClock } from "../../../utils/format.js";
 import { getState } from "../../../core/state.js";
+import { PlanTimeline } from "../../../pages/Plan/components/PlanTimeline.js";
 
 // Mismos iconos Lucide que ya usaba planData.js en sus arrays "metrics"
 // hardcodeados — aquí se construyen desde los campos reales presentes en
@@ -32,6 +33,7 @@ export function SessionCard(workout) {
 
     const metrics = buildMetrics(workout);
     const detailExpanded = getState().sessionDetailExpanded;
+    const weekPickerExpanded = getState().weekPickerExpanded;
 
     return `
 
@@ -59,15 +61,29 @@ export function SessionCard(workout) {
 
             </div>
 
-            <button class="session-change">
+            <button
+                class="session-change"
+                data-action="toggle-week-picker"
+                aria-expanded="${weekPickerExpanded}"
+            >
 
                 <i data-lucide="refresh-cw"></i>
 
-                Cambiar
+                ${weekPickerExpanded ? "Cerrar" : "Cambiar"}
 
             </button>
 
         </header>
+
+        ${weekPickerExpanded ? `
+
+            <div class="session-week-picker">
+
+                ${PlanTimeline(workout)}
+
+            </div>
+
+        ` : ""}
 
         <div class="session-type">
 

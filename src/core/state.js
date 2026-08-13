@@ -10,7 +10,9 @@ const state = {
 
     selectedShoe: null,
 
-    sessionDetailExpanded: false
+    sessionDetailExpanded: false,
+
+    weekPickerExpanded: false
 
 };
 

@@ -275,6 +275,25 @@
 
 }
 
+.session-change[aria-expanded="true"]{
+
+    opacity:1;
+
+    background:color-mix(in srgb, var(--color-primary) 22%, transparent);
+
+}
+
+/* ==========================================================
+   TIRA DE DÍAS (selector de semana — reutiliza PlanTimeline/TimelineDay
+   tal cual, sin duplicar su lógica ni sus estilos)
+========================================================== */
+
+.session-week-picker{
+
+    padding:4px 2px 2px;
+
+}
+
 /* ==========================================================
    CHIP ENTRENAMIENTO
 ========================================================== */
