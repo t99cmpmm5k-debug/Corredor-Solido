@@ -1,4 +1,5 @@
 import { formatSecondsAsClock } from "../../../utils/format.js";
+import { getState } from "../../../core/state.js";
 
 // Mismos iconos Lucide que ya usaba planData.js en sus arrays "metrics"
 // hardcodeados — aquí se construyen desde los campos reales presentes en
@@ -30,6 +31,7 @@ function buildMetrics(workout) {
 export function SessionCard(workout) {
 
     const metrics = buildMetrics(workout);
+    const detailExpanded = getState().sessionDetailExpanded;
 
     return `
 
@@ -94,6 +96,32 @@ export function SessionCard(workout) {
                 `).join("")}
 
             </div>
+
+        ` : ""}
+
+        ${workout.description ? `
+
+            <button
+                class="session-detail-toggle"
+                data-action="toggle-session-detail"
+                aria-expanded="${detailExpanded}"
+            >
+
+                <i data-lucide="chevron-down"></i>
+
+                <span>${detailExpanded ? "Ocultar detalles" : "Ver entrenamiento"}</span>
+
+            </button>
+
+            ${detailExpanded ? `
+
+                <p class="session-detail-description">
+
+                    ${workout.description}
+
+                </p>
+
+            ` : ""}
 
         ` : ""}
 

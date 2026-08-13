@@ -407,6 +407,86 @@
 }
 
 /* ==========================================================
+   VER ENTRENAMIENTO (detalle expandible in-place)
+========================================================== */
+
+.session-detail-toggle{
+
+    display:inline-flex;
+
+    align-items:center;
+
+    gap:6px;
+
+    padding:4px 0;
+
+    border:none;
+
+    background:none;
+
+    color:var(--color-primary);
+
+    font-size:13px;
+
+    font-weight:700;
+
+    cursor:pointer;
+
+    opacity:.85;
+
+    transition:.25s;
+
+}
+
+.session-detail-toggle:hover{
+
+    opacity:1;
+
+}
+
+.session-detail-toggle svg{
+
+    width:15px;
+
+    height:15px;
+
+    transition:transform .25s;
+
+}
+
+.session-detail-toggle[aria-expanded="true"] svg{
+
+    transform:rotate(180deg);
+
+}
+
+.session-detail-description{
+
+    margin:0;
+
+    color:var(--text-secondary);
+
+    line-height:1.6;
+
+    font-size:.92rem;
+
+    text-align:left;
+
+    /* Mismo motivo que .workout-description en PlanWorkoutCard.css: si la
+       sesión trae una descripción larga con saltos de línea reales, no
+       debe colapsarlos a un párrafo corrido ni estirar la tarjeta entera
+       — el scroll queda contenido aquí dentro. */
+    white-space:pre-wrap;
+
+    max-height:26vh;
+
+    overflow-y:auto;
+
+    padding-right:4px;
+
+}
+
+/* ==========================================================
    BOTÓN INICIAR ENTRENAMIENTO
 ========================================================== */
 

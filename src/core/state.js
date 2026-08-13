@@ -8,7 +8,9 @@ const state = {
 
     selectedExercise: null,
 
-    selectedShoe: null
+    selectedShoe: null,
+
+    sessionDetailExpanded: false
 
 };
 
