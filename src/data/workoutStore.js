@@ -316,6 +316,26 @@ export function updateWorkoutType(id, type) {
 
 }
 
+// Asignación retroactiva de zapatilla desde el detalle de una carrera ya
+// guardada — el caso normal es asignarla más tarde, no en el momento de
+// guardar. A diferencia de updateWorkoutType(), shoeId nunca vino de OCR
+// ni de un clasificador (siempre fue una elección del usuario), así que
+// no hay fieldMeta que tocar aquí. getShoeTotalKm() suma sobre este mismo
+// array en memoria en cada llamada, sin caché — el kilometraje de la
+// zapatilla queda al día solo con este cambio, sin trabajo extra.
+export function updateWorkoutShoe(id, shoeId) {
+
+    const workout = workouts.find(w => w.id === id);
+    if (!workout) return null;
+
+    workout.shoeId = shoeId;
+
+    put(STORES.workouts, workout).catch(() => {});
+
+    return workout;
+
+}
+
 export function retireShoe(id) {
 
     return updateShoe(id, { status: "retired", retiredDate: formatISODate(new Date()) });

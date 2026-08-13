@@ -298,6 +298,36 @@ function typeSelector(workout) {
 
 }
 
+// Zapatillas retiradas se excluyen de las opciones (no tiene sentido
+// reasignar una carrera a una zapatilla que ya no se usa), salvo que sea
+// la que este entreno ya tiene asignada — si no, cambiar de pantalla tras
+// retirarla haría "desaparecer" en silencio la que de verdad se usó.
+function shoeSelector(workout, shoes) {
+
+    const options = shoes.filter(shoe => shoe.status !== "retired" || shoe.id === workout.shoeId);
+
+    return `
+
+        <select class="detail-shoe-select" data-action="set-workout-shoe" data-workout-id="${workout.id}">
+
+            <option value="" ${!workout.shoeId ? "selected" : ""}>Sin zapatilla</option>
+
+            ${options.map(shoe => `
+
+                <option value="${shoe.id}" ${workout.shoeId === shoe.id ? "selected" : ""}>
+
+                    ${shoe.brand} ${shoe.model}
+
+                </option>
+
+            `).join("")}
+
+        </select>
+
+    `;
+
+}
+
 function detailStat(icon, label, value) {
 
     return `
@@ -320,7 +350,7 @@ function detailStat(icon, label, value) {
 
 }
 
-export function RunningDetailView(workout) {
+export function RunningDetailView(workout, shoes = []) {
 
     if (!workout) return "";
 
@@ -395,6 +425,8 @@ export function RunningDetailView(workout) {
             ${splits.length >= MIN_SPLITS_FOR_CHART ? RunningPaceChart(splits, avgPaceRef, avgHrRef) : ""}
 
             <div class="detail-stats">
+
+                ${detailStat("solar:running-round-bold-duotone", "Zapatilla", shoeSelector(workout, shoes))}
 
                 ${detailStat("solar:fire-bold-duotone", "Calorías", workout.calories != null ? `${workout.calories} kcal` : "—")}
 

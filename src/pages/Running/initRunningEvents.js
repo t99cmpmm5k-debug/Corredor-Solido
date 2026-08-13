@@ -1,5 +1,5 @@
 import { rerender } from "../../core/router.js";
-import { addWorkout, addShoe, deleteWorkout, findSimilarWorkout, updateWorkoutType, retireShoe, updateShoe } from "../../data/workoutStore.js";
+import { addWorkout, addShoe, deleteWorkout, findSimilarWorkout, updateWorkoutType, updateWorkoutShoe, retireShoe, updateShoe } from "../../data/workoutStore.js";
 import { parseGarminScreenshots, warmUpWorker } from "../../importers/garmin-engine/recognize.js";
 import { readShoePhotoAsDataUrl } from "./shoePhoto.js";
 import { importWorkout } from "../../importers/index.js";
@@ -563,6 +563,21 @@ export function initRunningEvents() {
         select.addEventListener("change", () => {
 
             updateWorkoutType(select.dataset.workoutId, select.value);
+            rerender();
+
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="set-workout-shoe"]').forEach(select => {
+
+        select.addEventListener("change", () => {
+
+            // "Sin zapatilla" vale "" en el <option> (HTML no admite value
+            // null) -- se traduce aquí al null real que usa el resto del
+            // modelo (getSelectedShoeId() por defecto, workout.shoeId sin
+            // asignar), no un string vacío suelto.
+            updateWorkoutShoe(select.dataset.workoutId, select.value || null);
             rerender();
 
         });

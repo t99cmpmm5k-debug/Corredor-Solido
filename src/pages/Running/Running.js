@@ -613,7 +613,7 @@ export function Running() {
     } else if (step === "detail") {
 
         const workout = getWorkouts().find(w => w.id === getDetailWorkoutId());
-        content = RunningDetailView(workout);
+        content = RunningDetailView(workout, getShoes());
 
     } else if (step === "shoes") {
 

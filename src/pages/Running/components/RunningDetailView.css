@@ -526,3 +526,39 @@
     font-size:.72rem;
 
 }
+
+/* Sustituye a .detail-stat-value dentro de la tarjeta "Zapatilla" -- mismo
+   tamaño/peso/color que el resto de stats (no un select con pinta de
+   select), pero editable. Ellipsis porque marca+modelo puede ser largo
+   y la tarjeta ocupa media fila en .detail-stats. */
+.detail-shoe-select{
+
+    display:block;
+
+    width:100%;
+
+    max-width:100%;
+
+    padding:2px 0;
+
+    border:none;
+
+    background:none;
+
+    color:var(--text-primary);
+
+    font-size:.95rem;
+
+    font-weight:800;
+
+    font-family:inherit;
+
+    white-space:nowrap;
+
+    overflow:hidden;
+
+    text-overflow:ellipsis;
+
+    cursor:pointer;
+
+}
