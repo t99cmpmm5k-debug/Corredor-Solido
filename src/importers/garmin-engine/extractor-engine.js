@@ -57,6 +57,15 @@ const DISTANCE_NUM = "[0-9]{1,3}[,.][0-9]{1,2}";
 // falló (si hubiera un separador real, DISTANCE_NUM ya lo habría cogido).
 const DISTANCE_METERS_NUM = "[0-9]{3,5}";
 
+// Pantalla Estadísticas, campo "Distancia real": el OCR sí lee la coma
+// decimal ("4770,00"), pero ahí la unidad es metros, no km como asume
+// DISTANCE_NUM — hay que dividir por 1000, no tomarla tal cual. Solo hacia
+// adelante desde la etiqueta (nunca "número -> etiqueta"): la fila de
+// arriba, "Carga de impacto ... 7370,00 m", tiene la misma forma y queda a
+// menos de 45 caracteres — buscar hacia atrás desde la etiqueta la coge a
+// ella en vez de a la distancia real.
+const DISTANCE_METERS_DECIMAL = "[0-9]{3,5}[,.][0-9]{1,2}";
+
 // "km" se lee mal con bastante frecuencia ("in", "kin", "krn", "irn"...)
 // — a diferencia de FC/cadencia no hay una unidad alternativa razonable
 // que enumerar, así que aquí directamente no se exige ninguna. La
@@ -74,6 +83,16 @@ export function distance(raw) {
         if (!m) continue;
         const value = numberParser(m[1]);
         if (V.distance(value)) return { value, source: m[0], confidence: .98 };
+    }
+
+    // La "m" exige que no haya letra pegada antes (\s* solo consume
+    // espacios) — si la unidad real fuera "km", el carácter previo a la
+    // "m" sería "k", no espacio, y esta regex ya no encontraría match ahí.
+    const metersDecimalMatch = text.match(new RegExp(`distancia real[\\s\\S]{0,15}?(${DISTANCE_METERS_DECIMAL})\\s*m\\b`, "i"));
+    if (metersDecimalMatch) {
+        const meters = numberParser(metersDecimalMatch[1]);
+        const value = meters != null ? meters / 1000 : null;
+        if (V.distance(value)) return { value, source: metersDecimalMatch[0], confidence: .9 };
     }
 
     // Confianza por debajo del umbral de aviso (.9): convertir un entero en

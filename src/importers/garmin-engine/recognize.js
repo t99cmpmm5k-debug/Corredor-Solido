@@ -114,7 +114,7 @@ function hasEnoughFields(parsed) {
         return parsed.data.distance_km != null && parsed.data.total_time != null;
     }
 
-    if (parsed.screen.type === "splits") {
+    if (parsed.screen.type === "splits" || parsed.screen.type === "intervals") {
         return (parsed.extras?.laps?.length || 0) > 0;
     }
 

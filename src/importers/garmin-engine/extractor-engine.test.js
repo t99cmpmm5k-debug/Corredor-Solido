@@ -157,4 +157,47 @@ describe("distance", () => {
 
     });
 
+    it("acepta cualquier ruido entre el número y la etiqueta en la reserva de metros (bug real: espacio y guion en vez de punto)", () => {
+
+        const text = [
+            "4770 -",
+            "Distancia",
+            "164 ppm Y 5:24 km @"
+        ].join("\n");
+
+        const result = distance(text);
+
+        expect(result.value).toBeCloseTo(4.77);
+        expect(result.confidence).toBe(.85);
+
+    });
+
+    it("lee \"Distancia real\" con coma decimal en metros, no en km (bug real, Estadísticas de un Entrenamiento en pista)", () => {
+
+        // "Carga de impacto ... 7370,00 m" tiene la misma forma justo antes
+        // y queda a menos de 45 caracteres de la etiqueta — sin anclar hacia
+        // adelante desde "distancia real", ese número decoy gana.
+        const text = [
+            "CARGA DE IMPACTO AYUDA",
+            "Carga de impacto (MW 7370,00 m",
+            "Distancia real 4770,00 m",
+            "ALTITUD"
+        ].join("\n");
+
+        const result = distance(text);
+
+        expect(result.value).toBeCloseTo(4.77);
+        expect(result.confidence).toBe(.9);
+
+    });
+
+    it("no confunde \"distancia real ... km\" (ya en km) con el caso de metros", () => {
+
+        const result = distance("Distancia real 4,77 km");
+
+        expect(result.value).toBe(4.77);
+        expect(result.confidence).toBe(.98);
+
+    });
+
 });
