@@ -102,14 +102,14 @@ export function SessionCard(workout) {
         ${workout.description ? `
 
             <button
-                class="session-detail-toggle"
+                class="session-button"
                 data-action="toggle-session-detail"
                 aria-expanded="${detailExpanded}"
             >
 
                 <i data-lucide="chevron-down"></i>
 
-                <span>${detailExpanded ? "Ocultar detalles" : "Ver entrenamiento"}</span>
+                ${detailExpanded ? "Ocultar detalles" : "Ver entrenamiento"}
 
             </button>
 
@@ -123,15 +123,17 @@ export function SessionCard(workout) {
 
             ` : ""}
 
-        ` : ""}
+        ` : `
 
-        <button class="session-button">
+            <button class="session-button">
 
-            <i data-lucide="play"></i>
+                <i data-lucide="play"></i>
 
-            Iniciar entrenamiento
+                Iniciar entrenamiento
 
-        </button>
+            </button>
+
+        `}
 
     </div>
 
