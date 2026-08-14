@@ -12,6 +12,8 @@
 
     padding:24px;
 
+    padding-top:calc(24px + env(safe-area-inset-top));
+
     padding-bottom:calc(110px + env(safe-area-inset-bottom));
 
     display:flex;

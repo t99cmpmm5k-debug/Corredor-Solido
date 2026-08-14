@@ -13,6 +13,8 @@
 
     padding:24px;
 
+    padding-top:calc(24px + env(safe-area-inset-top));
+
     display:flex;
 
     flex-direction:column;
