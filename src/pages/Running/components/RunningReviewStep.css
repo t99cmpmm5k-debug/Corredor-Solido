@@ -76,6 +76,14 @@
 
 }
 
+.review-field-estimated{
+
+    color:var(--text-secondary);
+
+    font-size:14px;
+
+}
+
 .review-field-input{
 
     display:flex;

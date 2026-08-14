@@ -328,7 +328,10 @@ function shoeSelector(workout, shoes) {
 
 }
 
-function detailStat(icon, label, value) {
+// badge opcional: { icon, title } -- hoy solo lo usa Temperatura, para
+// avisar cuando el valor viene de la estimación climática de Open-Meteo
+// (ver weatherEstimate.js) y no de una medición real del reloj.
+function detailStat(icon, label, value, badge) {
 
     return `
 
@@ -340,7 +343,13 @@ function detailStat(icon, label, value) {
 
                 <span class="detail-stat-value">${value}</span>
 
-                <span class="detail-stat-label">${label}</span>
+                <span class="detail-stat-label">
+
+                    ${label}
+
+                    ${badge ? `<iconify-icon icon="${badge.icon}" class="detail-stat-badge" title="${badge.title}"></iconify-icon>` : ""}
+
+                </span>
 
             </div>
 
@@ -362,6 +371,9 @@ export function RunningDetailView(workout, shoes = []) {
     const avgPaceRef = averagePace(workout, splits);
     const avgHrRef = averageHr(workout, splits);
     const warnings = workout.importWarnings || [];
+
+    const temperature = workout.temperatureC != null ? `${workout.temperatureC}°C` : "—";
+    const isEstimatedTemp = workout.temperatureC != null && workout.fieldMeta?.temperatureC?.estimated === true;
 
     return `
 
@@ -435,6 +447,13 @@ export function RunningDetailView(workout, shoes = []) {
                 ${detailStat("solar:mountains-bold-duotone", "Desnivel +", workout.elevationGainM != null ? `${workout.elevationGainM} m` : "—")}
 
                 ${detailStat("solar:clock-circle-bold-duotone", "Hora", workout.time || "—")}
+
+                ${detailStat(
+                    "solar:temperature-bold-duotone",
+                    "Temperatura",
+                    temperature,
+                    isEstimatedTemp ? { icon: "solar:cloud-bold-duotone", title: "Estimada por ubicación y fecha — no es una medición real del reloj" } : null
+                )}
 
             </div>
 

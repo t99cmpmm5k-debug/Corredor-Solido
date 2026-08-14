@@ -90,7 +90,8 @@ function renderField(field, workout) {
     const meta = workout.fieldMeta?.[field.key] || { confidence: null, corrected: false };
     const value = displayValue(field, workout);
     const isMissing = workout[field.key] == null;
-    const isLowConfidence = !isMissing && (meta.confidence ?? 0) < LOW_CONFIDENCE_THRESHOLD;
+    const isEstimated = meta.estimated === true;
+    const isLowConfidence = !isMissing && !isEstimated && (meta.confidence ?? 0) < LOW_CONFIDENCE_THRESHOLD;
 
     return `
 
@@ -103,6 +104,8 @@ function renderField(field, workout) {
                 ${isLowConfidence ? `<iconify-icon icon="solar:danger-triangle-bold-duotone" class="review-field-flag" title="Confianza baja — revisar"></iconify-icon>` : ""}
 
                 ${meta.corrected ? `<iconify-icon icon="solar:pen-2-bold-duotone" class="review-field-corrected" title="Editado a mano"></iconify-icon>` : ""}
+
+                ${isEstimated ? `<iconify-icon icon="solar:cloud-bold-duotone" class="review-field-estimated" title="Temperatura estimada por ubicación y fecha — no es una medición real del reloj"></iconify-icon>` : ""}
 
             </span>
 

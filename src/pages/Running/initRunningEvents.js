@@ -4,6 +4,7 @@ import { parseGarminScreenshots, warmUpWorker } from "../../importers/garmin-eng
 import { readShoePhotoAsDataUrl } from "./shoePhoto.js";
 import { importWorkout } from "../../importers/index.js";
 import { REVIEW_FIELDS, parseFieldValue } from "./components/RunningReviewStep.js";
+import { estimateTemperature } from "../../services/weatherEstimate.js";
 
 import {
     resetWizard,
@@ -176,6 +177,32 @@ function looksLikeTcx(text) {
     return /^\s*<\?xml/i.test(text) && text.includes("TrainingCenterDatabase");
 }
 
+// Rellena la temperatura en segundo plano cuando el reloj no la trajo —
+// no bloquea la pantalla de revisión, que ya se muestra con el resto de
+// datos. Sin GPS ni nombre de lugar no hay nada que consultar, así que ni
+// se llama a la red. Comprueba por referencia que el wizard sigue en el
+// mismo workout antes de escribir — si el usuario canceló o reimportó
+// mientras la petición estaba en vuelo, la respuesta llega tarde y no
+// debe pisar nada.
+function maybeEstimateTemperature(workout) {
+
+    if (workout.temperatureC != null) return;
+    if (workout.startLat == null && !workout.location) return;
+
+    estimateTemperature(workout).then(temp => {
+
+        if (temp == null || getWorkout() !== workout) return;
+
+        workout.temperatureC = temp;
+        workout.fieldMeta = workout.fieldMeta || {};
+        workout.fieldMeta.temperatureC = { confidence: null, corrected: false, estimated: true };
+
+        rerender();
+
+    }).catch(() => {});
+
+}
+
 // Un .tcx es un archivo de actividad ya completo por sí solo (a
 // diferencia de las capturas, que necesitan varias para fusionarse) —
 // no pasa por Tesseract ni por el paso "processing", el parseo XML es
@@ -191,6 +218,7 @@ async function handleTcxFileSelected(xmlText) {
 
         setWorkout(workout);
         setWizardStep("review");
+        maybeEstimateTemperature(workout);
 
     } catch (err) {
 
@@ -335,6 +363,7 @@ async function handleFilesSelected(fileList) {
 
         setWorkout(workout);
         setWizardStep("review");
+        maybeEstimateTemperature(workout);
 
     } catch (err) {
         setParseError(err.message);

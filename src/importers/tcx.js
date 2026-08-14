@@ -230,6 +230,7 @@ export function parseTcxWorkout(xmlText) {
         : null;
 
     const points = parseTrackpoints(lapEl);
+    const firstFix = points.find(p => p.lat != null && p.lon != null);
 
     // Notes de Zepp no es un título descriptivo como el que capturan las
     // pantallas de Garmin (aquí es una etiqueta fija del modo de registro,
@@ -257,7 +258,9 @@ export function parseTcxWorkout(xmlText) {
         maxCadence: nsTagValue(lapEl, "maxRunCadence"),
         elevationGainM: computeElevationGain(points),
         // No existe ningún campo de temperatura en TCX de Zepp/Amazfit.
-        temperatureC: null
+        temperatureC: null,
+        startLat: firstFix?.lat ?? null,
+        startLon: firstFix?.lon ?? null
     };
 
     // Al ser XML estructurado no hay confianza de OCR que propagar — es

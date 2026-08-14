@@ -527,6 +527,16 @@
 
 }
 
+.detail-stat .detail-stat-badge{
+
+    color:var(--text-secondary);
+
+    font-size:12px;
+
+    vertical-align:middle;
+
+}
+
 /* Sustituye a .detail-stat-value dentro de la tarjeta "Zapatilla" -- mismo
    tamaño/peso/color que el resto de stats (no un select con pinta de
    select), pero editable. Ellipsis porque marca+modelo puede ser largo

@@ -180,6 +180,7 @@ export function parseGarminWorkout(merged) {
         date,
         time: textOrNull(data.time),
         title,
+        location: textOrNull(data.location),
         type,
         distanceKm,
         durationSec: parseDurationToSeconds(data.total_time),
