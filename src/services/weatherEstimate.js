@@ -9,13 +9,24 @@
 const GEOCODING_URL = "https://geocoding-api.open-meteo.com/v1/search";
 const ARCHIVE_URL = "https://archive-api.open-meteo.com/v1/archive";
 
+// El grupo que usa esta app corre en España (Región de Murcia, Puerto
+// Lumbreras, Águilas...), así que acotamos el geocoding a ese país en vez
+// de buscar en el mundo entero. Sin esto, un topónimo local puede coincidir
+// por casualidad con uno homónimo en otro continente y la API lo devuelve
+// como si fuera un match válido -- pasó de verdad con "Águilas": el
+// geocoding sin restricción encontró "Águilas Ampliación Tercer Parque" en
+// Ciudad de México en vez de Águilas, Murcia, con coordenadas y temperatura
+// "estimada" totalmente ajenas a la carrera real, sin ninguna señal de que
+// el match fuera dudoso.
+const GEOCODING_COUNTRY = "ES";
+
 // Con varias localidades con el mismo nombre (frecuente en español:
 // "San José", "Santa Ana"...) se elige la más poblada en vez de bloquear
 // o de quedarse con la primera del listado, que no viene ordenada por
 // relevancia real.
 async function geocodeLocation(name, onLog) {
 
-    const url = `${GEOCODING_URL}?name=${encodeURIComponent(name)}&count=10&language=es&format=json`;
+    const url = `${GEOCODING_URL}?name=${encodeURIComponent(name)}&count=10&language=es&format=json&countryCode=${GEOCODING_COUNTRY}`;
     onLog(`clima: GET ${url}`);
 
     const res = await fetch(url);
