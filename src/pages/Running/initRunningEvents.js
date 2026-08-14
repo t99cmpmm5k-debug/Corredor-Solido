@@ -184,22 +184,42 @@ function looksLikeTcx(text) {
 // mismo workout antes de escribir — si el usuario canceló o reimportó
 // mientras la petición estaba en vuelo, la respuesta llega tarde y no
 // debe pisar nada.
+// TEMPORAL - appendTiming() vuelca cada paso al panel "Ver registro de
+// estimación de clima" en RunningReviewStep.js, para depurar en el móvil
+// sin devtools (mismo mecanismo que ya existe para los tiempos de OCR).
+// Quitar cuando el flujo esté verificado en real.
 function maybeEstimateTemperature(workout) {
 
-    if (workout.temperatureC != null) return;
-    if (workout.startLat == null && !workout.location) return;
+    if (workout.temperatureC != null) {
+        appendTiming("clima: el entreno ya trae temperatura, no se estima");
+        return;
+    }
 
-    estimateTemperature(workout).then(temp => {
+    if (workout.startLat == null && !workout.location) {
+        appendTiming("clima: sin GPS ni ubicación de texto detectada en la importación -- no se llama a la API");
+        return;
+    }
 
-        if (temp == null || getWorkout() !== workout) return;
+    estimateTemperature(workout, appendTiming).then(temp => {
 
-        workout.temperatureC = temp;
-        workout.fieldMeta = workout.fieldMeta || {};
-        workout.fieldMeta.temperatureC = { confidence: null, corrected: false, estimated: true };
+        if (getWorkout() !== workout) {
+            appendTiming("clima: el workout cambió mientras se esperaba la respuesta -- se descarta");
+            rerender();
+            return;
+        }
+
+        if (temp != null) {
+            workout.temperatureC = temp;
+            workout.fieldMeta = workout.fieldMeta || {};
+            workout.fieldMeta.temperatureC = { confidence: null, corrected: false, estimated: true };
+        }
 
         rerender();
 
-    }).catch(() => {});
+    }).catch(err => {
+        appendTiming(`clima: excepción no controlada: ${err.message}`);
+        rerender();
+    });
 
 }
 

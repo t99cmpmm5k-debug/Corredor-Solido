@@ -2,7 +2,7 @@ import "./RunningReviewStep.css";
 
 import { formatSecondsAsClock, parseClockToSeconds } from "../../../utils/format.js";
 import { RUNNING_WORKOUT_TYPES } from "../../../data/runningWorkoutTypes.js";
-import { getCaptures } from "../runningStore.js";
+import { getCaptures, getTimingLog } from "../runningStore.js";
 
 export const LOW_CONFIDENCE_THRESHOLD = 0.9;
 
@@ -167,6 +167,31 @@ function renderOcrDebug() {
 
 }
 
+// TEMPORAL - misma idea que renderOcrDebug(): volcar en pantalla el
+// progreso de la estimación automática de temperatura (ver
+// maybeEstimateTemperature() en initRunningEvents.js) para depurar en el
+// móvil sin devtools. Reutiliza el mismo timingLog que ya usa el panel de
+// tiempos de OCR (RunningUploadStep.js), que aquí solo se lee, no se
+// resetea. Quitar cuando el flujo esté verificado en real.
+function renderWeatherDebug() {
+
+    const lines = getTimingLog().filter(l => l.startsWith("clima:"));
+    if (!lines.length) return "";
+
+    return `
+
+        <details class="review-ocr-debug" open>
+
+            <summary>Ver registro de estimación de clima</summary>
+
+            <pre>${escapeHtml(lines.join("\n"))}</pre>
+
+        </details>
+
+    `;
+
+}
+
 export function RunningReviewStep(workout) {
 
     const warnings = workout.importWarnings || [];
@@ -210,6 +235,8 @@ export function RunningReviewStep(workout) {
             </div>
 
             ${renderOcrDebug()}
+
+            ${renderWeatherDebug()}
 
             <button class="wizard-primary-button" data-action="go-to-shoe">
 

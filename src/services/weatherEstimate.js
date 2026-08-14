@@ -13,23 +13,36 @@ const ARCHIVE_URL = "https://archive-api.open-meteo.com/v1/archive";
 // "San José", "Santa Ana"...) se elige la más poblada en vez de bloquear
 // o de quedarse con la primera del listado, que no viene ordenada por
 // relevancia real.
-async function geocodeLocation(name) {
+async function geocodeLocation(name, onLog) {
 
     const url = `${GEOCODING_URL}?name=${encodeURIComponent(name)}&count=10&language=es&format=json`;
+    onLog(`clima: GET ${url}`);
+
     const res = await fetch(url);
-    if (!res.ok) return null;
+
+    if (!res.ok) {
+        onLog(`clima: geocoding respondió HTTP ${res.status}`);
+        return null;
+    }
 
     const data = await res.json();
     const results = data.results || [];
-    if (!results.length) return null;
+
+    if (!results.length) {
+        onLog(`clima: geocoding sin resultados para "${name}"`);
+        return null;
+    }
 
     const best = results.reduce((a, b) => (b.population || 0) > (a.population || 0) ? b : a);
+    const label = [best.name, best.admin1, best.country].filter(Boolean).join(", ");
+
+    onLog(`clima: geocoding -> ${label} (lat=${best.latitude.toFixed(3)} lon=${best.longitude.toFixed(3)}, pob=${best.population ?? "?"})`);
 
     return { lat: best.latitude, lon: best.longitude };
 
 }
 
-async function fetchHourlyTemperature(lat, lon, dateStr, hour) {
+async function fetchHourlyTemperature(lat, lon, dateStr, hour, onLog) {
 
     const params = new URLSearchParams({
         latitude: lat,
@@ -40,16 +53,29 @@ async function fetchHourlyTemperature(lat, lon, dateStr, hour) {
         timezone: "auto"
     });
 
-    const res = await fetch(`${ARCHIVE_URL}?${params}`);
-    if (!res.ok) return null;
+    const url = `${ARCHIVE_URL}?${params}`;
+    onLog(`clima: GET ${url}`);
+
+    const res = await fetch(url);
+
+    if (!res.ok) {
+        onLog(`clima: archive-api respondió HTTP ${res.status}`);
+        return null;
+    }
 
     const data = await res.json();
     const times = data.hourly?.time || [];
     const temps = data.hourly?.temperature_2m || [];
-    if (!times.length) return null;
+
+    if (!times.length) {
+        onLog("clima: respuesta sin datos horarios (sin cobertura para esa fecha/lugar)");
+        return null;
+    }
 
     const targetHour = `${dateStr}T${String(hour).padStart(2, "0")}:00`;
     const index = times.indexOf(targetHour);
+
+    onLog(`clima: hora buscada=${targetHour} -> ${index !== -1 ? `encontrada, ${temps[index]}°C` : "no está en la respuesta"}`);
 
     return index !== -1 && temps[index] != null ? temps[index] : null;
 
@@ -57,39 +83,59 @@ async function fetchHourlyTemperature(lat, lon, dateStr, hour) {
 
 // workout: necesita date + (startLat/startLon, o location como texto).
 // Sin fecha, o sin ninguna pista de ubicación, no hay nada que consultar.
-export async function estimateTemperature(workout) {
+// onLog(línea) es opcional -- pensado para volcar el progreso a un panel
+// visible en pantalla (ver initRunningEvents.js/RunningReviewStep.js),
+// no depende de devtools para depurar en el móvil.
+export async function estimateTemperature(workout, onLog = () => {}) {
 
-    if (!workout.date) return null;
+    if (!workout.date) {
+        onLog("clima: sin fecha, no se puede estimar");
+        return null;
+    }
 
     let lat = workout.startLat;
     let lon = workout.startLon;
 
     if (lat == null || lon == null) {
 
-        if (!workout.location) return null;
+        if (!workout.location) {
+            onLog("clima: sin GPS ni ubicación de texto -- no se llama a la API");
+            return null;
+        }
+
+        onLog(`clima: sin GPS, geocodificando ubicación de texto: "${workout.location}"`);
 
         try {
 
-            const geo = await geocodeLocation(workout.location);
+            const geo = await geocodeLocation(workout.location, onLog);
             if (!geo) return null;
 
             lat = geo.lat;
             lon = geo.lon;
 
-        } catch {
+        } catch (err) {
+            onLog(`clima: excepción en geocoding: ${err.message}`);
             return null;
         }
 
+    } else {
+        onLog(`clima: usando GPS del archivo -> lat=${lat.toFixed(3)} lon=${lon.toFixed(3)}`);
     }
 
     const hour = workout.time ? parseInt(workout.time.split(":")[0], 10) : 12;
 
     try {
 
-        const temp = await fetchHourlyTemperature(lat, lon, workout.date, hour);
-        return temp != null ? Math.round(temp * 10) / 10 : null;
+        const temp = await fetchHourlyTemperature(lat, lon, workout.date, hour, onLog);
+        if (temp == null) return null;
 
-    } catch {
+        const rounded = Math.round(temp * 10) / 10;
+        onLog(`clima: temperatura estimada = ${rounded}°C`);
+
+        return rounded;
+
+    } catch (err) {
+        onLog(`clima: excepción consultando Open-Meteo: ${err.message}`);
         return null;
     }
 
