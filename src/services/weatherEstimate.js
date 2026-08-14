@@ -81,6 +81,14 @@ async function fetchHourlyTemperature(lat, lon, dateStr, hour, onLog) {
 
 }
 
+// Quita un único token final suelto de 1-2 letras (categoría de carrera
+// mal separada del nombre del lugar, resto de OCR...) además de colapsar
+// espacios. Deliberadamente conservador -- ver el porqué del reintento
+// único en estimateTemperature().
+function cleanLocationForRetry(text) {
+    return text.replace(/\s+/g, " ").replace(/\s+[A-Za-z]{1,2}$/, "").trim() || null;
+}
+
 // workout: necesita date + (startLat/startLon, o location como texto).
 // Sin fecha, o sin ninguna pista de ubicación, no hay nada que consultar.
 // onLog(línea) es opcional -- pensado para volcar el progreso a un panel
@@ -107,7 +115,24 @@ export async function estimateTemperature(workout, onLog = () => {}) {
 
         try {
 
-            const geo = await geocodeLocation(workout.location, onLog);
+            let geo = await geocodeLocation(workout.location, onLog);
+
+            // Un único reintento acotado, no una cadena de heurísticas cada
+            // vez más agresivas -- recortar más (p. ej. quedarse solo con la
+            // primera palabra) podría geocodificar una ciudad real pero
+            // distinta a la que era, sin que se note en ningún sitio (location
+            // no se revisa en pantalla). Peor un acierto falso que un null.
+            if (!geo) {
+
+                const cleaned = cleanLocationForRetry(workout.location);
+
+                if (cleaned && cleaned !== workout.location) {
+                    onLog(`clima: reintentando geocoding con texto simplificado: "${cleaned}"`);
+                    geo = await geocodeLocation(cleaned, onLog);
+                }
+
+            }
+
             if (!geo) return null;
 
             lat = geo.lat;

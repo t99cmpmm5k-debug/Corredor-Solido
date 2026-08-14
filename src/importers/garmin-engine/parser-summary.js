@@ -48,7 +48,10 @@ export function parse(text) {
         const m = n.match(/\b(carrera|rodaje|running|trail|tempo|series|entrenamiento)\b/);
         if (m) {
             activity = title.match(new RegExp(`\\b${m[1]}\\b`, "i"))?.[0] || m[1];
-            location = title.replace(new RegExp(`\\b${m[1]}\\b`, "i"), "").trim() || null;
+            // .trim() solo limpia los extremos -- si la palabra de actividad
+            // va en medio del título ("Aguilas Carrera A"), quitarla deja un
+            // hueco doble donde estaba ("Aguilas  A") que hay que colapsar.
+            location = title.replace(new RegExp(`\\b${m[1]}\\b`, "i"), "").replace(/\s+/g, " ").trim() || null;
         } else location = title;
     }
 
