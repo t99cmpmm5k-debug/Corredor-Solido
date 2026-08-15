@@ -14,6 +14,28 @@
 
     gap:2px;
 
+    /* Deja el scroll vertical de la página tal cual (el navegador lo
+       sigue gestionando de forma nativa) y reserva el gesto horizontal
+       para el swipe de cambio de semana (ver initTimelineSwipe() en
+       initPlanEvents.js) — sin esto, un primer movimiento horizontal
+       puede quedar ambiguo para el navegador y trabarse contra el
+       scroll de la página. */
+    touch-action:pan-y;
+
+}
+
+/* Placeholder sin días (PlanEmptyState en Plan.js, semana sin plan
+   importado) — mismo contenedor y misma clase para que el swipe
+   funcione igual ahí, con una altura mínima propia porque normalmente
+   la altura la dan los TimelineDay que aquí no existen. */
+.plan-timeline--empty{
+
+    min-height:56px;
+
+    width:100%;
+
+    max-width:280px;
+
 }
 
 /*==================================

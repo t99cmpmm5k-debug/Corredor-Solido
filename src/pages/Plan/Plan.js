@@ -2,10 +2,10 @@ import "./Plan.css";
 
 import { PlanHeader } from "./components/PlanHeader";
 import { PlanTimeline } from "./components/PlanTimeline";
+import "./components/PlanTimeline.css";
 import { PlanConnector } from "./components/PlanConnector";
 import { PlanWorkoutCard } from "./components/PlanWorkoutCard";
 import { PlanImportWizard } from "./components/PlanImportWizard.js";
-import { PlanWeekNav } from "./components/PlanWeekNav.js";
 
 import { getSelectedWorkout, getViewedWeekStart } from "./planStore";
 import { getImportStep } from "./planImportStore.js";
@@ -13,9 +13,10 @@ import { getWeekSessions } from "../../data/workoutStore.js";
 import { BottomNavigation } from "../../components/Navigation/BottomNavigation.js";
 import { parseISODate, addDays, formatDayMonth, getISOWeekNumber } from "../../utils/date.js";
 
-// Lleva sus propias flechas de semana (mismo componente que PlanHeader)
-// para no dejar al usuario atrapado si navega a una semana vacía —
-// si no, "Importar plan" sería la única salida.
+// Lleva su propia tira vacía (misma clase .plan-timeline que
+// PlanTimeline, sin días dentro) para que el swipe de cambio de semana
+// (ver initTimelineSwipe() en initPlanEvents.js) siga funcionando ahí —
+// si no, "Importar plan" sería la única salida de una semana vacía.
 function PlanEmptyState(weekStartDate) {
 
     const weekNumber = getISOWeekNumber(parseISODate(weekStartDate));
@@ -27,7 +28,23 @@ function PlanEmptyState(weekStartDate) {
 
             <h1>PLAN</h1>
 
-            ${PlanWeekNav(weekNumber, dateRange)}
+            <div class="plan-empty-week">
+
+                <span class="plan-empty-week-number">
+
+                    SEMANA ${weekNumber}
+
+                </span>
+
+                <span class="plan-empty-week-date">
+
+                    ${dateRange}
+
+                </span>
+
+            </div>
+
+            <div class="plan-timeline plan-timeline--empty"></div>
 
             <iconify-icon icon="solar:calendar-add-bold-duotone"></iconify-icon>
 

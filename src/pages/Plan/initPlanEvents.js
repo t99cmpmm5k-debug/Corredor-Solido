@@ -184,6 +184,74 @@ function changeViewedWeek(deltaWeeks) {
 
 }
 
+const WEEK_SWIPE_THRESHOLD_PX = 50;
+const HORIZONTAL_INTENT_PX = 10;
+
+// Deslizar la tira de días cambia de semana — deslizar hacia la
+// izquierda avanza (semana siguiente), hacia la derecha retrocede,
+// misma convención que un carrusel/calendario. .plan-timeline lleva
+// touch-action:pan-y (PlanTimeline.css) para que el navegador siga
+// gestionando el scroll vertical de la página tal cual, sin que este
+// listener tenga que pelear por él — solo se intercepta (preventDefault)
+// el gesto una vez confirmado que es predominantemente horizontal.
+function initTimelineSwipe() {
+
+    // Escopado a .plan-page: PlanTimeline también se reutiliza dentro del
+    // selector de día de Home (SessionCard.js) para elegir la sesión del
+    // día — ahí no debe cambiar de semana al deslizar, solo en Plan.
+    const timeline = document.querySelector(".plan-page .plan-timeline");
+    if (!timeline) return;
+
+    let startX = null;
+    let startY = null;
+    let isHorizontal = false;
+
+    timeline.addEventListener("touchstart", event => {
+
+        const touch = event.touches[0];
+        startX = touch.clientX;
+        startY = touch.clientY;
+        isHorizontal = false;
+
+    }, { passive: true });
+
+    timeline.addEventListener("touchmove", event => {
+
+        if (startX == null) return;
+
+        const touch = event.touches[0];
+        const deltaX = touch.clientX - startX;
+        const deltaY = touch.clientY - startY;
+
+        if (!isHorizontal && Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > HORIZONTAL_INTENT_PX) {
+            isHorizontal = true;
+        }
+
+        if (isHorizontal) {
+            event.preventDefault();
+        }
+
+    }, { passive: false });
+
+    timeline.addEventListener("touchend", event => {
+
+        if (startX == null) return;
+
+        const touch = event.changedTouches[0];
+        const deltaX = touch.clientX - startX;
+
+        if (isHorizontal && Math.abs(deltaX) > WEEK_SWIPE_THRESHOLD_PX) {
+            changeViewedWeek(deltaX < 0 ? 1 : -1);
+        }
+
+        startX = null;
+        startY = null;
+        isHorizontal = false;
+
+    });
+
+}
+
 function performPlanImport() {
 
     const plan = getParsedPlan();
@@ -229,17 +297,7 @@ export function initPlanEvents() {
 
     });
 
-    document.querySelectorAll('[data-action="prev-week"]').forEach(button => {
-
-        button.addEventListener("click", () => changeViewedWeek(-1));
-
-    });
-
-    document.querySelectorAll('[data-action="next-week"]').forEach(button => {
-
-        button.addEventListener("click", () => changeViewedWeek(1));
-
-    });
+    initTimelineSwipe();
 
     document.querySelectorAll('[data-action="open-plan-import"]').forEach(button => {
 

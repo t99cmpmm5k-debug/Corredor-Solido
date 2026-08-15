@@ -2,7 +2,6 @@ import "./PlanHeader.css";
 import { themeManager } from "../../../theme/themeManager.js";
 import { PLAN_IMAGES } from "../../../assets/plan";
 import { parseISODate, addDays, formatDayMonth, getISOWeekNumber } from "../../../utils/date.js";
-import { PlanWeekNav } from "./PlanWeekNav.js";
 
 // Foto-por-tema propia del Plan, misma mecánica que el Hero
 // (themeManager decide el tema, un mapa de imágenes por tema
@@ -64,7 +63,21 @@ export function PlanHeader(weekStartDate, sessions, timelineHtml = "") {
 
             <div class="plan-stats">
 
-                ${PlanWeekNav(weekNumber, dateRange, { photo: true })}
+                <div class="plan-week">
+
+                    <span class="week-label">
+
+                        SEMANA ${weekNumber}
+
+                    </span>
+
+                    <span class="week-date">
+
+                        ${dateRange}
+
+                    </span>
+
+                </div>
 
                 <div class="plan-progress">
 
