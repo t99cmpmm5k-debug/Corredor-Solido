@@ -8,6 +8,7 @@ import { Plan } from "../../pages/Plan/Plan.js";
 import { Running } from "../../pages/Running/Running.js";
 import { Profile } from "../../pages/Profile/Profile.js";
 import { Gym } from "../../pages/Gym/Gym.js";
+import { resetPlanView } from "../../pages/Plan/planStore.js";
 
 const PAGES = { home: Home, plan: Plan, running: Running, profile: Profile, gym: Gym };
 
@@ -70,7 +71,15 @@ export function initBottomNavigationEvents() {
 
         button.addEventListener("click", () => {
 
-            navigate(PAGES[button.dataset.page]);
+            const page = PAGES[button.dataset.page];
+
+            // Plan siempre arranca en la semana actual al entrar desde la
+            // navegación — la semana que estuvieras viendo antes no
+            // persiste, para que "Plan" sea siempre predecible ("qué toca
+            // ahora"), no una vuelta a donde lo dejaste.
+            if (page === Plan) resetPlanView();
+
+            navigate(page);
 
         });
 

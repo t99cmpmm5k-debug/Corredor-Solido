@@ -1,6 +1,5 @@
 import "./PlanTimeline.css";
 
-import { getCurrentWeekSessions } from "../../../data/workoutStore.js";
 import { isToday } from "../../../utils/date.js";
 import { TimelineDay } from "./TimelineDay/TimelineDay";
 
@@ -21,9 +20,8 @@ const TIMELINE_TYPE_COLOR = {
     generic: "var(--color-text-muted)"
 };
 
-export function PlanTimeline(selectedWorkout) {
+export function PlanTimeline(selectedWorkout, sessions) {
 
-    const sessions = getCurrentWeekSessions();
     const todayIndex = sessions.findIndex(session => isToday(session.date));
 
     // La línea pasa por el color de cada día, de punta a punta —

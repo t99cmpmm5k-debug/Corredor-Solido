@@ -15,7 +15,7 @@ export function TimelineDay(session, { isToday, isSelected, isCompleted }) {
                 ${isToday ? "is-today" : ""}
                 ${isSelected ? "is-selected" : ""}
             "
-            data-date="${session.date}"
+            data-session-id="${session.id}"
         >
 
             <div class="timeline-top">

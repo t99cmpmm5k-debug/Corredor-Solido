@@ -161,14 +161,29 @@ function withDerivedFields(session) {
 
 }
 
-export function getCurrentWeekSessions() {
+// Por id en vez de por fecha+semana: el timeline de Plan reutiliza este
+// mismo componente dentro del selector de día de Home (ver SessionCard.js),
+// donde "la semana" no tiene por qué coincidir con la que esté navegando
+// Plan en ese momento — el id no depende de en qué semana se pintó.
+export function getSessionById(id) {
 
-    const currentWeekStart = getWeekStartDate(formatISODate(new Date()));
+    const session = plannedSessions.find(ps => ps.id === id);
+    return session ? withDerivedFields(session) : null;
+
+}
+
+export function getWeekSessions(weekStartDate) {
 
     return plannedSessions
-        .filter(ps => ps.weekStartDate === currentWeekStart)
+        .filter(ps => ps.weekStartDate === weekStartDate)
         .sort((a, b) => a.date.localeCompare(b.date) || a.slot - b.slot)
         .map(withDerivedFields);
+
+}
+
+export function getCurrentWeekSessions() {
+
+    return getWeekSessions(getWeekStartDate(formatISODate(new Date())));
 
 }
 

@@ -4,6 +4,8 @@ const state = {
 
     selectedWorkout: null,
 
+    viewedWeekStart: null,
+
     selectedRun: null,
 
     selectedExercise: null,

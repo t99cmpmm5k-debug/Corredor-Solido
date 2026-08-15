@@ -1,8 +1,9 @@
-import { setSelectedWorkout } from "./planStore";
+import { setSelectedWorkout, getViewedWeekStart, setViewedWeekStart } from "./planStore";
 import { rerender, navigate } from "../../core/router";
 
 import { importPlan } from "../../importers/plan/index.js";
-import { importPlannedSessions, getCurrentWeekSessions } from "../../data/workoutStore.js";
+import { importPlannedSessions, getWeekSessions, getSessionById } from "../../data/workoutStore.js";
+import { addDays } from "../../utils/date.js";
 import { PLAN_SESSION_REVIEW_FIELDS, parseSessionFieldValue } from "./components/PlanImportReviewStep.js";
 import { Running } from "../Running/Running.js";
 import { openDetail as openRunningDetail } from "../Running/initRunningEvents.js";
@@ -168,6 +169,21 @@ function viewSessionWorkout(workoutId) {
 
 }
 
+// Cambiar de semana también reasigna la sesión seleccionada — la que
+// hubiera (de la semana anterior) puede no existir ya en la nueva, y
+// "hoy" solo tiene sentido dentro de la semana actual.
+function changeViewedWeek(deltaWeeks) {
+
+    const newWeekStart = addDays(getViewedWeekStart(), deltaWeeks * 7);
+    setViewedWeekStart(newWeekStart);
+
+    const sessions = getWeekSessions(newWeekStart);
+    setSelectedWorkout(sessions[0] ?? null);
+
+    rerender();
+
+}
+
 function performPlanImport() {
 
     const plan = getParsedPlan();
@@ -201,9 +217,7 @@ export function initPlanEvents() {
 
         day.addEventListener("click", () => {
 
-            const workout = getCurrentWeekSessions().find(
-                session => session.date === day.dataset.date
-            );
+            const workout = getSessionById(day.dataset.sessionId);
 
             if (!workout) return;
 
@@ -212,6 +226,18 @@ export function initPlanEvents() {
             rerender();
 
         });
+
+    });
+
+    document.querySelectorAll('[data-action="prev-week"]').forEach(button => {
+
+        button.addEventListener("click", () => changeViewedWeek(-1));
+
+    });
+
+    document.querySelectorAll('[data-action="next-week"]').forEach(button => {
+
+        button.addEventListener("click", () => changeViewedWeek(1));
 
     });
 

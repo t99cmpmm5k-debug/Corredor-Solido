@@ -5,19 +5,29 @@ import { PlanTimeline } from "./components/PlanTimeline";
 import { PlanConnector } from "./components/PlanConnector";
 import { PlanWorkoutCard } from "./components/PlanWorkoutCard";
 import { PlanImportWizard } from "./components/PlanImportWizard.js";
+import { PlanWeekNav } from "./components/PlanWeekNav.js";
 
-import { getSelectedWorkout } from "./planStore";
+import { getSelectedWorkout, getViewedWeekStart } from "./planStore";
 import { getImportStep } from "./planImportStore.js";
-import { getCurrentWeekSessions } from "../../data/workoutStore.js";
+import { getWeekSessions } from "../../data/workoutStore.js";
 import { BottomNavigation } from "../../components/Navigation/BottomNavigation.js";
+import { parseISODate, addDays, formatDayMonth, getISOWeekNumber } from "../../utils/date.js";
 
-function PlanEmptyState() {
+// Lleva sus propias flechas de semana (mismo componente que PlanHeader)
+// para no dejar al usuario atrapado si navega a una semana vacía —
+// si no, "Importar plan" sería la única salida.
+function PlanEmptyState(weekStartDate) {
+
+    const weekNumber = getISOWeekNumber(parseISODate(weekStartDate));
+    const dateRange = `${formatDayMonth(weekStartDate)} · ${formatDayMonth(addDays(weekStartDate, 6))}`;
 
     return `
 
         <section class="plan-page plan-empty-state">
 
             <h1>PLAN</h1>
+
+            ${PlanWeekNav(weekNumber, dateRange)}
 
             <iconify-icon icon="solar:calendar-add-bold-duotone"></iconify-icon>
 
@@ -59,8 +69,11 @@ export function Plan() {
 
     }
 
-    if (getCurrentWeekSessions().length === 0) {
-        return PlanEmptyState();
+    const viewedWeekStart = getViewedWeekStart();
+    const sessions = getWeekSessions(viewedWeekStart);
+
+    if (sessions.length === 0) {
+        return PlanEmptyState(viewedWeekStart);
     }
 
     const selectedWorkout = getSelectedWorkout();
@@ -69,7 +82,7 @@ export function Plan() {
 
         <section class="plan-page">
 
-            ${PlanHeader(PlanTimeline(selectedWorkout))}
+            ${PlanHeader(viewedWeekStart, sessions, PlanTimeline(selectedWorkout, sessions))}
 
             ${PlanConnector()}
 

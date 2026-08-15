@@ -1,28 +1,21 @@
 import "./PlanHeader.css";
 import { themeManager } from "../../../theme/themeManager.js";
 import { PLAN_IMAGES } from "../../../assets/plan";
-import { getCurrentWeekSessions } from "../../../data/workoutStore.js";
-import { parseISODate, formatISODate, formatDayMonth, getISOWeekNumber, getWeekStartDate } from "../../../utils/date.js";
+import { parseISODate, addDays, formatDayMonth, getISOWeekNumber } from "../../../utils/date.js";
+import { PlanWeekNav } from "./PlanWeekNav.js";
 
 // Foto-por-tema propia del Plan, misma mecánica que el Hero
 // (themeManager decide el tema, un mapa de imágenes por tema
 // decide la foto) pero con su propio set de imágenes.
-export function PlanHeader(timelineHtml = "") {
+export function PlanHeader(weekStartDate, sessions, timelineHtml = "") {
 
     const theme = themeManager.getTheme();
 
-    const weekStartDate = getWeekStartDate(formatISODate(new Date()));
-    const weekEndDate = formatISODate(
-        (() => {
-            const start = parseISODate(weekStartDate);
-            return new Date(start.getFullYear(), start.getMonth(), start.getDate() + 6);
-        })()
-    );
+    const weekEndDate = addDays(weekStartDate, 6);
 
     const weekNumber = getISOWeekNumber(parseISODate(weekStartDate));
     const dateRange = `${formatDayMonth(weekStartDate)} · ${formatDayMonth(weekEndDate)}`;
 
-    const sessions = getCurrentWeekSessions();
     const completedCount = sessions.filter(session => session.status === "completed").length;
     const totalCount = sessions.length;
     const completionPercent = totalCount
@@ -71,21 +64,7 @@ export function PlanHeader(timelineHtml = "") {
 
             <div class="plan-stats">
 
-                <div class="plan-week">
-
-                    <span class="week-label">
-
-                        SEMANA ${weekNumber}
-
-                    </span>
-
-                    <span class="week-date">
-
-                        ${dateRange}
-
-                    </span>
-
-                </div>
+                ${PlanWeekNav(weekNumber, dateRange, { photo: true })}
 
                 <div class="plan-progress">
 

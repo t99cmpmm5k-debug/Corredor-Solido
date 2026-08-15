@@ -127,6 +127,23 @@ export function getWeekStartDate(iso) {
 
 /**
  * ==========================================================
+ * Fecha ISO desplazada N días (negativo hacia atrás) — para
+ * navegar semanas (±7) o calcular el domingo de una semana
+ * (+6) a partir de su lunes.
+ * ==========================================================
+ */
+
+export function addDays(iso, days) {
+
+    const date = parseISODate(iso);
+    date.setDate(date.getDate() + days);
+
+    return formatISODate(date);
+
+}
+
+/**
+ * ==========================================================
  * Abreviatura de día de la semana (LUN..DOM) a partir de una
  * fecha — mismas claves que DAY_INITIALS, en sentido inverso
  * (ahí se va de abreviatura a letra suelta, no de fecha a

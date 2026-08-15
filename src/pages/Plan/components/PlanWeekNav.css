@@ -1,0 +1,99 @@
+.plan-week-nav{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+
+}
+
+.plan-week-nav .week-label-group{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:8px;
+
+    min-width:0;
+
+}
+
+.plan-week-nav .week-label{
+
+    font-size:11px;
+
+    font-weight:800;
+
+    color:var(--text-primary);
+
+}
+
+.plan-week-nav .week-date{
+
+    font-size:12px;
+
+    color:var(--text-secondary);
+
+}
+
+/* Sobre la foto del header: mismo blanco + text-shadow que el resto del
+   texto de PlanHeader — el color/--text-secondary por defecto queda
+   ilegible sobre algunas fotos (p.ej. hero-day, cielo claro). */
+.plan-week-nav--photo .week-label{
+
+    color:#FFFFFF;
+
+    text-shadow:0 2px 6px rgba(0,0,0,.45);
+
+}
+
+.plan-week-nav--photo .week-date{
+
+    color:rgba(255,255,255,.85);
+
+    text-shadow:0 2px 6px rgba(0,0,0,.45);
+
+}
+
+.week-nav-button{
+
+    width:32px;
+
+    height:32px;
+
+    flex-shrink:0;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    border-radius:50%;
+
+    border:1px solid color-mix(in srgb, var(--card-border) 14%, transparent);
+
+    background:color-mix(in srgb, var(--card-background) 55%, transparent);
+
+    backdrop-filter:blur(18px);
+    -webkit-backdrop-filter:blur(18px);
+
+    color:var(--color-primary);
+
+    font-size:16px;
+
+    cursor:pointer;
+
+    transition:.25s;
+
+}
+
+.week-nav-button:hover{
+
+    transform:scale(1.05);
+
+    border-color:var(--color-primary);
+
+}
