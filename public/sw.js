@@ -1,4 +1,9 @@
-const CACHE_NAME = "corredor-solido-v1";
+// El sufijo de más abajo lo sustituye scripts/version-sw.js (corre tras
+// "vite build", ver package.json) por el hash corto del commit en cada
+// build -- así activate() de aquí abajo sí purga la caché de la versión
+// anterior en cada despliegue, en vez de quedarse pegado a un nombre
+// fijo que nunca cambia.
+const CACHE_NAME = "corredor-solido-__BUILD_ID__";
 
 self.addEventListener("install", () => {
   self.skipWaiting();
