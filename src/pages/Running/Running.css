@@ -23,81 +23,9 @@
 
 }
 
-.running-header{
-
-    display:flex;
-
-    align-items:center;
-
-    justify-content:space-between;
-
-}
-
-.running-header-title{
-
-    display:flex;
-
-    flex-direction:column;
-
-    gap:2px;
-
-}
-
-.running-header h1{
-
-    color:var(--text-primary);
-
-    font-size:1.6rem;
-
-    font-weight:800;
-
-}
-
-.running-subtitle{
-
-    color:var(--text-secondary);
-
-    font-size:.85rem;
-
-}
-
-.running-header-actions{
-
-    display:flex;
-
-    align-items:center;
-
-    gap:10px;
-
-}
-
-.running-import-button{
-
-    display:inline-flex;
-
-    align-items:center;
-
-    gap:8px;
-
-    padding:10px 18px;
-
-    border:none;
-
-    border-radius:999px;
-
-    background:linear-gradient(90deg, var(--color-primary), var(--color-secondary));
-
-    color:var(--button-text);
-
-    font-weight:700;
-
-    font-size:.9rem;
-
-    cursor:pointer;
-
-    box-shadow:0 8px 20px rgba(0,0,0,.25);
-
-}
+/* .running-header y compañía viven ahora en
+   components/RunningHeader.css (foto de fondo + overlay + glow, mismo
+   mecanismo que PlanHeader.css) — ya no son un header plano. */
 
 /* =========================
    ESTADO VACÍO

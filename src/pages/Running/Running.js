@@ -32,6 +32,7 @@ import { RunningShoeStep } from "./components/RunningShoeStep.js";
 import { RunningDetailView } from "./components/RunningDetailView.js";
 import { RunningProgressCard } from "./components/RunningProgressCard.js";
 import { RunningShoesScreen, ShoePhoto, shoeBarPercent, formatKm } from "./components/RunningShoesScreen.js";
+import { RunningHeader } from "./components/RunningHeader.js";
 
 function shoeLabel(shoeId, shoes) {
 
@@ -417,29 +418,7 @@ function RunningIdleView() {
 
         <div class="running-content">
 
-            <header class="running-header">
-
-                <div class="running-header-title">
-
-                    <h1>Running</h1>
-
-                    <p class="running-subtitle">Compara tu progreso</p>
-
-                </div>
-
-                <div class="running-header-actions">
-
-                    <button class="running-import-button" data-action="open-wizard">
-
-                        <iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon>
-
-                        Importar
-
-                    </button>
-
-                </div>
-
-            </header>
+            ${RunningHeader()}
 
             ${workouts.length === 0 ? (getPossibleDataLoss() ? `
 
