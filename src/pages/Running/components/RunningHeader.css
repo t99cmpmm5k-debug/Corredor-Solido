@@ -15,6 +15,14 @@
        sigue sumando igual — solo baja la parte fija. */
     padding-top:calc(12px + env(safe-area-inset-top));
 
+    /* Cancela el padding-top que .running-content le mete desde fuera
+       (24px + safe-area) para que la foto de fondo llegue al borde
+       superior real de la pantalla — el margen lateral no se toca
+       (sigue viniendo del padding horizontal de .running-content). El
+       padding-top interno de aquí arriba es independiente de esto: sigue
+       empujando el título por debajo de la isla dinámica igual que antes. */
+    margin-top:calc(-1 * (24px + env(safe-area-inset-top)));
+
     isolation:isolate;
 
     background:var(--color-background);
