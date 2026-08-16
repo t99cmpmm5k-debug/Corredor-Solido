@@ -5,11 +5,13 @@ import { PlanTimeline } from "./components/PlanTimeline";
 import "./components/PlanTimeline.css";
 import { PlanConnector } from "./components/PlanConnector";
 import { PlanWorkoutCard } from "./components/PlanWorkoutCard";
+import { PlanMoveDayPicker } from "./components/PlanMoveDayPicker.js";
+import { PlanMovePanel } from "./components/PlanMovePanel.js";
 import { PlanImportWizard } from "./components/PlanImportWizard.js";
 
-import { getSelectedWorkout, getViewedWeekStart } from "./planStore";
+import { getSelectedWorkout, getViewedWeekStart, getMovingSessionId } from "./planStore";
 import { getImportStep } from "./planImportStore.js";
-import { getWeekSessions } from "../../data/workoutStore.js";
+import { getWeekSessions, getSessionById } from "../../data/workoutStore.js";
 import { BottomNavigation } from "../../components/Navigation/BottomNavigation.js";
 import { parseISODate, addDays, formatDayMonth, getISOWeekNumber } from "../../utils/date.js";
 
@@ -89,21 +91,36 @@ export function Plan() {
     const viewedWeekStart = getViewedWeekStart();
     const sessions = getWeekSessions(viewedWeekStart);
 
-    if (sessions.length === 0) {
+    // La sesión que se está moviendo puede pertenecer a una semana
+    // distinta de la que se está viendo ahora (el usuario desliza para
+    // buscar el día destino) — se busca por id, no dentro de `sessions`.
+    const movingSessionId = getMovingSessionId();
+    const movingSession = movingSessionId ? getSessionById(movingSessionId) : null;
+
+    // Una semana sin sesiones normalmente manda a PlanEmptyState — pero
+    // si hay un movimiento en curso, esa semana vacía puede ser
+    // exactamente el destino que el usuario está buscando (p. ej. mover
+    // a una semana de descanso todavía sin plan), así que el selector de
+    // día tiene que seguir pudiéndose ver ahí.
+    if (sessions.length === 0 && !movingSession) {
         return PlanEmptyState(viewedWeekStart);
     }
 
     const selectedWorkout = getSelectedWorkout();
 
+    const timelineHtml = movingSession
+        ? PlanMoveDayPicker(viewedWeekStart, sessions, movingSession)
+        : PlanTimeline(selectedWorkout, sessions);
+
     return `
 
         <section class="plan-page">
 
-            ${PlanHeader(viewedWeekStart, sessions, PlanTimeline(selectedWorkout, sessions))}
+            ${PlanHeader(viewedWeekStart, sessions, timelineHtml)}
 
             ${PlanConnector()}
 
-            ${PlanWorkoutCard(selectedWorkout)}
+            ${movingSession ? PlanMovePanel(movingSession) : PlanWorkoutCard(selectedWorkout)}
 
         </section>
 

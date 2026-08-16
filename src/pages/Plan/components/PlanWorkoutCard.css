@@ -353,3 +353,22 @@
     transform:translateY(-2px);
 
 }
+
+/* Acción secundaria (mover, cancelar) — mismo tamaño que el botón
+   principal pero sin el degradado, para no competir con "VER DETALLES
+   DE LA SESIÓN" como si fuera la acción por defecto de la tarjeta. */
+.workout-button--ghost{
+
+    background:transparent;
+
+    border:1px solid color-mix(in srgb, var(--color-primary) 45%, transparent);
+
+    color:var(--color-primary);
+
+}
+
+.workout-button--ghost:hover{
+
+    background:color-mix(in srgb, var(--color-primary) 10%, transparent);
+
+}

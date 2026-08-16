@@ -50,7 +50,10 @@ export function PlanTimeline(selectedWorkout, sessions) {
 
                 TimelineDay(session, {
                     isToday: index === todayIndex,
-                    isSelected: session.date === selectedWorkout?.date,
+                    // Por id, no por fecha: dos sesiones el mismo día (p. ej.
+                    // tras mover una) no deben quedar ambas marcadas como
+                    // seleccionadas solo por compartir date.
+                    isSelected: session.id === selectedWorkout?.id,
                     isCompleted: session.status === "completed"
                 })
 

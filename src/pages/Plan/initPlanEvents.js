@@ -1,8 +1,8 @@
-import { setSelectedWorkout, getViewedWeekStart, setViewedWeekStart } from "./planStore";
+import { setSelectedWorkout, getViewedWeekStart, setViewedWeekStart, getMovingSessionId, setMovingSessionId } from "./planStore";
 import { rerender, navigate } from "../../core/router";
 
 import { importPlan } from "../../importers/plan/index.js";
-import { importPlannedSessions, getWeekSessions, getSessionById } from "../../data/workoutStore.js";
+import { importPlannedSessions, getWeekSessions, getSessionById, movePlannedSession } from "../../data/workoutStore.js";
 import { addDays } from "../../utils/date.js";
 import { PLAN_SESSION_REVIEW_FIELDS, parseSessionFieldValue } from "./components/PlanImportReviewStep.js";
 import { Running } from "../Running/Running.js";
@@ -184,6 +184,39 @@ function changeViewedWeek(deltaWeeks) {
 
 }
 
+function startMoveSession(sessionId) {
+
+    setMovingSessionId(sessionId);
+    rerender();
+
+}
+
+function cancelMoveSession() {
+
+    setMovingSessionId(null);
+    rerender();
+
+}
+
+// Confirma el movimiento nada más tocar el día destino — sin paso de
+// confirmación aparte, mismo criterio que tocar un día en el timeline
+// normal ya cambia la sesión mostrada sin preguntar. La semana en la
+// que se ejecuta ya es la que el usuario ha elegido deslizando, así
+// que no hace falta tocar viewedWeekStart aquí.
+function moveSessionTo(date) {
+
+    const sessionId = getMovingSessionId();
+    if (!sessionId) return;
+
+    const moved = movePlannedSession(sessionId, date);
+
+    setMovingSessionId(null);
+    setSelectedWorkout(moved ? getSessionById(moved.id) : null);
+
+    rerender();
+
+}
+
 const WEEK_SWIPE_THRESHOLD_PX = 50;
 const HORIZONTAL_INTENT_PX = 10;
 
@@ -353,6 +386,28 @@ export function initPlanEvents() {
     document.querySelectorAll('[data-action="confirm-plan-import"]').forEach(button => {
 
         button.addEventListener("click", performPlanImport);
+
+    });
+
+    document.querySelectorAll('[data-action="start-move-session"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+            startMoveSession(button.dataset.sessionId);
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="cancel-move-session"]').forEach(button => {
+
+        button.addEventListener("click", cancelMoveSession);
+
+    });
+
+    document.querySelectorAll('[data-action="move-session-to"]').forEach(day => {
+
+        day.addEventListener("click", () => {
+            moveSessionTo(day.dataset.date);
+        });
 
     });
 

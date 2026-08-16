@@ -51,6 +51,22 @@ export function setViewedWeekStart(weekStartDate) {
 
 }
 
+// Id de la sesión que se está moviendo a otro día — null cuando no hay
+// ningún movimiento en curso. Aparte de selectedWorkout a propósito: la
+// sesión que se ve en la tarjeta no tiene por qué ser la que se está
+// moviendo (mover no cambia qué hay seleccionado hasta que se confirma).
+export function getMovingSessionId() {
+
+    return getState().movingSessionId;
+
+}
+
+export function setMovingSessionId(id) {
+
+    setState("movingSessionId", id);
+
+}
+
 // Vuelve a la semana actual y olvida cualquier sesión seleccionada de
 // otra semana — se llama solo al entrar en Plan desde la barra de
 // navegación (ver BottomNavigation.js), nunca en cada render de Plan(),
@@ -60,5 +76,6 @@ export function resetPlanView() {
 
     setState("viewedWeekStart", currentWeekStart());
     setState("selectedWorkout", null);
+    setState("movingSessionId", null);
 
 }

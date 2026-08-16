@@ -169,7 +169,19 @@ export function PlanWorkoutCard(workout) {
 
                 </button>
 
-            ` : ""}
+            ` : `
+
+                <button
+                    class="workout-button workout-button--ghost"
+                    data-action="start-move-session"
+                    data-session-id="${workout.id}"
+                >
+
+                    MOVER SESIÓN
+
+                </button>
+
+            `}
 
         </section>
 

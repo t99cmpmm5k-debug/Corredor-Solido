@@ -1,0 +1,37 @@
+.plan-move-panel{
+
+    display:flex;
+
+    flex-direction:column;
+
+    align-items:center;
+
+    gap:18px;
+
+    text-align:center;
+
+}
+
+.plan-move-instructions{
+
+    margin:0;
+
+    color:var(--text-secondary);
+
+    line-height:1.55;
+
+    font-size:.95rem;
+
+}
+
+.plan-move-instructions strong{
+
+    color:var(--text-primary);
+
+}
+
+.plan-move-panel .workout-button{
+
+    margin-top:0;
+
+}

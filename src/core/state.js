@@ -12,6 +12,8 @@ const state = {
 
     selectedShoe: null,
 
+    movingSessionId: null,
+
     sessionDetailExpanded: false,
 
     weekPickerExpanded: false

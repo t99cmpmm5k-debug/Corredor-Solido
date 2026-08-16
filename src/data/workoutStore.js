@@ -357,6 +357,34 @@ export function retireShoe(id) {
 
 }
 
+// Mover una sesión planificada a otro día (misma semana o distinta) —
+// weekStartDate se recalcula siempre desde la nueva fecha, nunca se
+// arrastra el valor viejo (si no, una sesión movida a otra semana
+// seguiría apareciendo en la semana original). slot se reasigna al
+// final de los que ya hubiera ese día destino, para no chocar con su
+// propio slot de origen si por casualidad coincidiera.
+// Una sesión con entreno real enlazado (status "completed") no se
+// puede mover — ya ocurrió en una fecha real; el botón "Mover" ya se
+// oculta para ese caso, esto es la misma regla del lado de los datos.
+export function movePlannedSession(id, newDate) {
+
+    const session = plannedSessions.find(ps => ps.id === id);
+    if (!session) return null;
+
+    if (workouts.some(w => w.linkedSessionId === id)) return null;
+
+    const slot = plannedSessions.filter(ps => ps.date === newDate && ps.id !== id).length;
+
+    session.date = newDate;
+    session.weekStartDate = getWeekStartDate(newDate);
+    session.slot = slot;
+
+    put(STORES.plannedSessions, session).catch(() => {});
+
+    return session;
+
+}
+
 function sharedSessionFields(session) {
 
     return {

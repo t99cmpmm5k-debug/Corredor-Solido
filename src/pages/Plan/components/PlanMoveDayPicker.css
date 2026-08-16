@@ -1,0 +1,111 @@
+/* Mismo contenedor que .plan-timeline (PlanTimeline.css) — hereda gap,
+   touch-action:pan-y y la posición de .timeline-line, que sigue
+   pintándose detrás aunque estas columnas no tengan nodo/tallo propio. */
+.move-day{
+
+    position:relative;
+
+    display:flex;
+
+    flex-direction:column;
+
+    align-items:center;
+
+    justify-content:center;
+
+    flex:1;
+
+    min-width:0;
+
+    height:60px;
+
+    gap:3px;
+
+    border-radius:14px;
+
+    cursor:pointer;
+
+    transition:.2s;
+
+}
+
+.move-day:hover{
+
+    background:rgba(255,255,255,.06);
+
+}
+
+.move-day-name{
+
+    color:rgba(255,255,255,.75);
+
+    font-size:9px;
+
+    font-weight:700;
+
+    letter-spacing:.06em;
+
+    text-transform:uppercase;
+
+    text-shadow:0 2px 6px rgba(0,0,0,.45);
+
+}
+
+.move-day-number{
+
+    color:#FFFFFF;
+
+    font-size:16px;
+
+    font-weight:800;
+
+    line-height:1;
+
+    text-shadow:0 2px 6px rgba(0,0,0,.45);
+
+}
+
+.move-day-dot{
+
+    width:5px;
+
+    height:5px;
+
+    border-radius:50%;
+
+    background:var(--color-primary);
+
+    box-shadow:0 0 6px var(--color-primary);
+
+}
+
+/* Día donde está la sesión ahora mismo — no es un destino válido (sin
+   data-action, ver PlanMoveDayPicker.js), se marca distinto para que
+   quede claro por qué no responde al toque. */
+.move-day.is-current{
+
+    cursor:default;
+
+    background:color-mix(in srgb, var(--color-primary) 18%, transparent);
+
+    border:1px solid color-mix(in srgb, var(--color-primary) 55%, transparent);
+
+}
+
+.move-day.is-current:hover{
+
+    background:color-mix(in srgb, var(--color-primary) 18%, transparent);
+
+}
+
+.move-day-current{
+
+    color:var(--color-primary);
+
+    font-size:8px;
+
+    font-weight:800;
+
+    letter-spacing:.05em;
+
+}
