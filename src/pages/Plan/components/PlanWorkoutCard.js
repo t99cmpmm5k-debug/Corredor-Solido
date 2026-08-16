@@ -111,6 +111,16 @@ export function PlanWorkoutCard(workout) {
 
                 </div>
 
+                <button
+                    class="workout-delete"
+                    data-action="delete-planned-session"
+                    data-session-id="${workout.id}"
+                >
+
+                    <iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon>
+
+                </button>
+
             </div>
 
             ${workout.description ? `

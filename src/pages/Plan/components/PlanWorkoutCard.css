@@ -176,6 +176,42 @@
 
 }
 
+/* Mismo patrón que .history-delete en Running.css (icono suelto, gris
+   que pasa a rojo al pasar el cursor, confirm() nativo al pulsar) —
+   ver el mismo TODO ahí sobre sustituirlo por "pulsa otra vez para
+   confirmar" cuando se retome. */
+.workout-delete{
+
+    flex-shrink:0;
+
+    align-self:flex-start;
+
+    background:none;
+
+    border:none;
+
+    padding:8px;
+
+    cursor:pointer;
+
+    display:flex;
+
+}
+
+.workout-delete iconify-icon{
+
+    font-size:20px;
+
+    color:var(--color-text-muted);
+
+}
+
+.workout-delete:hover iconify-icon{
+
+    color:var(--color-danger);
+
+}
+
 /*=========================
       DESCRIPCIÓN
 =========================*/

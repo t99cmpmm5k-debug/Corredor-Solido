@@ -4,7 +4,8 @@ const initial = () => ({
     parsedPlan: null,
     parseError: null,
     saveError: null,
-    savedCount: null
+    savedCount: null,
+    savedBatchId: null
 
 });
 
@@ -84,6 +85,18 @@ export function getImportSavedCount() {
 export function setImportSavedCount(count) {
 
     wizard.savedCount = count;
+
+}
+
+export function getImportSavedBatchId() {
+
+    return wizard.savedBatchId;
+
+}
+
+export function setImportSavedBatchId(batchId) {
+
+    wizard.savedBatchId = batchId;
 
 }
 

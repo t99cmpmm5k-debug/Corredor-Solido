@@ -6,10 +6,11 @@ import {
     getParsedPlan,
     getImportParseError,
     getImportSaveError,
-    getImportSavedCount
+    getImportSavedCount,
+    getImportSavedBatchId
 } from "../planImportStore.js";
 
-function PlanImportSuccessStep(savedCount) {
+function PlanImportSuccessStep(savedCount, savedBatchId) {
 
     const count = savedCount ?? 0;
 
@@ -51,6 +52,20 @@ function PlanImportSuccessStep(savedCount) {
 
             </button>
 
+            ${count > 0 && savedBatchId ? `
+
+                <button
+                    class="wizard-undo-button"
+                    data-action="undo-plan-import"
+                    data-batch-id="${savedBatchId}"
+                >
+
+                    Deshacer esta importación
+
+                </button>
+
+            ` : ""}
+
         </section>
 
     `;
@@ -62,7 +77,7 @@ export function PlanImportWizard() {
     const step = getImportStep();
 
     if (step === "review") return PlanImportReviewStep(getParsedPlan(), getImportSaveError());
-    if (step === "success") return PlanImportSuccessStep(getImportSavedCount());
+    if (step === "success") return PlanImportSuccessStep(getImportSavedCount(), getImportSavedBatchId());
 
     return PlanImportUploadStep(getImportParseError());
 

@@ -281,6 +281,38 @@ export function deleteWorkout(id) {
 
 }
 
+// Borra solo la sesión PLANIFICADA, nunca el entreno real — son dos
+// registros en dos stores distintos. Si esta sesión ya tenía un
+// entreno real enlazado, ese entreno se queda tal cual en el
+// histórico de Running; su linkedSessionId se queda apuntando a un id
+// que ya no existe (huérfano, inofensivo — nada lo vuelve a buscar
+// desde ese lado, getWorkoutForSession/getSessionStatus solo
+// consultan desde plannedSessions hacia workouts, nunca al revés).
+export function deletePlannedSession(id) {
+
+    const index = plannedSessions.findIndex(ps => ps.id === id);
+    if (index === -1) return;
+
+    plannedSessions.splice(index, 1);
+    remove(STORES.plannedSessions, id).catch(() => {});
+
+}
+
+// Deshacer una importación entera de una sentada — borra todas las
+// sesiones que quedaron marcadas con ese importBatchId (ver
+// importPlannedSessions). Las que esa importación se saltó por estar
+// "congeladas" (ya con entreno real enlazado) nunca tomaron el
+// batchId nuevo, así que quedan fuera y no se tocan.
+export function deletePlannedSessionsByBatch(batchId) {
+
+    const toDelete = plannedSessions.filter(ps => ps.importBatchId === batchId);
+
+    toDelete.forEach(session => deletePlannedSession(session.id));
+
+    return toDelete.length;
+
+}
+
 export function addShoe(shoeInput) {
 
     const shoe = {
@@ -416,6 +448,15 @@ function sharedSessionFields(session) {
 // date.
 export function importPlannedSessions(sessions) {
 
+    // Una por llamada, no por sesión — es lo que agrupa "todo lo que
+    // trajo este archivo" para poder deshacerlo de una vez (ver
+    // deletePlannedSessionsByBatch). Una sesión "congelada" (existing +
+    // isFrozen más abajo) nunca se reescribe, así que se queda con el
+    // batchId de cuando de verdad se creó — reimportar el mismo plan
+    // desplaza el batchId de las que sí se actualizan hacia esta
+    // importación, que es la que "deshacer" debe deshacer.
+    const batchId = generateId();
+
     const slotByDate = {};
     const slotByWeekday = {};
     const writes = [];
@@ -441,6 +482,7 @@ export function importPlannedSessions(sessions) {
                 weekday: session.weekday,
                 slot,
                 weekStartDate: null,
+                importBatchId: batchId,
                 ...sharedSessionFields(session)
             };
 
@@ -471,6 +513,7 @@ export function importPlannedSessions(sessions) {
             date: session.date,
             slot,
             weekStartDate: getWeekStartDate(session.date),
+            importBatchId: batchId,
             ...sharedSessionFields(session)
         };
 
@@ -479,7 +522,7 @@ export function importPlannedSessions(sessions) {
 
     });
 
-    return Promise.all(writes).then(() => ({ written, skippedFrozen }));
+    return Promise.all(writes).then(() => ({ written, skippedFrozen, batchId }));
 
 }
 

@@ -2,7 +2,7 @@ import { setSelectedWorkout, getViewedWeekStart, setViewedWeekStart, getMovingSe
 import { rerender, navigate } from "../../core/router";
 
 import { importPlan } from "../../importers/plan/index.js";
-import { importPlannedSessions, getWeekSessions, getSessionById, movePlannedSession } from "../../data/workoutStore.js";
+import { importPlannedSessions, getWeekSessions, getSessionById, movePlannedSession, deletePlannedSession, deletePlannedSessionsByBatch } from "../../data/workoutStore.js";
 import { addDays } from "../../utils/date.js";
 import { PLAN_SESSION_REVIEW_FIELDS, parseSessionFieldValue } from "./components/PlanImportReviewStep.js";
 import { Running } from "../Running/Running.js";
@@ -17,6 +17,7 @@ import {
     setImportParseError,
     setImportSaveError,
     setImportSavedCount,
+    setImportSavedBatchId,
     updateImportSessionField
 } from "./planImportStore.js";
 
@@ -301,14 +302,51 @@ function performPlanImport() {
         return;
     }
 
-    importPlannedSessions(plan.sessions).then(({ written }) => {
+    importPlannedSessions(plan.sessions).then(({ written, batchId }) => {
 
         setImportSavedCount(written);
+        setImportSavedBatchId(batchId);
         setImportSaveError(null);
         setImportStep("success");
         rerender();
 
     });
+
+}
+
+// La tarjeta de detalle solo muestra la sesión seleccionada — al
+// borrarla, esa selección queda apuntando a un id que ya no existe.
+// Se limpia siempre (no solo si coincide) porque en la práctica
+// siempre coincide: no hay otra forma de llegar a este botón que
+// viendo ya esa misma sesión. Plan() recalcula un valor por defecto
+// razonable (hoy, o la primera de la semana) en el siguiente render.
+function deleteSession(id) {
+
+    if (!window.confirm("¿Borrar esta sesión del plan? No se puede deshacer.")) return;
+
+    deletePlannedSession(id);
+    setSelectedWorkout(null);
+
+    rerender();
+
+}
+
+// Deshace de golpe la importación que se acaba de guardar — solo
+// disponible desde la propia pantalla de éxito del wizard, con el
+// batchId que importPlannedSessions() acaba de devolver (ver
+// performPlanImport). Limpia la selección por la misma razón que
+// deleteSession(): tras cerrar el wizard, cualquier selección previa
+// pudo quedar obsoleta.
+function undoPlanImport(batchId) {
+
+    if (!batchId) return;
+
+    if (!window.confirm("¿Deshacer esta importación? Se borrarán todas las sesiones que se acaban de guardar. No se puede deshacer.")) return;
+
+    deletePlannedSessionsByBatch(batchId);
+    setSelectedWorkout(null);
+
+    closePlanImport();
 
 }
 
@@ -407,6 +445,22 @@ export function initPlanEvents() {
 
         day.addEventListener("click", () => {
             moveSessionTo(day.dataset.date);
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="delete-planned-session"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+            deleteSession(button.dataset.sessionId);
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="undo-plan-import"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+            undoPlanImport(button.dataset.batchId);
         });
 
     });

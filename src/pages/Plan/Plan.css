@@ -281,6 +281,42 @@
 
 }
 
+/* Acción destructiva secundaria, bajo "Cerrar" — deshace de golpe la
+   importación que se acaba de hacer (ver undo-plan-import en
+   initPlanEvents.js). En rojo pero sin relleno, para no competir con
+   "Cerrar" como si fuera la acción esperada. */
+.wizard-undo-button{
+
+    width:100%;
+
+    height:48px;
+
+    margin-top:4px;
+
+    border:1px solid color-mix(in srgb, var(--color-danger) 45%, transparent);
+
+    border-radius:var(--radius-md);
+
+    background:transparent;
+
+    color:var(--color-danger);
+
+    font-size:.88rem;
+
+    font-weight:700;
+
+    cursor:pointer;
+
+    transition:.25s;
+
+}
+
+.wizard-undo-button:hover{
+
+    background:color-mix(in srgb, var(--color-danger) 10%, transparent);
+
+}
+
 .plan-import-success-body{
 
     display:flex;
