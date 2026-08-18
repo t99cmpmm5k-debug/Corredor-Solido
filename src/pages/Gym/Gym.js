@@ -2,11 +2,14 @@ import "./Gym.css";
 
 import { BottomNavigation } from "../../components/Navigation/BottomNavigation.js";
 import { getGymDays } from "../../data/gymRoutineStore.js";
-import { getSessionById } from "../../data/gymSessionStore.js";
+import { getSessionById, getGymSessions } from "../../data/gymSessionStore.js";
 import { getStep, getActiveSessionId } from "./gymStore.js";
 import { GymSessionView } from "./components/GymSessionView.js";
 import { GymImportWizard } from "./components/GymImportWizard.js";
+import { GymHomeSummary } from "./components/GymHomeSummary.js";
 import { getImportStep } from "./gymImportStore.js";
+import { hasWeeklySchedule, getTodayGymDay, getUpcomingGymDays, getWeekProgress } from "./gymSchedule.js";
+import { formatISODate } from "../../utils/date.js";
 
 function DayCard(day) {
 
@@ -34,7 +37,28 @@ function DayCard(day) {
 
 }
 
+// La rutina por defecto (gymData.js) no trae weekday por día — solo la
+// rutina importada desde PDF lo tiene (ver pdf.js) — así que "hoy" /
+// "próximos" / "resumen semanal" solo tienen sentido cuando hay ese dato
+// real de calendario. Sin él, se mantiene el listado plano de días de
+// siempre (ninguna regresión para quien no ha importado nada todavía).
+function GymHomeSummarySection(days) {
+
+    if (!hasWeeklySchedule(days)) return "";
+
+    const today = formatISODate(new Date());
+
+    return GymHomeSummary({
+        todayDay: getTodayGymDay(days, today),
+        upcoming: getUpcomingGymDays(days, today),
+        weekProgress: getWeekProgress(days, getGymSessions(), today)
+    });
+
+}
+
 function GymDaySelect() {
+
+    const days = getGymDays();
 
     return `
 
@@ -54,9 +78,11 @@ function GymDaySelect() {
 
             </header>
 
+            ${GymHomeSummarySection(days)}
+
             <div class="gym-day-list">
 
-                ${getGymDays().map(DayCard).join("")}
+                ${days.map(DayCard).join("")}
 
             </div>
 
