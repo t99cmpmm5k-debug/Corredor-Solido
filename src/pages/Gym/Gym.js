@@ -1,10 +1,12 @@
 import "./Gym.css";
 
 import { BottomNavigation } from "../../components/Navigation/BottomNavigation.js";
-import { gymDays } from "../../data/gymData.js";
+import { getGymDays } from "../../data/gymRoutineStore.js";
 import { getSessionById } from "../../data/gymSessionStore.js";
 import { getStep, getActiveSessionId } from "./gymStore.js";
 import { GymSessionView } from "./components/GymSessionView.js";
+import { GymImportWizard } from "./components/GymImportWizard.js";
+import { getImportStep } from "./gymImportStore.js";
 
 function DayCard(day) {
 
@@ -42,11 +44,19 @@ function GymDaySelect() {
 
                 <h1>Gimnasio</h1>
 
+                <button class="gym-import-button" data-action="open-gym-import">
+
+                    <iconify-icon icon="solar:file-download-bold-duotone"></iconify-icon>
+
+                    Importar rutina
+
+                </button>
+
             </header>
 
             <div class="gym-day-list">
 
-                ${gymDays.map(DayCard).join("")}
+                ${getGymDays().map(DayCard).join("")}
 
             </div>
 
@@ -57,6 +67,24 @@ function GymDaySelect() {
 }
 
 export function Gym() {
+
+    // El wizard de importación se superpone a la pantalla normal de Gym,
+    // mismo patrón que Plan() con PlanImportWizard.
+    if (getImportStep() !== "closed") {
+
+        return `
+
+            <div class="gym-page">
+
+                ${GymImportWizard()}
+
+            </div>
+
+            ${BottomNavigation()}
+
+        `;
+
+    }
 
     const step = getStep();
     const session = step === "session" ? getSessionById(getActiveSessionId()) : null;

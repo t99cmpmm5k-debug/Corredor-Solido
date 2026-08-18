@@ -1,5 +1,5 @@
 const DB_NAME = "corredor-solido";
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 export const STORES = {
 
@@ -7,7 +7,8 @@ export const STORES = {
     shoes: "shoes",
     plannedSessions: "plannedSessions",
     meta: "meta",
-    gymSessions: "gymSessions"
+    gymSessions: "gymSessions",
+    gymRoutines: "gymRoutines"
 
 };
 
@@ -61,6 +62,12 @@ function upgrade(db) {
         const gymSessions = db.createObjectStore(STORES.gymSessions, { keyPath: "id" });
         gymSessions.createIndex("date", "date", { unique: false });
         gymSessions.createIndex("dayId", "dayId", { unique: false });
+
+    }
+
+    if (!db.objectStoreNames.contains(STORES.gymRoutines)) {
+
+        db.createObjectStore(STORES.gymRoutines, { keyPath: "id" });
 
     }
 

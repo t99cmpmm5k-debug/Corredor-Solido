@@ -1,7 +1,7 @@
 import { STORES, getAll, put } from "./db.js";
 import { generateId } from "../utils/id.js";
 import { formatISODate } from "../utils/date.js";
-import { getGymDay } from "./gymData.js";
+import { getGymDay } from "./gymRoutineStore.js";
 
 const sessions = [];
 

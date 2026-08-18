@@ -23,6 +23,7 @@ import { start, rerender } from "./core/router.js";
 
 import { hydrate } from "./data/workoutStore.js";
 import { hydrate as hydrateGymSessions } from "./data/gymSessionStore.js";
+import { hydrate as hydrateGymRoutine } from "./data/gymRoutineStore.js";
 import { hydrateBackupMeta } from "./utils/backup.js";
 
 // TEMPORAL - QUITAR ANTES DE PRODUCCIÓN
@@ -36,7 +37,7 @@ function boot() {
 
     let readyBeforeTimeout = false;
 
-    const ready = Promise.all([hydrate(), hydrateGymSessions(), hydrateBackupMeta()])
+    const ready = Promise.all([hydrate(), hydrateGymSessions(), hydrateGymRoutine(), hydrateBackupMeta()])
         .then(() => { readyBeforeTimeout = true; });
 
     const timedOut = new Promise(resolve => setTimeout(resolve, HYDRATE_TIMEOUT_MS));

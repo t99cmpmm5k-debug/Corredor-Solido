@@ -1,6 +1,6 @@
 import "./GymSessionView.css";
 
-import { getGymDay } from "../../../data/gymData.js";
+import { getGymDay } from "../../../data/gymRoutineStore.js";
 import { getLastLoggedWeight } from "../../../data/gymSessionStore.js";
 
 function formatWeight(weight, weightUnit) {
@@ -15,9 +15,15 @@ function formatWeight(weight, weightUnit) {
 
 function exerciseTarget(definition) {
 
-    const weightPart = definition.weightUnit
-        ? ` · ${formatWeight(definition.targetWeight, definition.weightUnit)}`
-        : "";
+    // targetLoadText (solo en ejercicios importados) es siempre el texto
+    // más completo — conserva rangos ("45-50 kg") que formatWeight()
+    // recortaría al primer número, y cubre valores cualitativos
+    // (Asistencia, Moderado...) que formatWeight() no sabe representar.
+    const weightPart = definition.targetLoadText
+        ? ` · ${definition.targetLoadText}`
+        : definition.weightUnit
+            ? ` · ${formatWeight(definition.targetWeight, definition.weightUnit)}`
+            : "";
 
     return `${definition.sets}×${definition.targetReps}${weightPart}`;
 
