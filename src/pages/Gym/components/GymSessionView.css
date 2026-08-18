@@ -56,6 +56,164 @@
 
 }
 
+.gym-exercise-muscle{
+
+    display:inline-block;
+
+    margin:4px 0;
+
+    padding:3px 10px;
+
+    border-radius:999px;
+
+    background:color-mix(in srgb, var(--color-secondary) 16%, transparent);
+
+    color:var(--color-secondary);
+
+    font-size:.68rem;
+
+    font-weight:700;
+
+    letter-spacing:.03em;
+
+    text-transform:uppercase;
+
+}
+
+/*==========================
+   NAVEGACIÓN UN EJERCICIO A LA VEZ
+==========================*/
+
+.gym-exercise-nav{
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:space-between;
+
+    gap:12px;
+
+}
+
+.gym-exercise-nav-btn{
+
+    flex-shrink:0;
+
+    width:44px;
+
+    height:44px;
+
+    border:none;
+
+    border-radius:50%;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    background:color-mix(in srgb, var(--card-background) 70%, transparent);
+
+    border:1px solid var(--card-border);
+
+    color:var(--text-primary);
+
+    cursor:pointer;
+
+}
+
+.gym-exercise-nav-btn:disabled{
+
+    opacity:.35;
+
+    cursor:default;
+
+}
+
+.gym-exercise-nav-btn iconify-icon{
+
+    font-size:22px;
+
+}
+
+.gym-exercise-nav-count{
+
+    color:var(--text-secondary);
+
+    font-size:.85rem;
+
+    font-weight:700;
+
+}
+
+/*==========================
+   MINI-GRÁFICO DE PROGRESO
+==========================*/
+
+.gym-history{
+
+    display:flex;
+
+    flex-direction:column;
+
+    align-items:flex-start;
+
+    gap:8px;
+
+}
+
+.gym-history-track{
+
+    position:relative;
+
+    width:100%;
+
+    height:44px;
+
+}
+
+.gym-history-lines{
+
+    position:absolute;
+
+    inset:0;
+
+    width:100%;
+
+    height:100%;
+
+}
+
+.gym-history-line{
+
+    fill:none;
+
+    stroke:var(--color-primary);
+
+    stroke-width:2;
+
+    vector-effect:non-scaling-stroke;
+
+}
+
+.gym-history-dot{
+
+    position:absolute;
+
+    width:6px;
+
+    height:6px;
+
+    border-radius:50%;
+
+    background:var(--color-primary);
+
+    transform:translate(-50%, 50%);
+
+}
+
 .gym-exercise-badge{
 
     flex-shrink:0;
@@ -75,6 +233,70 @@
     white-space:nowrap;
 
     text-align:right;
+
+}
+
+/*==========================
+   CABECERA DE COLUMNAS
+   (mismo grid que .gym-set-row, para que Peso/Reps/RIR queden alineados
+   con sus steppers de abajo)
+==========================*/
+
+.gym-set-columns{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+
+}
+
+.gym-set-columns-labels{
+
+    flex:1;
+
+    min-width:0;
+
+    display:flex;
+
+    gap:8px;
+
+}
+
+.gym-set-columns-labels span{
+
+    flex:1;
+
+    min-width:0;
+
+    text-align:center;
+
+    color:var(--text-secondary);
+
+    font-size:.68rem;
+
+    font-weight:700;
+
+    letter-spacing:.03em;
+
+    text-transform:uppercase;
+
+}
+
+.gym-set-columns-labels .gym-set-columns-rir{
+
+    flex:0 0 auto;
+
+    width:84px;
+
+}
+
+.gym-set-columns-done{
+
+    flex-shrink:0;
+
+    width:44px;
 
 }
 
@@ -270,5 +492,206 @@
 .gym-set-row.is-done{
 
     opacity:.85;
+
+}
+
+/* RIR — mismo componente que weightStepper/repsStepper pero más estrecho
+   (flex fijo, no flex:1) y con botones más pequeños, porque comparte fila
+   con otros dos steppers y su valor es de un solo dígito. */
+.gym-stepper--compact{
+
+    flex:0 0 auto;
+
+    width:84px;
+
+}
+
+.gym-stepper--compact .gym-stepper-btn{
+
+    width:28px;
+
+    height:28px;
+
+    font-size:1rem;
+
+}
+
+.gym-stepper--compact .gym-stepper-value{
+
+    font-size:.85rem;
+
+}
+
+/*==========================
+   TEMPORIZADOR DE DESCANSO
+==========================*/
+
+.gym-rest-timer{
+
+    padding:14px 16px;
+
+    border-radius:var(--radius-lg);
+
+    background:color-mix(in srgb, var(--color-primary) 10%, var(--card-background));
+
+    border:1px solid color-mix(in srgb, var(--color-primary) 30%, var(--card-border));
+
+}
+
+.gym-rest-timer-top{
+
+    display:flex;
+
+    align-items:baseline;
+
+    justify-content:space-between;
+
+}
+
+.gym-rest-timer-label{
+
+    color:var(--color-primary);
+
+    font-size:.7rem;
+
+    font-weight:800;
+
+    letter-spacing:.06em;
+
+}
+
+.gym-rest-timer-value{
+
+    color:var(--text-primary);
+
+    font-size:1.3rem;
+
+    font-weight:800;
+
+    font-variant-numeric:tabular-nums;
+
+}
+
+.gym-rest-timer-track{
+
+    margin-top:8px;
+
+    height:6px;
+
+    border-radius:999px;
+
+    background:color-mix(in srgb, var(--card-border) 60%, transparent);
+
+    overflow:hidden;
+
+}
+
+.gym-rest-timer-fill{
+
+    height:100%;
+
+    border-radius:999px;
+
+    background:linear-gradient(90deg, var(--color-primary), var(--color-secondary));
+
+}
+
+.gym-rest-timer-actions{
+
+    margin-top:12px;
+
+    display:flex;
+
+    gap:8px;
+
+}
+
+.gym-rest-btn{
+
+    flex:1;
+
+    padding:10px 0;
+
+    border-radius:var(--radius-sm);
+
+    border:1px solid var(--card-border);
+
+    background:color-mix(in srgb, var(--card-background) 80%, transparent);
+
+    color:var(--text-primary);
+
+    font-size:.8rem;
+
+    font-weight:700;
+
+    cursor:pointer;
+
+}
+
+.gym-rest-btn:active{
+
+    background:color-mix(in srgb, var(--color-primary) 16%, transparent);
+
+}
+
+/*==========================
+   NOTAS
+==========================*/
+
+.gym-notes{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:6px;
+
+}
+
+.gym-notes label{
+
+    color:var(--text-secondary);
+
+    font-size:.78rem;
+
+    font-weight:700;
+
+}
+
+.gym-notes-input{
+
+    min-height:64px;
+
+    padding:12px 14px;
+
+    border-radius:var(--radius-md);
+
+    border:1px solid var(--card-border);
+
+    background:color-mix(in srgb, var(--card-background) 80%, transparent);
+
+    color:var(--text-primary);
+
+    font-family:inherit;
+
+    font-size:.9rem;
+
+    line-height:1.4;
+
+    resize:vertical;
+
+}
+
+.gym-notes-input::placeholder{
+
+    color:var(--color-text-muted);
+
+}
+
+.gym-notes-input:focus{
+
+    outline:none;
+
+    border-color:var(--color-primary);
 
 }

@@ -1,8 +1,22 @@
 import { rerender } from "../../core/router.js";
-import { startSession, updateSet, finishSession, getSessionById, hydrate } from "../../data/gymSessionStore.js";
+import { startSession, updateSet, updateExerciseNotes, finishSession, getSessionById, hydrate } from "../../data/gymSessionStore.js";
 import { saveImportedRoutine, undoRoutineImport } from "../../data/gymRoutineStore.js";
 import { importGymRoutine } from "../../importers/gym/index.js";
-import { getActiveSessionId, setActiveSessionId, setStep } from "./gymStore.js";
+
+import {
+    getActiveSessionId,
+    setActiveSessionId,
+    setStep,
+    getCurrentExerciseIndex,
+    setCurrentExerciseIndex,
+    isRestRunning,
+    getRestRemainingSec,
+    getRestDurationSec,
+    startRestTimer,
+    stopRestTimer,
+    adjustRestTimer,
+    REST_STEP_SEC
+} from "./gymStore.js";
 
 import {
     getImportStep,
@@ -21,6 +35,7 @@ import { GYM_EXERCISE_REVIEW_FIELDS, parseExerciseFieldValue } from "./component
 
 const WEIGHT_STEP = 2.5;
 const REPS_STEP = 1;
+const RIR_STEP = 1;
 
 const GYM_IMPORT_HISTORY_STATE = { gymImport: true };
 
@@ -166,15 +181,73 @@ function adjustReps(exerciseId, setIndex, delta) {
 
 }
 
+function adjustRir(exerciseId, setIndex, delta) {
+
+    const set = currentSet(exerciseId, setIndex);
+    if (!set) return;
+
+    const next = Math.max(0, (set.rir ?? 0) + delta);
+
+    updateSet(getActiveSessionId(), exerciseId, setIndex, { rir: next });
+    rerender();
+
+}
+
 function toggleDone(exerciseId, setIndex) {
 
     const set = currentSet(exerciseId, setIndex);
     if (!set) return;
 
-    updateSet(getActiveSessionId(), exerciseId, setIndex, { done: !set.done });
+    const nextDone = !set.done;
+
+    updateSet(getActiveSessionId(), exerciseId, setIndex, { done: nextDone });
+
+    // Autoarranca el descanso solo al completar una serie, no al
+    // desmarcarla — decisión de producto confirmada con el usuario (ver
+    // gymStore.js).
+    if (nextDone) startRestTimer();
+
     rerender();
 
 }
+
+// Actualiza el conteo del descanso directamente sobre el DOM ya pintado,
+// sin pasar por rerender() — así no se repinta la página entera (y no se
+// pierde el foco de las notas, por ejemplo) solo porque pasa un segundo.
+// Cuando el descanso llega a cero, ahí sí hace falta un rerender() para
+// que el widget desaparezca (ver isRestRunning() en gymStore.js).
+function tickRestTimerDisplay() {
+
+    const remainingEl = document.querySelector("#gym-rest-remaining");
+    const fillEl = document.querySelector("#gym-rest-fill");
+    if (!remainingEl || !fillEl) return;
+
+    const remaining = getRestRemainingSec();
+
+    if (remaining <= 0) {
+        stopRestTimer();
+        rerender();
+        return;
+    }
+
+    const duration = getRestDurationSec();
+    const mm = String(Math.floor(remaining / 60)).padStart(2, "0");
+    const ss = String(remaining % 60).padStart(2, "0");
+
+    remainingEl.textContent = `${mm}:${ss}`;
+    fillEl.style.width = `${Math.round((remaining / duration) * 100)}%`;
+
+}
+
+// Registrado una sola vez a nivel de módulo (no dentro de initGymEvents,
+// que se vuelve a llamar en cada render) — mismo motivo que el listener
+// de popstate más arriba: si no, cada repintado añadiría otro intervalo y
+// el conteo se aceleraría solo con navegar por la app.
+setInterval(() => {
+
+    if (isRestRunning()) tickRestTimerDisplay();
+
+}, 1000);
 
 function wireStepper(action, handler) {
 
@@ -210,6 +283,8 @@ export function initGymEvents() {
                 if (!session) return;
 
                 setActiveSessionId(session.id);
+                setCurrentExerciseIndex(0);
+                stopRestTimer();
                 setStep("session");
                 rerender();
 
@@ -226,6 +301,7 @@ export function initGymEvents() {
             // Todo lo marcado como hecho ya está autoguardado — cerrar aquí
             // no pierde nada, solo saca de la pantalla de sesión.
             setActiveSessionId(null);
+            stopRestTimer();
             setStep("select-day");
             rerender();
 
@@ -241,6 +317,7 @@ export function initGymEvents() {
             if (id) finishSession(id);
 
             setActiveSessionId(null);
+            stopRestTimer();
             setStep("select-day");
             rerender();
 
@@ -252,7 +329,86 @@ export function initGymEvents() {
     wireStepper("dec-weight", (exerciseId, setIndex) => adjustWeight(exerciseId, setIndex, -WEIGHT_STEP));
     wireStepper("inc-reps", (exerciseId, setIndex) => adjustReps(exerciseId, setIndex, REPS_STEP));
     wireStepper("dec-reps", (exerciseId, setIndex) => adjustReps(exerciseId, setIndex, -REPS_STEP));
+    wireStepper("inc-rir", (exerciseId, setIndex) => adjustRir(exerciseId, setIndex, RIR_STEP));
+    wireStepper("dec-rir", (exerciseId, setIndex) => adjustRir(exerciseId, setIndex, -RIR_STEP));
     wireStepper("toggle-done", toggleDone);
+
+    document.querySelectorAll('[data-action="prev-exercise"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+
+            setCurrentExerciseIndex(Math.max(0, getCurrentExerciseIndex() - 1));
+
+            // El descanso pertenece al ejercicio que se acaba de dejar —
+            // seguir contando bajo un ejercicio distinto confundiría más
+            // de lo que ayuda.
+            stopRestTimer();
+            rerender();
+
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="next-exercise"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+
+            const session = getSessionById(getActiveSessionId());
+            if (!session) return;
+
+            const lastIndex = session.exercises.length - 1;
+            setCurrentExerciseIndex(Math.min(lastIndex, getCurrentExerciseIndex() + 1));
+            stopRestTimer();
+            rerender();
+
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="update-notes"]').forEach(textarea => {
+
+        // "change" (al perder el foco), no "input" — así no se repinta la
+        // página en cada pulsación mientras el usuario está escribiendo.
+        textarea.addEventListener("change", () => {
+
+            updateExerciseNotes(getActiveSessionId(), textarea.dataset.exerciseId, textarea.value);
+
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="rest-skip"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+
+            stopRestTimer();
+            rerender();
+
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="rest-add"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+
+            adjustRestTimer(REST_STEP_SEC);
+            tickRestTimerDisplay();
+
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="rest-subtract"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+
+            adjustRestTimer(-REST_STEP_SEC);
+            tickRestTimerDisplay();
+
+        });
+
+    });
 
     document.querySelectorAll('[data-action="open-gym-import"]').forEach(button => {
 

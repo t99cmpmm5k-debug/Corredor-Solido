@@ -57,9 +57,13 @@ function buildInitialSets(exercise) {
     // Cada serie parte del peso de ESA MISMA serie la última vez (pirámide:
     // serie 1 con la serie 1, serie 2 con la serie 2...), no de un único
     // valor repetido en las 4 — ver getLastLoggedSetWeight más abajo.
+    // rir empieza en null (sin dato) — no se prerrellena con nada, a
+    // diferencia de weight/reps, porque no hay un "objetivo" de RIR en el
+    // modelo de datos como sí lo hay para peso/reps.
     return Array.from({ length: exercise.sets }, (_, index) => ({
         weight: getLastLoggedSetWeight(exercise.id, index) ?? exercise.targetWeight,
         reps,
+        rir: null,
         done: false
     }));
 
@@ -92,7 +96,8 @@ export function startSession(dayId) {
         exercises: day.exercises.map(exercise => ({
             exerciseId: exercise.id,
             name: exercise.name,
-            sets: buildInitialSets(exercise)
+            sets: buildInitialSets(exercise),
+            notes: ""
         }))
 
     };
@@ -118,6 +123,22 @@ export function updateSet(sessionId, exerciseId, setIndex, patch) {
     if (!exercise || !exercise.sets[setIndex]) return null;
 
     Object.assign(exercise.sets[setIndex], patch);
+
+    upsertInto(session);
+
+    return session;
+
+}
+
+export function updateExerciseNotes(sessionId, exerciseId, notes) {
+
+    const session = getSessionById(sessionId);
+    if (!session) return null;
+
+    const exercise = session.exercises.find(e => e.exerciseId === exerciseId);
+    if (!exercise) return null;
+
+    exercise.notes = notes;
 
     upsertInto(session);
 
@@ -161,23 +182,38 @@ export function getLastLoggedSetWeight(exerciseId, setIndex) {
 
 }
 
-// Peso de la ÚLTIMA serie hecha de la sesión más reciente que tocó este
-// ejercicio — usado solo para el badge "Última vez" (un valor de un
-// vistazo), no para prerellenar series (ver getLastLoggedSetWeight).
-export function getLastLoggedWeight(exerciseId) {
+// Serie temporal real para el mini-gráfico de progreso: una sesión (con
+// al menos una serie marcada como hecha) aporta un punto, con el peso
+// máximo entre sus series hechas ("mejor serie" de esa sesión) — no la
+// media ni la última, para que el punto represente lo más exigente que se
+// levantó ese día. Solo sesiones con dato real; nada interpolado.
+//
+// excludeSessionId excluye la sesión en curso: sin esto, marcar la
+// primera serie de hoy como hecha convertía la propia sesión activa en su
+// "mejor serie anterior" — un badge que se supone habla del pasado
+// mostrando algo que acabas de hacer hace un segundo.
+export function getExerciseHistory(exerciseId, { limit = 8, excludeSessionId = null } = {}) {
 
-    const sorted = [...sessions].sort((a, b) => b.date.localeCompare(a.date));
+    const sorted = [...sessions].sort((a, b) => a.date.localeCompare(b.date));
+    const points = [];
 
     for (const session of sorted) {
+
+        if (session.id === excludeSessionId) continue;
 
         const exercise = session.exercises.find(e => e.exerciseId === exerciseId);
         if (!exercise) continue;
 
-        const doneSets = exercise.sets.filter(s => s.done && s.weight != null);
-        if (doneSets.length) return doneSets[doneSets.length - 1].weight;
+        const doneWeights = exercise.sets
+            .filter(s => s.done && s.weight != null)
+            .map(s => s.weight);
+
+        if (!doneWeights.length) continue;
+
+        points.push({ date: session.date, weight: Math.max(...doneWeights) });
 
     }
 
-    return null;
+    return points.slice(-limit);
 
 }
