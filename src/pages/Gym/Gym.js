@@ -106,7 +106,15 @@ function ExerciseDetailSection() {
 
     if (!definition) return "";
 
-    const history = getExerciseSessionHistory(exerciseId, { excludeSessionId: activeSession?.id });
+    // Solo se excluye si sigue de verdad en curso (sin finishedAt) — una
+    // sesión de hoy ya guardada con "Guardar sesión" cuenta como historial
+    // real. Sin este matiz, startSession() retoma la sesión de hoy aunque
+    // ya esté terminada (ver comentario en gymSessionStore.js), y
+    // excluirla por ser "la activa" hacía que el propio entreno que
+    // acabas de guardar pareciera no haberse guardado nunca al abrir el
+    // detalle del ejercicio justo después.
+    const excludeSessionId = activeSession && !activeSession.finishedAt ? activeSession.id : null;
+    const history = getExerciseSessionHistory(exerciseId, { excludeSessionId });
 
     return GymExerciseDetailView(definition, history, getDetailTab(), getDetailExpandedSessionId());
 

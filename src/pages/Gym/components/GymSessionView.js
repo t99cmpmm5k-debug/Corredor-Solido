@@ -264,7 +264,7 @@ function NotesField(sessionExercise) {
 
 }
 
-function exerciseCard(definition, sessionExercise, sessionId) {
+function exerciseCard(definition, sessionExercise, excludeSessionId) {
 
     return `
 
@@ -294,7 +294,7 @@ function exerciseCard(definition, sessionExercise, sessionId) {
 
             </header>
 
-            ${definition.weightUnit ? GymExerciseHistoryChart(definition.id, definition.weightUnit, sessionId) : ""}
+            ${definition.weightUnit ? GymExerciseHistoryChart(definition.id, definition.weightUnit, excludeSessionId) : ""}
 
             ${SetColumnsHeader(definition)}
 
@@ -321,6 +321,14 @@ export function GymSessionView(session) {
     const sessionExercise = session.exercises[index];
     const definition = day?.exercises.find(e => e.id === sessionExercise?.exerciseId);
 
+    // Mismo criterio que ExerciseDetailSection() en Gym.js: startSession()
+    // retoma la sesión de hoy aunque ya tenga finishedAt (es un checkpoint,
+    // no un cierre — ver gymSessionStore.js), así que "activa" no basta
+    // para excluirla de su propio historial. Sin este matiz, el badge se
+    // quedaba en "Primera vez" para siempre nada más guardar, aunque esa
+    // misma sesión ya tuviera una serie real hecha.
+    const excludeSessionId = session.finishedAt ? null : session.id;
+
     return `
 
         <div class="gym-session">
@@ -339,7 +347,7 @@ export function GymSessionView(session) {
 
             ${ExerciseNavHeader(index, session.exercises.length)}
 
-            ${sessionExercise && definition ? exerciseCard(definition, sessionExercise, session.id) : ""}
+            ${sessionExercise && definition ? exerciseCard(definition, sessionExercise, excludeSessionId) : ""}
 
             <button class="gym-finish-button" data-action="finish-session">
 
