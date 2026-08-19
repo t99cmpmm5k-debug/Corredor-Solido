@@ -1,0 +1,507 @@
+.gym-detail{
+
+    padding:24px;
+
+    padding-top:calc(24px + env(safe-area-inset-top));
+
+    padding-bottom:calc(110px + env(safe-area-inset-bottom));
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:20px;
+
+}
+
+.gym-detail-header{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:14px;
+
+}
+
+.gym-detail-header h2{
+
+    flex:1;
+
+    min-width:0;
+
+    color:var(--text-primary);
+
+    font-size:1.2rem;
+
+    font-weight:800;
+
+    white-space:nowrap;
+
+    overflow:hidden;
+
+    text-overflow:ellipsis;
+
+}
+
+/*==========================
+   RESUMEN DE PROGRESO
+==========================*/
+
+.gym-detail-summary{
+
+    display:flex;
+
+    border-radius:var(--radius-lg);
+
+    background:color-mix(in srgb, var(--card-background) 70%, transparent);
+
+    border:1px solid var(--card-border);
+
+    padding:16px 0;
+
+}
+
+.gym-detail-summary--single{
+
+    justify-content:center;
+
+}
+
+.gym-detail-summary-item{
+
+    flex:1;
+
+    min-width:0;
+
+    display:flex;
+
+    flex-direction:column;
+
+    align-items:center;
+
+    gap:4px;
+
+    border-right:1px solid color-mix(in srgb, var(--card-border) 70%, transparent);
+
+}
+
+.gym-detail-summary-item:last-child{
+
+    border-right:none;
+
+}
+
+.gym-detail-summary-value{
+
+    color:var(--color-primary);
+
+    font-size:1.05rem;
+
+    font-weight:800;
+
+}
+
+.gym-detail-summary-label{
+
+    color:var(--text-secondary);
+
+    font-size:.72rem;
+
+}
+
+/*==========================
+   PESTAÑAS
+==========================*/
+
+.gym-detail-tabs{
+
+    display:flex;
+
+    gap:8px;
+
+    padding:4px;
+
+    border-radius:999px;
+
+    background:color-mix(in srgb, var(--card-background) 70%, transparent);
+
+    border:1px solid var(--card-border);
+
+}
+
+.gym-detail-tab{
+
+    flex:1;
+
+    padding:10px 0;
+
+    border:none;
+
+    border-radius:999px;
+
+    background:none;
+
+    color:var(--text-secondary);
+
+    font-size:.76rem;
+
+    font-weight:800;
+
+    letter-spacing:.04em;
+
+    cursor:pointer;
+
+}
+
+.gym-detail-tab.is-active{
+
+    background:var(--color-primary);
+
+    color:var(--color-on-primary, #fff);
+
+}
+
+/*==========================
+   TABLA DE HISTORIAL
+==========================*/
+
+.gym-detail-empty{
+
+    display:flex;
+
+    flex-direction:column;
+
+    align-items:center;
+
+    gap:10px;
+
+    padding:40px 20px;
+
+    text-align:center;
+
+    color:var(--text-secondary);
+
+}
+
+.gym-detail-empty iconify-icon{
+
+    font-size:34px;
+
+    color:var(--color-text-muted);
+
+}
+
+.gym-history-table{
+
+    display:flex;
+
+    flex-direction:column;
+
+    border-radius:var(--radius-lg);
+
+    background:color-mix(in srgb, var(--card-background) 70%, transparent);
+
+    border:1px solid var(--card-border);
+
+    overflow:hidden;
+
+}
+
+.gym-history-row{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:8px;
+
+    padding:12px 14px;
+
+    border:none;
+
+    border-top:1px solid color-mix(in srgb, var(--card-border) 70%, transparent);
+
+    background:none;
+
+    cursor:pointer;
+
+}
+
+.gym-history-row--header{
+
+    cursor:default;
+
+    border-top:none;
+
+}
+
+.gym-history-row-group:first-child .gym-history-row{
+
+    border-top:none;
+
+}
+
+.gym-history-cell{
+
+    flex:1;
+
+    min-width:0;
+
+    text-align:center;
+
+    color:var(--text-primary);
+
+    font-size:.82rem;
+
+    font-weight:700;
+
+}
+
+.gym-history-row--header .gym-history-cell{
+
+    color:var(--text-secondary);
+
+    font-size:.68rem;
+
+    font-weight:700;
+
+    letter-spacing:.03em;
+
+}
+
+.gym-history-cell--date{
+
+    flex:.8;
+
+    color:var(--text-secondary);
+
+    font-weight:700;
+
+}
+
+.gym-history-row--header .gym-history-cell--date{
+
+    color:var(--text-secondary);
+
+}
+
+.gym-history-row-chevron{
+
+    flex-shrink:0;
+
+    width:16px;
+
+    font-size:16px;
+
+    color:var(--color-text-muted);
+
+    transition:transform .2s;
+
+}
+
+.gym-history-row-chevron.is-expanded{
+
+    transform:rotate(90deg);
+
+}
+
+.gym-history-row-chevron-spacer{
+
+    flex-shrink:0;
+
+    width:16px;
+
+}
+
+.gym-history-row-detail{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:6px;
+
+    padding:4px 14px 14px 14px;
+
+    background:color-mix(in srgb, var(--color-primary) 6%, transparent);
+
+}
+
+.gym-history-set-line{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    gap:10px;
+
+    color:var(--text-secondary);
+
+    font-size:.78rem;
+
+}
+
+.gym-history-set-index{
+
+    color:var(--color-text-muted);
+
+    font-weight:700;
+
+}
+
+.gym-history-set-rir{
+
+    flex-shrink:0;
+
+    min-width:52px;
+
+    text-align:right;
+
+}
+
+/*==========================
+   GRÁFICO DE EVOLUCIÓN
+==========================*/
+
+.gym-detail-chart{
+
+    position:relative;
+
+    overflow:hidden;
+
+    padding:22px;
+
+    border-radius:26px;
+
+    background:color-mix(in srgb, var(--card-background) 80%, transparent);
+
+    backdrop-filter:blur(16px);
+    -webkit-backdrop-filter:blur(16px);
+
+    border:1px solid color-mix(in srgb, var(--color-primary) 50%, transparent);
+
+    box-shadow:
+        0 8px 20px rgba(0,0,0,.18),
+        0 0 8px color-mix(in srgb, var(--color-glow) 30%, transparent),
+        0 0 30px color-mix(in srgb, var(--color-glow) 18%, transparent);
+
+}
+
+.gym-detail-chart-header{
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:space-between;
+
+    gap:12px;
+
+    margin-bottom:20px;
+
+}
+
+.gym-detail-chart-title{
+
+    margin:0;
+
+    color:var(--text-primary);
+
+    font-size:.9rem;
+
+    font-weight:800;
+
+    letter-spacing:.05em;
+
+}
+
+.gym-detail-chart-badge{
+
+    flex-shrink:0;
+
+    padding:6px 12px;
+
+    border-radius:999px;
+
+    background:color-mix(in srgb, var(--color-primary) 12%, transparent);
+
+    color:var(--color-primary);
+
+    font-size:.75rem;
+
+    font-weight:700;
+
+    white-space:nowrap;
+
+}
+
+.gym-detail-chart-track{
+
+    position:relative;
+
+    height:200px;
+
+}
+
+.gym-detail-chart-lines{
+
+    position:absolute;
+
+    inset:0;
+
+    width:100%;
+
+    height:100%;
+
+}
+
+.gym-detail-chart-line{
+
+    fill:none;
+
+    stroke:var(--color-primary);
+
+    stroke-width:2;
+
+    vector-effect:non-scaling-stroke;
+
+    stroke-linecap:round;
+
+    stroke-linejoin:round;
+
+}
+
+.gym-detail-chart-dot{
+
+    position:absolute;
+
+    width:8px;
+
+    height:8px;
+
+    border-radius:50%;
+
+    background:var(--color-primary);
+
+    box-shadow:0 0 6px color-mix(in srgb, var(--color-primary) 60%, transparent);
+
+    transform:translate(-50%, 50%);
+
+}
+
+.gym-detail-chart-axis{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    margin-top:10px;
+
+    color:var(--text-secondary);
+
+    font-size:.72rem;
+
+    font-weight:700;
+
+}

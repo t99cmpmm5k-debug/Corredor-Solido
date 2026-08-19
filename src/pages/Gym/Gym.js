@@ -1,10 +1,11 @@
 import "./Gym.css";
 
 import { BottomNavigation } from "../../components/Navigation/BottomNavigation.js";
-import { getGymDays } from "../../data/gymRoutineStore.js";
-import { getSessionById, getGymSessions } from "../../data/gymSessionStore.js";
-import { getStep, getActiveSessionId } from "./gymStore.js";
+import { getGymDays, getGymDay } from "../../data/gymRoutineStore.js";
+import { getSessionById, getGymSessions, getExerciseSessionHistory } from "../../data/gymSessionStore.js";
+import { getStep, getActiveSessionId, getDetailExerciseId, getDetailTab, getDetailExpandedSessionId } from "./gymStore.js";
 import { GymSessionView } from "./components/GymSessionView.js";
+import { GymExerciseDetailView } from "./components/GymExerciseDetailView.js";
 import { GymImportWizard } from "./components/GymImportWizard.js";
 import { GymHomeSummary } from "./components/GymHomeSummary.js";
 import { getImportStep } from "./gymImportStore.js";
@@ -92,6 +93,25 @@ function GymDaySelect() {
 
 }
 
+// La sesión activa se queda intacta al abrir el detalle (solo cambia
+// `step`, ver openExerciseDetail en initGymEvents.js) — así se puede
+// localizar la definición del ejercicio (nombre, weightUnit, grupo
+// muscular) sin duplicarla en gymStore.
+function ExerciseDetailSection() {
+
+    const exerciseId = getDetailExerciseId();
+    const activeSession = getSessionById(getActiveSessionId());
+    const day = activeSession ? getGymDay(activeSession.dayId) : null;
+    const definition = day?.exercises.find(e => e.id === exerciseId);
+
+    if (!definition) return "";
+
+    const history = getExerciseSessionHistory(exerciseId, { excludeSessionId: activeSession?.id });
+
+    return GymExerciseDetailView(definition, history, getDetailTab(), getDetailExpandedSessionId());
+
+}
+
 export function Gym() {
 
     // El wizard de importación se superpone a la pantalla normal de Gym,
@@ -119,7 +139,7 @@ export function Gym() {
 
         <div class="gym-page">
 
-            ${session ? GymSessionView(session) : GymDaySelect()}
+            ${step === "exercise-detail" ? ExerciseDetailSection() : session ? GymSessionView(session) : GymDaySelect()}
 
             ${BottomNavigation()}
 

@@ -6,6 +6,7 @@ import { importGymRoutine } from "../../importers/gym/index.js";
 import {
     getActiveSessionId,
     setActiveSessionId,
+    getStep,
     setStep,
     getCurrentExerciseIndex,
     setCurrentExerciseIndex,
@@ -15,7 +16,12 @@ import {
     startRestTimer,
     stopRestTimer,
     adjustRestTimer,
-    REST_STEP_SEC
+    REST_STEP_SEC,
+    setDetailExerciseId,
+    setDetailTab,
+    getDetailExpandedSessionId,
+    setDetailExpandedSessionId,
+    resetExerciseDetail
 } from "./gymStore.js";
 
 import {
@@ -38,6 +44,7 @@ const REPS_STEP = 1;
 const RIR_STEP = 1;
 
 const GYM_IMPORT_HISTORY_STATE = { gymImport: true };
+const GYM_EXERCISE_DETAIL_HISTORY_STATE = { gymExerciseDetail: true };
 
 function openGymImport() {
 
@@ -65,6 +72,37 @@ function closeGymImport() {
 
 }
 
+// Igual que openGymImport() — su propia entrada de historial para que el
+// gesto de atrás del móvil cierre el detalle en vez de salir de la app.
+function openExerciseDetail(exerciseId) {
+
+    setDetailExerciseId(exerciseId);
+    setDetailTab("historial");
+    setDetailExpandedSessionId(null);
+    setStep("exercise-detail");
+
+    history.pushState(GYM_EXERCISE_DETAIL_HISTORY_STATE, "");
+
+    rerender();
+
+}
+
+function closeExerciseDetail() {
+
+    if (history.state?.gymExerciseDetail) {
+        history.back();
+        return;
+    }
+
+    resetExerciseDetail();
+
+    // Solo se llega aquí desde dentro de una sesión (ver GymSessionView.js)
+    // — cerrar siempre vuelve a ella, no a la selección de día.
+    setStep("session");
+    rerender();
+
+}
+
 // Registrado una sola vez a nivel de módulo (no dentro de initGymEvents,
 // que se vuelve a llamar en cada render) — mismo motivo que el listener
 // equivalente de initPlanEvents.js.
@@ -72,6 +110,13 @@ window.addEventListener("popstate", () => {
 
     if (getImportStep() !== "closed") {
         setImportStep("closed");
+        rerender();
+        return;
+    }
+
+    if (getStep() === "exercise-detail") {
+        resetExerciseDetail();
+        setStep("session");
         rerender();
     }
 
@@ -405,6 +450,44 @@ export function initGymEvents() {
 
             adjustRestTimer(-REST_STEP_SEC);
             tickRestTimerDisplay();
+
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="open-exercise-detail"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+            openExerciseDetail(button.dataset.exerciseId);
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="close-exercise-detail"]').forEach(button => {
+
+        button.addEventListener("click", closeExerciseDetail);
+
+    });
+
+    document.querySelectorAll('[data-action="set-exercise-detail-tab"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+
+            setDetailTab(button.dataset.tab);
+            setDetailExpandedSessionId(null);
+            rerender();
+
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="toggle-history-row"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+
+            const sessionId = button.dataset.sessionId;
+            setDetailExpandedSessionId(getDetailExpandedSessionId() === sessionId ? null : sessionId);
+            rerender();
 
         });
 

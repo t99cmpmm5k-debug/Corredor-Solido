@@ -217,3 +217,39 @@ export function getExerciseHistory(exerciseId, { limit = 8, excludeSessionId = n
     return points.slice(-limit);
 
 }
+
+// Histórico completo (sin tope) para la pantalla de detalle de ejercicio
+// (Fase 4) — a diferencia de getExerciseHistory(), que solo saca el mejor
+// peso de cada sesión para el mini-gráfico, aquí hace falta cada serie
+// hecha (peso, reps, rir) para poder construir la tabla de HISTORIAL, el
+// desglose por fila y el volumen (peso×reps sumado) de cada sesión.
+// excludeSessionId con el mismo motivo que en getExerciseHistory: la
+// sesión en curso no cuenta como "historial" todavía.
+export function getExerciseSessionHistory(exerciseId, { excludeSessionId = null } = {}) {
+
+    const sorted = [...sessions].sort((a, b) => a.date.localeCompare(b.date));
+    const history = [];
+
+    for (const session of sorted) {
+
+        if (session.id === excludeSessionId) continue;
+
+        const exercise = session.exercises.find(e => e.exerciseId === exerciseId);
+        if (!exercise) continue;
+
+        const doneSets = exercise.sets.filter(s => s.done && s.weight != null && s.reps != null);
+        if (!doneSets.length) continue;
+
+        history.push({
+            sessionId: session.id,
+            date: session.date,
+            sets: doneSets.map(({ weight, reps, rir }) => ({ weight, reps, rir })),
+            bestWeight: Math.max(...doneSets.map(s => s.weight)),
+            volume: doneSets.reduce((sum, s) => sum + s.weight * s.reps, 0)
+        });
+
+    }
+
+    return history;
+
+}

@@ -274,7 +274,17 @@ function exerciseCard(definition, sessionExercise, sessionId) {
 
                 <div>
 
-                    <h3>${definition.name}</h3>
+                    ${definition.weightUnit ? `
+
+                        <button class="gym-exercise-title" data-action="open-exercise-detail" data-exercise-id="${definition.id}">
+
+                            <h3>${definition.name}</h3>
+
+                            <iconify-icon icon="solar:alt-arrow-right-bold-duotone"></iconify-icon>
+
+                        </button>
+
+                    ` : `<h3>${definition.name}</h3>`}
 
                     ${definition.muscleGroup ? `<span class="gym-exercise-muscle">${definition.muscleGroup}</span>` : ""}
 

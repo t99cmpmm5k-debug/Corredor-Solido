@@ -52,6 +52,37 @@
 
 }
 
+/* Envuelve el h3 cuando el ejercicio tiene peso (ver GymSessionView.js) —
+   abre la pantalla de detalle (Fase 4). Sin envoltorio para ejercicios sin
+   weightUnit: sin peso no hay volumen ni progreso de peso que mostrar. */
+.gym-exercise-title{
+
+    display:inline-flex;
+
+    align-items:center;
+
+    gap:4px;
+
+    border:none;
+
+    background:none;
+
+    padding:0;
+
+    text-align:left;
+
+    cursor:pointer;
+
+}
+
+.gym-exercise-title iconify-icon{
+
+    font-size:16px;
+
+    color:var(--color-text-muted);
+
+}
+
 .gym-exercise-target{
 
     color:var(--text-secondary);
