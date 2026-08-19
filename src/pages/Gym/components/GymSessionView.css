@@ -54,32 +54,59 @@
 
 /* Envuelve el h3 cuando el ejercicio tiene peso (ver GymSessionView.js) —
    abre la pantalla de detalle (Fase 4). Sin envoltorio para ejercicios sin
-   weightUnit: sin peso no hay volumen ni progreso de peso que mostrar. */
+   weightUnit: sin peso no hay volumen ni progreso de peso que mostrar.
+   Fondo en píldora + flecha grande y en color — sin esto la única pista de
+   que el nombre es tocable era una flechita de 16px del mismo gris que el
+   texto secundario, invisible a simple vista (bug reportado: "toco el
+   nombre y no pasa nada", cuando en realidad sí navegaba, solo que nadie
+   encontraba dónde tocar). width:fit-content en vez de inline-flex a
+   secas: el <button> necesita seguir siendo de bloque (su propia línea,
+   como el <h3> que sustituye) para que la insignia de grupo muscular y el
+   objetivo de abajo sigan cayendo cada uno en su línea; con inline-flex
+   se colaban en la misma línea que el nombre. Los márgenes negativos
+   compensan el padding para que el texto quede alineado con el resto de
+   la tarjeta, y solo el fondo de la píldora sobresalga un poco. */
 .gym-exercise-title{
 
-    display:inline-flex;
+    display:flex;
+
+    width:fit-content;
 
     align-items:center;
 
-    gap:4px;
+    gap:6px;
+
+    margin:-6px -10px 0 -10px;
+
+    padding:6px 10px;
 
     border:none;
 
-    background:none;
+    border-radius:999px;
 
-    padding:0;
+    background:color-mix(in srgb, var(--color-primary) 14%, transparent);
 
     text-align:left;
 
     cursor:pointer;
 
+    transition:background .15s;
+
+}
+
+.gym-exercise-title:active{
+
+    background:color-mix(in srgb, var(--color-primary) 26%, transparent);
+
 }
 
 .gym-exercise-title iconify-icon{
 
-    font-size:16px;
+    flex-shrink:0;
 
-    color:var(--color-text-muted);
+    font-size:20px;
+
+    color:var(--color-primary);
 
 }
 
