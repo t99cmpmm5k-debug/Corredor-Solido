@@ -10,7 +10,11 @@
 
 .gym-exercise-card{
 
-    padding:18px;
+    /* 14px (no 18) — el margen extra es justo lo que hace falta para que
+       un peso de 3 cifras con decimal ("142.5", el caso real más pesado
+       de la app) siga cabiendo en la misma línea que Reps en un móvil de
+       ancho normal (~390px), sin caer al fallback de gym-set-steppers. */
+    padding:14px;
 
     border-radius:var(--radius-xl);
 
@@ -326,7 +330,7 @@
 
     align-items:center;
 
-    gap:10px;
+    gap:8px;
 
 }
 
@@ -338,9 +342,9 @@
 
     gap:10px;
 
-    /* 20px de .gym-set-label + 10px de gap de la fila principal, para que
+    /* 20px de .gym-set-label + 8px de gap de la fila principal, para que
        el stepper de RIR quede alineado bajo los de Peso/Reps. */
-    padding-left:30px;
+    padding-left:28px;
 
 }
 
@@ -386,17 +390,29 @@
 
     display:flex;
 
-    gap:8px;
+    flex-wrap:wrap;
+
+    gap:6px 8px;
 
 }
 
 /* Cada stepper (peso o reps) — botones grandes de 44px a cada lado del
-   valor, pensado para tocar sin mirar mucho ni acertar a la primera. */
+   valor, pensado para tocar sin mirar mucho ni acertar a la primera.
+   Sin min-width:0 aquí (a diferencia de casi todo lo demás en flex) — a
+   propósito: es justo ese min-width:0 el que dejaba que el valor se
+   encogiera hasta desaparecer y el número acabara solapado con los
+   botones cuando llevaba decimal ("40.5" en vez de "40"). Sin él, un
+   stepper nunca se encoge por debajo de lo que su propio contenido
+   necesita — y si aun así los dos steppers no caben en la misma línea
+   (raro: solo pasa si el peso llega a 3 cifras con decimal, tipo
+   "142.5", en una pantalla muy estrecha), flex-wrap en
+   .gym-set-steppers hace que Reps baje a una segunda línea en vez de
+   solaparse con nada. */
 .gym-stepper{
 
     flex:1;
 
-    min-width:0;
+    min-width:min-content;
 
     display:flex;
 
@@ -404,7 +420,7 @@
 
     justify-content:space-between;
 
-    gap:4px;
+    gap:3px;
 
     padding:2px;
 
@@ -420,9 +436,9 @@
 
     flex-shrink:0;
 
-    width:40px;
+    width:38px;
 
-    height:40px;
+    height:38px;
 
     border:none;
 
@@ -452,7 +468,7 @@
 
     flex:1;
 
-    min-width:0;
+    min-width:min-content;
 
     text-align:center;
 
@@ -463,18 +479,6 @@
     font-weight:800;
 
     white-space:nowrap;
-
-}
-
-.gym-stepper-value small{
-
-    margin-left:2px;
-
-    color:var(--text-secondary);
-
-    font-size:.68rem;
-
-    font-weight:700;
 
 }
 

@@ -30,6 +30,10 @@ function exerciseTarget(definition) {
 
 }
 
+// Sin sufijo "kg" pegado al valor (la cabecera de columna "PESO" ya da el
+// contexto) — el valor puede llevar decimal ("40.5" tras ajustar en pasos
+// de 2.5, ver WEIGHT_STEP en initGymEvents.js), y esos 2 caracteres de más
+// eran justo los que desbordaban el stepper en pantallas de móvil normales.
 function weightStepper(exerciseId, setIndex, set) {
 
     return `
@@ -38,7 +42,7 @@ function weightStepper(exerciseId, setIndex, set) {
 
             <button class="gym-stepper-btn" data-action="dec-weight" data-exercise-id="${exerciseId}" data-set-index="${setIndex}">−</button>
 
-            <span class="gym-stepper-value">${set.weight != null ? set.weight : "—"}<small>kg</small></span>
+            <span class="gym-stepper-value">${set.weight != null ? set.weight : "—"}</span>
 
             <button class="gym-stepper-btn" data-action="inc-weight" data-exercise-id="${exerciseId}" data-set-index="${setIndex}">+</button>
 
