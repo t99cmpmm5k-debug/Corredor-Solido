@@ -284,14 +284,6 @@
 
 }
 
-.gym-set-columns-labels .gym-set-columns-rir{
-
-    flex:0 0 auto;
-
-    width:84px;
-
-}
-
 .gym-set-columns-done{
 
     flex-shrink:0;
@@ -304,13 +296,17 @@
         FILA DE SERIE
 ==========================*/
 
+/* Dos líneas por serie: la principal (nº + Peso/Reps + hecho) y una
+   segunda más compacta solo para RIR (ver gym-set-rir-row) — las 3
+   columnas completas no caben en el ancho de un móvil normal, así que RIR
+   no comparte fila con Peso/Reps (ver GymSessionView.js, setRow). */
 .gym-set-row{
 
     display:flex;
 
-    align-items:center;
+    flex-direction:column;
 
-    gap:10px;
+    gap:8px;
 
     padding:8px 0;
 
@@ -321,6 +317,48 @@
 .gym-set-row:first-child{
 
     border-top:none;
+
+}
+
+.gym-set-row-main{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+
+}
+
+.gym-set-rir-row{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+
+    /* 20px de .gym-set-label + 10px de gap de la fila principal, para que
+       el stepper de RIR quede alineado bajo los de Peso/Reps. */
+    padding-left:30px;
+
+}
+
+.gym-set-rir-label{
+
+    flex-shrink:0;
+
+    width:32px;
+
+    color:var(--text-secondary);
+
+    font-size:.7rem;
+
+    font-weight:700;
+
+    letter-spacing:.03em;
+
+    text-transform:uppercase;
 
 }
 
@@ -496,29 +534,30 @@
 }
 
 /* RIR — mismo componente que weightStepper/repsStepper pero más estrecho
-   (flex fijo, no flex:1) y con botones más pequeños, porque comparte fila
-   con otros dos steppers y su valor es de un solo dígito. */
+   (flex fijo, no flex:1): vive solo en su propia línea (gym-set-rir-row),
+   así que puede ser más generoso que un stepper apretado entre otros dos,
+   aunque sigue siendo más pequeño porque su valor es de un solo dígito. */
 .gym-stepper--compact{
 
     flex:0 0 auto;
 
-    width:84px;
+    width:112px;
 
 }
 
 .gym-stepper--compact .gym-stepper-btn{
 
-    width:28px;
+    width:34px;
 
-    height:28px;
+    height:34px;
 
-    font-size:1rem;
+    font-size:1.1rem;
 
 }
 
 .gym-stepper--compact .gym-stepper-value{
 
-    font-size:.85rem;
+    font-size:.9rem;
 
 }
 

@@ -66,9 +66,11 @@ function repsStepper(exerciseId, setIndex, set) {
 
 }
 
-// Más compacto que weightStepper/repsStepper — RIR es el tercer control de
-// la fila, y a diferencia de peso/reps no viene de ningún objetivo (nace
-// en null, ver buildInitialSets en gymSessionStore.js).
+// Más compacto que weightStepper/repsStepper — vive en su propia línea
+// bajo Peso/Reps (ver setRow), no comparte fila con ellos: las 3 columnas
+// completas no caben en el ancho de un móvil normal. A diferencia de
+// peso/reps tampoco viene de ningún objetivo (nace en null, ver
+// buildInitialSets en gymSessionStore.js).
 function rirStepper(exerciseId, setIndex, set) {
 
     return `
@@ -88,8 +90,10 @@ function rirStepper(exerciseId, setIndex, set) {
 }
 
 // Cabecera de columnas de la tabla de series — una sola vez por ejercicio,
-// no repetida en cada fila (por eso rirStepper ya no lleva su propia
-// etiqueta "RIR" pegada al valor).
+// no repetida en cada fila. Solo Peso/Reps: RIR va en su propia línea bajo
+// cada serie (ver setRow), con su propia etiqueta inline, porque las tres
+// columnas completas no caben en el ancho de un móvil normal (ver
+// gym-set-rir-row en GymSessionView.css).
 function SetColumnsHeader(definition) {
 
     return `
@@ -103,8 +107,6 @@ function SetColumnsHeader(definition) {
                 ${definition.weightUnit ? `<span>Peso</span>` : ""}
 
                 <span>Reps</span>
-
-                <span class="gym-set-columns-rir">RIR</span>
 
             </div>
 
@@ -122,28 +124,38 @@ function setRow(definition, sessionExercise, set, index) {
 
         <div class="gym-set-row ${set.done ? "is-done" : ""}">
 
-            <span class="gym-set-label">${index + 1}</span>
+            <div class="gym-set-row-main">
 
-            <div class="gym-set-steppers">
+                <span class="gym-set-label">${index + 1}</span>
 
-                ${definition.weightUnit ? weightStepper(sessionExercise.exerciseId, index, set) : ""}
+                <div class="gym-set-steppers">
 
-                ${repsStepper(sessionExercise.exerciseId, index, set)}
+                    ${definition.weightUnit ? weightStepper(sessionExercise.exerciseId, index, set) : ""}
+
+                    ${repsStepper(sessionExercise.exerciseId, index, set)}
+
+                </div>
+
+                <button
+                    class="gym-set-done ${set.done ? "is-done" : ""}"
+                    data-action="toggle-done"
+                    data-exercise-id="${sessionExercise.exerciseId}"
+                    data-set-index="${index}"
+                >
+
+                    <iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon>
+
+                </button>
+
+            </div>
+
+            <div class="gym-set-rir-row">
+
+                <span class="gym-set-rir-label">RIR</span>
 
                 ${rirStepper(sessionExercise.exerciseId, index, set)}
 
             </div>
-
-            <button
-                class="gym-set-done ${set.done ? "is-done" : ""}"
-                data-action="toggle-done"
-                data-exercise-id="${sessionExercise.exerciseId}"
-                data-set-index="${index}"
-            >
-
-                <iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon>
-
-            </button>
 
         </div>
 
