@@ -232,6 +232,19 @@
 
     height:160px;
 
+    overflow-x:auto;
+    overflow-y:hidden;
+
+    -webkit-overflow-scrolling:touch;
+
+    scrollbar-width:none;
+
+}
+
+.pace-chart-track::-webkit-scrollbar{
+
+    display:none;
+
 }
 
 .pace-chart-refline{
@@ -243,7 +256,7 @@
 
     border-top:1px dashed color-mix(in srgb, var(--text-secondary) 45%, transparent);
 
-    z-index:0;
+    z-index:-1;
 
 }
 
@@ -255,6 +268,9 @@
 
     height:100%;
 
+    width:max-content;
+    min-width:100%;
+
     display:flex;
 
     align-items:flex-end;
@@ -265,9 +281,9 @@
 
 .pace-chart-column{
 
-    flex:1;
+    flex:1 1 0;
 
-    min-width:0;
+    min-width:36px;
 
     height:100%;
 

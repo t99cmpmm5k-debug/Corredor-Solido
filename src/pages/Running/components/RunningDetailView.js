@@ -207,22 +207,21 @@ function RunningPaceChart(splits, avgPaceRef, avgHrRef) {
 
             <div class="pace-chart-track">
 
-                <div class="pace-chart-refline" style="bottom:${REFLINE_BOTTOM_PX}px"></div>
-
                 <div class="pace-chart-bars">
+
+                    <div class="pace-chart-refline" style="bottom:${REFLINE_BOTTOM_PX}px"></div>
 
                     ${splits.map(split => {
 
                         const isRest = split.segmentType === "rest";
                         const isFastest = !isRest && hasVariation && split.paceSecPerKm === fastestPace;
                         const isSlowest = !isRest && hasVariation && split.paceSecPerKm === slowestPace;
-                        const showValue = isFastest || isSlowest;
 
                         return `
 
                             <div class="pace-chart-column">
 
-                                <span class="pace-chart-value">${showValue ? formatSecondsAsClock(split.paceSecPerKm) : ""}</span>
+                                <span class="pace-chart-value">${formatSecondsAsClock(split.paceSecPerKm)}</span>
 
                                 <div
                                     class="pace-chart-bar ${isFastest ? "is-fastest" : ""} ${isSlowest ? "is-slowest" : ""} ${isRest ? "is-rest" : ""}"
@@ -237,17 +236,17 @@ function RunningPaceChart(splits, avgPaceRef, avgHrRef) {
 
                     }).join("")}
 
+                    ${hasHr ? `
+
+                        <div class="pace-chart-hr-overlay" style="bottom:${LAP_LABEL_SPACE_PX}px;height:${CHART_HEIGHT_PX}px">
+
+                            ${RunningHrOverlay(splits, avgHrRef)}
+
+                        </div>
+
+                    ` : ""}
+
                 </div>
-
-                ${hasHr ? `
-
-                    <div class="pace-chart-hr-overlay" style="bottom:${LAP_LABEL_SPACE_PX}px;height:${CHART_HEIGHT_PX}px">
-
-                        ${RunningHrOverlay(splits, avgHrRef)}
-
-                    </div>
-
-                ` : ""}
 
             </div>
 
