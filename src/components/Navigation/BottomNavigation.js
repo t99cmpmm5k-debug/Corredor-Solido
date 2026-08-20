@@ -6,11 +6,13 @@ import { getState } from "../../core/state.js";
 import { Home } from "../../pages/Home/Home.js";
 import { Plan } from "../../pages/Plan/Plan.js";
 import { Running } from "../../pages/Running/Running.js";
+import { Carreras } from "../../pages/Carreras/Carreras.js";
 import { Profile } from "../../pages/Profile/Profile.js";
 import { Gym } from "../../pages/Gym/Gym.js";
 import { resetPlanView } from "../../pages/Plan/planStore.js";
+import { resetCarrerasView } from "../../pages/Carreras/carrerasStore.js";
 
-const PAGES = { home: Home, plan: Plan, running: Running, profile: Profile, gym: Gym };
+const PAGES = { home: Home, plan: Plan, running: Running, carreras: Carreras, profile: Profile, gym: Gym };
 
 export function BottomNavigation() {
 
@@ -40,6 +42,14 @@ export function BottomNavigation() {
                 <iconify-icon icon="solar:running-bold-duotone"></iconify-icon>
 
                 <small>Running</small>
+
+            </button>
+
+            <button class="nav-item ${currentPage === Carreras ? "active" : ""}" data-page="carreras">
+
+                <iconify-icon icon="solar:flag-2-bold-duotone"></iconify-icon>
+
+                <small>Carreras</small>
 
             </button>
 
@@ -78,6 +88,7 @@ export function initBottomNavigationEvents() {
             // persiste, para que "Plan" sea siempre predecible ("qué toca
             // ahora"), no una vuelta a donde lo dejaste.
             if (page === Plan) resetPlanView();
+            if (page === Carreras) resetCarrerasView();
 
             navigate(page);
 

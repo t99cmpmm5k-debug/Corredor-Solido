@@ -8,6 +8,7 @@ import { initPlanConnector } from "../pages/Plan/components/PlanConnector.js";
 import { initRunningEvents } from "../pages/Running/initRunningEvents.js";
 import { initProfileEvents } from "../pages/Profile/initProfileEvents.js";
 import { initGymEvents } from "../pages/Gym/initGymEvents.js";
+import { initCarrerasEvents } from "../pages/Carreras/initCarrerasEvents.js";
 
 export function render() {
 
@@ -36,5 +37,7 @@ export function render() {
     initProfileEvents();
 
     initGymEvents();
+
+    initCarrerasEvents();
 
 }

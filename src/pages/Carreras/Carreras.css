@@ -1,0 +1,196 @@
+.carreras{
+
+    width:100%;
+
+    min-height:100vh;
+    min-height:100dvh;
+
+}
+
+.carreras-content{
+
+    padding:24px;
+
+    padding-top:calc(24px + env(safe-area-inset-top));
+
+    padding-bottom:calc(110px + env(safe-area-inset-bottom));
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:18px;
+
+}
+
+.carreras-header h1{
+
+    color:var(--text-primary);
+
+    font-size:1.6rem;
+
+    font-weight:800;
+
+}
+
+.carreras-subtitle{
+
+    color:var(--text-secondary);
+
+    font-size:.85rem;
+
+    margin-top:2px;
+
+}
+
+/* =========================
+   ESTADO VACÍO
+========================= */
+
+.carreras-empty{
+
+    display:flex;
+
+    flex-direction:column;
+
+    align-items:center;
+
+    gap:12px;
+
+    padding:56px 24px;
+
+    border-radius:var(--radius-xl);
+
+    background:color-mix(in srgb, var(--card-background) 70%, transparent);
+
+    border:1px solid var(--card-border);
+
+    text-align:center;
+
+}
+
+.carreras-empty iconify-icon{
+
+    font-size:52px;
+
+    color:var(--color-danger);
+
+}
+
+.carreras-empty p{
+
+    color:var(--text-secondary);
+
+}
+
+.carreras-empty-hint{
+
+    font-size:.8rem;
+
+    opacity:.8;
+
+}
+
+/* =========================
+   PANEL DEL DÍA SELECCIONADO
+========================= */
+
+.carreras-day-panel{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:10px;
+
+}
+
+.carreras-day-panel-title{
+
+    color:var(--text-secondary);
+
+    font-size:.75rem;
+
+    font-weight:700;
+
+    letter-spacing:.04em;
+
+    text-transform:uppercase;
+
+}
+
+.carreras-day-race{
+
+    width:100%;
+
+    display:flex;
+
+    align-items:center;
+
+    gap:12px;
+
+    padding:14px 16px;
+
+    border-radius:var(--radius-lg);
+
+    background:color-mix(in srgb, var(--card-background) 70%, transparent);
+
+    border:1px solid var(--card-border);
+
+    color:var(--text-primary);
+
+    text-align:left;
+
+    cursor:pointer;
+
+}
+
+.carreras-day-race iconify-icon:first-child{
+
+    flex-shrink:0;
+
+    font-size:22px;
+
+    color:var(--color-danger);
+
+}
+
+.carreras-day-race-text{
+
+    flex:1;
+
+    min-width:0;
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:2px;
+
+}
+
+.carreras-day-race-title{
+
+    font-weight:700;
+
+    font-size:.92rem;
+
+}
+
+.carreras-day-race-stats{
+
+    color:var(--text-secondary);
+
+    font-size:.78rem;
+
+}
+
+.carreras-day-race-chevron{
+
+    flex-shrink:0;
+
+    color:var(--text-secondary);
+
+    font-size:18px;
+
+}
