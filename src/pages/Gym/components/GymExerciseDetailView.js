@@ -120,6 +120,13 @@ function HistoryRow(entry, weightUnit, expandedSessionId) {
 
                     `).join("")}
 
+                    <button class="gym-history-delete" data-action="delete-gym-session" data-session-id="${entry.sessionId}">
+
+                        <iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon>
+                        Borrar sesión
+
+                    </button>
+
                 </div>
 
             ` : ""}

@@ -1,4 +1,4 @@
-import { STORES, getAll, put } from "./db.js";
+import { STORES, getAll, put, remove } from "./db.js";
 import { generateId } from "../utils/id.js";
 import { formatISODate } from "../utils/date.js";
 import { getGymDay } from "./gymRoutineStore.js";
@@ -111,6 +111,17 @@ export function startSession(dayId) {
 export function getSessionById(id) {
 
     return sessions.find(s => s.id === id) || null;
+
+}
+
+export function deleteSession(id) {
+
+    const index = sessions.findIndex(s => s.id === id);
+    if (index === -1) return;
+
+    sessions.splice(index, 1);
+
+    remove(STORES.gymSessions, id).catch(() => {});
 
 }
 

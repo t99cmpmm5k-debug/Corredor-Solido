@@ -1,5 +1,5 @@
 import { rerender } from "../../core/router.js";
-import { startSession, updateSet, updateExerciseNotes, finishSession, getSessionById, hydrate } from "../../data/gymSessionStore.js";
+import { startSession, updateSet, updateExerciseNotes, finishSession, getSessionById, deleteSession, hydrate } from "../../data/gymSessionStore.js";
 import { saveImportedRoutine, undoRoutineImport } from "../../data/gymRoutineStore.js";
 import { importGymRoutine } from "../../importers/gym/index.js";
 
@@ -487,6 +487,23 @@ export function initGymEvents() {
 
             const sessionId = button.dataset.sessionId;
             setDetailExpandedSessionId(getDetailExpandedSessionId() === sessionId ? null : sessionId);
+            rerender();
+
+        });
+
+    });
+
+    // TODO: sustituir este confirm() nativo por el patrón "pulsa otra vez
+    // para confirmar" — pendiente a propósito, mismo motivo que
+    // delete-workout en Running (ver initRunningEvents.js).
+    document.querySelectorAll('[data-action="delete-gym-session"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+
+            if (!window.confirm("¿Borrar esta sesión? No se puede deshacer.")) return;
+
+            deleteSession(button.dataset.sessionId);
+            setDetailExpandedSessionId(null);
             rerender();
 
         });
