@@ -32,7 +32,8 @@ import {
     getEditingShoeId,
     setEditingShoeId,
     getNewShoePhoto,
-    setNewShoePhoto
+    setNewShoePhoto,
+    toggleSort
 } from "./runningStore.js";
 
 const DETAIL_HISTORY_STATE = { runningDetail: true };
@@ -654,6 +655,15 @@ export function initRunningEvents() {
     document.querySelectorAll('[data-action="close-history-table"]').forEach(button => {
 
         button.addEventListener("click", closeHistoryTable);
+
+    });
+
+    document.querySelectorAll('[data-action="sort-history-table"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+            toggleSort(button.dataset.column);
+            rerender();
+        });
 
     });
 

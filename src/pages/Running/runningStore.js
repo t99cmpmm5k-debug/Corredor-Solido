@@ -40,6 +40,38 @@ export function setTypeFilter(type) {
 
 }
 
+// Orden de la tabla completa (RunningFullTableView) — aparte de `wizard`
+// por el mismo motivo que typeFilter. "date"/"desc" por defecto reproduce
+// el orden fijo de siempre (más reciente primero), así que nada cambia
+// visualmente hasta que se toca una cabecera.
+let sortColumn = "date";
+let sortDirection = "desc";
+
+export function getSortColumn() {
+
+    return sortColumn;
+
+}
+
+export function getSortDirection() {
+
+    return sortDirection;
+
+}
+
+// Tocar una columna nueva ordena descendente; tocar la misma columna
+// alterna la dirección — como un filtro, no como un reset.
+export function toggleSort(column) {
+
+    if (sortColumn === column) {
+        sortDirection = sortDirection === "desc" ? "asc" : "desc";
+    } else {
+        sortColumn = column;
+        sortDirection = "desc";
+    }
+
+}
+
 export function getWizardStep() {
 
     return wizard.step;

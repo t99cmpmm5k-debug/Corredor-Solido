@@ -643,7 +643,7 @@
 
     display:grid;
 
-    grid-template-columns:64px 64px 68px 76px 56px 1fr 18px;
+    grid-template-columns:64px 64px 66px 68px 76px 56px 1fr 18px;
 
     align-items:center;
 
@@ -682,6 +682,59 @@
     text-transform:uppercase;
 
     letter-spacing:.03em;
+
+}
+
+/* Cabecera tocable (ver SortableHeaderCell en Running.js) — reset de
+   <button> para que se vea igual que la <span> que sustituye, con un
+   indicador de orden siempre visible (↕ tenue si la columna no es la
+   activa, ↑/↓ en color si lo es) para que no haga falta descubrir por
+   accidente que la tabla se puede ordenar. */
+.history-table-cell--sortable{
+
+    display:inline-flex;
+
+    align-items:center;
+
+    gap:3px;
+
+    border:none;
+
+    background:none;
+
+    padding:0;
+
+    font:inherit;
+
+    cursor:pointer;
+
+}
+
+.history-table-cell--sortable:active{
+
+    opacity:.6;
+
+}
+
+.history-table-cell--sortable.is-active{
+
+    color:var(--color-primary);
+
+}
+
+.history-table-sort-icon{
+
+    flex-shrink:0;
+
+    font-size:.7rem;
+
+    color:var(--color-text-muted);
+
+}
+
+.history-table-cell--sortable.is-active .history-table-sort-icon{
+
+    color:var(--color-primary);
 
 }
 
