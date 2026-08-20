@@ -1,6 +1,7 @@
 import "./RunningShoesScreen.css";
 
 import { getShoeTotalKm } from "../../../data/workoutStore.js";
+import { formatShoeName } from "../../../utils/format.js";
 
 export function formatKm(km) {
 
@@ -133,7 +134,7 @@ function ShoeCard(shoe, km, isEditing, pendingPhoto) {
 
                 <div class="shoe-card-body">
 
-                    <p class="shoe-card-name">${shoe.brand} ${shoe.model}</p>
+                    <p class="shoe-card-name">${formatShoeName(shoe)}</p>
 
                     ${ShoeBar(shoe, km)}
 
@@ -177,7 +178,7 @@ function RetiredShoeCard(shoe, km) {
 
                 <div class="shoe-card-body">
 
-                    <p class="shoe-card-name">${shoe.brand} ${shoe.model}</p>
+                    <p class="shoe-card-name">${formatShoeName(shoe)}</p>
 
                     <p class="shoe-km-plain">${formatKm(km)} · retirada</p>
 

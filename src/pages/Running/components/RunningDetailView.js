@@ -1,7 +1,7 @@
 import "./RunningDetailView.css";
 
 import { formatWeekday, formatDayMonth } from "../../../utils/date.js";
-import { formatSecondsAsClock } from "../../../utils/format.js";
+import { formatSecondsAsClock, formatShoeName } from "../../../utils/format.js";
 import { RUNNING_WORKOUT_TYPES } from "../../../data/runningWorkoutTypes.js";
 
 // Garmin cierra la vuelta en curso al parar el cronómetro, así que la
@@ -315,7 +315,7 @@ function shoeSelector(workout, shoes) {
 
                 <option value="${shoe.id}" ${workout.shoeId === shoe.id ? "selected" : ""}>
 
-                    ${shoe.brand} ${shoe.model}
+                    ${formatShoeName(shoe)}
 
                 </option>
 
@@ -443,7 +443,7 @@ export function RunningDetailView(workout, shoes = []) {
 
                 ${detailStat("solar:round-alt-arrow-up-bold-duotone", "Cadencia", workout.avgCadence != null ? `${workout.avgCadence} spm` : "—")}
 
-                ${detailStat("solar:mountains-bold-duotone", "Desnivel +", workout.elevationGainM != null ? `${workout.elevationGainM} m` : "—")}
+                ${detailStat("solar:route-bold-duotone", "Desnivel +", workout.elevationGainM != null ? `${workout.elevationGainM} m` : "—")}
 
                 ${detailStat("solar:clock-circle-bold-duotone", "Hora", workout.time || "—")}
 

@@ -1,7 +1,7 @@
 import "./RunningShoeStep.css";
 
 import { formatDayMonth } from "../../../utils/date.js";
-import { formatSecondsAsClock } from "../../../utils/format.js";
+import { formatSecondsAsClock, formatShoeName } from "../../../utils/format.js";
 
 function workoutSummary(workout) {
 
@@ -107,7 +107,7 @@ export function RunningShoeStep({ shoes, selectedShoeId, addingNewShoe, saveErro
 
                                 <iconify-icon icon="solar:running-round-bold-duotone"></iconify-icon>
 
-                                <span>${shoe.brand} ${shoe.model}</span>
+                                <span>${formatShoeName(shoe)}</span>
 
                             </button>
 

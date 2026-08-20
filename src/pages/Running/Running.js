@@ -3,7 +3,7 @@ import "./Running.css";
 import { getWorkouts, getShoes, getPossibleDataLoss, getShoeTotalKm } from "../../data/workoutStore.js";
 import { RUNNING_WORKOUT_TYPES } from "../../data/runningWorkoutTypes.js";
 import { formatDayMonth } from "../../utils/date.js";
-import { formatSecondsAsClock } from "../../utils/format.js";
+import { formatSecondsAsClock, formatShoeName } from "../../utils/format.js";
 import { buildTypeProgressInsight } from "./runningProgress.js";
 import { buildTypeSummary } from "./runningSummary.js";
 
@@ -39,7 +39,7 @@ import { RunningHeader } from "./components/RunningHeader.js";
 function shoeLabel(shoeId, shoes) {
 
     const shoe = shoes.find(s => s.id === shoeId);
-    return shoe ? `${shoe.brand} ${shoe.model}` : "Sin zapatilla";
+    return shoe ? formatShoeName(shoe) : "Sin zapatilla";
 
 }
 
@@ -232,7 +232,7 @@ const TYPE_ICON = {
     easy: "solar:running-bold-duotone",
     series: "solar:bolt-bold-duotone",
     tempo: "solar:clock-circle-bold-duotone",
-    long: "solar:mountains-bold-duotone",
+    long: "solar:route-bold-duotone",
     race: "solar:flag-2-bold-duotone"
 };
 
@@ -306,7 +306,7 @@ function ShoeMileageRow(shoe, km) {
 
             ${ShoePhoto(shoe.photo)}
 
-            <span class="shoe-mileage-name">${shoe.brand} ${shoe.model}</span>
+            <span class="shoe-mileage-name">${formatShoeName(shoe)}</span>
 
             <div class="shoe-mileage-bar-track">
 

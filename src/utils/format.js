@@ -19,6 +19,21 @@ export function formatSecondsAsClock(totalSeconds) {
 
 }
 
+// Algunas zapatillas se guardaron con la marca ya repetida dentro del
+// modelo (tecleado a mano en el formulario, sin ningún autocompletado de
+// por medio) — sin esta comprobación, concatenar brand+model a ciegas
+// muestra "Adidas Adidas zero evo sl" en vez de "Adidas zero evo sl".
+export function formatShoeName(shoe) {
+
+    const brand = shoe.brand?.trim() ?? "";
+    const model = shoe.model?.trim() ?? "";
+
+    if (model.toLowerCase().startsWith(brand.toLowerCase()) && brand) return model;
+
+    return `${brand} ${model}`.trim();
+
+}
+
 export function parseClockToSeconds(text) {
 
     const trimmed = String(text ?? "").trim();
