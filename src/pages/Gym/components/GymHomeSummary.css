@@ -233,6 +233,8 @@
 
 .gym-week-summary-header{
 
+    width:100%;
+
     display:flex;
 
     align-items:baseline;
@@ -240,6 +242,18 @@
     justify-content:space-between;
 
     gap:12px;
+
+    border:none;
+
+    background:none;
+
+    padding:0;
+
+    text-align:left;
+
+    cursor:pointer;
+
+    font-family:inherit;
 
 }
 
@@ -284,5 +298,126 @@
     background:linear-gradient(90deg, var(--color-primary), var(--color-secondary));
 
     transition:width .3s ease;
+
+}
+
+/*==========================
+   LISTADO DEL DESPLEGABLE
+   (borrado de sesiones desde el resumen semanal)
+==========================*/
+
+.gym-week-sessions-empty{
+
+    margin-top:14px;
+
+    color:var(--text-secondary);
+
+    font-size:.82rem;
+
+    text-align:center;
+
+}
+
+.gym-week-sessions-list{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:8px;
+
+    margin-top:14px;
+
+}
+
+.gym-week-session-row{
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:space-between;
+
+    gap:12px;
+
+    padding:10px 12px;
+
+    border-radius:var(--radius-md, 12px);
+
+    background:color-mix(in srgb, var(--card-background) 60%, transparent);
+
+    border:1px solid color-mix(in srgb, var(--card-border) 70%, transparent);
+
+}
+
+.gym-week-session-info{
+
+    display:flex;
+
+    align-items:baseline;
+
+    gap:10px;
+
+    min-width:0;
+
+}
+
+.gym-week-session-date{
+
+    flex-shrink:0;
+
+    color:var(--color-primary);
+
+    font-size:.78rem;
+
+    font-weight:800;
+
+}
+
+.gym-week-session-title{
+
+    min-width:0;
+
+    color:var(--text-primary);
+
+    font-size:.85rem;
+
+    font-weight:700;
+
+    white-space:nowrap;
+
+    overflow:hidden;
+
+    text-overflow:ellipsis;
+
+}
+
+.gym-week-session-delete{
+
+    flex-shrink:0;
+
+    display:flex;
+
+    background:none;
+
+    border:none;
+
+    padding:4px;
+
+    cursor:pointer;
+
+}
+
+.gym-week-session-delete iconify-icon{
+
+    font-size:18px;
+
+    color:var(--color-text-muted);
+
+}
+
+.gym-week-session-delete:hover iconify-icon{
+
+    color:var(--color-danger);
 
 }

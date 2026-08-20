@@ -6,7 +6,9 @@ const store = {
 
     detailExerciseId: null,
     detailTab: "historial",
-    detailExpandedSessionId: null
+    detailExpandedSessionId: null,
+
+    weekSummaryExpanded: false
 
 };
 
@@ -94,6 +96,22 @@ export function resetExerciseDetail() {
     store.detailExerciseId = null;
     store.detailTab = "historial";
     store.detailExpandedSessionId = null;
+
+}
+
+/*==========================
+   RESUMEN SEMANAL (pantalla principal)
+==========================*/
+
+export function getWeekSummaryExpanded() {
+
+    return store.weekSummaryExpanded;
+
+}
+
+export function toggleWeekSummaryExpanded() {
+
+    store.weekSummaryExpanded = !store.weekSummaryExpanded;
 
 }
 

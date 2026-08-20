@@ -58,25 +58,44 @@ export function getUpcomingGymDays(days, todayISO, count = 4) {
 
 }
 
-// Sesiones completadas vs. programadas de la semana ISO actual (lunes a
-// domingo, mismo criterio que Plan) — solo cuenta días con weekday real y
-// sesiones que de verdad pertenecen a la rutina activa (scheduledIds),
-// para no arrastrar histórico de una rutina ya sustituida.
-export function getWeekProgress(days, sessions, todayISO) {
+// Sesiones completadas de la semana ISO actual (lunes a domingo, mismo
+// criterio que Plan) — solo cuenta sesiones que de verdad pertenecen a la
+// rutina activa (scheduledIds), para no arrastrar histórico de una rutina
+// ya sustituida. Compartido por getWeekProgress() (solo el conteo) y
+// getWeekSessions() (el listado para poder borrar desde el resumen
+// semanal) para no duplicar el criterio de "qué cuenta como esta semana".
+function completedThisWeek(days, sessions, todayISO) {
 
-    const scheduled = scheduledDays(days);
-    const scheduledIds = new Set(scheduled.map(day => day.id));
+    const scheduledIds = new Set(scheduledDays(days).map(day => day.id));
 
     const weekStart = getWeekStartDate(todayISO);
     const weekEnd = addDays(weekStart, 6);
 
-    const completed = sessions.filter(session =>
+    return sessions.filter(session =>
         session.finishedAt &&
         session.date >= weekStart &&
         session.date <= weekEnd &&
         scheduledIds.has(session.dayId)
-    ).length;
+    );
 
-    return { completed, total: scheduled.length };
+}
+
+export function getWeekProgress(days, sessions, todayISO) {
+
+    return {
+        completed: completedThisWeek(days, sessions, todayISO).length,
+        total: scheduledDays(days).length
+    };
+
+}
+
+// Mismas sesiones que cuenta getWeekProgress(), pero el listado completo
+// en vez de solo el número — para el desplegable del resumen semanal
+// donde se pueden borrar una a una. Más reciente primero, igual que
+// HistoryTab en GymExerciseDetailView.js.
+export function getWeekSessions(days, sessions, todayISO) {
+
+    return completedThisWeek(days, sessions, todayISO)
+        .sort((a, b) => b.date.localeCompare(a.date));
 
 }

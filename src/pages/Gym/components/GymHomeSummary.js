@@ -1,5 +1,5 @@
 import "./GymHomeSummary.css";
-import { formatDayNumber, getDayAbbreviation } from "../../../utils/date.js";
+import { formatDayNumber, formatDayMonth, getDayAbbreviation } from "../../../utils/date.js";
 
 function todayCard(day) {
 
@@ -71,7 +71,48 @@ function upcomingItem({ day, date }) {
 
 }
 
-function weekSummary({ completed, total }) {
+function weekSessionRow(session) {
+
+    return `
+
+        <li class="gym-week-session-row">
+
+            <div class="gym-week-session-info">
+
+                <span class="gym-week-session-date">${formatDayMonth(session.date)}</span>
+
+                <span class="gym-week-session-title">${session.dayTitle}</span>
+
+            </div>
+
+            <button class="gym-week-session-delete" data-action="delete-gym-session" data-session-id="${session.id}">
+
+                <iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon>
+
+            </button>
+
+        </li>
+
+    `;
+
+}
+
+// sessions llega ya formada por Gym.js (fecha + título del día), no una
+// sesión cruda — este componente solo renderiza, mismo criterio que
+// todayCard/upcomingItem más arriba.
+function weekSessionsList(sessions) {
+
+    if (!sessions.length) {
+
+        return `<p class="gym-week-sessions-empty">Aún no hay sesiones completadas esta semana.</p>`;
+
+    }
+
+    return `<ul class="gym-week-sessions-list">${sessions.map(weekSessionRow).join("")}</ul>`;
+
+}
+
+function weekSummary({ completed, total, expanded, sessions }) {
 
     const percent = total ? Math.round((completed / total) * 100) : 0;
 
@@ -79,19 +120,21 @@ function weekSummary({ completed, total }) {
 
         <div class="gym-week-summary">
 
-            <div class="gym-week-summary-header">
+            <button class="gym-week-summary-header" data-action="toggle-week-summary">
 
                 <h2>Resumen semanal</h2>
 
                 <span>${completed}/${total} sesiones completadas</span>
 
-            </div>
+            </button>
 
             <div class="gym-week-progress-track">
 
                 <div class="gym-week-progress-fill" style="width:${percent}%"></div>
 
             </div>
+
+            ${expanded ? weekSessionsList(sessions) : ""}
 
         </div>
 
@@ -101,7 +144,9 @@ function weekSummary({ completed, total }) {
 
 // todayDay puede ser null (día de descanso real — hoy no coincide con
 // ningún día de la rutina). upcoming/weekProgress vienen ya calculados por
-// gymSchedule.js — este componente solo renderiza.
+// gymSchedule.js — este componente solo renderiza. weekProgress incluye
+// además expanded/sessions (estado del desplegable y su listado, con
+// dayTitle ya resuelto) para el borrado desde el resumen semanal.
 export function GymHomeSummary({ todayDay, upcoming, weekProgress }) {
 
     return `

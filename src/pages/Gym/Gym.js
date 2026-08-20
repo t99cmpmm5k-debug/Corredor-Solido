@@ -3,13 +3,13 @@ import "./Gym.css";
 import { BottomNavigation } from "../../components/Navigation/BottomNavigation.js";
 import { getGymDays, getGymDay } from "../../data/gymRoutineStore.js";
 import { getSessionById, getGymSessions, getExerciseSessionHistory } from "../../data/gymSessionStore.js";
-import { getStep, getActiveSessionId, getDetailExerciseId, getDetailTab, getDetailExpandedSessionId } from "./gymStore.js";
+import { getStep, getActiveSessionId, getDetailExerciseId, getDetailTab, getDetailExpandedSessionId, getWeekSummaryExpanded } from "./gymStore.js";
 import { GymSessionView } from "./components/GymSessionView.js";
 import { GymExerciseDetailView } from "./components/GymExerciseDetailView.js";
 import { GymImportWizard } from "./components/GymImportWizard.js";
 import { GymHomeSummary } from "./components/GymHomeSummary.js";
 import { getImportStep } from "./gymImportStore.js";
-import { hasWeeklySchedule, getTodayGymDay, getUpcomingGymDays, getWeekProgress } from "./gymSchedule.js";
+import { hasWeeklySchedule, getTodayGymDay, getUpcomingGymDays, getWeekProgress, getWeekSessions } from "./gymSchedule.js";
 import { formatISODate } from "../../utils/date.js";
 
 function DayCard(day) {
@@ -48,11 +48,23 @@ function GymHomeSummarySection(days) {
     if (!hasWeeklySchedule(days)) return "";
 
     const today = formatISODate(new Date());
+    const expanded = getWeekSummaryExpanded();
+
+    // El listado de sesiones (con el título del día ya resuelto) solo
+    // hace falta calcularlo si el desplegable está abierto — evita tirar
+    // de getGymDay() por cada sesión de la semana en cada render normal.
+    const sessions = expanded
+        ? getWeekSessions(days, getGymSessions(), today).map(session => ({
+            id: session.id,
+            date: session.date,
+            dayTitle: getGymDay(session.dayId)?.title ?? "Entrenamiento"
+        }))
+        : [];
 
     return GymHomeSummary({
         todayDay: getTodayGymDay(days, today),
         upcoming: getUpcomingGymDays(days, today),
-        weekProgress: getWeekProgress(days, getGymSessions(), today)
+        weekProgress: { ...getWeekProgress(days, getGymSessions(), today), expanded, sessions }
     });
 
 }

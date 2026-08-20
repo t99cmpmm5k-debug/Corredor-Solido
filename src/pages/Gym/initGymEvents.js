@@ -21,7 +21,8 @@ import {
     setDetailTab,
     getDetailExpandedSessionId,
     setDetailExpandedSessionId,
-    resetExerciseDetail
+    resetExerciseDetail,
+    toggleWeekSummaryExpanded
 } from "./gymStore.js";
 
 import {
@@ -506,6 +507,15 @@ export function initGymEvents() {
             setDetailExpandedSessionId(null);
             rerender();
 
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="toggle-week-summary"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+            toggleWeekSummaryExpanded();
+            rerender();
         });
 
     });
