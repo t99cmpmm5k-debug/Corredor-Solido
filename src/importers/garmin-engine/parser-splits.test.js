@@ -20,6 +20,28 @@ const REAL_HR_TABLE_TEXT = [
     "o) 5:46 156 158 3"
 ].join("\n");
 
+// Texto OCR real (confianza 91%) de la MISMA tabla pero congelada en una
+// posición de scroll intermedia distinta — la cabecera de la primera
+// columna sale mezclada con el final de la columna anterior ("Vuelta dio"
+// en vez de "Vuelta" limpio), y esa misma basura de scroll se pega al
+// número de vuelta en cada fila de forma inconsistente: unas veces sin
+// espacio ("5"+"40" residual = "540"), una vez CON espacio ("7 46"), una
+// vez con dos puntos ("8"+":11" = "8:11"). La versión anterior de HR_ROW
+// (que consumía "un único token" antes del GAP) fallaba justo en la fila
+// con espacio y la perdía entera — de ahí que ahora no se intente
+// entender esa columna en absoluto, solo se busca el patrón GAP+FC+FC en
+// cualquier punto de la línea.
+const REAL_HR_TABLE_TEXT_SCROLL2 = [
+    "Vuelta dio GAP medio Frecuencia cardiaca media Frec. cardiaca max. Ascenso ti]",
+    "/km min/km ppm ppm",
+    "440 5:40 154 158",
+    "540 5:44 154 158",
+    "644 5:46 156 158",
+    "7 46 5:52 154 157",
+    "8:11 6:00 155 157",
+    "Total 40 5:41 152 158 |"
+].join("\n");
+
 // Fila sintética con la forma exacta que exige STANDARD_ROW (vuelta, tiempo
 // con decimales, distancia con coma, ritmo) — no hay una captura OCR real
 // disponible todavía para este formato en este repo; misma convención que
@@ -87,6 +109,26 @@ describe("parser-splits — vista con FC (GAP medio/FC media/FC máx.)", () => {
         const { extras } = parse(REAL_HR_TABLE_TEXT);
 
         expect(extras.laps.every(l => l.distance_km === undefined && l.pace_min_km === undefined)).toBe(true);
+
+    });
+
+    it("extrae las 5 vueltas reales de una captura congelada en otra posición de scroll, incluida la fila con espacio en la basura de columna ('7 46')", () => {
+
+        const { extras } = parse(REAL_HR_TABLE_TEXT_SCROLL2);
+
+        expect(extras.laps).toEqual([
+            { avg_heart_rate_bpm: 154, max_heart_rate_bpm: 158, lap: 1 },
+            { avg_heart_rate_bpm: 154, max_heart_rate_bpm: 158, lap: 2 },
+            { avg_heart_rate_bpm: 156, max_heart_rate_bpm: 158, lap: 3 },
+            { avg_heart_rate_bpm: 154, max_heart_rate_bpm: 157, lap: 4 },
+            { avg_heart_rate_bpm: 155, max_heart_rate_bpm: 157, lap: 5 }
+        ]);
+
+    });
+
+    it("identifica esta segunda posición de scroll como 'splits' pese a la cabecera mezclada", () => {
+
+        expect(detect(REAL_HR_TABLE_TEXT_SCROLL2).type).toBe("splits");
 
     });
 

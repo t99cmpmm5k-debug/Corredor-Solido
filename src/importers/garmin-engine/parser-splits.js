@@ -12,12 +12,19 @@ const STANDARD_ROW = /^\s*([0-9]{1,2})\s+[0-9]{1,2}:[0-5][0-9](?:[.,][0-9]+)?\s+
 // Fila de la vista de Vueltas desplazada a la derecha (columnas GAP
 // medio/FC media/FC máx./Ascenso total, ver screen-detector.js) — no hay
 // distancia aquí, así que esta vista nunca aporta ritmo/distancia por
-// vuelta, solo FC media y máxima. El primer token (número de vuelta) se
-// ignora a propósito: verificado contra una captura real que el motor OCR
-// lo confunde con frecuencia ("&", "o)"...) en esta columna concreta —
-// las vueltas se numeran por orden de aparición en vez de fiarse de ese
-// dígito. El ascenso (última columna) no se captura, no hace falta hoy.
-const HR_ROW = /^\S+\s+[0-9]{1,2}:[0-5][0-9]\s+([0-9]{2,3})\s+([0-9]{2,3})\b/;
+// vuelta, solo FC media y máxima. El número de vuelta (primera columna) se
+// ignora del todo a propósito, no solo su dígito: verificado contra dos
+// capturas reales que, según la posición de scroll en la que se congeló la
+// captura, esa columna trae basura del final de la columna anterior
+// (todavía no ha salido del todo) pegada al número de vuelta — a veces
+// sin espacio ("5" + "40" residual = "540"), a veces con uno ("7 46"),
+// a veces con dos puntos ("8" + ":11" = "8:11"). Intentar consumir "un
+// único token" ahí (como antes) fallaba en la variante con espacio y
+// perdía la fila entera. En vez de intentar entender esa columna, no se
+// anda ni se mira: se busca el patrón GAP+FC+FC en cualquier punto de la
+// línea y las vueltas se numeran por orden de aparición. El ascenso
+// (última columna) no se captura, no hace falta hoy.
+const HR_ROW = /[0-9]{1,2}:[0-5][0-9]\s+([0-9]{2,3})\s+([0-9]{2,3})\b/;
 
 function parseStandardRows(lines) {
 
