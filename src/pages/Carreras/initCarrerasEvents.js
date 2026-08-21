@@ -10,7 +10,7 @@ import {
 } from "./carrerasStore.js";
 
 import { importRaces } from "../../importers/races/index.js";
-import { getPlannedRaces, importPlannedRaces, deletePlannedRacesByBatch } from "../../data/workoutStore.js";
+import { getPlannedRaces, importPlannedRaces, deletePlannedRacesByBatch, deletePlannedRace } from "../../data/workoutStore.js";
 import { RACE_REVIEW_FIELDS, parseRaceFieldValue } from "./components/RaceImportReviewStep.js";
 
 import {
@@ -65,6 +65,25 @@ function closeRaceDetail() {
     }
 
     setSelectedPlannedRaceId(null);
+    rerender();
+
+}
+
+// Un mismo botón sirve para la tarjeta de la lista (Próximas/Pasadas) y
+// para el propio detalle — si la carrera borrada es la que está abierta
+// en el detalle, hay que cerrarlo (ya no queda nada que mostrar), si no,
+// basta con volver a pintar la lista sin ella.
+function deletePlannedRaceEntry(id) {
+
+    if (!window.confirm("¿Borrar esta carrera planificada? No se puede deshacer.")) return;
+
+    deletePlannedRace(id);
+
+    if (getSelectedPlannedRaceId() === id) {
+        closeRaceDetail();
+        return;
+    }
+
     rerender();
 
 }
@@ -238,6 +257,22 @@ export function initCarrerasEvents() {
     document.querySelectorAll('[data-action="open-race-entry"]').forEach(card => {
 
         card.addEventListener("click", () => openRaceEntry(card.dataset.kind, card.dataset.id));
+
+    });
+
+    document.querySelectorAll('[data-action="delete-planned-race"]').forEach(button => {
+
+        button.addEventListener("click", (event) => {
+
+            // En la tarjeta de la lista, todo el <article> abre el detalle
+            // al tocarlo (ver open-race-entry más abajo) — sin esto, borrar
+            // también lo abriría. En el detalle no hace nada (no hay nada
+            // por encima escuchando el click), es inofensivo dejarlo igual.
+            event.stopPropagation();
+
+            deletePlannedRaceEntry(button.dataset.id);
+
+        });
 
     });
 

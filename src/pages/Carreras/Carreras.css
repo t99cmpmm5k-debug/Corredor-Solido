@@ -536,6 +536,14 @@
 
     margin-top:4px;
 
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    gap:8px;
+
     border:1px solid color-mix(in srgb, var(--color-danger) 45%, transparent);
 
     border-radius:var(--radius-md);
@@ -557,5 +565,11 @@
 .wizard-undo-button:hover{
 
     background:color-mix(in srgb, var(--color-danger) 10%, transparent);
+
+}
+
+.wizard-undo-button iconify-icon{
+
+    font-size:16px;
 
 }

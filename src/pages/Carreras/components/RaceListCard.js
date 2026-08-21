@@ -28,6 +28,13 @@ function DateBadge(iso) {
 // contenido sale de la forma normalizada de raceEntries.js, así que una
 // carrera completada sin location/disciplina simplemente no pinta esas
 // líneas en vez de fingirlas.
+//
+// <article>, no <button>: una planificada necesita un botón de borrar
+// propio dentro de la tarjeta (papelera, ver delete-planned-race en
+// initCarrerasEvents.js) — un <button> no puede anidar otro <button>.
+// Mismo patrón que RunningHistoryItem (Running.js): el contenedor entero
+// abre el detalle vía data-action + listener JS, el botón de borrar hace
+// stopPropagation() para no disparar también la apertura.
 export function RaceListCard(entry) {
 
     const image = getRaceImage({ type: entry.disciplineType, name: entry.name, date: entry.date });
@@ -35,7 +42,7 @@ export function RaceListCard(entry) {
 
     return `
 
-        <button
+        <article
             class="race-card ${isPlanned ? "is-planned" : "is-completed"}"
             data-action="open-race-entry"
             data-kind="${entry.kind}"
@@ -71,9 +78,19 @@ export function RaceListCard(entry) {
 
             </div>
 
+            ${isPlanned ? `
+
+                <button class="race-card-delete" data-action="delete-planned-race" data-id="${entry.id}">
+
+                    <iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon>
+
+                </button>
+
+            ` : ""}
+
             <iconify-icon icon="solar:alt-arrow-right-bold-duotone" class="race-card-chevron"></iconify-icon>
 
-        </button>
+        </article>
 
     `;
 

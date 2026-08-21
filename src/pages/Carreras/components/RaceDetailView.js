@@ -108,6 +108,13 @@ export function RaceDetailView(race) {
 
                 ` : ""}
 
+                <button class="wizard-undo-button" data-action="delete-planned-race" data-id="${race.id}">
+
+                    <iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon>
+                    Eliminar carrera
+
+                </button>
+
             </div>
 
         </section>
