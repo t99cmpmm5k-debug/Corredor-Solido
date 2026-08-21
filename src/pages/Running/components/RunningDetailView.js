@@ -158,11 +158,21 @@ function RunningHrOverlay(splits, avgHrRef) {
         return `<span class="pace-chart-hr-dot" style="left:${x}%;bottom:${y}%"></span>`;
     }).join("");
 
+    // Mismo valor que ya se muestra sobre cada barra de ritmo, pero para
+    // FC — solo se pintan donde hrSegments() ya decidió que hay un punto
+    // real (nunca sobre un hueco).
+    const values = segments.flat().map(p => {
+        const { x, y } = point(p);
+        return `<span class="pace-chart-hr-value" style="left:${x}%;bottom:${y}%">${Math.round(p.avgHr)}</span>`;
+    }).join("");
+
     return `
 
         <svg class="pace-chart-hr-lines" viewBox="0 0 100 100" preserveAspectRatio="none">${lines}</svg>
 
         ${dots}
+
+        ${values}
 
     `;
 
@@ -181,11 +191,15 @@ function RunningPaceChart(splits, avgPaceRef, avgHrRef) {
     const slowestPace = Math.max(...paceSplits.map(s => s.paceSecPerKm));
     const hasVariation = fastestPace !== slowestPace;
 
-    // avgHrRef puede venir de workout.avgHr (media OCR de todo el
-    // entreno) aunque ningún split traiga FC propia (caso Garmin) — la
-    // insignia/línea solo tienen sentido si hay al menos un punto real
-    // que dibujar, no solo un número medio suelto sin nada que graficar.
-    const hasHr = avgHrRef != null && splits.some(s => s.avgHr != null);
+    // La insignia de FC media y la línea por km son datos independientes:
+    // Garmin (OCR) solo trae la media general (pantalla Resumen/
+    // Estadísticas) — su "Vueltas" no tabula FC por vuelta, solo la
+    // dibuja como gráfica continua, así que no hay forma de leerla por
+    // OCR. Amazfit (TCX) sí trae FC por trackpoint y por tanto por split.
+    // La insignia se muestra siempre que haya media; la línea solo si hay
+    // al menos un split con FC real que graficar — nunca se inventa.
+    const hasAvgHr = avgHrRef != null;
+    const hasHrLine = splits.some(s => s.avgHr != null);
 
     return `
 
@@ -199,7 +213,7 @@ function RunningPaceChart(splits, avgPaceRef, avgHrRef) {
 
                     <span class="pace-chart-avg-badge">${formatSecondsAsClock(avgPaceRef)}/km medio</span>
 
-                    ${hasHr ? `<span class="pace-chart-avg-badge pace-chart-avg-badge--hr">${Math.round(avgHrRef)} ppm medio</span>` : ""}
+                    ${hasAvgHr ? `<span class="pace-chart-avg-badge pace-chart-avg-badge--hr">${Math.round(avgHrRef)} ppm medio</span>` : ""}
 
                 </div>
 
@@ -236,7 +250,7 @@ function RunningPaceChart(splits, avgPaceRef, avgHrRef) {
 
                     }).join("")}
 
-                    ${hasHr ? `
+                    ${hasHrLine ? `
 
                         <div class="pace-chart-hr-overlay" style="bottom:${LAP_LABEL_SPACE_PX}px;height:${CHART_HEIGHT_PX}px">
 
@@ -250,7 +264,7 @@ function RunningPaceChart(splits, avgPaceRef, avgHrRef) {
 
             </div>
 
-            ${hasHr ? `
+            ${hasHrLine ? `
 
                 <div class="pace-chart-legend">
 

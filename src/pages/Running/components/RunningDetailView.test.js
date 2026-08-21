@@ -1,5 +1,21 @@
 import { describe, it, expect } from "vitest";
-import { hrPointPercent, hrSegments } from "./RunningDetailView.js";
+import { hrPointPercent, hrSegments, RunningDetailView } from "./RunningDetailView.js";
+
+function workout(overrides) {
+    return {
+        id: "w1",
+        date: "2026-08-20",
+        distanceKm: 5,
+        durationSec: 1500,
+        avgPaceSecPerKm: 300,
+        splits: [
+            { lap: 1, paceSecPerKm: 295 },
+            { lap: 2, paceSecPerKm: 305 },
+            { lap: 3, paceSecPerKm: 300 }
+        ],
+        ...overrides
+    };
+}
 
 describe("hrPointPercent", () => {
 
@@ -82,6 +98,51 @@ describe("hrSegments", () => {
 
         expect(segments.length).toBe(1);
         expect(segments[0].map(p => p.index)).toEqual([1]);
+
+    });
+
+});
+
+describe("RunningDetailView — FC en el gráfico de ritmo", () => {
+
+    it("caso Garmin (OCR): muestra el chip de FC media pero no la línea por km cuando los splits no traen FC", () => {
+
+        const html = RunningDetailView(workout({ avgHr: 160 }));
+
+        expect(html).toContain("pace-chart-avg-badge--hr");
+        expect(html).toContain("160 ppm medio");
+        expect(html).not.toContain("pace-chart-hr-overlay");
+        expect(html).not.toContain("pace-chart-hr-value");
+
+    });
+
+    it("caso Amazfit (TCX): muestra el chip y la línea con el valor numérico de FC por km", () => {
+
+        const html = RunningDetailView(workout({
+            avgHr: 145,
+            splits: [
+                { lap: 1, paceSecPerKm: 295, avgHr: 140 },
+                { lap: 2, paceSecPerKm: 305, avgHr: 148 },
+                { lap: 3, paceSecPerKm: 300, avgHr: 150 }
+            ]
+        }));
+
+        expect(html).toContain("pace-chart-avg-badge--hr");
+        expect(html).toContain("pace-chart-hr-overlay");
+        expect(html).toContain("pace-chart-hr-value");
+        expect(html).toContain(">140<");
+        expect(html).toContain(">148<");
+        expect(html).toContain(">150<");
+
+    });
+
+    it("sin FC en absoluto (ni media ni por km): no muestra ningún elemento de FC", () => {
+
+        const html = RunningDetailView(workout());
+
+        expect(html).not.toContain("pace-chart-avg-badge--hr");
+        expect(html).not.toContain("pace-chart-hr-overlay");
+        expect(html).not.toContain("pace-chart-hr-value");
 
     });
 

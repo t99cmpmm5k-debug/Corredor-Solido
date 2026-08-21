@@ -423,6 +423,33 @@
 
 }
 
+/* Mismo tratamiento que .pace-chart-value (encima de la barra de ritmo)
+   pero anclado sobre el punto de FC en vez del top de la columna, ya que
+   su posición vertical varía punto a punto y puede coincidir con la altura
+   de una barra corta -- el fondo de píldora es lo que mantiene el número
+   legible en ese cruce, en vez de superponer texto plano sobre texto. */
+.pace-chart-hr-value{
+
+    position:absolute;
+
+    padding:1px 5px;
+
+    border-radius:999px;
+
+    background:color-mix(in srgb, var(--color-danger) 85%, black 10%);
+
+    color:#fff;
+
+    font-size:.62rem;
+
+    font-weight:700;
+
+    white-space:nowrap;
+
+    transform:translate(-50%, calc(-100% - 8px));
+
+}
+
 .pace-chart-legend{
 
     display:flex;
