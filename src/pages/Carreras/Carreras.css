@@ -29,6 +29,18 @@
 
 .carreras-tabs{
 
+    position:relative;
+
+    z-index:10;
+
+    /* Se superpone sobre la parte baja de la foto del hero (el colchón
+       de padding-bottom:90px de .carreras-hero, libre de texto — ver
+       CarrerasHero.css), igual que .running-summary sobre .running-header.
+       .carreras-content ya mete un gap:18px entre hermanos, así que esto
+       deja un solape neto de unos 50px (68px de este margen menos los
+       18px del gap), por debajo de esos 90px libres. */
+    margin-top:-68px;
+
     display:flex;
 
     gap:8px;

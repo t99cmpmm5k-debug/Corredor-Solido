@@ -1,0 +1,64 @@
+// Datos de fábrica: calendario de carreras de asfalto (RU) de la Región
+// de Murcia y alrededores, agosto 2026 - enero 2027. Son los mismos dos
+// archivos que ya se importaron a mano con el wizard de Carreras
+// (carreras-murcia.json + carreras-murcia-nuevas.json), congelados aquí
+// en el mismo formato final que guarda importPlannedRaces() en
+// workoutStore.js — no pasa por el parser de importación (fieldMeta/
+// importWarnings son solo para la revisión del wizard, no se persisten
+// en el store).
+//
+// Se precargan solos en una instalación nueva si plannedRaces está vacío
+// la primera vez que arranca esa instalación — ver seedPlannedRacesIfNeeded()
+// en src/data/db.js. A partir de ahí son datos normales: cada usuario
+// puede editarlos o borrarlos igual que cualquier carrera importada a
+// mano, sin que afecte a nadie más (no hay sincronización entre
+// dispositivos).
+export const SEED_RACES_BATCH_ID = "seed-races-2026";
+
+export const SEED_RACES = [
+    { id: "seed-race-001", date: "2026-08-22", type: "RU", name: "VIII Carrera Popular Villa de Ojós 2026", location: "Ojós, Murcia", registrationDeadline: "2026-08-19T20:00:00", url: "https://www.alcanzatumeta.es/calendario.php", importBatchId: SEED_RACES_BATCH_ID },
+    { id: "seed-race-002", date: "2026-08-26", type: "RU", name: "30ª Carrera Nocturna Fiestas de Las Torres 2026", location: "Torres de Cotillas (Las), Murcia", registrationDeadline: "2026-08-24T00:00:00", url: "https://www.alcanzatumeta.es/calendario.php", importBatchId: SEED_RACES_BATCH_ID },
+    { id: "seed-race-003", date: "2026-08-29", type: "RU", name: "Chit@ Beer Run Cieza 2026", location: "Cieza, Murcia", registrationDeadline: "2026-08-25T20:00:00", url: "https://www.alcanzatumeta.es/calendario.php", importBatchId: SEED_RACES_BATCH_ID },
+    { id: "seed-race-004", date: "2026-08-29", type: "RU", name: "XLII Carrera Nocturna Alcalde de Águilas 2026", location: "Águilas, Murcia", registrationDeadline: "2026-08-27T00:00:00", url: "https://www.alcanzatumeta.es/calendario.php", importBatchId: SEED_RACES_BATCH_ID },
+    { id: "seed-race-005", date: "2026-08-29", type: "RU", name: "XXXI Cross Subida a la fuente del Sapo", location: "Algar (El), Murcia", registrationDeadline: "2026-08-27T00:00:00", url: "https://www.alcanzatumeta.es/calendario.php", importBatchId: SEED_RACES_BATCH_ID },
+    { id: "seed-race-006", date: "2026-09-05", type: "RU", name: "Carrera Popular San Miguel de Salinas 2026", location: "San Miguel de Salinas, Alicante", registrationDeadline: "2026-09-05T00:00:00", url: "https://www.alcanzatumeta.es/calendario.php", importBatchId: SEED_RACES_BATCH_ID },
+    { id: "seed-race-007", date: "2026-09-06", type: "RU", name: "XI Cross Popular de Fuente Librilla 11.5K 2026", location: "Fuente Librilla, Murcia", registrationDeadline: "2026-09-02T12:00:00", url: "https://www.alcanzatumeta.es/calendario.php", importBatchId: SEED_RACES_BATCH_ID },
+    { id: "seed-race-008", date: "2026-09-12", type: "RU", name: "10K y 5K Villa de Algorfa 2026", location: "Algorfa, Alicante", registrationDeadline: "2026-09-09T20:00:00", url: "https://www.alcanzatumeta.es/calendario.php", importBatchId: SEED_RACES_BATCH_ID },
+    { id: "seed-race-009", date: "2026-09-12", type: "RU", name: "IX 5K Puerto Torrevieja Salinas Torrevieja", location: "Torrevieja, Alicante", registrationDeadline: "2026-09-11T00:00:00", url: "https://www.alcanzatumeta.es/calendario.php", importBatchId: SEED_RACES_BATCH_ID },
+    { id: "seed-race-010", date: "2026-09-13", type: "RU", name: "XXVIII Carrera Subida a la Santa 2026", location: "Totana, Murcia", registrationDeadline: "2026-09-10T20:00:00", url: "https://www.alcanzatumeta.es/calendario.php", importBatchId: SEED_RACES_BATCH_ID },
+    { id: "seed-race-011", date: "2026-09-19", type: "RU", name: "XII Carrera Popular Rafal", location: "Rafal, Alicante", registrationDeadline: "2026-09-18T00:00:00", url: "https://www.alcanzatumeta.es/calendario.php", importBatchId: SEED_RACES_BATCH_ID },
+    { id: "seed-race-012", date: "2026-09-20", type: "RU", name: "XXXII Carrera Popular de Nonduermas 2026", location: "Nonduermas, Murcia", registrationDeadline: "2026-09-16T23:30:00", url: "https://www.alcanzatumeta.es/calendario.php", importBatchId: SEED_RACES_BATCH_ID },
+    { id: "seed-race-013", date: "2026-10-03", type: "RU", name: "IV Media Maratón, 10K y 5K Archena", location: "Archena, Murcia", registrationDeadline: "2026-10-01T20:00:00", url: "https://www.alcanzatumeta.es/calendario.php", importBatchId: SEED_RACES_BATCH_ID },
+    { id: "seed-race-014", date: "2026-10-03", type: "RU", name: "XIV 10K y 5K Villa de Almoradí 2026", location: "Almoradí, Alicante", registrationDeadline: "2026-10-01T00:00:00", url: "https://www.alcanzatumeta.es/calendario.php", importBatchId: SEED_RACES_BATCH_ID },
+    { id: "seed-race-015", date: "2026-10-04", type: "RU", name: "VIII 10KBZO Cabezo de Torres", location: "Cabezo de Torres, Murcia", registrationDeadline: "2026-10-01T20:00:00", url: "https://www.alcanzatumeta.es/calendario.php", importBatchId: SEED_RACES_BATCH_ID },
+    { id: "seed-race-016", date: "2026-10-11", type: "RU", name: "XIV Carrera Urbana La Villa Moratalla", location: "Moratalla, Murcia", registrationDeadline: null, url: "https://www.alcanzatumeta.es/calendario.php", importBatchId: SEED_RACES_BATCH_ID },
+    { id: "seed-race-017", date: "2026-10-17", type: "RU", name: "XI 10KCPC Carrera Solidaria Puerto de Cartagena 2026", location: "Cartagena, Murcia", registrationDeadline: "2026-10-12T20:00:00", url: "https://www.alcanzatumeta.es/calendario.php", importBatchId: SEED_RACES_BATCH_ID },
+    { id: "seed-race-018", date: "2026-10-17", type: "RU", name: "X 5K Ciudad de Elda GRAN PREMIO EGARI", location: "Elda, Alicante", registrationDeadline: "2026-10-17T00:00:00", url: "https://www.alcanzatumeta.es/calendario.php", importBatchId: SEED_RACES_BATCH_ID },
+    { id: "seed-race-019", date: "2026-10-18", type: "RU", name: "Media Maratón Molina de Segura 2026", location: "Molina de Segura, Murcia", registrationDeadline: "2026-10-15T20:00:00", url: "https://www.alcanzatumeta.es/calendario.php", importBatchId: SEED_RACES_BATCH_ID },
+    { id: "seed-race-020", date: "2026-10-25", type: "RU", name: "Media Maratón AZUD Murcia 2026", location: "Murcia, Murcia", registrationDeadline: "2026-10-22T10:00:00", url: "https://www.alcanzatumeta.es/calendario.php", importBatchId: SEED_RACES_BATCH_ID },
+    { id: "seed-race-021", date: "2026-10-25", type: "RU", name: "XIX Carrera Popular Ruta de las Norias 2026", location: "Abarán, Murcia", registrationDeadline: "2026-10-23T00:00:00", url: "https://www.alcanzatumeta.es/calendario.php", importBatchId: SEED_RACES_BATCH_ID },
+    { id: "seed-race-022", date: "2026-11-08", type: "RU", name: "15ª Media Maratón y 10K Pilar de la Horadada", location: "Pilar de la Horadada, Alicante", registrationDeadline: "2026-11-04T00:00:00", url: "https://www.alcanzatumeta.es/calendario.php", importBatchId: SEED_RACES_BATCH_ID },
+    { id: "seed-race-023", date: "2026-11-08", type: "RU", name: "III 5+5 Solidarios ALCANZANDO METAS", location: "Cieza, Murcia", registrationDeadline: "2026-11-05T23:00:00", url: "https://www.alcanzatumeta.es/calendario.php", importBatchId: SEED_RACES_BATCH_ID },
+    { id: "seed-race-024", date: "2026-11-22", type: "RU", name: "VIII Media Maratón Jumilla Ciudad del Vino 2026", location: "Jumilla, Murcia", registrationDeadline: "2026-11-19T20:00:00", url: "https://www.alcanzatumeta.es/calendario.php", importBatchId: SEED_RACES_BATCH_ID },
+    { id: "seed-race-025", date: "2026-11-29", type: "RU", name: "IV Carrera & Marcha Solidaria a favor de ACODIP 2026", location: "Ibi, Alicante", registrationDeadline: "2026-11-27T00:00:00", url: "https://www.alcanzatumeta.es/calendario.php", importBatchId: SEED_RACES_BATCH_ID },
+    { id: "seed-race-026", date: "2026-11-29", type: "RU", name: "XXXVII Media Maratón Ciudad de Cieza y XVII 11.3K Solidarios 2026", location: "Cieza, Murcia", registrationDeadline: "2026-11-26T20:00:00", url: "https://www.alcanzatumeta.es/calendario.php", importBatchId: SEED_RACES_BATCH_ID },
+
+    { id: "seed-race-027", date: "2026-09-27", type: "RU", name: "XXVII Milla Urbana Fiestas Patronales Pilar de la Horadada 2026", location: "Pilar de la Horadada, Alicante", registrationDeadline: null, url: "https://www.alcanzatumeta.es/calendario.php", importBatchId: SEED_RACES_BATCH_ID },
+    { id: "seed-race-028", date: "2026-10-11", type: "RU", name: "Run for Parkinsons LORCA 2026", location: "Lorca, Murcia", registrationDeadline: null, url: "https://www.alcanzatumeta.es/calendario.php", importBatchId: SEED_RACES_BATCH_ID },
+    { id: "seed-race-029", date: "2026-10-17", type: "RU", name: "XIII Milla Urbana Villa de Los Montesinos 2026", location: "Montesinos (Los), Alicante", registrationDeadline: null, url: "https://www.alcanzatumeta.es/calendario.php", importBatchId: SEED_RACES_BATCH_ID },
+    { id: "seed-race-030", date: "2026-10-18", type: "RU", name: "CORRELIMOS 13.4 2026", location: "San Pedro del Pinatar, Murcia", registrationDeadline: null, url: "https://www.alcanzatumeta.es/calendario.php", importBatchId: SEED_RACES_BATCH_ID },
+    { id: "seed-race-031", date: "2026-10-24", type: "RU", name: "XXIV Carrera Popular Ayuntamiento Fuente Álamo 2026", location: "Fuente Alamo, Murcia", registrationDeadline: null, url: "https://www.alcanzatumeta.es/calendario.php", importBatchId: SEED_RACES_BATCH_ID },
+    { id: "seed-race-032", date: "2026-10-25", type: "RU", name: "X Carrera Popular Villa de Redován", location: "Redovan, Alicante", registrationDeadline: null, url: "https://www.alcanzatumeta.es/calendario.php", importBatchId: SEED_RACES_BATCH_ID },
+    { id: "seed-race-033", date: "2026-10-31", type: "RU", name: "XI Carrera Solidaria de Cox", location: "Cox, Alicante", registrationDeadline: null, url: "https://www.alcanzatumeta.es/calendario.php", importBatchId: SEED_RACES_BATCH_ID },
+    { id: "seed-race-034", date: "2026-11-15", type: "RU", name: "III 10K Caravaca", location: "Caravaca de la Cruz, Murcia", registrationDeadline: null, url: "https://www.alcanzatumeta.es/calendario.php", importBatchId: SEED_RACES_BATCH_ID },
+    { id: "seed-race-035", date: "2026-11-22", type: "RU", name: "XV 10K, 5K & Marcha Los Montesinos 2026", location: "Montesinos (Los), Alicante", registrationDeadline: null, url: "https://www.alcanzatumeta.es/calendario.php", importBatchId: SEED_RACES_BATCH_ID },
+    { id: "seed-race-036", date: "2026-12-06", type: "RU", name: "XII Carrera del Pavo y Papa Noel", location: "Molins, Alicante", registrationDeadline: null, url: "https://www.alcanzatumeta.es/calendario.php", importBatchId: SEED_RACES_BATCH_ID },
+    { id: "seed-race-037", date: "2026-12-12", type: "RU", name: "Carrera de Navidad de Callosa de Segura 2026", location: "Callosa de Segura, Alicante", registrationDeadline: null, url: "https://www.alcanzatumeta.es/calendario.php", importBatchId: SEED_RACES_BATCH_ID },
+    { id: "seed-race-038", date: "2026-12-13", type: "RU", name: "XIV Carrera Popular La Joaquinesca 5 y 10K Bigastro", location: "Bigastro, Alicante", registrationDeadline: null, url: "https://www.alcanzatumeta.es/calendario.php", importBatchId: SEED_RACES_BATCH_ID },
+    { id: "seed-race-039", date: "2026-12-19", type: "RU", name: "XIII Carrera de Navidad Vera 2026", location: "Vera, Almeria", registrationDeadline: null, url: "https://www.alcanzatumeta.es/calendario.php", importBatchId: SEED_RACES_BATCH_ID },
+    { id: "seed-race-040", date: "2026-12-20", type: "RU", name: "Carrera y Marcha de Navidad San Miguel de Salinas 2026", location: "San Miguel de Salinas, Alicante", registrationDeadline: null, url: "https://www.alcanzatumeta.es/calendario.php", importBatchId: SEED_RACES_BATCH_ID },
+    { id: "seed-race-041", date: "2026-12-30", type: "RU", name: "VI CAPT San Silvestre Torrevejense 2026", location: "Torrevieja, Alicante", registrationDeadline: null, url: "https://www.alcanzatumeta.es/calendario.php", importBatchId: SEED_RACES_BATCH_ID },
+    { id: "seed-race-042", date: "2026-12-31", type: "RU", name: "12ª San Silvestre Pilareña 2026", location: "Pilar de la Horadada, Alicante", registrationDeadline: null, url: "https://www.alcanzatumeta.es/calendario.php", importBatchId: SEED_RACES_BATCH_ID },
+    { id: "seed-race-043", date: "2026-12-31", type: "RU", name: "San Silvestre Ciudad de Lorca 2026", location: "Lorca, Murcia", registrationDeadline: null, url: "https://www.alcanzatumeta.es/calendario.php", importBatchId: SEED_RACES_BATCH_ID },
+    { id: "seed-race-044", date: "2027-01-17", type: "RU", name: "Carrera Popular Daya Nueva 2027", location: "Daya Nueva, Alicante", registrationDeadline: null, url: "https://www.alcanzatumeta.es/calendario.php", importBatchId: SEED_RACES_BATCH_ID }
+];

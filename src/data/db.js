@@ -1,5 +1,15 @@
+import { SEED_RACES } from "./seedRaces.js";
+
 const DB_NAME = "corredor-solido";
-const DB_VERSION = 4;
+const DB_VERSION = 5;
+
+// Bookkeeping en meta (misma store que lastExportAt, ver backup.js) — se
+// escribe una sola vez, la primera vez que esta instalación pasa por
+// onupgradeneeded con esta lógica ya presente. Deliberadamente NO se
+// vuelve a comprobar en cada arranque futuro: así, si un usuario borra a
+// mano todas sus plannedRaces más adelante, una subida de DB_VERSION por
+// una función totalmente distinta no las vuelve a traer de vuelta.
+const SEED_RACES_META_KEY = "plannedRacesSeeded";
 
 export const STORES = {
 
@@ -22,11 +32,48 @@ export function isStorageAvailable() {
 
 }
 
+// Precarga plannedRaces con el calendario de fábrica (src/data/seedRaces.js)
+// SOLO la primera vez que esta instalación pasa por aquí, y SOLO si
+// plannedRaces está vacío en ese momento — un usuario que ya tenía sus
+// propias carreras importadas (o que ya recibió el seed antes) no se
+// toca. Usa la misma transacción de versionchange que el resto de
+// upgrade(): en onupgradeneeded esa transacción da acceso a CUALQUIER
+// store ya existente, no solo a las que se crean en esta pasada — no
+// hace falta abrir una transacción aparte.
+//
+// CRÍTICO: esto no lee ni escribe workouts (entrenos reales) en ningún
+// caso — solo toca meta (el flag de "ya se decidió") y plannedRaces.
+function seedPlannedRacesIfNeeded(transaction) {
+
+    const metaStore = transaction.objectStore(STORES.meta);
+    const getRequest = metaStore.get(SEED_RACES_META_KEY);
+
+    getRequest.onsuccess = () => {
+
+        if (getRequest.result) return;
+
+        const racesStore = transaction.objectStore(STORES.plannedRaces);
+        const countRequest = racesStore.count();
+
+        countRequest.onsuccess = () => {
+
+            if (countRequest.result === 0) {
+                SEED_RACES.forEach(race => racesStore.put(race));
+            }
+
+            metaStore.put({ key: SEED_RACES_META_KEY, value: true });
+
+        };
+
+    };
+
+}
+
 // Cada store se crea solo si no existe ya — onupgradeneeded se dispara con
 // TODAS las stores anteriores ya presentes en una DB real (no solo en una
 // nueva), así que crear sin comprobar revienta con "store already exists"
 // en cuanto se sube DB_VERSION para añadir una store nueva.
-function upgrade(db) {
+function upgrade(db, transaction) {
 
     if (!db.objectStoreNames.contains(STORES.workouts)) {
 
@@ -79,6 +126,8 @@ function upgrade(db) {
 
     }
 
+    seedPlannedRacesIfNeeded(transaction);
+
 }
 
 export function openDB() {
@@ -89,7 +138,7 @@ export function openDB() {
 
         const request = indexedDB.open(DB_NAME, DB_VERSION);
 
-        request.onupgradeneeded = () => upgrade(request.result);
+        request.onupgradeneeded = () => upgrade(request.result, request.transaction);
         request.onsuccess = () => resolve(request.result);
         request.onerror = () => reject(request.error);
 
