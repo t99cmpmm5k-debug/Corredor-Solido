@@ -5,6 +5,7 @@ import { generateId } from "../utils/id.js";
 const workouts = [];
 const shoes = [];
 const plannedSessions = [];
+const plannedRaces = [];
 
 let hydrated = null;
 let possibleDataLoss = false;
@@ -55,12 +56,14 @@ export function hydrate() {
     hydrated = Promise.all([
         getAll(STORES.workouts),
         getAll(STORES.shoes),
-        getAll(STORES.plannedSessions)
-    ]).then(([loadedWorkouts, loadedShoes, loadedPlannedSessions]) => {
+        getAll(STORES.plannedSessions),
+        getAll(STORES.plannedRaces)
+    ]).then(([loadedWorkouts, loadedShoes, loadedPlannedSessions, loadedPlannedRaces]) => {
 
         workouts.push(...loadedWorkouts);
         shoes.push(...loadedShoes);
         plannedSessions.push(...loadedPlannedSessions);
+        plannedRaces.push(...loadedPlannedRaces);
 
         // Si antes hubo entrenos guardados (localStorage lo recuerda) y
         // ahora IndexedDB viene vacía, no es "primera vez" — es sospechoso
@@ -110,6 +113,27 @@ export function getPlannedSessions() {
 export function getSessionsForDate(date) {
 
     return plannedSessions.filter(ps => ps.date === date);
+
+}
+
+export function getPlannedRaces() {
+
+    return plannedRaces;
+
+}
+
+// Solo las que aún no han pasado — "de hoy en adelante", igual que
+// getSessionStatus() considera "upcoming" una sesión con fecha futura.
+// No filtra por si ya existe un workout real ese día: enlazar una carrera
+// planificada con su entreno importado es una heurística que no se ha
+// pedido, de momento son dos registros independientes (ver CLAUDE.md).
+export function getUpcomingPlannedRaces() {
+
+    const today = todayMidnight();
+
+    return plannedRaces
+        .filter(r => r.date && parseISODate(r.date) >= today)
+        .sort((a, b) => a.date.localeCompare(b.date));
 
 }
 
@@ -523,6 +547,65 @@ export function importPlannedSessions(sessions) {
     });
 
     return Promise.all(writes).then(() => ({ written, skippedFrozen, batchId }));
+
+}
+
+// Borra una carrera planificada (calendario de Carreras) — no toca ningún
+// workout real, son dos stores distintos igual que deletePlannedSession()
+// frente a workouts.
+export function deletePlannedRace(id) {
+
+    const index = plannedRaces.findIndex(r => r.id === id);
+    if (index === -1) return;
+
+    plannedRaces.splice(index, 1);
+    remove(STORES.plannedRaces, id).catch(() => {});
+
+}
+
+// Deshacer una importación entera de una sentada — mismo patrón que
+// deletePlannedSessionsByBatch().
+export function deletePlannedRacesByBatch(batchId) {
+
+    const toDelete = plannedRaces.filter(r => r.importBatchId === batchId);
+
+    toDelete.forEach(race => deletePlannedRace(race.id));
+
+    return toDelete.length;
+
+}
+
+// Importación de un calendario de carreras (ver src/importers/races/) —
+// dedupe por fecha+nombre: reimportar el mismo archivo actualiza las
+// carreras ya guardadas en vez de duplicarlas, igual que
+// importPlannedSessions() dedupe por fecha+slot.
+export function importPlannedRaces(races) {
+
+    const batchId = generateId();
+    const writes = [];
+
+    races.forEach(race => {
+
+        const existing = plannedRaces.find(
+            r => r.date === race.date && r.name === race.name
+        );
+
+        const record = {
+            id: existing ? existing.id : generateId(),
+            date: race.date,
+            type: race.type,
+            name: race.name,
+            location: race.location,
+            registrationDeadline: race.registrationDeadline,
+            url: race.url,
+            importBatchId: batchId
+        };
+
+        writes.push(upsertInto(plannedRaces, STORES.plannedRaces, record));
+
+    });
+
+    return Promise.all(writes).then(() => ({ written: races.length, batchId }));
 
 }
 

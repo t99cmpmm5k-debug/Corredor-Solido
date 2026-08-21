@@ -194,3 +194,425 @@
     font-size:18px;
 
 }
+
+/* =========================
+   CARRERA FUTURA (planificada, importada del calendario)
+   — misma forma que .carreras-day-race, pero no es un <button> que
+   abra un detalle real (no hay workout todavía): icono outline en vez
+   de sólido, fecha límite de inscripción y botón de enlace propios.
+========================= */
+
+.carreras-day-planned-race{
+
+    display:flex;
+
+    align-items:flex-start;
+
+    gap:12px;
+
+    padding:14px 16px;
+
+    border-radius:var(--radius-lg);
+
+    background:color-mix(in srgb, var(--card-background) 70%, transparent);
+
+    border:1px dashed color-mix(in srgb, var(--color-primary) 45%, transparent);
+
+    color:var(--text-primary);
+
+}
+
+.carreras-day-planned-race iconify-icon:first-child{
+
+    flex-shrink:0;
+
+    margin-top:2px;
+
+    font-size:22px;
+
+    color:var(--color-primary);
+
+}
+
+.carreras-day-planned-race-text{
+
+    flex:1;
+
+    min-width:0;
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:2px;
+
+}
+
+.carreras-day-planned-race-title{
+
+    font-weight:700;
+
+    font-size:.92rem;
+
+}
+
+.carreras-day-planned-race-stats{
+
+    color:var(--text-secondary);
+
+    font-size:.78rem;
+
+}
+
+.carreras-day-planned-race-deadline{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:5px;
+
+    margin-top:4px;
+
+    font-size:.76rem;
+
+    color:var(--text-secondary);
+
+}
+
+.carreras-day-planned-race-deadline iconify-icon{
+
+    font-size:14px;
+
+}
+
+.carreras-day-planned-race-deadline.is-urgent{
+
+    color:var(--color-warning);
+
+    font-weight:700;
+
+}
+
+.carreras-day-planned-race-link{
+
+    flex-shrink:0;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    width:38px;
+
+    height:38px;
+
+    border-radius:50%;
+
+    border:1px solid color-mix(in srgb, var(--color-primary) 40%, transparent);
+
+    background:transparent;
+
+    color:var(--color-primary);
+
+    cursor:pointer;
+
+    transition:.25s;
+
+}
+
+.carreras-day-planned-race-link:hover{
+
+    background:color-mix(in srgb, var(--color-primary) 12%, transparent);
+
+}
+
+.carreras-day-planned-race-link iconify-icon{
+
+    font-size:18px;
+
+}
+
+.carreras-import-button{
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    gap:8px;
+
+    width:100%;
+
+    height:48px;
+
+    border-radius:var(--radius-md);
+
+    border:1px solid color-mix(in srgb, var(--color-primary) 40%, transparent);
+
+    background:color-mix(in srgb, var(--card-background) 60%, transparent);
+
+    color:var(--text-primary);
+
+    font-size:.9rem;
+
+    font-weight:700;
+
+    cursor:pointer;
+
+}
+
+.carreras-import-button iconify-icon{
+
+    font-size:18px;
+
+    color:var(--color-primary);
+
+}
+
+/* =========================
+   WIZARD DE IMPORTACIÓN — mismo cascarón visual que .plan-wizard,
+   copiado en vez de compartido (las páginas no comparten hoja de
+   estilos, ver CLAUDE.md "known duplication").
+========================= */
+
+.carreras-wizard{
+
+    padding:24px;
+
+    padding-top:calc(24px + env(safe-area-inset-top));
+
+    padding-bottom:calc(110px + env(safe-area-inset-bottom));
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:18px;
+
+}
+
+.carreras-wizard .wizard-header{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:12px;
+
+}
+
+.carreras-wizard .wizard-header h2{
+
+    color:var(--text-primary);
+
+    font-size:1.3rem;
+
+    font-weight:800;
+
+}
+
+.carreras-wizard .wizard-close{
+
+    width:44px;
+
+    height:44px;
+
+    flex-shrink:0;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    border-radius:50%;
+
+    border:1px solid color-mix(in srgb, var(--card-border) 14%, transparent);
+
+    background:color-mix(in srgb, var(--card-background) 55%, transparent);
+
+    backdrop-filter:blur(18px);
+    -webkit-backdrop-filter:blur(18px);
+
+    cursor:pointer;
+
+    transition:.25s;
+
+}
+
+.carreras-wizard .wizard-close:hover{
+
+    transform:scale(1.05);
+
+    border-color:var(--color-primary);
+
+}
+
+.carreras-wizard .wizard-close iconify-icon{
+
+    font-size:24px;
+
+    color:var(--text-secondary);
+
+}
+
+.carreras-wizard .wizard-banner{
+
+    display:flex;
+
+    align-items:flex-start;
+
+    gap:10px;
+
+    padding:14px 16px;
+
+    border-radius:var(--radius-md);
+
+    font-size:.88rem;
+
+}
+
+.carreras-wizard .wizard-banner ul{
+
+    margin:0;
+
+    padding-left:1.1em;
+
+}
+
+.carreras-wizard .wizard-banner-error{
+
+    background:color-mix(in srgb, var(--color-danger) 14%, transparent);
+
+    border:1px solid color-mix(in srgb, var(--color-danger) 35%, transparent);
+
+    color:var(--text-primary);
+
+}
+
+.carreras-wizard .wizard-banner-error iconify-icon{
+
+    color:var(--color-danger);
+
+    font-size:20px;
+
+    flex-shrink:0;
+
+}
+
+.carreras-wizard .wizard-banner-warning{
+
+    background:color-mix(in srgb, var(--color-warning) 14%, transparent);
+
+    border:1px solid color-mix(in srgb, var(--color-warning) 35%, transparent);
+
+    color:var(--text-primary);
+
+}
+
+.carreras-wizard .wizard-banner-warning iconify-icon{
+
+    color:var(--color-warning);
+
+    font-size:20px;
+
+    flex-shrink:0;
+
+}
+
+.race-import-success-body{
+
+    display:flex;
+
+    flex-direction:column;
+
+    align-items:center;
+
+    gap:10px;
+
+    padding:32px 16px;
+
+    text-align:center;
+
+}
+
+.race-import-success-body iconify-icon{
+
+    font-size:52px;
+
+    color:var(--color-primary);
+
+}
+
+.race-import-success-body p{
+
+    color:var(--text-secondary);
+
+}
+
+.wizard-primary-button{
+
+    width:100%;
+
+    height:54px;
+
+    border:none;
+
+    border-radius:var(--radius-md);
+
+    background:linear-gradient(90deg, var(--color-primary), var(--color-secondary));
+
+    color:var(--button-text);
+
+    font-size:1rem;
+
+    font-weight:800;
+
+    cursor:pointer;
+
+    box-shadow:0 8px 20px rgba(0,0,0,.25);
+
+}
+
+.wizard-primary-button:hover{
+
+    box-shadow:
+        0 0 26px color-mix(in srgb, var(--color-glow) 55%, transparent),
+        0 8px 20px rgba(0,0,0,.25);
+
+}
+
+.wizard-undo-button{
+
+    width:100%;
+
+    height:48px;
+
+    margin-top:4px;
+
+    border:1px solid color-mix(in srgb, var(--color-danger) 45%, transparent);
+
+    border-radius:var(--radius-md);
+
+    background:transparent;
+
+    color:var(--color-danger);
+
+    font-size:.88rem;
+
+    font-weight:700;
+
+    cursor:pointer;
+
+    transition:.25s;
+
+}
+
+.wizard-undo-button:hover{
+
+    background:color-mix(in srgb, var(--color-danger) 10%, transparent);
+
+}

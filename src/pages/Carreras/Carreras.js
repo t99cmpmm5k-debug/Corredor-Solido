@@ -2,22 +2,33 @@ import "./Carreras.css";
 
 import { BottomNavigation } from "../../components/Navigation/BottomNavigation.js";
 import { MonthCalendar, formatMonthLabel } from "../../components/MonthCalendar/MonthCalendar.js";
-import { getWorkouts } from "../../data/workoutStore.js";
+import { RaceImportWizard } from "./components/RaceImportWizard.js";
+import { getWorkouts, getPlannedRaces } from "../../data/workoutStore.js";
 import { getViewedMonth, getSelectedDate } from "./carrerasStore.js";
+import { getRaceImportStep } from "./raceImportStore.js";
 import { parseISODate, formatDayMonth } from "../../utils/date.js";
 import { formatSecondsAsClock } from "../../utils/format.js";
 
-// Un marcador por carrera de ese día (bandera roja, mismo icono que
-// TYPE_ICON.race en Running.js) — MonthCalendar solo pinta el primero y
-// un "+N" si hay más de uno.
-function raceMarkersByDate(races) {
+const URGENT_DEADLINE_DAYS = 3;
 
-    return races.reduce((map, workout) => {
+// Un marcador por carrera de ese día: sólido para las ya corridas (workout
+// real), outline para las planificadas (importadas, todavía sin correr) —
+// mismo icono, distinto relleno/color para distinguirlas de un vistazo en
+// el calendario. MonthCalendar solo pinta el primero y un "+N" si hay más.
+function raceMarkersByDate(races, plannedRaces) {
 
+    const map = {};
+
+    races.forEach(workout => {
         (map[workout.date] ||= []).push({ icon: "solar:flag-2-bold-duotone", color: "var(--color-danger)" });
-        return map;
+    });
 
-    }, {});
+    plannedRaces.forEach(race => {
+        if (!race.date) return;
+        (map[race.date] ||= []).push({ icon: "solar:flag-2-bold-duotone", color: "var(--color-primary)" });
+    });
+
+    return map;
 
 }
 
@@ -27,10 +38,37 @@ function formatDistance(distanceKm) {
 
 }
 
-// Fila de una carrera dentro del panel del día seleccionado — toca abrir
-// su detalle real, que vive en Running (ver RunningDetailView.js); no se
-// duplica ninguna tarjeta de Running.js, esta es una versión propia y más
-// simple, sin botón de borrar (borrar sigue siendo cosa de Running).
+function formatDeadline(iso) {
+
+    const [datePart, timePart] = iso.split("T");
+    const date = parseISODate(datePart);
+
+    const dateLabel = new Intl.DateTimeFormat("es-ES", { day: "numeric", month: "short" })
+        .format(date)
+        .replace(".", "");
+
+    const timeLabel = timePart ? timePart.slice(0, 5) : null;
+
+    return timeLabel ? `${dateLabel}, ${timeLabel}` : dateLabel;
+
+}
+
+function isDeadlineUrgent(iso) {
+
+    const deadline = new Date(iso);
+    if (Number.isNaN(deadline.getTime())) return false;
+
+    const msUntil = deadline.getTime() - Date.now();
+
+    return msUntil >= 0 && msUntil <= URGENT_DEADLINE_DAYS * 24 * 60 * 60 * 1000;
+
+}
+
+// Fila de una carrera ya corrida (workout real) dentro del panel del día
+// seleccionado — toca abrir su detalle real, que vive en Running (ver
+// RunningDetailView.js); no se duplica ninguna tarjeta de Running.js, esta
+// es una versión propia y más simple, sin botón de borrar (borrar sigue
+// siendo cosa de Running).
 function CarreraRow(workout) {
 
     const distance = formatDistance(workout.distanceKm);
@@ -59,12 +97,64 @@ function CarreraRow(workout) {
 
 }
 
-function SelectedDayPanel(selectedDate, races) {
+// Fila de una carrera planificada (importada, todavía sin correr) — sin
+// detalle al que saltar (no hay workout real todavía), con la fecha
+// límite de inscripción si el archivo la traía y un botón para abrir el
+// enlace de inscripción en una pestaña nueva.
+function PlannedRaceRow(race) {
+
+    const urgent = race.registrationDeadline && isDeadlineUrgent(race.registrationDeadline);
+
+    return `
+
+        <div class="carreras-day-planned-race">
+
+            <iconify-icon icon="solar:flag-2-bold-duotone"></iconify-icon>
+
+            <div class="carreras-day-planned-race-text">
+
+                <span class="carreras-day-planned-race-title">${race.name || "Carrera"}</span>
+
+                ${race.location ? `<span class="carreras-day-planned-race-stats">${race.location}${race.type ? ` · ${race.type}` : ""}</span>` : ""}
+
+                ${race.registrationDeadline ? `
+
+                    <span class="carreras-day-planned-race-deadline ${urgent ? "is-urgent" : ""}">
+
+                        <iconify-icon icon="solar:clock-circle-bold-duotone"></iconify-icon>
+
+                        Inscripción hasta ${formatDeadline(race.registrationDeadline)}
+
+                    </span>
+
+                ` : ""}
+
+            </div>
+
+            ${race.url ? `
+
+                <button class="carreras-day-planned-race-link" data-action="open-race-url" data-url="${race.url}" title="Abrir inscripción">
+
+                    <iconify-icon icon="solar:link-bold-duotone"></iconify-icon>
+
+                </button>
+
+            ` : ""}
+
+        </div>
+
+    `;
+
+}
+
+function SelectedDayPanel(selectedDate, races, plannedRaces) {
 
     if (!selectedDate) return "";
 
     const dayRaces = races.filter(w => w.date === selectedDate);
-    if (!dayRaces.length) return "";
+    const dayPlannedRaces = plannedRaces.filter(r => r.date === selectedDate);
+
+    if (!dayRaces.length && !dayPlannedRaces.length) return "";
 
     return `
 
@@ -74,6 +164,8 @@ function SelectedDayPanel(selectedDate, races) {
 
             ${dayRaces.map(CarreraRow).join("")}
 
+            ${dayPlannedRaces.map(PlannedRaceRow).join("")}
+
         </section>
 
     `;
@@ -82,7 +174,28 @@ function SelectedDayPanel(selectedDate, races) {
 
 export function Carreras() {
 
+    // El wizard de importación se superpone a la pantalla normal de
+    // Carreras (mismo patrón que en Plan) en vez de vivir en su propia
+    // ruta — así el gesto de atrás del móvil puede cerrarlo sin salir de
+    // la app.
+    if (getRaceImportStep() !== "closed") {
+
+        return `
+
+            <section class="carreras">
+
+                ${RaceImportWizard()}
+
+            </section>
+
+            ${BottomNavigation()}
+
+        `;
+
+    }
+
     const races = getWorkouts().filter(w => w.type === "race");
+    const plannedRaces = getPlannedRaces();
     const viewedMonth = getViewedMonth();
     const selectedDate = getSelectedDate();
 
@@ -105,7 +218,15 @@ export function Carreras() {
 
                 </header>
 
-                ${races.length === 0 ? `
+                <button class="carreras-import-button" data-action="open-race-import">
+
+                    <iconify-icon icon="solar:calendar-add-bold-duotone"></iconify-icon>
+
+                    Importar carreras
+
+                </button>
+
+                ${races.length === 0 && plannedRaces.length === 0 ? `
 
                     <div class="carreras-empty">
 
@@ -113,19 +234,19 @@ export function Carreras() {
 
                         <p>Aún no has registrado ninguna carrera.</p>
 
-                        <p class="carreras-empty-hint">Importa una carrera desde Running y clasifícala como "Carrera" para verla aquí.</p>
+                        <p class="carreras-empty-hint">Importa un calendario de carreras futuras, o clasifica un entreno como "Carrera" desde Running para verlo aquí.</p>
 
                     </div>
 
                 ` : `
 
                     ${MonthCalendar(viewedMonth, {
-                        markersByDate: raceMarkersByDate(races),
+                        markersByDate: raceMarkersByDate(races, plannedRaces),
                         selectedDate,
                         dataAction: "select-race-day"
                     })}
 
-                    ${SelectedDayPanel(selectedDate, races)}
+                    ${SelectedDayPanel(selectedDate, races, plannedRaces)}
 
                 `}
 
