@@ -1,44 +1,60 @@
-function monthStartOf(date) {
+// "Completadas vs planificadas" es la única distinción que ya existe en
+// los datos (workouts type:"race" frente a plannedRaces) — las 3 tabs de
+// la lista son ese mismo cruce, no una categorización nueva:
+//   - proximas: planificada con fecha de hoy en adelante (aún no corrida)
+//   - misCarreras: completada (hay un workout real, sea cual sea su fecha)
+//   - pasadas: planificada con fecha ya vencida (nunca se corrió, o se
+//     corrió pero no hay forma de enlazarla con su workout real todavía)
+export const RACE_TABS = ["proximas", "misCarreras", "pasadas"];
 
-    return new Date(date.getFullYear(), date.getMonth(), 1);
+let activeTab = "proximas";
+let searchQuery = "";
+let selectedPlannedRaceId = null;
 
-}
+export function getActiveTab() {
 
-let viewedMonth = monthStartOf(new Date());
-let selectedDate = null;
-
-export function getViewedMonth() {
-
-    return viewedMonth;
-
-}
-
-export function shiftViewedMonth(deltaMonths) {
-
-    viewedMonth = monthStartOf(new Date(viewedMonth.getFullYear(), viewedMonth.getMonth() + deltaMonths, 1));
-    selectedDate = null;
+    return activeTab;
 
 }
 
-export function getSelectedDate() {
+export function setActiveTab(tab) {
 
-    return selectedDate;
-
-}
-
-export function setSelectedDate(date) {
-
-    selectedDate = date;
+    if (!RACE_TABS.includes(tab)) return;
+    activeTab = tab;
 
 }
 
-// Carreras siempre arranca en el mes actual al entrar desde la
-// navegación — mismo criterio que resetPlanView() en Plan: el mes que
-// estuvieras viendo antes no persiste, para que "Carreras" sea siempre
-// predecible ("qué se corrió este mes"), no una vuelta a donde lo dejaste.
+export function getSearchQuery() {
+
+    return searchQuery;
+
+}
+
+export function setSearchQuery(query) {
+
+    searchQuery = query;
+
+}
+
+export function getSelectedPlannedRaceId() {
+
+    return selectedPlannedRaceId;
+
+}
+
+export function setSelectedPlannedRaceId(id) {
+
+    selectedPlannedRaceId = id;
+
+}
+
+// La pantalla siempre arranca en "Próximas" al entrar desde la
+// navegación — mismo criterio que resetCarrerasView() en versiones
+// anteriores: lo que estuvieras viendo antes no persiste.
 export function resetCarrerasView() {
 
-    viewedMonth = monthStartOf(new Date());
-    selectedDate = null;
+    activeTab = "proximas";
+    searchQuery = "";
+    selectedPlannedRaceId = null;
 
 }

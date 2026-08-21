@@ -1,10 +1,16 @@
 import { rerender, navigate } from "../../core/router.js";
 import { openDetail as openRunningDetail } from "../Running/initRunningEvents.js";
 import { Running } from "../Running/Running.js";
-import { getSelectedDate, setSelectedDate, shiftViewedMonth } from "./carrerasStore.js";
+
+import {
+    setActiveTab,
+    setSearchQuery,
+    getSelectedPlannedRaceId,
+    setSelectedPlannedRaceId
+} from "./carrerasStore.js";
 
 import { importRaces } from "../../importers/races/index.js";
-import { importPlannedRaces, deletePlannedRacesByBatch } from "../../data/workoutStore.js";
+import { getPlannedRaces, importPlannedRaces, deletePlannedRacesByBatch } from "../../data/workoutStore.js";
 import { RACE_REVIEW_FIELDS, parseRaceFieldValue } from "./components/RaceImportReviewStep.js";
 
 import {
@@ -21,21 +27,78 @@ import {
 } from "./raceImportStore.js";
 
 const RACE_IMPORT_HISTORY_STATE = { raceImport: true };
+const RACE_DETAIL_HISTORY_STATE = { raceDetail: true };
 
-function selectDay(iso) {
+function selectTab(tab) {
 
-    setSelectedDate(iso === getSelectedDate() ? null : iso);
+    setActiveTab(tab);
     rerender();
 
 }
 
-// Mismo patrón que viewSessionWorkout() en Plan/initPlanEvents.js: salta
-// de página (router global) y, ya en Running, abre directamente su vista
-// de detalle (estado propio de runningStore.js, ajeno al router).
-function openRaceDetail(workoutId) {
+// Una completada de verdad salta al detalle real de Running (mismo
+// patrón que viewSessionWorkout() en Plan/initPlanEvents.js: navega de
+// página y, ya en Running, abre directamente su vista de detalle). Una
+// planificada abre el detalle propio de Carreras (RaceDetailView.js),
+// como overlay con su propia entrada de historial para que el gesto de
+// atrás del móvil la cierre sin salir de la app.
+function openRaceEntry(kind, id) {
 
-    navigate(Running);
-    openRunningDetail(workoutId);
+    if (kind === "completed") {
+        navigate(Running);
+        openRunningDetail(id);
+        return;
+    }
+
+    setSelectedPlannedRaceId(id);
+    history.pushState(RACE_DETAIL_HISTORY_STATE, "");
+
+    rerender();
+
+}
+
+function closeRaceDetail() {
+
+    if (history.state?.raceDetail) {
+        history.back();
+        return;
+    }
+
+    setSelectedPlannedRaceId(null);
+    rerender();
+
+}
+
+async function shareRace(raceId) {
+
+    const race = getPlannedRaces().find(r => r.id === raceId);
+    if (!race) return;
+
+    const shareData = {
+        title: race.name || "Carrera",
+        text: [race.name, race.location].filter(Boolean).join(" — "),
+        url: race.url || undefined
+    };
+
+    if (navigator.share) {
+        // El usuario puede cerrar la hoja de compartir sin elegir nada —
+        // eso rechaza la promesa, no es un error que avisar.
+        navigator.share(shareData).catch(() => {});
+        return;
+    }
+
+    if (race.url && navigator.clipboard?.writeText) {
+        navigator.clipboard.writeText(race.url).catch(() => {});
+    }
+
+}
+
+// Enlace de inscripción de una carrera planificada — se abre en pestaña
+// nueva porque es un sitio externo (alcanzatumeta.es u otro organizador),
+// no una vista propia de la app.
+function openRaceUrl(url) {
+
+    window.open(url, "_blank", "noopener,noreferrer");
 
 }
 
@@ -65,13 +128,20 @@ function closeRaceImport() {
 
 }
 
-// Registrado una sola vez a nivel de módulo (no dentro de
+// Registrados una sola vez a nivel de módulo (no dentro de
 // initCarrerasEvents, que se vuelve a llamar en cada render) — mismo
-// motivo que el listener equivalente de initPlanEvents.js.
+// motivo que el listener equivalente de initPlanEvents.js. Los dos
+// overlays (wizard y detalle) son independientes: cada uno solo cierra
+// el suyo si estaba abierto.
 window.addEventListener("popstate", () => {
 
     if (getRaceImportStep() !== "closed") {
         setRaceImportStep("closed");
+        rerender();
+    }
+
+    if (getSelectedPlannedRaceId()) {
+        setSelectedPlannedRaceId(null);
         rerender();
     }
 
@@ -146,44 +216,40 @@ function undoRaceImport(batchId) {
 
 }
 
-// Enlace de inscripción de una carrera planificada — se abre en pestaña
-// nueva porque es un sitio externo (alcanzatumeta.es u otro organizador),
-// no una vista propia de la app.
-function openRaceUrl(url) {
-
-    window.open(url, "_blank", "noopener,noreferrer");
-
-}
-
 export function initCarrerasEvents() {
 
-    document.querySelectorAll('[data-action="calendar-prev-month"]').forEach(button => {
+    document.querySelectorAll('[data-action="select-race-tab"]').forEach(button => {
 
-        button.addEventListener("click", () => {
-            shiftViewedMonth(-1);
+        button.addEventListener("click", () => selectTab(button.dataset.tab));
+
+    });
+
+    const searchInput = document.querySelector("#carreras-search-input");
+
+    if (searchInput) {
+
+        searchInput.addEventListener("input", () => {
+            setSearchQuery(searchInput.value);
             rerender();
         });
 
-    });
+    }
 
-    document.querySelectorAll('[data-action="calendar-next-month"]').forEach(button => {
+    document.querySelectorAll('[data-action="open-race-entry"]').forEach(card => {
 
-        button.addEventListener("click", () => {
-            shiftViewedMonth(1);
-            rerender();
-        });
+        card.addEventListener("click", () => openRaceEntry(card.dataset.kind, card.dataset.id));
 
     });
 
-    document.querySelectorAll('[data-action="select-race-day"]').forEach(day => {
+    document.querySelectorAll('[data-action="close-race-detail"]').forEach(button => {
 
-        day.addEventListener("click", () => selectDay(day.dataset.date));
+        button.addEventListener("click", closeRaceDetail);
 
     });
 
-    document.querySelectorAll('[data-action="open-race-detail"]').forEach(row => {
+    document.querySelectorAll('[data-action="share-race-detail"]').forEach(button => {
 
-        row.addEventListener("click", () => openRaceDetail(row.dataset.workoutId));
+        button.addEventListener("click", () => shareRace(button.dataset.raceId));
 
     });
 

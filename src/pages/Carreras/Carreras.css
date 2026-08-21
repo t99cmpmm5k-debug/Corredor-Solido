@@ -23,23 +23,247 @@
 
 }
 
-.carreras-header h1{
+/* =========================
+   TABS (Próximas / Mis carreras / Pasadas)
+========================= */
 
-    color:var(--text-primary);
+.carreras-tabs{
 
-    font-size:1.6rem;
+    display:flex;
 
-    font-weight:800;
+    gap:8px;
+
+    overflow-x:auto;
 
 }
 
-.carreras-subtitle{
+.carreras-tab{
+
+    flex-shrink:0;
+
+    padding:9px 16px;
+
+    border-radius:999px;
+
+    border:1px solid var(--card-border);
+
+    background:color-mix(in srgb, var(--card-background) 60%, transparent);
 
     color:var(--text-secondary);
 
     font-size:.85rem;
 
-    margin-top:2px;
+    font-weight:700;
+
+    cursor:pointer;
+
+    transition:.2s;
+
+}
+
+.carreras-tab.is-active{
+
+    border-color:var(--color-primary);
+
+    background:var(--color-primary);
+
+    color:var(--button-text);
+
+}
+
+/* =========================
+   BUSCADOR + FILTROS
+========================= */
+
+.carreras-search-row{
+
+    display:flex;
+
+    gap:10px;
+
+}
+
+.carreras-search{
+
+    flex:1;
+
+    min-width:0;
+
+    display:flex;
+
+    align-items:center;
+
+    gap:8px;
+
+    padding:0 14px;
+
+    height:44px;
+
+    border-radius:var(--radius-md);
+
+    background:color-mix(in srgb, var(--card-background) 60%, transparent);
+
+    border:1px solid var(--card-border);
+
+}
+
+.carreras-search iconify-icon{
+
+    flex-shrink:0;
+
+    color:var(--text-secondary);
+
+    font-size:18px;
+
+}
+
+.carreras-search input{
+
+    flex:1;
+
+    min-width:0;
+
+    background:transparent;
+
+    border:none;
+
+    outline:none;
+
+    color:var(--text-primary);
+
+    font-size:.9rem;
+
+}
+
+.carreras-search input::placeholder{
+
+    color:var(--color-text-muted);
+
+}
+
+.carreras-filters-button{
+
+    flex-shrink:0;
+
+    display:flex;
+
+    align-items:center;
+
+    gap:6px;
+
+    padding:0 16px;
+
+    height:44px;
+
+    border-radius:var(--radius-md);
+
+    border:1px solid var(--card-border);
+
+    background:color-mix(in srgb, var(--card-background) 60%, transparent);
+
+    color:var(--text-primary);
+
+    font-size:.85rem;
+
+    font-weight:700;
+
+    cursor:pointer;
+
+}
+
+.carreras-filters-button iconify-icon{
+
+    font-size:16px;
+
+    color:var(--color-primary);
+
+}
+
+/* =========================
+   BOTÓN IMPORTAR
+========================= */
+
+.carreras-import-button{
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    gap:8px;
+
+    width:100%;
+
+    height:48px;
+
+    border-radius:var(--radius-md);
+
+    border:1px solid color-mix(in srgb, var(--color-primary) 40%, transparent);
+
+    background:color-mix(in srgb, var(--card-background) 60%, transparent);
+
+    color:var(--text-primary);
+
+    font-size:.9rem;
+
+    font-weight:700;
+
+    cursor:pointer;
+
+}
+
+.carreras-import-button iconify-icon{
+
+    font-size:18px;
+
+    color:var(--color-primary);
+
+}
+
+/* =========================
+   LISTA AGRUPADA POR MES
+========================= */
+
+.carreras-list{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:20px;
+
+}
+
+.carreras-month-group{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:10px;
+
+}
+
+.carreras-month-title{
+
+    color:var(--text-secondary);
+
+    font-size:.75rem;
+
+    font-weight:700;
+
+    letter-spacing:.06em;
+
+}
+
+.carreras-month-cards{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:10px;
 
 }
 
@@ -88,287 +312,6 @@
     font-size:.8rem;
 
     opacity:.8;
-
-}
-
-/* =========================
-   PANEL DEL DÍA SELECCIONADO
-========================= */
-
-.carreras-day-panel{
-
-    display:flex;
-
-    flex-direction:column;
-
-    gap:10px;
-
-}
-
-.carreras-day-panel-title{
-
-    color:var(--text-secondary);
-
-    font-size:.75rem;
-
-    font-weight:700;
-
-    letter-spacing:.04em;
-
-    text-transform:uppercase;
-
-}
-
-.carreras-day-race{
-
-    width:100%;
-
-    display:flex;
-
-    align-items:center;
-
-    gap:12px;
-
-    padding:14px 16px;
-
-    border-radius:var(--radius-lg);
-
-    background:color-mix(in srgb, var(--card-background) 70%, transparent);
-
-    border:1px solid var(--card-border);
-
-    color:var(--text-primary);
-
-    text-align:left;
-
-    cursor:pointer;
-
-}
-
-.carreras-day-race iconify-icon:first-child{
-
-    flex-shrink:0;
-
-    font-size:22px;
-
-    color:var(--color-danger);
-
-}
-
-.carreras-day-race-text{
-
-    flex:1;
-
-    min-width:0;
-
-    display:flex;
-
-    flex-direction:column;
-
-    gap:2px;
-
-}
-
-.carreras-day-race-title{
-
-    font-weight:700;
-
-    font-size:.92rem;
-
-}
-
-.carreras-day-race-stats{
-
-    color:var(--text-secondary);
-
-    font-size:.78rem;
-
-}
-
-.carreras-day-race-chevron{
-
-    flex-shrink:0;
-
-    color:var(--text-secondary);
-
-    font-size:18px;
-
-}
-
-/* =========================
-   CARRERA FUTURA (planificada, importada del calendario)
-   — misma forma que .carreras-day-race, pero no es un <button> que
-   abra un detalle real (no hay workout todavía): icono outline en vez
-   de sólido, fecha límite de inscripción y botón de enlace propios.
-========================= */
-
-.carreras-day-planned-race{
-
-    display:flex;
-
-    align-items:flex-start;
-
-    gap:12px;
-
-    padding:14px 16px;
-
-    border-radius:var(--radius-lg);
-
-    background:color-mix(in srgb, var(--card-background) 70%, transparent);
-
-    border:1px dashed color-mix(in srgb, var(--color-primary) 45%, transparent);
-
-    color:var(--text-primary);
-
-}
-
-.carreras-day-planned-race iconify-icon:first-child{
-
-    flex-shrink:0;
-
-    margin-top:2px;
-
-    font-size:22px;
-
-    color:var(--color-primary);
-
-}
-
-.carreras-day-planned-race-text{
-
-    flex:1;
-
-    min-width:0;
-
-    display:flex;
-
-    flex-direction:column;
-
-    gap:2px;
-
-}
-
-.carreras-day-planned-race-title{
-
-    font-weight:700;
-
-    font-size:.92rem;
-
-}
-
-.carreras-day-planned-race-stats{
-
-    color:var(--text-secondary);
-
-    font-size:.78rem;
-
-}
-
-.carreras-day-planned-race-deadline{
-
-    display:flex;
-
-    align-items:center;
-
-    gap:5px;
-
-    margin-top:4px;
-
-    font-size:.76rem;
-
-    color:var(--text-secondary);
-
-}
-
-.carreras-day-planned-race-deadline iconify-icon{
-
-    font-size:14px;
-
-}
-
-.carreras-day-planned-race-deadline.is-urgent{
-
-    color:var(--color-warning);
-
-    font-weight:700;
-
-}
-
-.carreras-day-planned-race-link{
-
-    flex-shrink:0;
-
-    display:flex;
-
-    align-items:center;
-
-    justify-content:center;
-
-    width:38px;
-
-    height:38px;
-
-    border-radius:50%;
-
-    border:1px solid color-mix(in srgb, var(--color-primary) 40%, transparent);
-
-    background:transparent;
-
-    color:var(--color-primary);
-
-    cursor:pointer;
-
-    transition:.25s;
-
-}
-
-.carreras-day-planned-race-link:hover{
-
-    background:color-mix(in srgb, var(--color-primary) 12%, transparent);
-
-}
-
-.carreras-day-planned-race-link iconify-icon{
-
-    font-size:18px;
-
-}
-
-.carreras-import-button{
-
-    display:flex;
-
-    align-items:center;
-
-    justify-content:center;
-
-    gap:8px;
-
-    width:100%;
-
-    height:48px;
-
-    border-radius:var(--radius-md);
-
-    border:1px solid color-mix(in srgb, var(--color-primary) 40%, transparent);
-
-    background:color-mix(in srgb, var(--card-background) 60%, transparent);
-
-    color:var(--text-primary);
-
-    font-size:.9rem;
-
-    font-weight:700;
-
-    cursor:pointer;
-
-}
-
-.carreras-import-button iconify-icon{
-
-    font-size:18px;
-
-    color:var(--color-primary);
 
 }
 

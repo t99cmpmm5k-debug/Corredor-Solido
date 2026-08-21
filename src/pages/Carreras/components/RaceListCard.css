@@ -1,0 +1,191 @@
+.race-card{
+
+    width:100%;
+
+    display:flex;
+
+    align-items:center;
+
+    gap:12px;
+
+    padding:12px;
+
+    border-radius:var(--radius-lg);
+
+    background:color-mix(in srgb, var(--card-background) 70%, transparent);
+
+    border:1px solid var(--card-border);
+
+    text-align:left;
+
+    cursor:pointer;
+
+}
+
+/* Mismo lenguaje visual que ya usaba el calendario: borde sólido para
+   una carrera ya corrida, discontinuo para una planificada. */
+.race-card.is-planned{
+
+    border-style:dashed;
+
+    border-color:color-mix(in srgb, var(--color-primary) 45%, transparent);
+
+}
+
+.race-card-image{
+
+    flex-shrink:0;
+
+    width:56px;
+
+    height:56px;
+
+    border-radius:var(--radius-md);
+
+    background-size:cover;
+
+    background-position:center;
+
+    background-color:color-mix(in srgb, var(--card-background) 40%, transparent);
+
+}
+
+.race-card-date-badge{
+
+    flex-shrink:0;
+
+    display:flex;
+
+    flex-direction:column;
+
+    align-items:center;
+
+    justify-content:center;
+
+    width:46px;
+
+    height:46px;
+
+    border-radius:var(--radius-sm);
+
+    border:1px solid color-mix(in srgb, var(--color-primary) 50%, transparent);
+
+    background:color-mix(in srgb, var(--color-primary) 12%, transparent);
+
+    color:var(--color-primary);
+
+}
+
+.race-card-date-day{
+
+    font-size:1.05rem;
+
+    font-weight:800;
+
+    line-height:1.1;
+
+}
+
+.race-card-date-month{
+
+    font-size:.62rem;
+
+    font-weight:700;
+
+    letter-spacing:.03em;
+
+}
+
+.race-card-body{
+
+    flex:1;
+
+    min-width:0;
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:4px;
+
+}
+
+.race-card-name{
+
+    color:var(--text-primary);
+
+    font-weight:700;
+
+    font-size:.94rem;
+
+    overflow:hidden;
+
+    text-overflow:ellipsis;
+
+    white-space:nowrap;
+
+}
+
+.race-card-location{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:4px;
+
+    color:var(--text-secondary);
+
+    font-size:.78rem;
+
+    overflow:hidden;
+
+    text-overflow:ellipsis;
+
+    white-space:nowrap;
+
+}
+
+.race-card-location iconify-icon{
+
+    flex-shrink:0;
+
+    font-size:13px;
+
+}
+
+.race-card-pills{
+
+    display:flex;
+
+    gap:6px;
+
+    margin-top:2px;
+
+}
+
+.race-card-pill{
+
+    padding:2px 9px;
+
+    border-radius:999px;
+
+    background:color-mix(in srgb, var(--card-border) 40%, transparent);
+
+    color:var(--text-secondary);
+
+    font-size:.7rem;
+
+    font-weight:700;
+
+}
+
+.race-card-chevron{
+
+    flex-shrink:0;
+
+    color:var(--text-secondary);
+
+    font-size:18px;
+
+}
