@@ -450,6 +450,19 @@
 
 }
 
+/* Variante para cuando el punto cae a la altura de su propia barra (o por
+   encima) -- ver el cálculo de flipBelow/bottomPct en RunningHrOverlay().
+   "bottom" ya trae el punto exacto por debajo del cual debe quedar todo
+   el número (recortado contra la altura de la barra) -- translateY(100%)
+   baja la etiqueta entera una altura propia, para que su borde SUPERIOR
+   quede anclado ahí en vez del inferior (que es lo que haría sin este
+   transform, invadiendo otra vez la franja que se quería evitar). */
+.pace-chart-hr-value--below{
+
+    transform:translate(-50%, calc(100% + 2px));
+
+}
+
 .pace-chart-legend{
 
     display:flex;

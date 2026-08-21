@@ -26,6 +26,20 @@ const REFLINE_BOTTOM_PX = LAP_LABEL_SPACE_PX + CHART_HEIGHT_PX / 2;
 // la FC media propia de la carrera, no del rango min/max real.
 const HR_WINDOW_BPM = 15;
 
+// El número de ritmo de una columna vive justo encima de su barra (~6px
+// más su propia altura de texto). Si el punto de FC de ese mismo km cae a
+// una altura parecida a la de la barra, su número (que por defecto vive
+// encima del punto) invade esa misma franja y se pisan — verificado
+// visualmente con un entreno real. Margen en el mismo eje 0-100 que usan
+// barHeightPx()/hrPointPercent(), no en píxeles.
+const HR_LABEL_FLIP_MARGIN_PCT = 20;
+
+// Cuánto se aleja el número de FC de su punto al volcarlo hacia abajo, en
+// el mismo eje 0-100 — equivalente a los ~22px (8px + alto del texto) que
+// ya usa la variante de encima, pero expresado en porcentaje para poder
+// recortarlo contra barPct (ver el comentario junto a HR_LABEL_FLIP_MARGIN_PCT).
+const HR_VALUE_DROP_PCT = (22 / CHART_HEIGHT_PX) * 100;
+
 function capitalize(text) {
 
     return text ? text.charAt(0).toUpperCase() + text.slice(1) : text;
@@ -137,7 +151,7 @@ export function hrSegments(splits) {
 
 }
 
-function RunningHrOverlay(splits, avgHrRef) {
+function RunningHrOverlay(splits, avgHrRef, avgPaceRef) {
 
     const segments = hrSegments(splits);
     if (!segments.length) return "";
@@ -160,10 +174,29 @@ function RunningHrOverlay(splits, avgHrRef) {
 
     // Mismo valor que ya se muestra sobre cada barra de ritmo, pero para
     // FC — solo se pintan donde hrSegments() ya decidió que hay un punto
-    // real (nunca sobre un hueco).
+    // real (nunca sobre un hueco). Por defecto el número vive encima del
+    // punto, igual que el de ritmo vive encima de su barra — pero si el
+    // punto cae a la altura de la barra de ese mismo km (o por encima),
+    // esa franja ya la ocupa el número de ritmo: se ancla debajo del
+    // punto en su lugar. La distancia al punto NO es fija: si el punto
+    // está muy por encima de su propia barra (verificado con un caso real
+    // de 21 km — un desplazamiento fijo se quedaba corto y el número de FC
+    // acababa tapando entero al de ritmo), se recorta como mucho a la
+    // altura de la propia barra, nunca por encima — así siempre queda por
+    // debajo de la franja donde vive el número de ritmo, sea cual sea la
+    // distancia real entre el punto y su barra.
     const values = segments.flat().map(p => {
         const { x, y } = point(p);
-        return `<span class="pace-chart-hr-value" style="left:${x}%;bottom:${y}%">${Math.round(p.avgHr)}</span>`;
+        const split = splits[p.index];
+        const barPct = (barHeightPx(split.paceSecPerKm, avgPaceRef) / CHART_HEIGHT_PX) * 100;
+        const flipBelow = y >= barPct - HR_LABEL_FLIP_MARGIN_PCT;
+        const cls = `pace-chart-hr-value${flipBelow ? " pace-chart-hr-value--below" : ""}`;
+        // Math.max(0, ...): con una barra muy corta (barPct cerca de 0) y
+        // un punto solo un poco por encima, y - HR_VALUE_DROP_PCT puede
+        // salir negativo -- un "bottom" inválido, fuera del propio
+        // gráfico. 0 es el límite inferior real del eje.
+        const bottomPct = flipBelow ? Math.max(0, Math.min(y - HR_VALUE_DROP_PCT, barPct)) : y;
+        return `<span class="${cls}" style="left:${x}%;bottom:${bottomPct}%">${Math.round(p.avgHr)}</span>`;
     }).join("");
 
     return `
@@ -256,7 +289,7 @@ function RunningPaceChart(splits, avgPaceRef, avgHrRef) {
 
                         <div class="pace-chart-hr-overlay" style="bottom:${LAP_LABEL_SPACE_PX}px;height:${CHART_HEIGHT_PX}px">
 
-                            ${RunningHrOverlay(splits, avgHrRef)}
+                            ${RunningHrOverlay(splits, avgHrRef, avgPaceRef)}
 
                         </div>
 
