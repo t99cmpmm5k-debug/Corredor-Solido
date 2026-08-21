@@ -4,24 +4,36 @@
 
     overflow:hidden;
 
-    border-radius:28px;
+    /* Grande y a los 3 bordes reales de la pantalla, igual que el Hero de
+       Inicio — antes era una tarjeta compacta con esquinas redondeadas y
+       margen lateral propio. min-height (no height fija) para que quepa
+       el contenido en pantallas muy estrechas sin recortarlo. */
+    min-height:340px;
 
-    padding:24px 20px;
+    display:flex;
 
-    /* Base más baja que la de PlanHeader.css (24px) a propósito: el
-       header de Running solo tiene una fila de contenido (sin stats ni
-       timeline debajo empujándolo), así que con la misma base quedaba
-       demasiado aire encima del título. env(safe-area-inset-top) se
-       sigue sumando igual — solo baja la parte fija. */
-    padding-top:calc(12px + env(safe-area-inset-top));
+    flex-direction:column;
 
-    /* Cancela el padding-top que .running-content le mete desde fuera
-       (24px + safe-area) para que la foto de fondo llegue al borde
-       superior real de la pantalla — el margen lateral no se toca
-       (sigue viniendo del padding horizontal de .running-content). El
-       padding-top interno de aquí arriba es independiente de esto: sigue
-       empujando el título por debajo de la isla dinámica igual que antes. */
-    margin-top:calc(-1 * (24px + env(safe-area-inset-top)));
+    justify-content:flex-end;
+
+    /* padding-bottom grande (no los 24px de antes) a propósito: deja un
+       colchón de foto/degradado libre de texto para que .running-summary
+       pueda superponerse por encima sin tapar el título/subtítulo (ver
+       margin-top negativo en .running-summary, Running.css) — mismo papel
+       que el padding-bottom:120px del Hero de Inicio frente a MasterCard. */
+    padding:24px 20px 90px;
+
+    /* Contenido anclado abajo (justify-content:flex-end arriba) — con
+       tanto alto de foto de más, subir el título pegado arriba dejaría un
+       hueco vacío raro debajo; anclado abajo es lo mismo que hace
+       CarrerasHero.js con su propio hero. */
+    padding-top:calc(24px + env(safe-area-inset-top));
+
+    /* Cancela el padding que .running-content le mete desde fuera (24px
+       + safe-area arriba, 24px a los lados) para que la foto de fondo
+       llegue a los 3 bordes reales de la pantalla — el padding interno de
+       aquí arriba sigue empujando el contenido para que no los toque. */
+    margin:calc(-1 * (24px + env(safe-area-inset-top))) -24px 0;
 
     isolation:isolate;
 

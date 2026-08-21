@@ -159,6 +159,18 @@
 
 .running-summary{
 
+    position:relative;
+
+    z-index:10;
+
+    /* Se superpone sobre la parte baja de la foto del header (el colchón
+       de padding-bottom:90px de .running-header, libre de texto — ver
+       RunningHeader.css), igual que .master-card sobre el Hero de Inicio.
+       .running-content ya mete un gap:20px entre hermanos, así que esto
+       deja un solape neto de unos 50px (70px de este margen menos los
+       20px del gap), por debajo de esos 90px libres. */
+    margin-top:-70px;
+
     display:flex;
 
     flex-direction:column;

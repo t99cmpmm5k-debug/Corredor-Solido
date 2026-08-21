@@ -51,10 +51,16 @@
     inset:0;
 
     background:linear-gradient(180deg,
-        rgba(4,10,22,.25) 0%,
-        rgba(4,10,22,.45) 55%,
-        rgba(4,10,22,.88) 100%
+        rgba(4,10,22,.35) 0%,
+        rgba(4,10,22,.6) 55%,
+        rgba(4,10,22,.96) 100%
     );
+
+    /* overlay en vez de alpha plano: conserva el contraste propio de la
+       foto (el arco de salida sigue leyéndose como zona clara) en vez de
+       aplastarla bajo un velo negro uniforme — mismo degradado de antes,
+       solo cambia cómo se combina con la foto. */
+    mix-blend-mode:overlay;
 
     z-index:1;
 

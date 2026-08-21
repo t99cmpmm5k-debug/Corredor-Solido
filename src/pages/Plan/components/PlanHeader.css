@@ -4,10 +4,16 @@
 
     overflow:hidden;
 
-    border-radius:28px;
-
     padding:24px 20px;
     padding-top:calc(24px + env(safe-area-inset-top));
+
+    /* Full-bleed, igual que el Hero de Inicio: cancela tanto el
+       padding-top como el horizontal que .plan-page le mete desde fuera,
+       para que la foto llegue a los 3 bordes reales de la pantalla
+       (arriba, detrás de la isla dinámica, e izquierda/derecha) en vez de
+       quedar como una tarjeta con márgenes. El padding interno de arriba
+       sigue empujando el contenido para que no toque esos bordes. */
+    margin:calc(-1 * (20px + env(safe-area-inset-top))) -20px 0;
 
     isolation:isolate;
 
