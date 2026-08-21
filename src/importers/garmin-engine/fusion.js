@@ -80,15 +80,26 @@ export function merge(results) {
     const warnings = [];
 
     // Parciales: se juntan los de TODAS las capturas de Vueltas (una
-    // carrera larga puede no caber en una sola pantalla), sin duplicar
-    // por número de vuelta (por si se sube la misma captura dos veces)
-    // y ordenados, por si las capturas no llegan en orden.
+    // carrera larga puede no caber en una sola pantalla, o la FC viene de
+    // una segunda captura de la tabla desplazada — ver parser-splits.js),
+    // ordenados por número de vuelta. Se combinan campo a campo (no "la
+    // primera captura de esa vuelta gana entera"): así la distancia/ritmo
+    // de la vista estándar y la FC de la vista desplazada, para la misma
+    // vuelta, conviven en el mismo lap en vez de que la segunda captura
+    // pierda sus datos porque esa vuelta "ya estaba" con otro campo.
     const lapsByNumber = new Map();
     results
         .filter(r => Array.isArray(r.extras?.laps))
         .flatMap(r => r.extras.laps)
         .forEach(lap => {
-            if (!lapsByNumber.has(lap.lap)) lapsByNumber.set(lap.lap, lap);
+            const existing = lapsByNumber.get(lap.lap);
+            if (!existing) {
+                lapsByNumber.set(lap.lap, { ...lap });
+                return;
+            }
+            Object.entries(lap).forEach(([key, value]) => {
+                if (value != null && existing[key] == null) existing[key] = value;
+            });
         });
     const laps = [...lapsByNumber.values()].sort((a, b) => a.lap - b.lap);
 

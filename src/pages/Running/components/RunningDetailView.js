@@ -192,12 +192,14 @@ function RunningPaceChart(splits, avgPaceRef, avgHrRef) {
     const hasVariation = fastestPace !== slowestPace;
 
     // La insignia de FC media y la línea por km son datos independientes:
-    // Garmin (OCR) solo trae la media general (pantalla Resumen/
-    // Estadísticas) — su "Vueltas" no tabula FC por vuelta, solo la
-    // dibuja como gráfica continua, así que no hay forma de leerla por
-    // OCR. Amazfit (TCX) sí trae FC por trackpoint y por tanto por split.
-    // La insignia se muestra siempre que haya media; la línea solo si hay
-    // al menos un split con FC real que graficar — nunca se inventa.
+    // Garmin (OCR) solo trae la media general de serie (pantalla Resumen/
+    // Estadísticas); la FC por vuelta es opcional y depende de que el
+    // usuario también capture la tabla de Vueltas desplazada a la derecha
+    // (columnas GAP medio/FC media/FC máx. — ver parser-splits.js), así
+    // que no siempre está aunque la media sí lo esté. Amazfit (TCX) trae
+    // FC por trackpoint y por tanto por split siempre. La insignia se
+    // muestra siempre que haya media; la línea solo si hay al menos un
+    // split con FC real que graficar — nunca se inventa.
     const hasAvgHr = avgHrRef != null;
     const hasHrLine = splits.some(s => s.avgHr != null);
 

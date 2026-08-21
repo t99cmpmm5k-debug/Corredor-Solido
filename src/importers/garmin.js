@@ -156,14 +156,17 @@ export function parseGarminWorkout(merged) {
     const title = textOrNull(data.title);
     const distanceKm = parseNumber(data.distance_km);
 
-    // Solo lap/distancia/ritmo — es lo único que captura el regex de
-    // parser-splits.js hoy. FC/desnivel por vuelta requerirían tocarlo.
-    // segmentType ("work"/"rest") solo lo trae parser-intervals.js — en una
-    // Vuelta normal queda null.
+    // avgHr/maxHr por vuelta solo llegan si el usuario también capturó la
+    // tabla de Vueltas desplazada a la derecha (columnas GAP medio/FC
+    // media/FC máx.) — ver parser-splits.js. Sin esa captura quedan null,
+    // igual que hoy, sin inventar nada. segmentType ("work"/"rest") solo
+    // lo trae parser-intervals.js — en una Vuelta normal queda null.
     const splits = (merged.laps || []).map(lap => ({
         lap: lap.lap,
         distanceKm: lap.distance_km,
         paceSecPerKm: parsePaceToSecPerKm(lap.pace_min_km),
+        avgHr: lap.avg_heart_rate_bpm ?? null,
+        maxHr: lap.max_heart_rate_bpm ?? null,
         segmentType: lap.segmentType ?? null
     }));
 

@@ -120,8 +120,8 @@ function computeElevationGain(points) {
 // calculan recorriendo los Trackpoints, acumulando distancia GPS
 // (haversine entre puntos consecutivos) y cortando cada vez que se cruza
 // un múltiplo de km, interpolando el instante exacto de cruce para que el
-// ritmo de cada tramo sea preciso. La FC media por split (avgHr) es un
-// dato que el OCR de Garmin nunca ha podido dar.
+// ritmo de cada tramo sea preciso. La FC media por split (avgHr) sale gratis
+// de los mismos Trackpoints, sin depender de una tabla aparte como en OCR.
 function computeSplits(points) {
 
     const KM = 1000;

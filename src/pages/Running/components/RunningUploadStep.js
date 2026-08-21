@@ -83,7 +83,7 @@ export function RunningUploadStep({ progress, ocrError, parseError, timingLog })
 
                     <strong>Seleccionar capturas o archivo TCX</strong>
 
-                    <span>Sube una o varias capturas del mismo entrenamiento (Resumen, Estadísticas...) o un único archivo .tcx exportado desde tu reloj/app (Amazfit, etc.).</span>
+                    <span>Sube una o varias capturas del mismo entrenamiento (Resumen, Estadísticas, Vueltas...) o un único archivo .tcx exportado desde tu reloj/app (Amazfit, etc.). Para ver la FC por vuelta en el gráfico, en Vueltas desliza la tabla a la derecha hasta la columna "Frecuencia cardíaca media" antes de capturar — si no, el gráfico mostrará solo la FC media del entreno.</span>
 
                 </label>
 

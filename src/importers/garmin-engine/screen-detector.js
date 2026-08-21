@@ -33,5 +33,15 @@ export function detect(text) {
         return { type: "splits", confidence: .97 };
     }
 
+    // Misma pantalla de Vueltas pero desplazada a la derecha para ver la FC
+    // por vuelta (columnas GAP medio/FC media/FC máx./Ascenso total) — la
+    // captura suele venir recortada justo a la tabla, sin la palabra
+    // "vueltas" visible, así que se identifica por sus cabeceras propias
+    // en vez de exigirla. Solo aporta FC, nunca distancia/ritmo — ver
+    // parser-splits.js.
+    if (/gap medio/.test(n) && /frecuencia cardiaca media|frec\.? cardiaca max/.test(n)) {
+        return { type: "splits", confidence: .96 };
+    }
+
     return { type: "unknown", confidence: .35 };
 }

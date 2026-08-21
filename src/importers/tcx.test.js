@@ -114,7 +114,7 @@ describe("parseTcxWorkout", () => {
 
     });
 
-    it("calcula al menos un split por GPS con FC media (dato que el OCR de Garmin no da)", () => {
+    it("calcula al menos un split por GPS con FC media (sale gratis de los Trackpoints)", () => {
 
         const workout = parseTcxWorkout(buildTcx());
 

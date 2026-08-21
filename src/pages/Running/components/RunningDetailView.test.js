@@ -78,7 +78,7 @@ describe("hrSegments", () => {
 
     });
 
-    it("splits sin avgHr (caso Garmin, el campo ni existe) no generan ningún tramo", () => {
+    it("splits sin avgHr (p. ej. Garmin sin la captura de FC por vuelta) no generan ningún tramo", () => {
 
         const splits = [
             { paceSecPerKm: 300 }, { paceSecPerKm: 310 }

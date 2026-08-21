@@ -9,9 +9,29 @@ import * as GarminFusion from "./fusion.js";
 export function parse(text) {
     // La primera línea de una captura del móvil es siempre la barra de
     // estado del sistema (hora, wifi, batería) — nunca es dato del entreno.
-    const withoutStatusBar = U.linesOf(text).slice(1).join("\n");
+    const lines = U.linesOf(text);
+    const withoutStatusBar = lines.slice(1).join("\n");
 
-    const screen = GarminScreenDetector.detect(withoutStatusBar);
+    let screen = GarminScreenDetector.detect(withoutStatusBar);
+    let bodyText = withoutStatusBar;
+
+    // La tabla de Vueltas desplazada a la derecha (FC por vuelta) a veces
+    // llega recortada justo a la tabla, sin barra de estado encima —
+    // verificado contra una captura real. Ahí la cabecera con "GAP medio"
+    // es la propia primera línea, y quitarla a ciegas deja la pantalla sin
+    // identificar. Si eso pasa, se reintenta sin descartar esa línea antes
+    // de rendirse a "unknown" — no cambia nada para una captura normal,
+    // donde la primera línea de verdad es la barra de estado y el
+    // reintento nunca hace falta.
+    if (screen.type === "unknown") {
+        const withFirstLine = lines.join("\n");
+        const retryScreen = GarminScreenDetector.detect(withFirstLine);
+        if (retryScreen.type !== "unknown") {
+            screen = retryScreen;
+            bodyText = withFirstLine;
+        }
+    }
+
     let parsed;
 
     // "unknown" NO es "estadísticas" — antes caía en el else y se
@@ -20,13 +40,13 @@ export function parse(text) {
     // manda sobre Resumen en las métricas), esa etiqueta falsa le daba
     // vía libre para ganarle a un Resumen correcto con basura.
     if (screen.type === "summary") {
-        parsed = GarminSummaryParser.parse(withoutStatusBar);
+        parsed = GarminSummaryParser.parse(bodyText);
     } else if (screen.type === "statistics") {
-        parsed = GarminStatisticsParser.parse(withoutStatusBar);
+        parsed = GarminStatisticsParser.parse(bodyText);
     } else if (screen.type === "splits") {
-        parsed = GarminSplitsParser.parse(withoutStatusBar);
+        parsed = GarminSplitsParser.parse(bodyText);
     } else if (screen.type === "intervals") {
-        parsed = GarminIntervalsParser.parse(withoutStatusBar);
+        parsed = GarminIntervalsParser.parse(bodyText);
     } else {
         parsed = { parser: "unknown-screen", fields: {} };
     }
