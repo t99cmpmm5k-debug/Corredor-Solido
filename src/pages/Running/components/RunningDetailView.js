@@ -423,6 +423,12 @@ export function RunningDetailView(workout, shoes = []) {
     const temperature = workout.temperatureC != null ? `${workout.temperatureC}°C` : "—";
     const isEstimatedTemp = workout.temperatureC != null && workout.fieldMeta?.temperatureC?.estimated === true;
 
+    // El stat "FC media" en .detail-stats no es redundante con el chip del
+    // gráfico: ese chip vive dentro de RITMO POR KILÓMETRO, que ni se pinta
+    // sin datos de ritmo por km (chartSplits() exige paceSecPerKm) — un
+    // entreno con FC media conocida pero sin la vista estándar de Vueltas
+    // (solo Resumen/Estadísticas + la tabla con FC) se quedaba sin ningún
+    // sitio donde mostrar ese dato.
     return `
 
         <section class="running-detail">
@@ -502,6 +508,8 @@ export function RunningDetailView(workout, shoes = []) {
                     temperature,
                     isEstimatedTemp ? { icon: "solar:cloud-bold-duotone", title: "Estimada por ubicación y fecha — no es una medición real del reloj" } : null
                 )}
+
+                ${detailStat("solar:heart-pulse-bold-duotone", "FC media", workout.avgHr != null ? `${Math.round(workout.avgHr)} ppm` : "—")}
 
             </div>
 

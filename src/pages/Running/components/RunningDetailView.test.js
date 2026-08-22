@@ -231,3 +231,56 @@ describe("RunningDetailView — FC en el gráfico de ritmo", () => {
     });
 
 });
+
+describe("RunningDetailView — stat 'FC media' (independiente del gráfico)", () => {
+
+    // Caso real reportado: FC media conocida (Resumen/Estadísticas) pero
+    // ningún split trae ritmo por km (solo se capturó la tabla de Vueltas
+    // con FC, sin la vista estándar Vuelta/Tiempo/Distancia/Ritmo) —
+    // chartSplits() filtra por paceSecPerKm y se queda vacío, así que
+    // RITMO POR KILÓMETRO (con su chip) ni se pinta. El stat en
+    // .detail-stats es el único sitio donde ese dato sobrevive.
+    it("con FC media conocida pero sin ritmo por km en ningún split: el gráfico no se pinta, pero el stat 'FC media' sí", () => {
+
+        const html = RunningDetailView(workout({
+            avgHr: 152,
+            splits: [
+                { lap: 1, avgHr: 140 },
+                { lap: 2, avgHr: 153 }
+            ]
+        }));
+
+        expect(html).not.toContain("RITMO POR KILÓMETRO");
+        expect(html).toContain("FC media");
+        expect(html).toContain("152 ppm");
+
+    });
+
+    it("sin FC media: el stat muestra el placeholder, no la inventa", () => {
+
+        const html = RunningDetailView(workout());
+
+        expect(html).toContain("FC media");
+        expect(html).not.toMatch(/\d+ ppm<\/span>\s*<span class="detail-stat-label">\s*FC media/);
+
+    });
+
+    it("con gráfico completo (ritmo + FC por km): el stat convive con el chip, no lo sustituye", () => {
+
+        const html = RunningDetailView(workout({
+            avgHr: 145,
+            splits: [
+                { lap: 1, paceSecPerKm: 295, avgHr: 140 },
+                { lap: 2, paceSecPerKm: 305, avgHr: 148 },
+                { lap: 3, paceSecPerKm: 300, avgHr: 150 }
+            ]
+        }));
+
+        expect(html).toContain("RITMO POR KILÓMETRO");
+        expect(html).toContain("pace-chart-avg-badge--hr");
+        expect(html).toContain("145 ppm medio"); // chip del gráfico
+        expect(html).toContain("145 ppm</span>"); // stat de .detail-stats (sin "medio")
+
+    });
+
+});
