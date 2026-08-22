@@ -1,7 +1,7 @@
 import { SEED_RACES } from "./seedRaces.js";
 
 const DB_NAME = "corredor-solido";
-const DB_VERSION = 6;
+const DB_VERSION = 7;
 
 // Bookkeeping en meta (misma store que lastExportAt, ver backup.js) — se
 // escribe una sola vez, la primera vez que esta instalación pasa por
@@ -20,6 +20,20 @@ const SEED_RACES_META_KEY = "plannedRacesSeeded";
 // pisa ni duplica el resto del registro.
 const REGION_MIGRATION_META_KEY = "plannedRacesRegionMigrated";
 const LEGACY_PLANNED_RACES_REGION = "Murcia";
+
+// Reparación de una regresión real (no una migración nueva): reimportar un
+// calendario de Murcia con el wizard pisaba el region ya migrado con null,
+// porque importPlannedRaces() sobrescribía el registro entero con lo que
+// trajera el archivo — y esos dos primeros archivos de Murcia no llevan
+// "region" (se etiquetaron aquí, retroactivamente). Ya arreglado en
+// importPlannedRaces() (conserva el region existente si la carrera entrante
+// no trae uno), pero las instalaciones que reimportaron antes del fix se
+// quedaron con esas carreras en null para siempre — REGION_MIGRATION_META_KEY
+// ya está marcada como hecha y no se repite sola. Este segundo pase, bajo su
+// propia clave de una sola vez, aplica el mismo criterio de la migración
+// original (toda plannedRace sin region a estas alturas es de Murcia) para
+// sanarlas sin que el usuario tenga que borrar y reimportar nada.
+const REGION_REPAIR_META_KEY = "plannedRacesRegionRepairedV2";
 
 export const STORES = {
 
@@ -99,14 +113,17 @@ function seedPlannedRacesIfNeeded(transaction) {
 // cada registro completo tal cual está, tocando solo "region" — igual de
 // seguro dentro de la misma transacción de versionchange que
 // seedPlannedRacesIfNeeded().
-function migrateMissingRegionToMurcia(transaction) {
+function fillMissingRegionWithMurcia(transaction, metaKey, onDone) {
 
     const metaStore = transaction.objectStore(STORES.meta);
-    const getRequest = metaStore.get(REGION_MIGRATION_META_KEY);
+    const getRequest = metaStore.get(metaKey);
 
     getRequest.onsuccess = () => {
 
-        if (getRequest.result) return;
+        if (getRequest.result) {
+            onDone?.();
+            return;
+        }
 
         const racesStore = transaction.objectStore(STORES.plannedRaces);
         const cursorRequest = racesStore.openCursor();
@@ -116,7 +133,8 @@ function migrateMissingRegionToMurcia(transaction) {
             const cursor = cursorRequest.result;
 
             if (!cursor) {
-                metaStore.put({ key: REGION_MIGRATION_META_KEY, value: true });
+                metaStore.put({ key: metaKey, value: true });
+                onDone?.();
                 return;
             }
 
@@ -131,6 +149,14 @@ function migrateMissingRegionToMurcia(transaction) {
         };
 
     };
+
+}
+
+function migrateMissingRegionToMurcia(transaction) {
+
+    fillMissingRegionWithMurcia(transaction, REGION_MIGRATION_META_KEY, () => {
+        fillMissingRegionWithMurcia(transaction, REGION_REPAIR_META_KEY);
+    });
 
 }
 

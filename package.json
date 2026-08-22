@@ -10,6 +10,7 @@
     "test": "vitest run"
   },
   "devDependencies": {
+    "fake-indexeddb": "^6.2.5",
     "happy-dom": "^20.11.2",
     "vite": "^8.1.1",
     "vitest": "^4.1.10"

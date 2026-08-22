@@ -579,6 +579,14 @@ export function deletePlannedRacesByBatch(batchId) {
 // dedupe por fecha+nombre: reimportar el mismo archivo actualiza las
 // carreras ya guardadas en vez de duplicarlas, igual que
 // importPlannedSessions() dedupe por fecha+slot.
+//
+// "region" es la excepción a "el archivo manda": no es un campo que el
+// wizard deje editar ni que todos los archivos traigan (los dos primeros
+// calendarios de Murcia no lo llevan, se etiquetaron por la migración de
+// db.js) — si el archivo entrante no trae region, reimportarlo NO debe
+// borrar la que ya tuviera guardada esa carrera. Sin este `?? existing`,
+// reimportar un calendario antiguo sin region pisaba silenciosamente el
+// region ya migrado con null y el filtro por región se quedaba vacío.
 export function importPlannedRaces(races) {
 
     const batchId = generateId();
@@ -598,7 +606,7 @@ export function importPlannedRaces(races) {
             location: race.location,
             registrationDeadline: race.registrationDeadline,
             url: race.url,
-            region: race.region ?? null,
+            region: race.region ?? existing?.region ?? null,
             importBatchId: batchId
         };
 
