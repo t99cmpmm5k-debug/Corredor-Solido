@@ -2,7 +2,7 @@ import "./RaceListCard.css";
 
 import { getRaceImage } from "../../../utils/raceImage.js";
 import { parseISODate } from "../../../utils/date.js";
-import { monthAbbrev, formatDistance } from "../raceFormat.js";
+import { monthAbbrev, formatDistance, formatDisciplineType } from "../raceFormat.js";
 
 function DateBadge(iso) {
 
@@ -39,6 +39,7 @@ export function RaceListCard(entry) {
 
     const image = getRaceImage({ type: entry.disciplineType, name: entry.name, date: entry.date });
     const isPlanned = entry.kind === "planned";
+    const disciplineLabel = formatDisciplineType(entry.disciplineType);
 
     return `
 
@@ -72,7 +73,7 @@ export function RaceListCard(entry) {
 
                     ${entry.distanceKm != null ? `<span class="race-card-pill">${formatDistance(entry.distanceKm)}</span>` : ""}
 
-                    ${entry.disciplineType === "RU" ? `<span class="race-card-pill">Asfalto</span>` : ""}
+                    ${disciplineLabel ? `<span class="race-card-pill">${disciplineLabel}</span>` : ""}
 
                 </div>
 

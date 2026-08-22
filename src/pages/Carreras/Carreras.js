@@ -6,10 +6,11 @@ import { RaceListCard } from "./components/RaceListCard.js";
 import { RaceDetailView } from "./components/RaceDetailView.js";
 import { RaceImportWizard } from "./components/RaceImportWizard.js";
 import { getWorkouts, getPlannedRaces } from "../../data/workoutStore.js";
-import { getActiveTab, setActiveTab, getSearchQuery, getSelectedRegion, getSelectedPlannedRaceId, RACE_TABS, RACE_REGIONS } from "./carrerasStore.js";
+import { getActiveTab, setActiveTab, getSearchQuery, getSelectedRegion, getSelectedType, getSelectedPlannedRaceId, RACE_TABS, RACE_REGIONS, RACE_TYPES } from "./carrerasStore.js";
 import { getRaceImportStep } from "./raceImportStore.js";
 import { formatMonthLabel } from "../../components/MonthCalendar/MonthCalendar.js";
-import { buildRaceEntries, categorizeRaceEntries, filterRaceEntriesByQuery, filterRaceEntriesByRegion, groupEntriesByMonth } from "./raceEntries.js";
+import { formatDisciplineType } from "./raceFormat.js";
+import { buildRaceEntries, categorizeRaceEntries, filterRaceEntriesByQuery, filterRaceEntriesByRegion, filterRaceEntriesByType, groupEntriesByMonth } from "./raceEntries.js";
 
 const TAB_LABELS = {
     proximas: "Próximas",
@@ -68,9 +69,10 @@ function CarrerasSearchRow(query) {
 
             </label>
 
-            <!-- Sin lógica de filtros todavía (por tipo/distancia/etc.) —
-                 botón puramente visual hasta que exista algo real que
-                 filtrar, ver instrucciones del rediseño. -->
+            <!-- Región y type ya tienen su propia fila de píldoras (ver
+                 CarrerasRegionFilter/CarrerasTypeFilter) — este botón sigue
+                 reservado para la subcategoría más fina dentro del asfalto
+                 (Popular/Media Maratón/Maratón), todavía sin resolver. -->
             <button class="carreras-filters-button" type="button">
 
                 <iconify-icon icon="solar:tuning-2-bold-duotone"></iconify-icon>
@@ -90,24 +92,56 @@ const REGION_LABELS = {
     "Andalucía": "Andalucía"
 };
 
-// Fila de píldoras aparte del botón "Filtros" (ese sigue reservado para el
-// filtro por categoría/disciplina que queda pendiente — ver punto 4 del
-// encargo) — se combina con la tab activa y la búsqueda, no las sustituye.
+// Fila de píldoras aparte del botón "Filtros" (ese sigue reservado para la
+// subcategoría más fina dentro del asfalto — Popular/Media Maratón/
+// Maratón — que todavía queda pendiente) — se combina con la tab activa,
+// la búsqueda y el filtro de type, no las sustituye.
 function CarrerasRegionFilter(selectedRegion) {
 
     return `
 
-        <div class="carreras-region-filter">
+        <div class="carreras-filter-row">
 
             ${RACE_REGIONS.map(region => `
 
                 <button
-                    class="carreras-region-pill ${region === selectedRegion ? "is-active" : ""}"
+                    class="carreras-filter-pill ${region === selectedRegion ? "is-active" : ""}"
                     data-action="select-race-region"
                     data-region="${region}"
                 >
 
                     ${REGION_LABELS[region]}
+
+                </button>
+
+            `).join("")}
+
+        </div>
+
+    `;
+
+}
+
+// Mismo patrón visual y de comportamiento que CarrerasRegionFilter — dos
+// filtros independientes que se combinan entre sí (ver filterRaceEntries
+// ByType/ByRegion en raceEntries.js), no una jerarquía uno-dentro-del-otro.
+// "Todas" reutiliza la etiqueta genérica; RU/TRS salen de
+// formatDisciplineType() para no mantener un segundo mapa de nombres.
+function CarrerasTypeFilter(selectedType) {
+
+    return `
+
+        <div class="carreras-filter-row">
+
+            ${RACE_TYPES.map(type => `
+
+                <button
+                    class="carreras-filter-pill ${type === selectedType ? "is-active" : ""}"
+                    data-action="select-race-type"
+                    data-type="${type}"
+                >
+
+                    ${type === "all" ? "Todas" : formatDisciplineType(type)}
 
                 </button>
 
@@ -234,13 +268,17 @@ export function Carreras() {
     const activeTab = getActiveTab();
     const query = getSearchQuery();
     const selectedRegion = getSelectedRegion();
+    const selectedType = getSelectedType();
 
     // Los contadores de las tabs se quedan con el total sin filtrar, igual
     // que ya pasaba con la búsqueda de texto (nunca se recalculaban por
-    // query) — el filtro de región solo recorta la lista visible dentro de
-    // la tab activa, no lo que dicen las propias tabs.
-    const visibleEntries = filterRaceEntriesByRegion(filterRaceEntriesByQuery(byTab[activeTab], query), selectedRegion);
-    const hasActiveFilter = query.trim().length > 0 || selectedRegion !== "all";
+    // query) — región y type solo recortan la lista visible dentro de la
+    // tab activa, no lo que dicen las propias tabs. Los dos filtros son
+    // independientes entre sí (encadenados, no una jerarquía), así que da
+    // igual el orden en que se apliquen.
+    const filtered = filterRaceEntriesByType(filterRaceEntriesByRegion(byTab[activeTab], selectedRegion), selectedType);
+    const visibleEntries = filterRaceEntriesByQuery(filtered, query);
+    const hasActiveFilter = query.trim().length > 0 || selectedRegion !== "all" || selectedType !== "all";
 
     return `
 
@@ -259,6 +297,8 @@ export function Carreras() {
                 ${CarrerasSearchRow(query)}
 
                 ${CarrerasRegionFilter(selectedRegion)}
+
+                ${CarrerasTypeFilter(selectedType)}
 
                 <button class="carreras-import-button" data-action="open-race-import">
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { formatDeadline, isDeadlineUrgent, formatUrlHost, formatDistance } from "./raceFormat.js";
+import { formatDeadline, isDeadlineUrgent, formatUrlHost, formatDistance, formatDisciplineType } from "./raceFormat.js";
 
 describe("formatDeadline", () => {
 
@@ -69,6 +69,35 @@ describe("formatDistance", () => {
         expect(formatDistance(10)).toBe("10,00 km");
         expect(formatDistance(10.2)).toBe("10,20 km");
         expect(formatDistance(10.256)).toBe("10,26 km");
+
+    });
+
+});
+
+describe("formatDisciplineType", () => {
+
+    it("RU -> Asfalto", () => {
+
+        expect(formatDisciplineType("RU")).toBe("Asfalto");
+
+    });
+
+    it("TRS -> Trail", () => {
+
+        expect(formatDisciplineType("TRS")).toBe("Trail");
+
+    });
+
+    it("un type sin etiqueta propia se muestra tal cual, sin inventar una", () => {
+
+        expect(formatDisciplineType("TR")).toBe("TR");
+
+    });
+
+    it("sin type devuelve null, no un texto vacío ni inventado", () => {
+
+        expect(formatDisciplineType(null)).toBeNull();
+        expect(formatDisciplineType(undefined)).toBeNull();
 
     });
 

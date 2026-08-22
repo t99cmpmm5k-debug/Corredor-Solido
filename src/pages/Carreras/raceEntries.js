@@ -101,6 +101,17 @@ export function filterRaceEntriesByRegion(entries, region) {
 
 }
 
+// Mismo criterio que filterRaceEntriesByRegion, sobre disciplineType en
+// vez de region — se combinan sin más porque son dos filtros
+// independientes sobre el mismo array (ver Carreras.js).
+export function filterRaceEntriesByType(entries, type) {
+
+    if (!type || type === "all") return entries;
+
+    return entries.filter(e => e.disciplineType === type);
+
+}
+
 // Agrupa preservando el orden de entrada (ascendente o descendente según
 // venga ya ordenado categorizeRaceEntries) — un grupo por mes, en el
 // orden en que aparece su primera carrera.

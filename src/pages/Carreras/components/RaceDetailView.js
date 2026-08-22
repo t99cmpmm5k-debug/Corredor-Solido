@@ -2,7 +2,7 @@ import "./RaceDetailView.css";
 
 import { getRaceImage } from "../../../utils/raceImage.js";
 import { parseISODate, formatWeekday, formatDayMonth } from "../../../utils/date.js";
-import { formatDeadline, isDeadlineUrgent, formatUrlHost, monthAbbrev, formatDistance } from "../raceFormat.js";
+import { formatDeadline, isDeadlineUrgent, formatUrlHost, monthAbbrev, formatDistance, formatDisciplineType } from "../raceFormat.js";
 
 function capitalize(text) {
 
@@ -69,7 +69,7 @@ export function RaceDetailView(race) {
                         <h1>${race.name}</h1>
 
                         <span class="race-detail-subtitle">
-                            ${[race.disciplineType === "RU" ? "Asfalto" : race.disciplineType, race.location].filter(Boolean).join(" · ")}
+                            ${[formatDisciplineType(race.disciplineType), race.location].filter(Boolean).join(" · ")}
                         </span>
 
                     </div>

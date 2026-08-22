@@ -1,4 +1,12 @@
-import { RACE_RU_IMAGES, RACE_FALLBACK_IMAGE } from "../assets/races/index.js";
+import { RACE_RU_IMAGES, RACE_TRAIL_IMAGES, RACE_FALLBACK_IMAGE } from "../assets/races/index.js";
+
+// Un pool de imágenes por type -- añadir una disciplina nueva es añadir
+// una entrada aquí (y sus fotos en assets/races/index.js), sin tocar
+// getRaceImage() ni duplicar el hash por cada type.
+const IMAGES_BY_TYPE = {
+    RU: RACE_RU_IMAGES,
+    TRS: RACE_TRAIL_IMAGES
+};
 
 // djb2 — barata, determinista y con buena distribución para strings
 // cortos como "nombre+fecha" de una carrera. No necesita ser
@@ -17,16 +25,17 @@ export function djb2Hash(text) {
 
 // Misma carrera (mismo nombre+fecha) siempre devuelve la misma foto, en
 // cualquier render o sesión — el hash es puro, no hay estado ni azar de
-// por medio. Solo las de asfalto (type "RU") pasan por el reparto de las
-// 4 siluetas; cualquier otro type (o sin type) cae siempre al degradado,
-// sin gastar una foto de corredor pensada para asfalto.
+// por medio. Solo los types con pool propio (RU, TRS) pasan por el
+// reparto de sus 4 siluetas; cualquier otro type (o sin type) cae
+// siempre al degradado, sin gastar una foto pensada para otra disciplina.
 export function getRaceImage(race) {
 
-    if (race?.type !== "RU") return RACE_FALLBACK_IMAGE;
+    const images = IMAGES_BY_TYPE[race?.type];
+    if (!images) return RACE_FALLBACK_IMAGE;
 
     const key = `${race.name ?? ""}${race.date ?? ""}`;
-    const index = djb2Hash(key) % RACE_RU_IMAGES.length;
+    const index = djb2Hash(key) % images.length;
 
-    return RACE_RU_IMAGES[index];
+    return images[index];
 
 }

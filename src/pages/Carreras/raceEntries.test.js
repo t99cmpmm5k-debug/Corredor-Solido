@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildRaceEntries, categorizeRaceEntries, filterRaceEntriesByQuery, filterRaceEntriesByRegion, groupEntriesByMonth } from "./raceEntries.js";
+import { buildRaceEntries, categorizeRaceEntries, filterRaceEntriesByQuery, filterRaceEntriesByRegion, filterRaceEntriesByType, groupEntriesByMonth } from "./raceEntries.js";
 
 function futureIso(daysFromNow) {
     const d = new Date();
@@ -156,6 +156,51 @@ describe("filterRaceEntriesByRegion", () => {
 
         expect(result.some(e => e.id === "w1")).toBe(false);
         expect(result.some(e => e.id === "p3")).toBe(false);
+
+    });
+
+});
+
+describe("filterRaceEntriesByType", () => {
+
+    const entries = buildRaceEntries(
+        [{ id: "w1", type: "race", date: "2026-07-01", title: "Ya corrida" }],
+        [
+            { id: "p1", date: "2026-08-22", type: "RU", name: "Carrera de Ojós" },
+            { id: "p2", date: "2026-10-04", type: "TRS", name: "Ultra Sierra Espuña" }
+        ]
+    );
+
+    it("con 'all' devuelve todo tal cual, completadas incluidas", () => {
+
+        expect(filterRaceEntriesByType(entries, "all")).toEqual(entries);
+
+    });
+
+    it("filtra solo las del type pedido", () => {
+
+        expect(filterRaceEntriesByType(entries, "RU").map(e => e.id)).toEqual(["p1"]);
+        expect(filterRaceEntriesByType(entries, "TRS").map(e => e.id)).toEqual(["p2"]);
+
+    });
+
+    it("un type concreto deja fuera lo completado — nunca tiene disciplineType", () => {
+
+        expect(filterRaceEntriesByType(entries, "TRS").some(e => e.id === "w1")).toBe(false);
+
+    });
+
+    it("se combina con filterRaceEntriesByRegion (dos filtros independientes sobre el mismo array)", () => {
+
+        const withRegion = buildRaceEntries([], [
+            { id: "r1", date: "2026-08-22", type: "RU", name: "Asfalto Murcia", region: "Murcia" },
+            { id: "r2", date: "2026-08-28", type: "TRS", name: "Trail Murcia", region: "Murcia" },
+            { id: "r3", date: "2026-08-29", type: "TRS", name: "Trail Andalucía", region: "Andalucía" }
+        ]);
+
+        const result = filterRaceEntriesByType(filterRaceEntriesByRegion(withRegion, "Murcia"), "TRS");
+
+        expect(result.map(e => e.id)).toEqual(["r2"]);
 
     });
 

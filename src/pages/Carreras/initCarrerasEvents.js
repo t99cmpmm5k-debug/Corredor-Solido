@@ -6,6 +6,7 @@ import {
     setActiveTab,
     setSearchQuery,
     setSelectedRegion,
+    setSelectedType,
     getSelectedPlannedRaceId,
     setSelectedPlannedRaceId
 } from "./carrerasStore.js";
@@ -40,6 +41,13 @@ function selectTab(tab) {
 function selectRegion(region) {
 
     setSelectedRegion(region);
+    rerender();
+
+}
+
+function selectType(type) {
+
+    setSelectedType(type);
     rerender();
 
 }
@@ -254,6 +262,12 @@ export function initCarrerasEvents() {
     document.querySelectorAll('[data-action="select-race-region"]').forEach(button => {
 
         button.addEventListener("click", () => selectRegion(button.dataset.region));
+
+    });
+
+    document.querySelectorAll('[data-action="select-race-type"]').forEach(button => {
+
+        button.addEventListener("click", () => selectType(button.dataset.type));
 
     });
 

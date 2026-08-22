@@ -18,6 +18,24 @@ export function formatDistance(distanceKm) {
 
 }
 
+// Etiqueta legible para el type de una carrera — un solo sitio para no
+// repetir el mapeo RU/TRS en la tarjeta de lista y en el detalle (antes
+// solo vivía a medias en RaceDetailView.js, y la tarjeta de lista ni
+// siquiera pintaba pill alguna para nada que no fuera RU). Cualquier type
+// que no esté en el mapa se muestra tal cual llegó — nunca se inventa una
+// etiqueta para una disciplina que todavía no tiene nombre bonito.
+const DISCIPLINE_LABELS = {
+    RU: "Asfalto",
+    TRS: "Trail"
+};
+
+export function formatDisciplineType(type) {
+
+    if (!type) return null;
+    return DISCIPLINE_LABELS[type] ?? type;
+
+}
+
 // "AAAA-MM-DDTHH:MM(:SS)?" en hora LOCAL de quien lo lea — igual que
 // parseISODate(), evitando el bug de new Date("AAAA-MM-DD...") interpretado
 // en UTC y desplazando el día/hora según la zona horaria de quien mire la

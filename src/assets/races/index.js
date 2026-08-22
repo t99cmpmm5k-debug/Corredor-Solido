@@ -2,6 +2,10 @@ import raceRu01Skyline from "./race-ru-01-skyline.jpg";
 import raceRu02Seafront from "./race-ru-02-seafront.jpg";
 import raceRu03Archway from "./race-ru-03-archway.jpg";
 import raceRu04Alley from "./race-ru-04-alley.jpg";
+import raceTrail01Dawn from "./race-trail-01-dawn.jpg";
+import raceTrail02Ridge from "./race-trail-02-ridge.jpg";
+import raceTrail03Forest from "./race-trail-03-forest.jpg";
+import raceTrail04Night from "./race-trail-04-night.jpg";
 import raceFallbackGradient from "./race-fallback-gradient.jpg";
 
 import raceHeroDawn from "./race-hero-dawn.jpg";
@@ -21,6 +25,10 @@ import raceHeroWinter from "../hero/hero-snow.jpeg";
 // src/utils/raceImage.js de forma determinista (mismo hash siempre),
 // no aquí.
 export const RACE_RU_IMAGES = [raceRu01Skyline, raceRu02Seafront, raceRu03Archway, raceRu04Alley];
+
+// Mismo reparto por hash que RACE_RU_IMAGES, pero para carreras de trail
+// (type "TRS") — 4 fotos propias, no las de asfalto reutilizadas.
+export const RACE_TRAIL_IMAGES = [raceTrail01Dawn, raceTrail02Ridge, raceTrail03Forest, raceTrail04Night];
 
 // Cualquier carrera que no sea de asfalto (type distinto de "RU", o sin
 // type) cae directamente aquí, sin pasar por el hash.

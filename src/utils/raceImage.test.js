@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { djb2Hash, getRaceImage } from "./raceImage.js";
-import { RACE_RU_IMAGES, RACE_FALLBACK_IMAGE } from "../assets/races/index.js";
+import { RACE_RU_IMAGES, RACE_TRAIL_IMAGES, RACE_FALLBACK_IMAGE } from "../assets/races/index.js";
 
 describe("getRaceImage", () => {
 
@@ -36,7 +36,36 @@ describe("getRaceImage", () => {
 
     });
 
-    it("usa el degradado de fallback si type no es RU", () => {
+    it("devuelve una de las 4 imágenes de trail para type TRS", () => {
+
+        const race = { type: "TRS", name: "Trail de prueba", date: "2026-08-22" };
+
+        expect(RACE_TRAIL_IMAGES).toContain(getRaceImage(race));
+
+    });
+
+    it("devuelve siempre la misma imagen de trail para la misma carrera", () => {
+
+        const race = { type: "TRS", name: "Ultra Sierra Espuña", date: "2026-10-04" };
+
+        expect(getRaceImage(race)).toBe(getRaceImage({ ...race }));
+
+    });
+
+    it("dos carreras de trail con distinto nombre pueden caer en fotos distintas", () => {
+
+        const images = [
+            "Ultra Sierra Espuña",
+            "Trail Nocturno Cehegín",
+            "Maratón de Montaña Moratalla",
+            "Trail del Carche"
+        ].map(name => getRaceImage({ type: "TRS", name, date: "2026-08-22" }));
+
+        expect(new Set(images).size).toBeGreaterThan(1);
+
+    });
+
+    it("usa el degradado de fallback si type no es RU ni TRS", () => {
 
         expect(getRaceImage({ type: "TR", name: "Trail de prueba", date: "2026-08-22" })).toBe(RACE_FALLBACK_IMAGE);
 

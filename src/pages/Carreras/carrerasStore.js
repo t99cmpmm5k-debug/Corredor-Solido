@@ -9,14 +9,21 @@ export const RACE_TABS = ["proximas", "misCarreras", "pasadas"];
 
 // "all" + las dos regiones que ya trae el propio dato (Murcia de las
 // carreras importadas/sembradas hasta ahora, Andalucía de este lote
-// nuevo) — no un catálogo cerrado aparte que mantener sincronizado. La
-// subcategoría por disciplina (Popular/Media Maratón/Maratón/Trail) queda
-// pendiente para más adelante, no es parte de este filtro.
+// nuevo) — no un catálogo cerrado aparte que mantener sincronizado.
 export const RACE_REGIONS = ["all", "Murcia", "Andalucía"];
+
+// "all" + los dos type que ya trae el propio dato (RU de asfalto, TRS de
+// trail) — mismos códigos que disciplineType en raceEntries.js, sus
+// etiquetas legibles salen de formatDisciplineType() (raceFormat.js) para
+// no mantener un segundo mapa de nombres. La subcategoría más fina
+// (Popular/Media Maratón/Maratón dentro de RU) sigue pendiente, esto solo
+// distingue asfalto de trail.
+export const RACE_TYPES = ["all", "RU", "TRS"];
 
 let activeTab = "proximas";
 let searchQuery = "";
 let selectedRegion = "all";
+let selectedType = "all";
 let selectedPlannedRaceId = null;
 
 export function getActiveTab() {
@@ -57,6 +64,19 @@ export function setSelectedRegion(region) {
 
 }
 
+export function getSelectedType() {
+
+    return selectedType;
+
+}
+
+export function setSelectedType(type) {
+
+    if (!RACE_TYPES.includes(type)) return;
+    selectedType = type;
+
+}
+
 export function getSelectedPlannedRaceId() {
 
     return selectedPlannedRaceId;
@@ -77,6 +97,7 @@ export function resetCarrerasView() {
     activeTab = "proximas";
     searchQuery = "";
     selectedRegion = "all";
+    selectedType = "all";
     selectedPlannedRaceId = null;
 
 }
