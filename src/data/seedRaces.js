@@ -12,12 +12,13 @@
 //
 // Se precargan solos en una instalación nueva si plannedRaces está vacío
 // la primera vez que arranca esa instalación -- ver seedPlannedRacesIfNeeded()
-// en src/data/db.js. A partir de ahí son datos normales: cada usuario
-// puede editarlos o borrarlos igual que cualquier carrera importada a
-// mano, sin que afecte a nadie más (no hay sincronización entre
-// dispositivos). Una instalación que ya recibió un seed anterior (con
-// menos carreras) NO recibe estas nuevas automáticamente -- mismo criterio
-// que cualquier otro dato del usuario, aceptado y esperado.
+// en src/data/db.js. Una instalación YA existente con menos carreras (p.
+// ej. solo las 44 originales de Murcia RU) SÍ recibe las que le falten,
+// vía addMissingSeedRaces() en db.js -- una migración aparte, dedupe por
+// fecha+nombre, que no espera a que plannedRaces esté vacío. A partir de
+// ahí son datos normales: cada usuario puede editarlos o borrarlos igual
+// que cualquier carrera importada a mano, sin que afecte a nadie más (no
+// hay sincronización entre dispositivos).
 export const SEED_RACES_BATCH_ID = "seed-races-2026";
 
 export const SEED_RACES = [

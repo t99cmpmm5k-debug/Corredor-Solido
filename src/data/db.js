@@ -1,7 +1,7 @@
 import { SEED_RACES } from "./seedRaces.js";
 
 const DB_NAME = "corredor-solido";
-const DB_VERSION = 7;
+const DB_VERSION = 8;
 
 // Bookkeeping en meta (misma store que lastExportAt, ver backup.js) — se
 // escribe una sola vez, la primera vez que esta instalación pasa por
@@ -34,6 +34,66 @@ const LEGACY_PLANNED_RACES_REGION = "Murcia";
 // original (toda plannedRace sin region a estas alturas es de Murcia) para
 // sanarlas sin que el usuario tenga que borrar y reimportar nada.
 const REGION_REPAIR_META_KEY = "plannedRacesRegionRepairedV2";
+
+// Migración incremental (no un seed): instalaciones YA EXISTENTES -- con
+// datos previos del usuario, sean pocas plannedRaces o ninguna en
+// absoluto -- reciben las carreras nuevas que seedRaces.js fue ganando
+// desde que se sembraron por primera vez (Andalucía RU, trail Murcia,
+// trail Andalucía). A diferencia de seedPlannedRacesIfNeeded(), que solo
+// actúa si plannedRaces está vacío, esta se ejecuta SIEMPRE, tenga
+// plannedRaces lo que tenga -- por eso vive fuera de esa función, como su
+// propio paso en la cadena. Dedupe por fecha+nombre (mismo criterio que
+// importPlannedRaces()) para no duplicar en quien ya las importó a mano
+// con el wizard. Una sola vez por instalación, bajo su propia clave.
+//
+// CRÍTICO: solo toca plannedRaces y meta -- igual que el resto de
+// migraciones de este archivo, nunca lee ni escribe workouts (entrenos
+// reales) bajo ningún caso.
+const INCREMENTAL_SEED_META_KEY = "plannedRacesIncrementalSeedV1";
+
+// Las 44 de Murcia RU son las que ya recibían las instalaciones antiguas
+// (el seed original, antes de que existiera nada más) -- todo lo demás en
+// SEED_RACES es "nuevo" desde el punto de vista de esas instalaciones.
+function isIncrementalSeedRace(race) {
+
+    return !(race.region === "Murcia" && race.type === "RU");
+
+}
+
+function addMissingSeedRaces(transaction) {
+
+    const metaStore = transaction.objectStore(STORES.meta);
+    const getRequest = metaStore.get(INCREMENTAL_SEED_META_KEY);
+
+    getRequest.onsuccess = () => {
+
+        if (getRequest.result) return;
+
+        const racesStore = transaction.objectStore(STORES.plannedRaces);
+        const getAllRequest = racesStore.getAll();
+
+        getAllRequest.onsuccess = () => {
+
+            const existingKeys = new Set(
+                getAllRequest.result.map(r => `${r.date}__${r.name}`)
+            );
+
+            SEED_RACES.filter(isIncrementalSeedRace).forEach(race => {
+
+                const key = `${race.date}__${race.name}`;
+                if (!existingKeys.has(key)) {
+                    racesStore.put(race);
+                }
+
+            });
+
+            metaStore.put({ key: INCREMENTAL_SEED_META_KEY, value: true });
+
+        };
+
+    };
+
+}
 
 export const STORES = {
 
@@ -155,7 +215,9 @@ function fillMissingRegionWithMurcia(transaction, metaKey, onDone) {
 function migrateMissingRegionToMurcia(transaction) {
 
     fillMissingRegionWithMurcia(transaction, REGION_MIGRATION_META_KEY, () => {
-        fillMissingRegionWithMurcia(transaction, REGION_REPAIR_META_KEY);
+        fillMissingRegionWithMurcia(transaction, REGION_REPAIR_META_KEY, () => {
+            addMissingSeedRaces(transaction);
+        });
     });
 
 }
