@@ -14,9 +14,12 @@ import { resolveWorkoutCoordinates } from "./weatherEstimate.js";
 
 const FORECAST_URL = "https://api.open-meteo.com/v1/forecast";
 
-// Franja razonable para no saturar la pantalla de Inicio -- de la hora
-// actual a unas horas más tarde, no el día entero.
-export const HOURS_AHEAD = 8;
+// 24 horas fijas desde la hora actual -- de noche cubre toda la mañana
+// siguiente, de día llega hasta la misma hora del día siguiente. Si
+// Open-Meteo no llega a dar las 24 completas (borde del pronóstico
+// disponible) parseForecastHours() recorta limpio con las que haya, nunca
+// rellena con datos inventados.
+export const HOURS_AHEAD = 24;
 
 // El entreno con fecha+hora más reciente que traiga algo de ubicación
 // (GPS o texto) -- "la ubicación del usuario" se aproxima aquí al lugar
@@ -91,6 +94,13 @@ export function weatherIconForCode(code, isDay = true) {
 
 // `now` es inyectable para poder testear el recorte de horas de forma
 // determinista, sin depender del reloj real de quien ejecute los tests.
+//
+// isNewDay marca la primera hora de cada franja cuya fecha de calendario
+// cambia respecto a la hora anterior -- se calcula DESPUÉS de descartar
+// las horas sin temperatura (nunca antes), para que un hueco de datos
+// justo en la medianoche no le quite la marca a la siguiente hora que sí
+// sobrevive. Siempre false en la primera hora devuelta: no hay "anterior"
+// con la que comparar.
 export function parseForecastHours(data, now = new Date()) {
 
     const times = data?.hourly?.time || [];
@@ -106,17 +116,27 @@ export function parseForecastHours(data, now = new Date()) {
     let startIndex = times.findIndex(t => t >= nowKey);
     if (startIndex === -1) startIndex = 0;
 
-    return times
+    const withData = times
         .slice(startIndex, startIndex + HOURS_AHEAD)
-        .map((t, i) => {
-            const idx = startIndex + i;
-            return {
-                time: t.slice(11, 16),
-                temp: temps[idx] != null ? Math.round(temps[idx]) : null,
-                icon: weatherIconForCode(codes[idx], isDayFlags[idx] !== 0)
-            };
-        })
-        .filter(hour => hour.temp != null);
+        .map((t, i) => ({ t, idx: startIndex + i }))
+        .filter(({ idx }) => temps[idx] != null);
+
+    let previousDate = null;
+
+    return withData.map(({ t, idx }) => {
+
+        const date = t.slice(0, 10);
+        const isNewDay = previousDate !== null && date !== previousDate;
+        previousDate = date;
+
+        return {
+            time: t.slice(11, 16),
+            temp: Math.round(temps[idx]),
+            icon: weatherIconForCode(codes[idx], isDayFlags[idx] !== 0),
+            isNewDay
+        };
+
+    });
 
 }
 

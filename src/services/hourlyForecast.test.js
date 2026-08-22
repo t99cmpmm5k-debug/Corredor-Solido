@@ -82,22 +82,41 @@ describe("parseForecastHours", () => {
         const hours = parseForecastHours(data, now);
 
         expect(hours).toEqual([
-            { time: "11:00", temp: 23, icon: "sun" },
-            { time: "12:00", temp: 25, icon: "cloud" },
-            { time: "13:00", temp: 26, icon: "cloud" }
+            { time: "11:00", temp: 23, icon: "sun", isNewDay: false },
+            { time: "12:00", temp: 25, icon: "cloud", isNewDay: false },
+            { time: "13:00", temp: 26, icon: "cloud", isNewDay: false }
         ]);
 
     });
 
+    // 48 horas reales consecutivas (dos días de verdad, con el cambio de
+    // fecha en la posición correcta) -- a diferencia de un `i % 24` que
+    // repetiría la misma fecha dos veces, esto deja probar tanto el tope
+    // de HOURS_AHEAD como el separador de día sobre datos realistas.
+    function twoRealDaysOfHours(startIso) {
+
+        const times = Array.from({ length: 48 }, (_, i) => {
+            const d = new Date(startIso);
+            d.setHours(d.getHours() + i);
+            const pad = n => String(n).padStart(2, "0");
+            return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:00`;
+        });
+
+        return {
+            hourly: {
+                time: times,
+                temperature_2m: times.map(() => 20),
+                weathercode: times.map(() => 0),
+                is_day: times.map(() => 1)
+            }
+        };
+
+    }
+
     it("respeta HOURS_AHEAD como tope, no devuelve el día entero", () => {
 
-        const times = Array.from({ length: 48 }, (_, i) => `2026-08-22T${String(i % 24).padStart(2, "0")}:00`);
-        const temps = times.map(() => 20);
-        const codes = times.map(() => 0);
-        const isDay = times.map(() => 1);
-
         const hours = parseForecastHours(
-            { hourly: { time: times, temperature_2m: temps, weathercode: codes, is_day: isDay } },
+            twoRealDaysOfHours("2026-08-22T00:00"),
             new Date("2026-08-22T00:15:00")
         );
 
@@ -105,10 +124,63 @@ describe("parseForecastHours", () => {
 
     });
 
+    it("con 24h fijas desde la hora actual, cubre hasta la misma hora del día siguiente y marca la primera hora de mañana", () => {
+
+        // Mirado de día (10:15) -- las 24h llegan hasta las 10:00 de mañana.
+        const hours = parseForecastHours(
+            twoRealDaysOfHours("2026-08-22T00:00"),
+            new Date("2026-08-22T10:15:00")
+        );
+
+        expect(hours).toHaveLength(HOURS_AHEAD);
+        expect(hours[0].time).toBe("10:00");
+        expect(hours.at(-1).time).toBe("09:00"); // 24ª hora = 10:00 de hoy + 23h = 09:00 de mañana
+
+        const boundaryIndex = hours.findIndex(h => h.isNewDay);
+        expect(hours[boundaryIndex].time).toBe("00:00");
+        expect(hours.filter(h => h.isNewDay)).toHaveLength(1); // un único cambio de día en 24h
+
+    });
+
+    it("mirado de noche, el separador de día cae mucho antes en la franja (cubre toda la mañana siguiente)", () => {
+
+        const hours = parseForecastHours(
+            twoRealDaysOfHours("2026-08-22T00:00"),
+            new Date("2026-08-22T22:15:00")
+        );
+
+        const boundaryIndex = hours.findIndex(h => h.isNewDay);
+
+        expect(hours[boundaryIndex].time).toBe("00:00");
+        expect(boundaryIndex).toBe(2); // 22:00 (hoy), 23:00 (hoy), 00:00 (mañana) -> índice 2
+
+    });
+
     it("sin horas en la respuesta, devuelve un array vacío -- nunca inventa una hora", () => {
 
         expect(parseForecastHours({ hourly: {} })).toEqual([]);
         expect(parseForecastHours({})).toEqual([]);
+
+    });
+
+    it("recorta limpio si Open-Meteo no llega a dar las 24h completas, sin rellenar con horas falsas", () => {
+
+        // Solo 4 horas disponibles en toda la respuesta, simulando el borde
+        // del pronóstico -- se cortan ahí, ninguna se inventa para llegar
+        // a las 24 pedidas.
+        const short = {
+            hourly: {
+                time: ["2026-08-22T20:00", "2026-08-22T21:00", "2026-08-22T22:00", "2026-08-22T23:00"],
+                temperature_2m: [18, 17, 16, 16],
+                weathercode: [0, 0, 0, 0],
+                is_day: [1, 0, 0, 0]
+            }
+        };
+
+        const result = parseForecastHours(short, new Date("2026-08-22T20:15:00"));
+
+        expect(result).toHaveLength(4);
+        expect(result).not.toHaveLength(HOURS_AHEAD);
 
     });
 

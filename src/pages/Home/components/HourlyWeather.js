@@ -17,13 +17,23 @@ function weatherIcon(category) {
     return ICON_BY_CATEGORY[category] || ICON_BY_CATEGORY.cloud;
 }
 
-function HourlyWeatherSlot({ time, temp, icon }) {
+// isNewDay marca la primera hora de "mañana" dentro de la franja de 24h
+// (ver parseForecastHours() en services/hourlyForecast.js) -- esa hora
+// lleva la etiqueta "Mañana" además del número, y el slot un separador
+// sutil (línea + fondo) para que se entienda de un vistazo en qué día se
+// está mirando aunque se haya deslizado mucho.
+function HourlyWeatherSlot({ time, temp, icon, isNewDay }) {
 
     return `
 
-        <div class="hourly-weather-hour">
+        <div class="hourly-weather-hour ${isNewDay ? "is-new-day" : ""}">
 
-            <span class="hourly-weather-time">${time}</span>
+            <span class="hourly-weather-time">
+
+                ${isNewDay ? `<span class="hourly-weather-day-tag">Mañana</span>` : ""}
+                ${time}
+
+            </span>
 
             <iconify-icon icon="${weatherIcon(icon)}"></iconify-icon>
 

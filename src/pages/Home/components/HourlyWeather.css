@@ -119,11 +119,56 @@
 
 .hourly-weather-time {
 
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+
+    gap: 3px;
+
     font-size: .72rem;
 
     font-weight: 600;
 
     color: var(--text-secondary);
+
+}
+
+/* Separador sutil de cambio de día -- línea fina a la izquierda del
+   primer slot de "mañana" (dentro del hueco que ya deja el gap de
+   .hourly-weather-scroll, sin ensanchar la franja de más) + una
+   etiqueta en miniatura encima de la hora, para que se note en qué día
+   se está mirando aunque se haya deslizado mucho. */
+.hourly-weather-hour.is-new-day {
+
+    margin-left: 8px;
+
+    padding-left: 12px;
+
+    border-left: 1px solid color-mix(in srgb, var(--card-border) 90%, transparent);
+
+}
+
+.hourly-weather-day-tag {
+
+    padding: 2px 6px;
+
+    border-radius: 999px;
+
+    background: color-mix(in srgb, var(--color-primary) 16%, transparent);
+
+    color: var(--color-primary);
+
+    font-size: .58rem;
+
+    font-weight: 800;
+
+    letter-spacing: .03em;
+
+    text-transform: uppercase;
+
+    white-space: nowrap;
 
 }
 
