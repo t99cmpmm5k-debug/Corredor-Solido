@@ -133,6 +133,24 @@ function buildFieldMeta(merged) {
 
 }
 
+// Si no hay una captura de Resumen/Estadísticas con la FC media/máxima
+// general del entreno, se derivan de las vueltas (columna FC de la tabla
+// desplazada, ver parser-splits.js) en vez de dejarlas en null — un
+// entreno con solo esa tabla + Resumen (sin la vista estándar de Vueltas,
+// la única que aporta ritmo/distancia por vuelta) se quedaba sin ningún
+// ppm que mostrar, ni en el gráfico ni en el stat "FC media", aunque el
+// dato SÍ existe por vuelta. Media aritmética simple para la media (no
+// hay duración por vuelta con la que ponderar, y las vueltas de esta
+// tabla son ~1 km cada una); la máxima es el pico real de cualquier
+// vuelta, no una media de máximos.
+function averageOfLaps(values) {
+    return values.length ? Math.round(values.reduce((sum, v) => sum + v, 0) / values.length) : null;
+}
+
+function maxOfLaps(values) {
+    return values.length ? Math.max(...values) : null;
+}
+
 // raw = el resultado fusionado de varias capturas (GarminFusion.merge, ver
 // garmin-engine/recognize.js), no una única captura sin fusionar.
 export function parseGarminWorkout(merged) {
@@ -178,6 +196,16 @@ export function parseGarminWorkout(merged) {
     const fieldMeta = buildFieldMeta(merged);
     fieldMeta.type = { confidence: typeConfidence, corrected: false };
 
+    const avgHrFromCapture = parseNumber(data.avg_heart_rate_bpm);
+    const maxHrFromCapture = parseNumber(data.max_heart_rate_bpm);
+
+    const avgHr = avgHrFromCapture ?? averageOfLaps(splits.map(s => s.avgHr).filter(v => v != null));
+    const maxHr = maxHrFromCapture ?? maxOfLaps(splits.map(s => s.maxHr).filter(v => v != null));
+
+    if (avgHrFromCapture == null && avgHr != null) {
+        importWarnings.push("FC media estimada a partir de las vueltas — no viene de una lectura directa de Resumen/Estadísticas.");
+    }
+
     return {
 
         date,
@@ -188,8 +216,8 @@ export function parseGarminWorkout(merged) {
         distanceKm,
         durationSec: parseDurationToSeconds(data.total_time),
         avgPaceSecPerKm: parsePaceToSecPerKm(data.avg_pace_min_km),
-        avgHr: parseNumber(data.avg_heart_rate_bpm),
-        maxHr: parseNumber(data.max_heart_rate_bpm),
+        avgHr,
+        maxHr,
         calories: parseNumber(data.calories_kcal),
         avgCadence: parseNumber(data.cadence_spm),
         maxCadence: parseNumber(data.max_cadence_spm),
