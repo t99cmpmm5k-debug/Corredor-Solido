@@ -192,6 +192,54 @@
 }
 
 /* =========================
+   FILTRO DE REGIÓN (Todas/Murcia/Andalucía)
+========================= */
+
+.carreras-region-filter{
+
+    display:flex;
+
+    gap:8px;
+
+    overflow-x:auto;
+
+}
+
+.carreras-region-pill{
+
+    flex-shrink:0;
+
+    padding:7px 14px;
+
+    border-radius:999px;
+
+    border:1px solid var(--card-border);
+
+    background:transparent;
+
+    color:var(--text-secondary);
+
+    font-size:.78rem;
+
+    font-weight:600;
+
+    cursor:pointer;
+
+    transition:.2s;
+
+}
+
+.carreras-region-pill.is-active{
+
+    border-color:var(--color-primary);
+
+    background:color-mix(in srgb, var(--color-primary) 16%, transparent);
+
+    color:var(--color-primary);
+
+}
+
+/* =========================
    BOTÓN IMPORTAR
 ========================= */
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildRaceEntries, categorizeRaceEntries, filterRaceEntriesByQuery, groupEntriesByMonth } from "./raceEntries.js";
+import { buildRaceEntries, categorizeRaceEntries, filterRaceEntriesByQuery, filterRaceEntriesByRegion, groupEntriesByMonth } from "./raceEntries.js";
 
 function futureIso(daysFromNow) {
     const d = new Date();
@@ -34,7 +34,7 @@ describe("buildRaceEntries", () => {
     it("mapea plannedRaces con sus campos propios", () => {
 
         const plannedRaces = [
-            { id: "p1", date: "2026-09-01", type: "RU", name: "Carrera X", location: "Murcia", registrationDeadline: "2026-08-29T20:00:00", url: "https://x.test" }
+            { id: "p1", date: "2026-09-01", type: "RU", name: "Carrera X", location: "Murcia", registrationDeadline: "2026-08-29T20:00:00", url: "https://x.test", region: "Murcia" }
         ];
 
         const entries = buildRaceEntries([], plannedRaces);
@@ -48,8 +48,30 @@ describe("buildRaceEntries", () => {
             disciplineType: "RU",
             distanceKm: null,
             registrationDeadline: "2026-08-29T20:00:00",
-            url: "https://x.test"
+            url: "https://x.test",
+            region: "Murcia"
         });
+
+    });
+
+    it("una carrera completada nunca tiene region — no es un dato que un workout real traiga", () => {
+
+        const entries = buildRaceEntries(
+            [{ id: "w1", type: "race", date: "2026-08-01", title: "10K Local" }],
+            []
+        );
+
+        expect(entries[0].region).toBeNull();
+
+    });
+
+    it("una carrera planificada sin region (dato de antes de la migración) queda a null, no se inventa", () => {
+
+        const entries = buildRaceEntries([], [
+            { id: "p1", date: "2026-09-01", type: "RU", name: "Carrera vieja" }
+        ]);
+
+        expect(entries[0].region).toBeNull();
 
     });
 
@@ -99,6 +121,41 @@ describe("filterRaceEntriesByQuery", () => {
     it("con query vacía devuelve todo tal cual", () => {
 
         expect(filterRaceEntriesByQuery(entries, "  ")).toEqual(entries);
+
+    });
+
+});
+
+describe("filterRaceEntriesByRegion", () => {
+
+    const entries = buildRaceEntries(
+        [{ id: "w1", type: "race", date: "2026-07-01", title: "Ya corrida" }],
+        [
+            { id: "p1", date: "2026-08-22", type: "RU", name: "Carrera de Ojós", region: "Murcia" },
+            { id: "p2", date: "2026-08-28", type: "RU", name: "Carrera de Nívar", region: "Andalucía" },
+            { id: "p3", date: "2026-08-29", type: "RU", name: "Carrera sin migrar", region: null }
+        ]
+    );
+
+    it("con 'all' devuelve todo tal cual, completadas incluidas", () => {
+
+        expect(filterRaceEntriesByRegion(entries, "all")).toEqual(entries);
+
+    });
+
+    it("filtra solo las de la región pedida", () => {
+
+        expect(filterRaceEntriesByRegion(entries, "Murcia").map(e => e.id)).toEqual(["p1"]);
+        expect(filterRaceEntriesByRegion(entries, "Andalucía").map(e => e.id)).toEqual(["p2"]);
+
+    });
+
+    it("una región concreta deja fuera lo completado y lo sin migrar — no hay region con la que coincidir", () => {
+
+        const result = filterRaceEntriesByRegion(entries, "Murcia");
+
+        expect(result.some(e => e.id === "w1")).toBe(false);
+        expect(result.some(e => e.id === "p3")).toBe(false);
 
     });
 

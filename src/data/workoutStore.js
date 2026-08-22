@@ -598,6 +598,7 @@ export function importPlannedRaces(races) {
             location: race.location,
             registrationDeadline: race.registrationDeadline,
             url: race.url,
+            region: race.region ?? null,
             importBatchId: batchId
         };
 

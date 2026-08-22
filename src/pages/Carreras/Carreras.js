@@ -6,10 +6,10 @@ import { RaceListCard } from "./components/RaceListCard.js";
 import { RaceDetailView } from "./components/RaceDetailView.js";
 import { RaceImportWizard } from "./components/RaceImportWizard.js";
 import { getWorkouts, getPlannedRaces } from "../../data/workoutStore.js";
-import { getActiveTab, setActiveTab, getSearchQuery, getSelectedPlannedRaceId, RACE_TABS } from "./carrerasStore.js";
+import { getActiveTab, setActiveTab, getSearchQuery, getSelectedRegion, getSelectedPlannedRaceId, RACE_TABS, RACE_REGIONS } from "./carrerasStore.js";
 import { getRaceImportStep } from "./raceImportStore.js";
 import { formatMonthLabel } from "../../components/MonthCalendar/MonthCalendar.js";
-import { buildRaceEntries, categorizeRaceEntries, filterRaceEntriesByQuery, groupEntriesByMonth } from "./raceEntries.js";
+import { buildRaceEntries, categorizeRaceEntries, filterRaceEntriesByQuery, filterRaceEntriesByRegion, groupEntriesByMonth } from "./raceEntries.js";
 
 const TAB_LABELS = {
     proximas: "Próximas",
@@ -84,16 +84,55 @@ function CarrerasSearchRow(query) {
 
 }
 
-function CarrerasEmptyState(activeTab, hasQuery) {
+const REGION_LABELS = {
+    all: "Todas",
+    Murcia: "Murcia",
+    "Andalucía": "Andalucía"
+};
 
-    if (hasQuery) {
+// Fila de píldoras aparte del botón "Filtros" (ese sigue reservado para el
+// filtro por categoría/disciplina que queda pendiente — ver punto 4 del
+// encargo) — se combina con la tab activa y la búsqueda, no las sustituye.
+function CarrerasRegionFilter(selectedRegion) {
+
+    return `
+
+        <div class="carreras-region-filter">
+
+            ${RACE_REGIONS.map(region => `
+
+                <button
+                    class="carreras-region-pill ${region === selectedRegion ? "is-active" : ""}"
+                    data-action="select-race-region"
+                    data-region="${region}"
+                >
+
+                    ${REGION_LABELS[region]}
+
+                </button>
+
+            `).join("")}
+
+        </div>
+
+    `;
+
+}
+
+// hasFilter cubre tanto la búsqueda de texto como el filtro de región — en
+// cualquiera de los dos casos el hueco es "nada coincide con lo que has
+// pedido", no "esta tab está vacía de verdad" (que es lo que sugeriría el
+// hint por defecto, pensado para una tab sin ningún dato en absoluto).
+function CarrerasEmptyState(activeTab, hasFilter) {
+
+    if (hasFilter) {
         return `
 
             <div class="carreras-empty">
 
                 <iconify-icon icon="solar:magnifer-bold-duotone"></iconify-icon>
 
-                <p>Ninguna carrera coincide con la búsqueda.</p>
+                <p>Ninguna carrera coincide con el filtro.</p>
 
             </div>
 
@@ -194,7 +233,14 @@ export function Carreras() {
 
     const activeTab = getActiveTab();
     const query = getSearchQuery();
-    const visibleEntries = filterRaceEntriesByQuery(byTab[activeTab], query);
+    const selectedRegion = getSelectedRegion();
+
+    // Los contadores de las tabs se quedan con el total sin filtrar, igual
+    // que ya pasaba con la búsqueda de texto (nunca se recalculaban por
+    // query) — el filtro de región solo recorta la lista visible dentro de
+    // la tab activa, no lo que dicen las propias tabs.
+    const visibleEntries = filterRaceEntriesByRegion(filterRaceEntriesByQuery(byTab[activeTab], query), selectedRegion);
+    const hasActiveFilter = query.trim().length > 0 || selectedRegion !== "all";
 
     return `
 
@@ -212,6 +258,8 @@ export function Carreras() {
 
                 ${CarrerasSearchRow(query)}
 
+                ${CarrerasRegionFilter(selectedRegion)}
+
                 <button class="carreras-import-button" data-action="open-race-import">
 
                     <iconify-icon icon="solar:calendar-add-bold-duotone"></iconify-icon>
@@ -220,7 +268,7 @@ export function Carreras() {
 
                 </button>
 
-                ${visibleEntries.length === 0 ? CarrerasEmptyState(activeTab, query.trim().length > 0) : CarrerasList(visibleEntries)}
+                ${visibleEntries.length === 0 ? CarrerasEmptyState(activeTab, hasActiveFilter) : CarrerasList(visibleEntries)}
 
             </div>
 

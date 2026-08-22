@@ -25,7 +25,8 @@ export function buildRaceEntries(workouts, plannedRaces) {
             disciplineType: null,
             distanceKm: w.distanceKm ?? null,
             registrationDeadline: null,
-            url: null
+            url: null,
+            region: null
         }));
 
     const planned = plannedRaces.map(r => ({
@@ -37,7 +38,8 @@ export function buildRaceEntries(workouts, plannedRaces) {
         disciplineType: r.type ?? null,
         distanceKm: null,
         registrationDeadline: r.registrationDeadline ?? null,
-        url: r.url ?? null
+        url: r.url ?? null,
+        region: r.region ?? null
     }));
 
     return [...completed, ...planned];
@@ -83,6 +85,19 @@ export function filterRaceEntriesByQuery(entries, query) {
         e.name.toLowerCase().includes(trimmed) ||
         (e.location || "").toLowerCase().includes(trimmed)
     );
+
+}
+
+// "all" (o cualquier valor sin filtro real) devuelve todo tal cual — mismo
+// criterio que filterRaceEntriesByQuery con una query vacía. Una carrera
+// completada (workout real) nunca tiene region (ver buildRaceEntries), así
+// que un filtro de región concreto siempre la deja fuera — correcto: el
+// filtro es sobre el calendario importado, no sobre lo ya corrido.
+export function filterRaceEntriesByRegion(entries, region) {
+
+    if (!region || region === "all") return entries;
+
+    return entries.filter(e => e.region === region);
 
 }
 

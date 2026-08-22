@@ -1,7 +1,7 @@
 import { SEED_RACES } from "./seedRaces.js";
 
 const DB_NAME = "corredor-solido";
-const DB_VERSION = 5;
+const DB_VERSION = 6;
 
 // Bookkeeping en meta (misma store que lastExportAt, ver backup.js) — se
 // escribe una sola vez, la primera vez que esta instalación pasa por
@@ -10,6 +10,16 @@ const DB_VERSION = 5;
 // mano todas sus plannedRaces más adelante, una subida de DB_VERSION por
 // una función totalmente distinta no las vuelve a traer de vuelta.
 const SEED_RACES_META_KEY = "plannedRacesSeeded";
+
+// Migración de datos: plannedRaces existentes de antes de que existiera el
+// campo "region" (el filtro Andalucía/Murcia de Carreras) se quedaron sin
+// él. Todas las carreras importadas hasta ahora (seed de fábrica incluido)
+// son de la Región de Murcia y alrededores, así que se etiquetan
+// retroactivamente con "Murcia" — una sola vez por instalación, igual que
+// el flag de seedPlannedRacesIfNeeded(). Solo toca el campo region, nunca
+// pisa ni duplica el resto del registro.
+const REGION_MIGRATION_META_KEY = "plannedRacesRegionMigrated";
+const LEGACY_PLANNED_RACES_REGION = "Murcia";
 
 export const STORES = {
 
@@ -43,6 +53,16 @@ export function isStorageAvailable() {
 //
 // CRÍTICO: esto no lee ni escribe workouts (entrenos reales) en ningún
 // caso — solo toca meta (el flag de "ya se decidió") y plannedRaces.
+//
+// migrateMissingRegionToMurcia() se llama siempre desde dentro de esta
+// misma cadena, nunca en paralelo desde upgrade() — una transacción de
+// IndexedDB procesa las peticiones en el orden en que se encolan, así que
+// si la migración abriera su propio cursor por su cuenta podría
+// procesarse ANTES de que las filas recién sembradas lleguen a existir,
+// dejándolas sin region para siempre (su propio flag ya habría quedado
+// marcado como hecho). Encolarla aquí, después del seed en las dos ramas
+// (ya sembrado antes / sembrando ahora mismo), garantiza que siempre ve
+// el estado ya sembrado de plannedRaces.
 function seedPlannedRacesIfNeeded(transaction) {
 
     const metaStore = transaction.objectStore(STORES.meta);
@@ -50,7 +70,10 @@ function seedPlannedRacesIfNeeded(transaction) {
 
     getRequest.onsuccess = () => {
 
-        if (getRequest.result) return;
+        if (getRequest.result) {
+            migrateMissingRegionToMurcia(transaction);
+            return;
+        }
 
         const racesStore = transaction.objectStore(STORES.plannedRaces);
         const countRequest = racesStore.count();
@@ -62,6 +85,48 @@ function seedPlannedRacesIfNeeded(transaction) {
             }
 
             metaStore.put({ key: SEED_RACES_META_KEY, value: true });
+
+            migrateMissingRegionToMurcia(transaction);
+
+        };
+
+    };
+
+}
+
+// Ver el comentario junto a REGION_MIGRATION_META_KEY. Recorre plannedRaces
+// con un cursor de escritura (no getAll + put suelto) para poder actualizar
+// cada registro completo tal cual está, tocando solo "region" — igual de
+// seguro dentro de la misma transacción de versionchange que
+// seedPlannedRacesIfNeeded().
+function migrateMissingRegionToMurcia(transaction) {
+
+    const metaStore = transaction.objectStore(STORES.meta);
+    const getRequest = metaStore.get(REGION_MIGRATION_META_KEY);
+
+    getRequest.onsuccess = () => {
+
+        if (getRequest.result) return;
+
+        const racesStore = transaction.objectStore(STORES.plannedRaces);
+        const cursorRequest = racesStore.openCursor();
+
+        cursorRequest.onsuccess = () => {
+
+            const cursor = cursorRequest.result;
+
+            if (!cursor) {
+                metaStore.put({ key: REGION_MIGRATION_META_KEY, value: true });
+                return;
+            }
+
+            const race = cursor.value;
+
+            if (race.region == null) {
+                cursor.update({ ...race, region: LEGACY_PLANNED_RACES_REGION });
+            }
+
+            cursor.continue();
 
         };
 

@@ -1,6 +1,6 @@
 import { isValidIsoDate } from "../plan/json.js";
 
-const STRING_FIELDS = ["type", "name", "location", "url"];
+const STRING_FIELDS = ["type", "name", "location", "url", "region"];
 
 // AAAA-MM-DDTHH:MM(:SS)? — no valida más allá de la forma (ni que la hora
 // exista de verdad, p. ej. 25:99) por el mismo motivo que isValidIsoDate()
@@ -25,9 +25,9 @@ function parseRace(raw, index) {
     if (raw == null || typeof raw !== "object" || Array.isArray(raw)) {
         return {
             date: null, type: null, name: null, location: null,
-            registrationDeadline: null, url: null,
+            registrationDeadline: null, url: null, region: null,
             fieldMeta: Object.fromEntries(
-                ["date", "type", "name", "location", "registrationDeadline", "url"]
+                ["date", "type", "name", "location", "registrationDeadline", "url", "region"]
                     .map(k => [k, { confidence: null, corrected: false }])
             ),
             importWarnings: [`Carrera #${index + 1} no es un objeto válido — se ha ignorado por completo.`]

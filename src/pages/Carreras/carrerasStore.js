@@ -7,8 +7,16 @@
 //     corrió pero no hay forma de enlazarla con su workout real todavía)
 export const RACE_TABS = ["proximas", "misCarreras", "pasadas"];
 
+// "all" + las dos regiones que ya trae el propio dato (Murcia de las
+// carreras importadas/sembradas hasta ahora, Andalucía de este lote
+// nuevo) — no un catálogo cerrado aparte que mantener sincronizado. La
+// subcategoría por disciplina (Popular/Media Maratón/Maratón/Trail) queda
+// pendiente para más adelante, no es parte de este filtro.
+export const RACE_REGIONS = ["all", "Murcia", "Andalucía"];
+
 let activeTab = "proximas";
 let searchQuery = "";
+let selectedRegion = "all";
 let selectedPlannedRaceId = null;
 
 export function getActiveTab() {
@@ -36,6 +44,19 @@ export function setSearchQuery(query) {
 
 }
 
+export function getSelectedRegion() {
+
+    return selectedRegion;
+
+}
+
+export function setSelectedRegion(region) {
+
+    if (!RACE_REGIONS.includes(region)) return;
+    selectedRegion = region;
+
+}
+
 export function getSelectedPlannedRaceId() {
 
     return selectedPlannedRaceId;
@@ -55,6 +76,7 @@ export function resetCarrerasView() {
 
     activeTab = "proximas";
     searchQuery = "";
+    selectedRegion = "all";
     selectedPlannedRaceId = null;
 
 }

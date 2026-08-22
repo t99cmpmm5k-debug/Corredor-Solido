@@ -34,6 +34,27 @@ describe("parseRacesFromJson", () => {
 
     });
 
+    it("acepta el campo region (texto libre, sin catálogo cerrado, para el filtro Andalucía/Murcia de Carreras)", () => {
+
+        const result = parseRacesFromJson(JSON.stringify({
+            races: [{ date: "2026-08-22", name: "x", region: "Andalucía" }]
+        }));
+
+        expect(result.races[0].region).toBe("Andalucía");
+        expect(result.races[0].importWarnings).toHaveLength(0);
+
+    });
+
+    it("deja region a null si el archivo no lo trae, sin inventarlo", () => {
+
+        const result = parseRacesFromJson(JSON.stringify({
+            races: [{ date: "2026-08-22", name: "x" }]
+        }));
+
+        expect(result.races[0].region).toBeNull();
+
+    });
+
     it("acepta cualquier texto libre en type, sin validarlo contra ningún catálogo", () => {
 
         const result = parseRacesFromJson(JSON.stringify({
