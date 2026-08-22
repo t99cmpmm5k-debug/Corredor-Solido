@@ -42,6 +42,24 @@ const REAL_HR_TABLE_TEXT_SCROLL2 = [
     "Total 40 5:41 152 158 |"
 ].join("\n");
 
+// Tercera posición de scroll (más a la derecha todavía): ya no se ve GAP
+// medio, en su lugar Ascenso total/Descenso total — reportada como caso
+// real que fallaba (screen_type "unknown"), pero sin una imagen real
+// disponible en este repo todavía para extraer su texto OCR exacto; forma
+// sintética plausible siguiendo el mismo patrón de columnas contiguas
+// FC media/FC máx. ya verificado en las otras dos posiciones reales,
+// misma convención que SYNTHETIC_STANDARD_TABLE_TEXT más abajo. Vuelta 3
+// simula el mismo tipo de dígito corrompido con basura de scroll ya visto
+// en las capturas reales ("3" + resto de la columna anterior = "38").
+const SYNTHETIC_HR_TABLE_NO_GAP_TEXT = [
+    "Vuelta Frecuencia cardiaca media Frec. cardiaca max. Ascenso total Descenso total",
+    "ppm ppm m m",
+    "1 140 152 16 8",
+    "2 153 157 1 3",
+    "38 154 158 9 2",
+    "Total 40 152 158 26 13"
+].join("\n");
+
 // Fila sintética con la forma exacta que exige STANDARD_ROW (vuelta, tiempo
 // con decimales, distancia con coma, ritmo) — no hay una captura OCR real
 // disponible todavía para este formato en este repo; misma convención que
@@ -129,6 +147,28 @@ describe("parser-splits — vista con FC (GAP medio/FC media/FC máx.)", () => {
     it("identifica esta segunda posición de scroll como 'splits' pese a la cabecera mezclada", () => {
 
         expect(detect(REAL_HR_TABLE_TEXT_SCROLL2).type).toBe("splits");
+
+    });
+
+});
+
+describe("parser-splits — vista con FC sin GAP medio (Ascenso/Descenso en su lugar)", () => {
+
+    it("identifica esta tercera posición de scroll como 'splits' sin exigir GAP medio", () => {
+
+        expect(detect(SYNTHETIC_HR_TABLE_NO_GAP_TEXT).type).toBe("splits");
+
+    });
+
+    it("extrae FC media y máxima aunque no haya columna de ritmo (GAP medio) delante", () => {
+
+        const { extras } = parse(SYNTHETIC_HR_TABLE_NO_GAP_TEXT);
+
+        expect(extras.laps).toEqual([
+            { avg_heart_rate_bpm: 140, max_heart_rate_bpm: 152, lap: 1 },
+            { avg_heart_rate_bpm: 153, max_heart_rate_bpm: 157, lap: 2 },
+            { avg_heart_rate_bpm: 154, max_heart_rate_bpm: 158, lap: 3 }
+        ]);
 
     });
 

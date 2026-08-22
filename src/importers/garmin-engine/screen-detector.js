@@ -1,5 +1,21 @@
 import * as U from "./garmin-utils.js";
 
+// Cuenta líneas con dos tokens seguidos de 2-3 dígitos (p. ej. "140 152",
+// el cuerpo de una tabla de FC) -- por token separado por espacio, no por
+// un \b suelto sobre la línea entera: "5:34" no debe contar como si "34"
+// fuera un número de columna real solo porque hay un límite de palabra
+// entre ":" y "3" (mismo problema que ya se corrigió en parser-splits.js).
+function countNumericPairRows(text) {
+
+    const isHrShaped = token => /^[0-9]{2,3}$/.test(token);
+
+    return text.split("\n").filter(line => {
+        const tokens = line.trim().split(/\s+/);
+        return tokens.some((token, i) => isHrShaped(token) && isHrShaped(tokens[i + 1] || ""));
+    }).length;
+
+}
+
 export function detect(text) {
     const n = U.normalize(text);
 
@@ -34,12 +50,22 @@ export function detect(text) {
     }
 
     // Misma pantalla de Vueltas pero desplazada a la derecha para ver la FC
-    // por vuelta (columnas GAP medio/FC media/FC máx./Ascenso total) — la
-    // captura suele venir recortada justo a la tabla, sin la palabra
-    // "vueltas" visible, así que se identifica por sus cabeceras propias
-    // en vez de exigirla. Solo aporta FC, nunca distancia/ritmo — ver
-    // parser-splits.js.
-    if (/gap medio/.test(n) && /frecuencia cardiaca media|frec\.? cardiaca max/.test(n)) {
+    // por vuelta — el conjunto de columnas visible varía según hasta dónde
+    // se deslice la tabla (a veces GAP medio, a veces Ascenso/Descenso, a
+    // veces ninguna de las dos: verificado contra tres capturas reales
+    // distintas), y la captura suele venir recortada justo a la tabla, sin
+    // la palabra "vueltas" visible. No se exige ninguna columna concreta
+    // aparte de la propia FC — solo su cabecera, más varias filas con dos
+    // números seguidos en rango de pulsaciones (el cuerpo de la tabla) para
+    // no confundirla con la etiqueta suelta "Frecuencia cardíaca media" que
+    // también aparece como una única estadística en Resumen/Estadísticas
+    // (esas pantallas ya se identifican antes, más arriba, así que solo
+    // hace falta este resguardo para una captura que no traiga ninguna de
+    // sus etiquetas propias). Ver parser-splits.js.
+    if (
+        (/frecuencia cardiaca media/.test(n) || /frec\.? cardiaca max/.test(n))
+        && countNumericPairRows(n) >= 2
+    ) {
         return { type: "splits", confidence: .96 };
     }
 
