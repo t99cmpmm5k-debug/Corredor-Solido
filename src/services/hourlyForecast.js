@@ -1,0 +1,198 @@
+// Pronóstico por horas para el widget de Inicio -- misma API (Open-Meteo,
+// sin clave) y misma resolución de ubicación (GPS del entreno o geocoding
+// de su location de texto, restringido a España) que ya usa
+// weatherEstimate.js para la temperatura automática de un entreno
+// importado en Running. Aquí se usa el endpoint de PRONÓSTICO (forecast),
+// no el de reanálisis histórico (archive): "qué tiempo va a hacer en las
+// próximas horas", no "qué tiempo hizo aquel día".
+//
+// Nunca se inventa ni se aproxima un dato: cualquier fallo (sin ubicación,
+// sin conexión, respuesta sin horas) devuelve null y el widget se oculta
+// entero -- ver homeWeatherStore.js.
+
+import { resolveWorkoutCoordinates } from "./weatherEstimate.js";
+
+const FORECAST_URL = "https://api.open-meteo.com/v1/forecast";
+
+// Franja razonable para no saturar la pantalla de Inicio -- de la hora
+// actual a unas horas más tarde, no el día entero.
+export const HOURS_AHEAD = 8;
+
+// El entreno con fecha+hora más reciente que traiga algo de ubicación
+// (GPS o texto) -- "la ubicación del usuario" se aproxima aquí al lugar
+// de su actividad más reciente, mismo dato que Running ya resuelve para
+// la temperatura automática de un entreno concreto, aplicado al más
+// reciente en vez de a uno fijo.
+export function mostRecentLocatableWorkout(workouts) {
+
+    const candidates = workouts.filter(w =>
+        w.date && (w.location || (w.startLat != null && w.startLon != null))
+    );
+
+    if (!candidates.length) return null;
+
+    return [...candidates].sort((a, b) =>
+        `${b.date}T${b.time || "00:00"}`.localeCompare(`${a.date}T${a.time || "00:00"}`)
+    )[0];
+
+}
+
+// Primer tramo de "Ciudad, Provincia" -- lo bastante corto para el
+// "Hoy · [ubicación]" del widget sin repetir la provincia.
+function shortLocationLabel(location) {
+    return location.split(",")[0].trim() || null;
+}
+
+// { lat, lon, label } o null -- label es el nombre de sitio para mostrar
+// en el widget ("Hoy · Ojós"), tomado siempre del texto que el propio
+// workout ya trae (más legible que nada que devuelva el geocoding), no de
+// una reversa de las coordenadas -- Open-Meteo no ofrece geocoding
+// inverso, y no es la API a la que este widget debe recurrir para eso.
+export async function resolveLocation(workouts, onLog = () => {}) {
+
+    const workout = mostRecentLocatableWorkout(workouts);
+
+    if (!workout) {
+        onLog("tiempo: ningún entreno con ubicación todavía -- no se pide pronóstico");
+        return null;
+    }
+
+    const coords = await resolveWorkoutCoordinates(workout, onLog);
+    if (!coords) return null;
+
+    return { ...coords, label: workout.location ? shortLocationLabel(workout.location) : null };
+
+}
+
+// Códigos WMO que devuelve Open-Meteo (weathercode) -- agrupados en las
+// categorías que pide el widget (sol/nube/lluvia/luna) más nieve/tormenta,
+// que el endpoint da igual de gratis. Cualquier código no listado (o
+// null) cae a "cloud", nunca a un icono más específico sin certeza.
+// isDay (campo "is_day" de Open-Meteo, 1/0) decide sol vs. luna en los
+// códigos de cielo despejado/poco nuboso -- viene de la propia API, no es
+// un cálculo de amanecer/atardecer hecho a mano aquí.
+const CLEAR_CODES = new Set([0, 1]);
+const CLOUD_CODES = new Set([2, 3, 45, 48]);
+const RAIN_CODES = new Set([51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82]);
+const SNOW_CODES = new Set([71, 73, 75, 77, 85, 86]);
+const STORM_CODES = new Set([95, 96, 99]);
+
+export function weatherIconForCode(code, isDay = true) {
+
+    if (CLEAR_CODES.has(code)) return isDay ? "sun" : "moon";
+    if (RAIN_CODES.has(code)) return "rain";
+    if (SNOW_CODES.has(code)) return "snow";
+    if (STORM_CODES.has(code)) return "storm";
+    if (CLOUD_CODES.has(code)) return "cloud";
+
+    return "cloud";
+
+}
+
+// `now` es inyectable para poder testear el recorte de horas de forma
+// determinista, sin depender del reloj real de quien ejecute los tests.
+export function parseForecastHours(data, now = new Date()) {
+
+    const times = data?.hourly?.time || [];
+    const temps = data?.hourly?.temperature_2m || [];
+    const codes = data?.hourly?.weathercode || [];
+    const isDayFlags = data?.hourly?.is_day || [];
+
+    if (!times.length) return [];
+
+    const pad = n => String(n).padStart(2, "0");
+    const nowKey = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:00`;
+
+    let startIndex = times.findIndex(t => t >= nowKey);
+    if (startIndex === -1) startIndex = 0;
+
+    return times
+        .slice(startIndex, startIndex + HOURS_AHEAD)
+        .map((t, i) => {
+            const idx = startIndex + i;
+            return {
+                time: t.slice(11, 16),
+                temp: temps[idx] != null ? Math.round(temps[idx]) : null,
+                icon: weatherIconForCode(codes[idx], isDayFlags[idx] !== 0)
+            };
+        })
+        .filter(hour => hour.temp != null);
+
+}
+
+// El bloque "current" de Open-Meteo es la lectura de ahora mismo del
+// modelo -- más precisa para "temperatura actual" que asumir que coincide
+// con el primer valor de "hourly" (que es un promedio/instantánea horaria,
+// no necesariamente el mismo dato). Si falta, se cae al primer valor de
+// parseForecastHours() en vez de dejar el widget sin número grande.
+function parseCurrentConditions(data, hours) {
+
+    const current = data?.current;
+
+    if (current?.temperature_2m != null) {
+        return {
+            temp: Math.round(current.temperature_2m),
+            icon: weatherIconForCode(current.weathercode, current.is_day !== 0)
+        };
+    }
+
+    return hours[0] ? { temp: hours[0].temp, icon: hours[0].icon } : null;
+
+}
+
+async function fetchOpenMeteoForecast(lat, lon, onLog) {
+
+    const params = new URLSearchParams({
+        latitude: lat,
+        longitude: lon,
+        current: "temperature_2m,weathercode,is_day",
+        hourly: "temperature_2m,weathercode,is_day",
+        forecast_days: "2",
+        timezone: "auto"
+    });
+
+    const url = `${FORECAST_URL}?${params}`;
+    onLog(`tiempo: GET ${url}`);
+
+    const res = await fetch(url);
+
+    if (!res.ok) {
+        onLog(`tiempo: forecast-api respondió HTTP ${res.status}`);
+        return null;
+    }
+
+    const data = await res.json();
+    const hours = parseForecastHours(data);
+
+    if (!hours.length) {
+        onLog("tiempo: respuesta sin horas útiles");
+        return null;
+    }
+
+    const current = parseCurrentConditions(data, hours);
+
+    return { hours, current };
+
+}
+
+// workouts: lista completa de entrenos (getWorkouts() de workoutStore).
+// onLog opcional, mismo patrón que weatherEstimate.js. Devuelve
+// { hours, current, label } o null -- nunca datos inventados.
+export async function getHourlyForecast(workouts, onLog = () => {}) {
+
+    try {
+
+        const location = await resolveLocation(workouts, onLog);
+        if (!location) return null;
+
+        const forecast = await fetchOpenMeteoForecast(location.lat, location.lon, onLog);
+        if (!forecast) return null;
+
+        return { ...forecast, label: location.label };
+
+    } catch (err) {
+        onLog(`tiempo: excepción -- ${err.message}`);
+        return null;
+    }
+
+}

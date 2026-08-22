@@ -24,7 +24,7 @@ const GEOCODING_COUNTRY = "ES";
 // "San José", "Santa Ana"...) se elige la más poblada en vez de bloquear
 // o de quedarse con la primera del listado, que no viene ordenada por
 // relevancia real.
-async function geocodeLocation(name, onLog) {
+export async function geocodeLocation(name, onLog) {
 
     const url = `${GEOCODING_URL}?name=${encodeURIComponent(name)}&count=10&language=es&format=json&countryCode=${GEOCODING_COUNTRY}`;
     onLog(`clima: GET ${url}`);
@@ -100,6 +100,54 @@ function cleanLocationForRetry(text) {
     return text.replace(/\s+/g, " ").replace(/\s+[A-Za-z]{1,2}$/, "").trim() || null;
 }
 
+// GPS del propio workout si lo trae (reloj real) o, si no, geocoding de su
+// location de texto -- restringido a España (ver GEOCODING_COUNTRY), con
+// el mismo reintento acotado de arriba. Factorizado de estimateTemperature()
+// porque src/services/hourlyForecast.js (pronóstico por horas de Inicio)
+// necesita exactamente esta misma resolución, sin repetirla.
+export async function resolveWorkoutCoordinates(workout, onLog = () => {}) {
+
+    if (workout.startLat != null && workout.startLon != null) {
+        onLog(`clima: usando GPS del archivo -> lat=${workout.startLat.toFixed(3)} lon=${workout.startLon.toFixed(3)}`);
+        return { lat: workout.startLat, lon: workout.startLon };
+    }
+
+    if (!workout.location) {
+        onLog("clima: sin GPS ni ubicación de texto -- no se llama a la API");
+        return null;
+    }
+
+    onLog(`clima: sin GPS, geocodificando ubicación de texto: "${workout.location}"`);
+
+    try {
+
+        let geo = await geocodeLocation(workout.location, onLog);
+
+        // Un único reintento acotado, no una cadena de heurísticas cada vez
+        // más agresivas -- recortar más (p. ej. quedarse solo con la
+        // primera palabra) podría geocodificar una ciudad real pero
+        // distinta a la que era, sin que se note en ningún sitio (location
+        // no se revisa en pantalla). Peor un acierto falso que un null.
+        if (!geo) {
+
+            const cleaned = cleanLocationForRetry(workout.location);
+
+            if (cleaned && cleaned !== workout.location) {
+                onLog(`clima: reintentando geocoding con texto simplificado: "${cleaned}"`);
+                geo = await geocodeLocation(cleaned, onLog);
+            }
+
+        }
+
+        return geo;
+
+    } catch (err) {
+        onLog(`clima: excepción en geocoding: ${err.message}`);
+        return null;
+    }
+
+}
+
 // workout: necesita date + (startLat/startLon, o location como texto).
 // Sin fecha, o sin ninguna pista de ubicación, no hay nada que consultar.
 // onLog(línea) es opcional -- pensado para volcar el progreso a un panel
@@ -112,51 +160,10 @@ export async function estimateTemperature(workout, onLog = () => {}) {
         return null;
     }
 
-    let lat = workout.startLat;
-    let lon = workout.startLon;
+    const coords = await resolveWorkoutCoordinates(workout, onLog);
+    if (!coords) return null;
 
-    if (lat == null || lon == null) {
-
-        if (!workout.location) {
-            onLog("clima: sin GPS ni ubicación de texto -- no se llama a la API");
-            return null;
-        }
-
-        onLog(`clima: sin GPS, geocodificando ubicación de texto: "${workout.location}"`);
-
-        try {
-
-            let geo = await geocodeLocation(workout.location, onLog);
-
-            // Un único reintento acotado, no una cadena de heurísticas cada
-            // vez más agresivas -- recortar más (p. ej. quedarse solo con la
-            // primera palabra) podría geocodificar una ciudad real pero
-            // distinta a la que era, sin que se note en ningún sitio (location
-            // no se revisa en pantalla). Peor un acierto falso que un null.
-            if (!geo) {
-
-                const cleaned = cleanLocationForRetry(workout.location);
-
-                if (cleaned && cleaned !== workout.location) {
-                    onLog(`clima: reintentando geocoding con texto simplificado: "${cleaned}"`);
-                    geo = await geocodeLocation(cleaned, onLog);
-                }
-
-            }
-
-            if (!geo) return null;
-
-            lat = geo.lat;
-            lon = geo.lon;
-
-        } catch (err) {
-            onLog(`clima: excepción en geocoding: ${err.message}`);
-            return null;
-        }
-
-    } else {
-        onLog(`clima: usando GPS del archivo -> lat=${lat.toFixed(3)} lon=${lon.toFixed(3)}`);
-    }
+    const { lat, lon } = coords;
 
     const hour = workout.time ? parseInt(workout.time.split(":")[0], 10) : 12;
 

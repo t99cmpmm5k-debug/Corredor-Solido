@@ -25,6 +25,7 @@ import { hydrate } from "./data/workoutStore.js";
 import { hydrate as hydrateGymSessions } from "./data/gymSessionStore.js";
 import { hydrate as hydrateGymRoutine } from "./data/gymRoutineStore.js";
 import { hydrateBackupMeta } from "./utils/backup.js";
+import { loadHourlyWeather } from "./pages/Home/homeWeatherStore.js";
 
 // TEMPORAL - QUITAR ANTES DE PRODUCCIÓN
 import { mountThemeSwitcher } from "./dev/ThemeSwitcher.js";
@@ -54,6 +55,13 @@ function boot() {
         applyAutomaticTheme();
 
         start(Home);
+
+        // El pronóstico depende de getWorkouts() (ubicación del entreno más
+        // reciente) -- se espera a que hydrate() termine de verdad, aunque
+        // el arranque ya haya seguido por el timeout, para no resolver
+        // "sin ubicación" solo por una carrera contra el reloj. No bloquea
+        // el primer render de Inicio: start(Home) ya se hizo arriba.
+        ready.then(() => loadHourlyWeather());
 
         // Desactivado a propósito mientras se usa la app en real esta semana
         // (probando el tema automático por hora) — con el selector delante
