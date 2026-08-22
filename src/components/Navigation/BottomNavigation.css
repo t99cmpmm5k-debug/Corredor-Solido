@@ -1,4 +1,50 @@
 /* ==========================================================
+   FRANJA DE SEGURIDAD — la píldora (ver más abajo) flota separada
+   de los 3 bordes, con hueco visible debajo y a los lados (bottom:
+   20px + safe-area, width < 100%) a propósito: es el "acompaña, no
+   compite" del lenguaje visual de la app. Ese hueco deja pasar el
+   fondo de la propia página, pero si el padding-bottom de una
+   pantalla concreta no reserva sitio de sobra (o cambia en el
+   futuro), el final de una lista puede asomar por ahí en vez de
+   quedar oculto -- justo lo reportado en Carreras. Esta franja, a
+   todo el ancho real de la pantalla y con fondo sólido (no
+   translúcido, a diferencia de la píldora), cubre ese hueco entero
+   hasta el borde físico inferior sin más condición que "está ahí
+   siempre", así que ningún contenido puede colarse por debajo pase
+   lo que pase con el padding de cada pantalla. No cubre la propia
+   píldora (mismo alto que su separación del borde, no su altura
+   completa) para no tapar el cristal/blur que sí es intencional.
+========================================================== */
+
+.bottom-nav-safe-area{
+
+    position:fixed;
+
+    left:0;
+    right:0;
+    bottom:0;
+
+    height:calc(20px + env(safe-area-inset-bottom));
+
+    /* Sólido a propósito -- es la franja que garantiza que nada se ve
+       por debajo de la píldora, así que no puede ser ella misma
+       translúcida. Mismo color que el fondo de la propia píldora
+       (--navigation-background) para leerse como una sola pieza con
+       ella, no como un color de página distinto pegado debajo. */
+    background:var(--navigation-background);
+
+    transform:translateZ(0);
+    -webkit-transform:translateZ(0);
+
+    pointer-events:none;
+
+    /* Justo por debajo del z-index de la píldora de aquí abajo, pero por
+       encima de cualquier contenido de la página (que nunca fija el suyo). */
+    z-index:99;
+
+}
+
+/* ==========================================================
    PÍLDORA FLOTANTE — separada de los bordes, mismo lenguaje neón
    que las tarjetas pero un escalón por debajo de WeekSummary
    (regla 3: acompaña, no compite con la MasterCard)

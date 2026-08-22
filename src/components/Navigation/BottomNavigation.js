@@ -20,6 +20,8 @@ export function BottomNavigation() {
 
     return `
 
+        <div class="bottom-nav-safe-area"></div>
+
         <nav class="bottom-nav">
 <button class="nav-item ${currentPage === Home ? "active" : ""}" data-page="home">
 
