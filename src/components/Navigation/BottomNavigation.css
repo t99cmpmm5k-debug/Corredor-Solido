@@ -12,7 +12,21 @@
        (520px, ver Home.css) menos sus 20px de margen a cada lado.
        Si cambia ese max-width, este valor debe seguirlo. */
     left:50%;
-    transform:translateX(-50%);
+
+    /* translateZ(0) fuerza su propia capa de composición (GPU) en vez de
+       dejar que Safari la repinte junto al resto del documento -- sin
+       esto, en iOS (sobre todo en Running/Carreras, las pantallas con
+       listas largas) la barra podía quedarse "flotando" a mitad de
+       contenido un instante durante el scroll, mientras la barra de
+       direcciones del navegador se oculta/aparece y el viewport dinámico
+       (100dvh) cambia de tamaño -- bug conocido de position:fixed en
+       WebKit, no algo que dependa de qué pantalla sea. backface-visibility
+       evita el parpadeo que a veces trae esa misma promoción a capa aparte. */
+    transform:translateX(-50%) translateZ(0);
+    -webkit-transform:translateX(-50%) translateZ(0);
+    backface-visibility:hidden;
+    -webkit-backface-visibility:hidden;
+
     width:calc(100% - 40px);
     max-width:480px;
 

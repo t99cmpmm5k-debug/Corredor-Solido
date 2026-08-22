@@ -1,12 +1,18 @@
 .home {
 
     min-height: 100vh;
+    min-height: 100dvh;
 
     background: #090b11;
 
     color: #ffffff;
 
-    padding-bottom: 110px;
+    /* Mismo colchón que el resto de pantallas (Running/Carreras/Plan/Gym/
+       Profile, ver sus .css) para que .bottom-nav (position:fixed, altura
+       fija + env(safe-area-inset-bottom), ver BottomNavigation.css) nunca
+       tape el final del contenido -- Inicio era la única sin el safe-area
+       aquí, aunque la propia nav ya lo aplicaba igual en todas. */
+    padding-bottom: calc(110px + env(safe-area-inset-bottom));
 
     overflow-x: hidden;
 }
