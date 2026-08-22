@@ -1,8 +1,8 @@
-import { setSelectedWorkout, getViewedWeekStart, setViewedWeekStart, getMovingSessionId, setMovingSessionId } from "./planStore";
+import { setSelectedWorkout, getViewedWeekStart, setViewedWeekStart, getMovingSessionId, setMovingSessionId, getPlanViewMode, setPlanViewMode, shiftViewedMonth } from "./planStore";
 import { rerender, navigate } from "../../core/router";
 
 import { importPlan } from "../../importers/plan/index.js";
-import { importPlannedSessions, getWeekSessions, getSessionById, movePlannedSession, deletePlannedSession, deletePlannedSessionsByBatch } from "../../data/workoutStore.js";
+import { importPlannedSessions, getWeekSessions, getSessionById, getSessionsForDate, movePlannedSession, deletePlannedSession, deletePlannedSessionsByBatch } from "../../data/workoutStore.js";
 import { addDays } from "../../utils/date.js";
 import { PLAN_SESSION_REVIEW_FIELDS, parseSessionFieldValue } from "./components/PlanImportReviewStep.js";
 import { Running } from "../Running/Running.js";
@@ -180,6 +180,44 @@ function changeViewedWeek(deltaWeeks) {
 
     const sessions = getWeekSessions(newWeekStart);
     setSelectedWorkout(sessions[0] ?? null);
+
+    rerender();
+
+}
+
+// Alterna semanal/mensual sin perder la posición de cada una (viewedWeekStart
+// y viewedMonth son estados independientes, ver planStore.js). Un
+// movimiento en curso no tiene UI en vista mensual (PlanMovePanel/
+// PlanMoveDayPicker son solo de la semanal) — cambiar de vista en medio
+// lo cancela, en vez de dejarlo colgado sin ningún control para salir de él.
+function togglePlanView() {
+
+    setPlanViewMode(getPlanViewMode() === "week" ? "month" : "week");
+
+    if (getMovingSessionId()) setMovingSessionId(null);
+
+    rerender();
+
+}
+
+function changeViewedMonth(deltaMonths) {
+
+    shiftViewedMonth(deltaMonths);
+    rerender();
+
+}
+
+// Igual que tocar un día en el timeline semanal (ver más abajo,
+// ".timeline-day"): selecciona la sesión y la deja lista para
+// PlanWorkoutCard. Con varias sesiones el mismo día (running + gimnasio)
+// se queda con la primera por orden de slot — mismo criterio que
+// getWeekSessions() al ordenar la semana.
+function selectCalendarDay(date) {
+
+    const sessions = getSessionsForDate(date).sort((a, b) => (a.slot ?? 0) - (b.slot ?? 0));
+    const first = sessions[0];
+
+    setSelectedWorkout(first ? getSessionById(first.id) : null);
 
     rerender();
 
@@ -369,6 +407,32 @@ export function initPlanEvents() {
     });
 
     initTimelineSwipe();
+
+    document.querySelectorAll('[data-action="toggle-plan-view"]').forEach(button => {
+
+        button.addEventListener("click", togglePlanView);
+
+    });
+
+    document.querySelectorAll('[data-action="calendar-prev-month"]').forEach(button => {
+
+        button.addEventListener("click", () => changeViewedMonth(-1));
+
+    });
+
+    document.querySelectorAll('[data-action="calendar-next-month"]').forEach(button => {
+
+        button.addEventListener("click", () => changeViewedMonth(1));
+
+    });
+
+    document.querySelectorAll('[data-action="select-plan-calendar-day"]').forEach(day => {
+
+        day.addEventListener("click", () => {
+            selectCalendarDay(day.dataset.date);
+        });
+
+    });
 
     document.querySelectorAll('[data-action="open-plan-import"]').forEach(button => {
 

@@ -8,8 +8,9 @@ import { PlanWorkoutCard } from "./components/PlanWorkoutCard";
 import { PlanMoveDayPicker } from "./components/PlanMoveDayPicker.js";
 import { PlanMovePanel } from "./components/PlanMovePanel.js";
 import { PlanImportWizard } from "./components/PlanImportWizard.js";
+import { PlanMonthCalendar } from "./components/PlanMonthCalendar.js";
 
-import { getSelectedWorkout, getViewedWeekStart, getMovingSessionId } from "./planStore";
+import { getSelectedWorkout, getViewedWeekStart, getMovingSessionId, getPlanViewMode, getViewedMonth } from "./planStore";
 import { getImportStep } from "./planImportStore.js";
 import { getWeekSessions, getSessionById } from "../../data/workoutStore.js";
 import { BottomNavigation } from "../../components/Navigation/BottomNavigation.js";
@@ -28,7 +29,21 @@ function PlanEmptyState(weekStartDate) {
 
         <section class="plan-page plan-empty-state">
 
-            <h1>PLAN</h1>
+            <div class="plan-empty-top">
+
+                <h1>PLAN</h1>
+
+                <button
+                    class="plan-add-button plan-view-toggle"
+                    data-action="toggle-plan-view"
+                    aria-label="Ver calendario mensual"
+                >
+
+                    <iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon>
+
+                </button>
+
+            </div>
 
             <div class="plan-empty-week">
 
@@ -88,6 +103,7 @@ export function Plan() {
 
     }
 
+    const viewMode = getPlanViewMode();
     const viewedWeekStart = getViewedWeekStart();
     const sessions = getWeekSessions(viewedWeekStart);
 
@@ -98,15 +114,44 @@ export function Plan() {
     const movingSession = movingSessionId ? getSessionById(movingSessionId) : null;
 
     // Una semana sin sesiones normalmente manda a PlanEmptyState — pero
-    // si hay un movimiento en curso, esa semana vacía puede ser
-    // exactamente el destino que el usuario está buscando (p. ej. mover
-    // a una semana de descanso todavía sin plan), así que el selector de
-    // día tiene que seguir pudiéndose ver ahí.
-    if (sessions.length === 0 && !movingSession) {
+    // solo en vista semanal: la semana actual puede estar vacía y aun
+    // así el mes tener sesiones en otros días (ver PlanMonthCalendar),
+    // así que la vista mensual nunca debe quedar bloqueada por esto. Si
+    // hay un movimiento en curso, esa semana vacía puede ser exactamente
+    // el destino que el usuario está buscando (p. ej. mover a una semana
+    // de descanso todavía sin plan), así que el selector de día tiene
+    // que seguir pudiéndose ver ahí.
+    if (viewMode === "week" && sessions.length === 0 && !movingSession) {
         return PlanEmptyState(viewedWeekStart);
     }
 
     const selectedWorkout = getSelectedWorkout();
+
+    if (viewMode === "month") {
+
+        const calendarHtml = PlanMonthCalendar(getViewedMonth(), selectedWorkout?.date ?? null);
+
+        return `
+
+            <section class="plan-page">
+
+                ${PlanHeader(viewedWeekStart, sessions, "", { viewMode })}
+
+                <div class="plan-month-section">
+
+                    ${calendarHtml}
+
+                </div>
+
+                ${PlanWorkoutCard(selectedWorkout)}
+
+            </section>
+
+            ${BottomNavigation()}
+
+        `;
+
+    }
 
     const timelineHtml = movingSession
         ? PlanMoveDayPicker(viewedWeekStart, sessions, movingSession)
@@ -116,7 +161,7 @@ export function Plan() {
 
         <section class="plan-page">
 
-            ${PlanHeader(viewedWeekStart, sessions, timelineHtml)}
+            ${PlanHeader(viewedWeekStart, sessions, timelineHtml, { viewMode })}
 
             ${PlanConnector()}
 

@@ -8,7 +8,7 @@ import { TimelineDay } from "./TimelineDay/TimelineDay";
 // el degradado de la línea, que no puede leer clases CSS). Ids de
 // WORKOUT_TYPES (src/data/workoutTypes.js) — unificado con el vocabulario
 // de la importación de planes, ya no el propio de Plan.
-const TIMELINE_TYPE_COLOR = {
+export const TIMELINE_TYPE_COLOR = {
     recovery: "var(--color-text-muted)",
     z2: "var(--color-success)",
     tempo: "var(--color-primary)",

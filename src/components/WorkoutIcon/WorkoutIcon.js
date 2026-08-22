@@ -62,6 +62,17 @@ const ICONS = {
 
 };
 
+// Icono en crudo (el string de Iconify) para sitios que no pueden montar
+// el <div> completo de WorkoutIcon — p. ej. un marcador de MonthCalendar,
+// que ya pone su propio color inline. Misma fuente de verdad que
+// WorkoutIcon() (ICONS de arriba), nunca un segundo mapa.
+export function getWorkoutIcon(type) {
+
+    const resolvedType = ICONS[type] ? type : "generic";
+    return ICONS[resolvedType].icon;
+
+}
+
 export function WorkoutIcon(
 
     type,

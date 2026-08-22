@@ -6,9 +6,14 @@ import { parseISODate, addDays, formatDayMonth, getISOWeekNumber } from "../../.
 // Foto-por-tema propia del Plan, misma mecánica que el Hero
 // (themeManager decide el tema, un mapa de imágenes por tema
 // decide la foto) pero con su propio set de imágenes.
-export function PlanHeader(weekStartDate, sessions, timelineHtml = "") {
+//
+// viewMode "month" oculta las stats de la semana (semana/progreso) y el
+// timeline — no pintan nada en vista mensual, MonthCalendar ya trae su
+// propia cabecera con el mes y la navegación entre meses.
+export function PlanHeader(weekStartDate, sessions, timelineHtml = "", { viewMode = "week" } = {}) {
 
     const theme = themeManager.getTheme();
+    const showWeekStats = viewMode === "week";
 
     const weekEndDate = addDays(weekStartDate, 6);
 
@@ -53,51 +58,69 @@ export function PlanHeader(weekStartDate, sessions, timelineHtml = "") {
 
                 </div>
 
-                <button class="plan-add-button" data-action="open-plan-import">
+                <div class="plan-header-actions">
 
-                    +
+                    <button class="plan-add-button" data-action="open-plan-import">
 
-                </button>
+                        +
 
-            </div>
+                    </button>
 
-            <div class="plan-stats">
+                    <button
+                        class="plan-add-button plan-view-toggle"
+                        data-action="toggle-plan-view"
+                        aria-label="${showWeekStats ? "Ver calendario mensual" : "Ver semana"}"
+                    >
 
-                <div class="plan-week">
+                        <iconify-icon icon="${showWeekStats ? "solar:calendar-bold-duotone" : "solar:list-bold-duotone"}"></iconify-icon>
 
-                    <span class="week-label">
-
-                        SEMANA ${weekNumber}
-
-                    </span>
-
-                    <span class="week-date">
-
-                        ${dateRange}
-
-                    </span>
+                    </button>
 
                 </div>
 
-                <div class="plan-progress">
+            </div>
 
-                    <div class="progress-ring" style="--ring-percent:${completionPercent}">
+            ${showWeekStats ? `
 
-                        <span>${completionPercent}%</span>
+                <div class="plan-stats">
+
+                    <div class="plan-week">
+
+                        <span class="week-label">
+
+                            SEMANA ${weekNumber}
+
+                        </span>
+
+                        <span class="week-date">
+
+                            ${dateRange}
+
+                        </span>
 
                     </div>
 
-                    <small>
+                    <div class="plan-progress">
 
-                        ${completedCount}/${totalCount} SESIONES
+                        <div class="progress-ring" style="--ring-percent:${completionPercent}">
 
-                    </small>
+                            <span>${completionPercent}%</span>
+
+                        </div>
+
+                        <small>
+
+                            ${completedCount}/${totalCount} SESIONES
+
+                        </small>
+
+                    </div>
 
                 </div>
 
-            </div>
+                ${timelineHtml}
 
-            ${timelineHtml}
+            ` : ""}
 
         </div>
 

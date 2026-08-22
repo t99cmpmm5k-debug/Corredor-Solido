@@ -1,6 +1,6 @@
 import { getState, setState } from "../../core/state";
 import { getTodaySession, getCurrentWeekSessions } from "../../data/workoutStore.js";
-import { formatISODate, getWeekStartDate } from "../../utils/date.js";
+import { formatISODate, getWeekStartDate, parseISODate } from "../../utils/date.js";
 
 function currentWeekStart() {
 
@@ -51,6 +51,57 @@ export function setViewedWeekStart(weekStartDate) {
 
 }
 
+// "week" (por defecto) o "month" — qué vista de Plan está activa ahora
+// mismo. Independiente de viewedWeekStart/viewedMonth a propósito: cada
+// vista lleva su propia posición de navegación, para que alternar entre
+// ellas no le haga perder el sitio a la otra.
+export function getPlanViewMode() {
+
+    return getState().planViewMode ?? "week";
+
+}
+
+export function setPlanViewMode(mode) {
+
+    setState("planViewMode", mode);
+
+}
+
+// Mes (1er día, ISO) que muestra la vista mensual. Se inicializa una
+// sola vez al mes de la semana que se estuviera viendo (no siempre "hoy")
+// para que la primera vez que se alterna a mensual no salte de sitio si
+// el usuario ya había navegado a otra semana — a partir de ahí navega de
+// forma independiente, igual que viewedWeekStart.
+export function getViewedMonth() {
+
+    const state = getState();
+
+    if (!state.viewedMonth) {
+
+        const base = state.viewedWeekStart ? parseISODate(state.viewedWeekStart) : new Date();
+        setState("viewedMonth", formatISODate(new Date(base.getFullYear(), base.getMonth(), 1)));
+
+    }
+
+    return getState().viewedMonth;
+
+}
+
+export function setViewedMonth(monthStartIso) {
+
+    setState("viewedMonth", monthStartIso);
+
+}
+
+export function shiftViewedMonth(deltaMonths) {
+
+    const current = parseISODate(getViewedMonth());
+    const shifted = new Date(current.getFullYear(), current.getMonth() + deltaMonths, 1);
+
+    setState("viewedMonth", formatISODate(shifted));
+
+}
+
 // Id de la sesión que se está moviendo a otro día — null cuando no hay
 // ningún movimiento en curso. Aparte de selectedWorkout a propósito: la
 // sesión que se ve en la tarjeta no tiene por qué ser la que se está
@@ -77,5 +128,7 @@ export function resetPlanView() {
     setState("viewedWeekStart", currentWeekStart());
     setState("selectedWorkout", null);
     setState("movingSessionId", null);
+    setState("planViewMode", "week");
+    setState("viewedMonth", null);
 
 }

@@ -16,6 +16,12 @@
 
 }
 
+.plan-month-section{
+
+    margin:20px 0;
+
+}
+
 .plan-empty-state{
 
     display:flex;
@@ -34,9 +40,21 @@
 
 }
 
-.plan-empty-state h1{
+.plan-empty-top{
 
-    align-self:flex-start;
+    display:flex;
+
+    align-items:center;
+
+    justify-content:space-between;
+
+    gap:12px;
+
+    width:100%;
+
+}
+
+.plan-empty-state h1{
 
     font-size:1.6rem;
 
