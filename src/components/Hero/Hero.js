@@ -3,8 +3,9 @@ import "./Hero.css";
 import { themeManager } from "../../theme/themeManager.js";
 import { getHeroData } from "../../data/heroData.js";
 import { WORKOUT_TYPES } from "../../data/workoutTypes.js";
-import { getTodaySession } from "../../data/workoutStore.js";
+import { getTodaySession, getWorkouts } from "../../data/workoutStore.js";
 import { formatCurrentDate } from "../../utils/date.js";
+import { buildRestDayHero } from "../../utils/restDayHero.js";
 import { HERO_IMAGES } from "../../assets/hero";
 
 export function Hero() {
@@ -15,7 +16,13 @@ export function Hero() {
 
     const workout = WORKOUT_TYPES[todaySession?.type] ?? WORKOUT_TYPES.generic;
 
-    const hero = getHeroData(todaySession?.type);
+    // Sin sesión planificada hoy, el Hero no usa el genérico fijo "A
+    // entrenar / hoy toca" — en su lugar, una frase calculada a partir de
+    // los entrenos reales (ver restDayHero.js), o el mensaje neutro si no
+    // hay datos suficientes para decir algo veraz.
+    const hero = todaySession
+        ? getHeroData(todaySession.type)
+        : buildRestDayHero(getWorkouts());
 
     return `
 
