@@ -318,3 +318,27 @@
     transform:translateY(-9px);
 
 }
+
+/*========================
+      DESCANSO
+   (hueco sin sesión real -- ver fillWeekDays() en PlanTimeline.js,
+   nada que tocar aquí)
+========================*/
+
+.timeline-day.is-rest{
+
+    cursor:default;
+
+}
+
+.timeline-day.is-rest:hover{
+
+    transform:none;
+
+}
+
+.timeline-day.is-rest .workout-icon{
+
+    opacity:.6;
+
+}

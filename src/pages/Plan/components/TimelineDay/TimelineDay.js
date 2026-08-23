@@ -5,7 +5,11 @@ import { formatDayNumber } from "../../../../utils/date.js";
 // isToday: fecha real de hoy (más grande + más brillo)
 // isSelected: día tocado en el timeline, controla lo que se ve abajo
 // isCompleted: session.status === "completed", muestra el check
-export function TimelineDay(session, { isToday, isSelected, isCompleted }) {
+// isRest: hueco de "Descanso" sin sesión real (ver fillWeekDays() en
+// PlanTimeline.js) -- no necesita cursor de "tocable", el click en la
+// franja ya no hace nada por sí solo (getSessionById() de su id sintético
+// no encuentra ninguna sesión real).
+export function TimelineDay(session, { isToday, isSelected, isCompleted, isRest = false }) {
 
     return `
 
@@ -14,6 +18,7 @@ export function TimelineDay(session, { isToday, isSelected, isCompleted }) {
                 timeline-day
                 ${isToday ? "is-today" : ""}
                 ${isSelected ? "is-selected" : ""}
+                ${isRest ? "is-rest" : ""}
             "
             data-session-id="${session.id}"
         >

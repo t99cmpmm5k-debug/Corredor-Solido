@@ -2,6 +2,7 @@ import { formatSecondsAsClock } from "../../../utils/format.js";
 import { getState } from "../../../core/state.js";
 import { PlanTimeline } from "../../../pages/Plan/components/PlanTimeline.js";
 import { getCurrentWeekSessions } from "../../../data/workoutStore.js";
+import { formatISODate, getWeekStartDate } from "../../../utils/date.js";
 
 // Mismos iconos Lucide que ya usaba planData.js en sus arrays "metrics"
 // hardcodeados — aquí se construyen desde los campos reales presentes en
@@ -80,7 +81,7 @@ export function SessionCard(workout) {
 
             <div class="session-week-picker">
 
-                ${PlanTimeline(workout, getCurrentWeekSessions())}
+                ${PlanTimeline(workout, getCurrentWeekSessions(), getWeekStartDate(formatISODate(new Date())))}
 
             </div>
 

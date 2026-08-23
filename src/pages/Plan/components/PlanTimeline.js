@@ -1,6 +1,6 @@
 import "./PlanTimeline.css";
 
-import { isToday } from "../../../utils/date.js";
+import { isToday, addDays, getDayAbbreviation } from "../../../utils/date.js";
 import { TimelineDay } from "./TimelineDay/TimelineDay";
 
 // Mismos colores por tipo que WorkoutIcon.css (ahí es donde vive la
@@ -20,22 +20,70 @@ export const TIMELINE_TYPE_COLOR = {
     generic: "var(--color-text-muted)"
 };
 
-export function PlanTimeline(selectedWorkout, sessions) {
+// El hueco de un día sin sesión real reutiliza el tipo "free" tal cual
+// (mismo icono/color muted que ya tenía un día libre de un plan
+// importado) en vez de inventar una categoría nueva — "Descanso" es solo
+// el título que se lee si esa columna llega a estar seleccionada, igual
+// que con cualquier otra.
+const REST_DAY_TYPE = "free";
+const REST_DAY_TITLE = "Descanso";
 
-    const todayIndex = sessions.findIndex(session => isToday(session.date));
+function restDayPlaceholder(date) {
 
-    // La línea pasa por el color de cada día, de punta a punta —
-    // no solo hasta "hoy". Con 0 o 1 sesión no hay tramo que dibujar
-    // (index/(length-1) dividiría por cero) — se deja un color plano.
-    const lineGradient = sessions.length > 1
-        ? sessions
-            .map((session, index) => {
-                const color = TIMELINE_TYPE_COLOR[session.type] ?? TIMELINE_TYPE_COLOR.generic;
-                const stop = (index / (sessions.length - 1)) * 100;
-                return `${color} ${stop}%`;
-            })
-            .join(", ")
-        : TIMELINE_TYPE_COLOR[sessions[0]?.type] ?? TIMELINE_TYPE_COLOR.generic;
+    return {
+        id: `rest-${date}`,
+        date,
+        day: getDayAbbreviation(date),
+        type: REST_DAY_TYPE,
+        title: REST_DAY_TITLE,
+        subtitle: null,
+        status: "rest",
+        volume: 0,
+        isRest: true
+    };
+
+}
+
+// Siempre 7 columnas (lunes-domingo), tenga la semana sesiones o no — los
+// días sin sesión real se rellenan con un hueco de "Descanso". Con más
+// de una sesión real el mismo día (p. ej. tras mover una) se queda con
+// la primera por slot, mismo criterio que ya usa PlanMonthCalendar al
+// tocar un día del mes. Exportada aparte para poder testear el relleno
+// sin montar HTML.
+export function fillWeekDays(weekStartDate, sessions) {
+
+    const byDate = new Map();
+
+    // Ordenadas por slot antes del dedupe -- getWeekSessions() ya las
+    // entrega así, pero no se depende de que quien llame lo haga siempre
+    // bien: "la primera por slot" tiene que cumplirse pase lo que pase.
+    const sorted = [...sessions].sort((a, b) => (a.slot ?? 0) - (b.slot ?? 0));
+
+    sorted.forEach(session => {
+        if (!byDate.has(session.date)) byDate.set(session.date, session);
+    });
+
+    return Array.from({ length: 7 }, (_, i) => {
+        const date = addDays(weekStartDate, i);
+        return byDate.get(date) ?? restDayPlaceholder(date);
+    });
+
+}
+
+export function PlanTimeline(selectedWorkout, sessions, weekStartDate) {
+
+    const days = fillWeekDays(weekStartDate, sessions);
+    const todayIndex = days.findIndex(day => isToday(day.date));
+
+    // La línea pasa por el color de cada día, de punta a punta -- con 7
+    // columnas fijas siempre hay tramo que dibujar (nunca menos de 2).
+    const lineGradient = days
+        .map((day, index) => {
+            const color = TIMELINE_TYPE_COLOR[day.type] ?? TIMELINE_TYPE_COLOR.generic;
+            const stop = (index / (days.length - 1)) * 100;
+            return `${color} ${stop}%`;
+        })
+        .join(", ");
 
     return `
 
@@ -46,15 +94,16 @@ export function PlanTimeline(selectedWorkout, sessions) {
                 style="background:linear-gradient(90deg, ${lineGradient})"
             ></div>
 
-            ${sessions.map((session, index) =>
+            ${days.map((day, index) =>
 
-                TimelineDay(session, {
+                TimelineDay(day, {
                     isToday: index === todayIndex,
                     // Por id, no por fecha: dos sesiones el mismo día (p. ej.
                     // tras mover una) no deben quedar ambas marcadas como
                     // seleccionadas solo por compartir date.
-                    isSelected: session.id === selectedWorkout?.id,
-                    isCompleted: session.status === "completed"
+                    isSelected: day.id === selectedWorkout?.id,
+                    isCompleted: day.status === "completed",
+                    isRest: day.isRest === true
                 })
 
             ).join("")}

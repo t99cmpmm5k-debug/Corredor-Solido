@@ -12,14 +12,17 @@ import { PlanMonthCalendar } from "./components/PlanMonthCalendar.js";
 
 import { getSelectedWorkout, getViewedWeekStart, getMovingSessionId, getPlanViewMode, getViewedMonth } from "./planStore";
 import { getImportStep } from "./planImportStore.js";
-import { getWeekSessions, getSessionById } from "../../data/workoutStore.js";
+import { getWeekSessions, getSessionById, getPlannedSessions } from "../../data/workoutStore.js";
 import { BottomNavigation } from "../../components/Navigation/BottomNavigation.js";
 import { parseISODate, addDays, formatDayMonth, getISOWeekNumber } from "../../utils/date.js";
 
-// Lleva su propia tira vacía (misma clase .plan-timeline que
-// PlanTimeline, sin días dentro) para que el swipe de cambio de semana
-// (ver initTimelineSwipe() en initPlanEvents.js) siga funcionando ahí —
-// si no, "Importar plan" sería la única salida de una semana vacía.
+// Solo para "nunca se ha importado ningún plan" (getPlannedSessions()
+// vacío del todo) -- una semana concreta sin sesiones ya no cae aquí, la
+// línea temporal siempre pinta sus 7 días con "Descanso" (ver
+// fillWeekDays() en PlanTimeline.js). Lleva su propia tira vacía (misma
+// clase .plan-timeline que PlanTimeline, sin días dentro) para que el
+// swipe de cambio de semana (ver initTimelineSwipe() en initPlanEvents.js)
+// siga funcionando ahí — si no, "Importar plan" sería la única salida.
 function PlanEmptyState(weekStartDate) {
 
     const weekNumber = getISOWeekNumber(parseISODate(weekStartDate));
@@ -65,7 +68,7 @@ function PlanEmptyState(weekStartDate) {
 
             <iconify-icon icon="solar:calendar-add-bold-duotone"></iconify-icon>
 
-            <p>Todavía no has importado ningún plan para esta semana.</p>
+            <p>Todavía no has importado ningún plan de entrenamiento.</p>
 
             <button class="wizard-primary-button" data-action="open-plan-import">
 
@@ -113,15 +116,16 @@ export function Plan() {
     const movingSessionId = getMovingSessionId();
     const movingSession = movingSessionId ? getSessionById(movingSessionId) : null;
 
-    // Una semana sin sesiones normalmente manda a PlanEmptyState — pero
-    // solo en vista semanal: la semana actual puede estar vacía y aun
-    // así el mes tener sesiones en otros días (ver PlanMonthCalendar),
-    // así que la vista mensual nunca debe quedar bloqueada por esto. Si
-    // hay un movimiento en curso, esa semana vacía puede ser exactamente
-    // el destino que el usuario está buscando (p. ej. mover a una semana
-    // de descanso todavía sin plan), así que el selector de día tiene
-    // que seguir pudiéndose ver ahí.
-    if (viewMode === "week" && sessions.length === 0 && !movingSession) {
+    // PlanEmptyState solo cubre "nunca se ha importado ningún plan" (cero
+    // plannedSessions en toda la app) — una semana concreta sin sesiones
+    // ya no manda aquí, la línea temporal pinta sus 7 días igual, con
+    // "Descanso" en los que no tengan sesión (ver fillWeekDays() en
+    // PlanTimeline.js). Solo en vista semanal: la vista mensual nunca debe
+    // quedar bloqueada por esto (puede tener sesiones en otras semanas del
+    // mismo mes, ver PlanMonthCalendar). Si hay un movimiento en curso, se
+    // deja ver el selector de día igualmente (defensivo: en la práctica no
+    // puede haber una sesión que mover si nunca se importó ninguna).
+    if (viewMode === "week" && getPlannedSessions().length === 0 && !movingSession) {
         return PlanEmptyState(viewedWeekStart);
     }
 
@@ -155,7 +159,7 @@ export function Plan() {
 
     const timelineHtml = movingSession
         ? PlanMoveDayPicker(viewedWeekStart, sessions, movingSession)
-        : PlanTimeline(selectedWorkout, sessions);
+        : PlanTimeline(selectedWorkout, sessions, viewedWeekStart);
 
     return `
 

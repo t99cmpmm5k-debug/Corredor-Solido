@@ -45,7 +45,18 @@ export function initPlanConnector() {
         const selectedIcon = selectedDay?.querySelector(".workout-icon");
         const stem = selectedDay?.querySelector(".day-stem");
 
-        if (!selectedIcon || !stem) return;
+        // Con la línea temporal mostrando siempre 7 días (ver
+        // fillWeekDays() en PlanTimeline.js), una semana sin ninguna
+        // sesión real puede llegar aquí sin ningún día seleccionado
+        // (selectedWorkout a null) -- sin esto, la línea/flecha se
+        // quedarían clavadas en su posición por defecto (left:0) en vez
+        // de no señalar a nada.
+        if (!selectedIcon || !stem) {
+            connector.style.display = "none";
+            return;
+        }
+
+        connector.style.display = "";
 
         const iconRect = selectedIcon.getBoundingClientRect();
         const connectorRect = connector.getBoundingClientRect();
