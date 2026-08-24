@@ -14,9 +14,24 @@ function weekdayOf(iso) {
 
 }
 
+// Por id, sin repetir -- si el mismo día llegase a aparecer más de una
+// vez en `days` (dos rutinas que comparten un día, o un día repetido
+// dentro del array de una misma rutina), ninguna de las 4 funciones de
+// aquí abajo debe contarlo ni pintarlo dos veces. Puramente defensivo:
+// nunca toca ni borra nada guardado, solo cómo se cuenta/pinta.
 function scheduledDays(days) {
 
-    return days.filter(day => day.weekday);
+    const seenIds = new Set();
+
+    return days.filter(day => {
+
+        if (!day.weekday) return false;
+        if (seenIds.has(day.id)) return false;
+
+        seenIds.add(day.id);
+        return true;
+
+    });
 
 }
 
