@@ -350,16 +350,6 @@
 
 }
 
-.gym-history-set-rir{
-
-    flex-shrink:0;
-
-    min-width:52px;
-
-    text-align:right;
-
-}
-
 /* TODO: sustituir el confirm() nativo del borrado por el patrón "pulsa
    otra vez para confirmar" — mismo pendiente que .history-delete en
    Running.css. */

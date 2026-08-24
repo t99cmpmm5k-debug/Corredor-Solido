@@ -1,36 +1,62 @@
 import "./Gym.css";
 
 import { BottomNavigation } from "../../components/Navigation/BottomNavigation.js";
-import { getGymDays, getGymDay } from "../../data/gymRoutineStore.js";
+import { getRoutines, getGymDay } from "../../data/gymRoutineStore.js";
 import { getSessionById, getGymSessions, getExerciseSessionHistory } from "../../data/gymSessionStore.js";
 import { getStep, getActiveSessionId, getDetailExerciseId, getDetailTab, getDetailExpandedSessionId, getWeekSummaryExpanded } from "./gymStore.js";
 import { GymSessionView } from "./components/GymSessionView.js";
 import { GymExerciseDetailView } from "./components/GymExerciseDetailView.js";
-import { GymImportWizard } from "./components/GymImportWizard.js";
+import { GymRoutineBuilder } from "./components/GymRoutineBuilder.js";
 import { GymHomeSummary } from "./components/GymHomeSummary.js";
-import { getImportStep } from "./gymImportStore.js";
+import { isBuilderOpen } from "./gymRoutineBuilderStore.js";
 import { hasWeeklySchedule, getTodayGymDay, getUpcomingGymDays, getWeekProgress, getWeekSessions } from "./gymSchedule.js";
 import { formatISODate } from "../../utils/date.js";
 
-function DayCard(day) {
+function DayRow(day) {
 
     return `
 
-        <div class="gym-day-card" data-action="select-day" data-day-id="${day.id}">
+        <button class="gym-day-row" data-action="select-day" data-day-id="${day.id}">
 
-            <div class="gym-day-card-header">
+            <span>${day.title}</span>
 
-                <h2>${day.title}</h2>
+            <span class="gym-day-row-count">${day.exercises.length} ejercicios</span>
 
-                <span class="gym-day-card-count">${day.exercises.length} ejercicios</span>
+        </button>
+
+    `;
+
+}
+
+function RoutineCard(routine) {
+
+    return `
+
+        <div class="gym-routine-card">
+
+            <div class="gym-routine-card-header">
+
+                <h2>${routine.name}</h2>
+
+                <div class="gym-routine-card-actions">
+
+                    <button class="gym-routine-action" data-action="edit-gym-routine" data-routine-id="${routine.id}">
+                        <iconify-icon icon="solar:pen-bold-duotone"></iconify-icon>
+                    </button>
+
+                    <button class="gym-routine-action is-danger" data-action="delete-gym-routine" data-routine-id="${routine.id}">
+                        <iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon>
+                    </button>
+
+                </div>
 
             </div>
 
-            <ul class="gym-day-card-list">
+            <div class="gym-routine-card-days">
 
-                ${day.exercises.map(exercise => `<li>${exercise.name}</li>`).join("")}
+                ${routine.days.map(DayRow).join("")}
 
-            </ul>
+            </div>
 
         </div>
 
@@ -38,11 +64,28 @@ function DayCard(day) {
 
 }
 
-// La rutina por defecto (gymData.js) no trae weekday por día — solo la
-// rutina importada desde PDF lo tiene (ver pdf.js) — así que "hoy" /
-// "próximos" / "resumen semanal" solo tienen sentido cuando hay ese dato
-// real de calendario. Sin él, se mantiene el listado plano de días de
-// siempre (ninguna regresión para quien no ha importado nada todavía).
+function GymRoutinesEmptyState() {
+
+    return `
+
+        <div class="gym-routine-empty">
+
+            <iconify-icon icon="solar:dumbbell-large-bold-duotone"></iconify-icon>
+
+            <p>Todavía no tienes ninguna rutina. Crea la primera con el botón de arriba.</p>
+
+        </div>
+
+    `;
+
+}
+
+// La rutina por defecto (antes de este cambio) no traía weekday por día —
+// solo lo tenía una rutina importada por PDF (funcionalidad ya retirada,
+// ver CLAUDE.md) — así que "hoy" / "próximos" / "resumen semanal" solo
+// tienen sentido cuando hay ese dato real de calendario. Sin él, no se
+// muestra nada aquí (ninguna regresión para quien construye sus rutinas a
+// mano, que tampoco lo traían).
 function GymHomeSummarySection(days) {
 
     if (!hasWeeklySchedule(days)) return "";
@@ -71,7 +114,8 @@ function GymHomeSummarySection(days) {
 
 function GymDaySelect() {
 
-    const days = getGymDays();
+    const routines = getRoutines();
+    const allDays = routines.flatMap(r => r.days);
 
     return `
 
@@ -81,21 +125,21 @@ function GymDaySelect() {
 
                 <h1>Gimnasio</h1>
 
-                <button class="gym-import-button" data-action="open-gym-import">
+                <button class="gym-import-button" data-action="open-routine-builder">
 
-                    <iconify-icon icon="solar:file-download-bold-duotone"></iconify-icon>
+                    <iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon>
 
-                    Importar rutina
+                    Nueva rutina
 
                 </button>
 
             </header>
 
-            ${GymHomeSummarySection(days)}
+            ${GymHomeSummarySection(allDays)}
 
-            <div class="gym-day-list">
+            <div class="gym-routine-list">
 
-                ${days.map(DayCard).join("")}
+                ${routines.length ? routines.map(RoutineCard).join("") : GymRoutinesEmptyState()}
 
             </div>
 
@@ -134,15 +178,16 @@ function ExerciseDetailSection() {
 
 export function Gym() {
 
-    // El wizard de importación se superpone a la pantalla normal de Gym,
-    // mismo patrón que Plan() con PlanImportWizard.
-    if (getImportStep() !== "closed") {
+    // El constructor de rutinas se superpone a la pantalla normal de Gym,
+    // mismo patrón que el wizard de importación que sustituye (y que el
+    // resto de la app usa para overlays similares — ver Plan()).
+    if (isBuilderOpen()) {
 
         return `
 
             <div class="gym-page">
 
-                ${GymImportWizard()}
+                ${GymRoutineBuilder()}
 
             </div>
 

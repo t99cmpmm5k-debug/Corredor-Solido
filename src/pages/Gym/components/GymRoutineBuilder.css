@@ -1,0 +1,572 @@
+.gym-builder{
+
+    padding:24px;
+    padding-top:calc(24px + env(safe-area-inset-top));
+    padding-bottom:calc(110px + env(safe-area-inset-bottom));
+
+    display:flex;
+    flex-direction:column;
+    gap:18px;
+
+}
+
+.gym-builder-header{
+
+    display:flex;
+    align-items:center;
+    gap:12px;
+
+}
+
+.gym-builder-header h2{
+
+    color:var(--text-primary);
+    font-size:1.2rem;
+    font-weight:800;
+
+}
+
+.gym-builder-error{
+
+    padding:12px 16px;
+    border-radius:var(--radius-md);
+    background:color-mix(in srgb, var(--color-danger) 14%, transparent);
+    border:1px solid color-mix(in srgb, var(--color-danger) 35%, transparent);
+    color:var(--text-primary);
+    font-size:.88rem;
+
+}
+
+.gym-builder-field{
+
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+
+}
+
+.gym-builder-field span{
+
+    color:var(--text-secondary);
+    font-size:.78rem;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:.03em;
+
+}
+
+.gym-builder-field input,
+.gym-builder-field textarea{
+
+    padding:12px 14px;
+    border-radius:var(--radius-sm);
+    border:1px solid var(--card-border);
+    background:color-mix(in srgb, var(--card-background) 60%, transparent);
+    color:var(--text-primary);
+    font-family:inherit;
+    font-size:.95rem;
+
+}
+
+.gym-builder-field textarea{
+
+    min-height:90px;
+    resize:vertical;
+
+}
+
+.gym-builder-days{
+
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+
+}
+
+.gym-builder-day{
+
+    padding:16px;
+    border-radius:var(--radius-lg);
+    background:color-mix(in srgb, var(--card-background) 70%, transparent);
+    border:1px solid var(--card-border);
+
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+
+}
+
+.gym-builder-day-header{
+
+    display:flex;
+    align-items:center;
+    gap:8px;
+
+}
+
+.gym-builder-day-title{
+
+    flex:1;
+    padding:10px 12px;
+    border-radius:var(--radius-sm);
+    border:1px solid var(--card-border);
+    background:color-mix(in srgb, var(--card-background) 55%, transparent);
+    color:var(--text-primary);
+    font-family:inherit;
+    font-size:1rem;
+    font-weight:700;
+
+}
+
+.gym-builder-remove{
+
+    flex-shrink:0;
+    width:36px;
+    height:36px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:50%;
+    border:1px solid color-mix(in srgb, var(--color-danger) 35%, transparent);
+    background:transparent;
+    color:var(--color-danger);
+    cursor:pointer;
+
+}
+
+.gym-builder-exercises{
+
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+
+}
+
+.gym-builder-empty-day{
+
+    color:var(--text-secondary);
+    font-size:.85rem;
+    padding:8px 0;
+
+}
+
+.gym-builder-exercise{
+
+    padding:12px;
+    border-radius:var(--radius-md);
+    background:color-mix(in srgb, var(--card-background) 55%, transparent);
+    border:1px solid var(--card-border);
+
+}
+
+.gym-builder-exercise-head{
+
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-bottom:10px;
+
+}
+
+.gym-builder-exercise-name{
+
+    flex:1;
+    color:var(--text-primary);
+    font-weight:700;
+    font-size:.92rem;
+
+}
+
+.gym-builder-exercise-muscle{
+
+    padding:2px 8px;
+    border-radius:999px;
+    background:color-mix(in srgb, var(--color-primary) 14%, transparent);
+    color:var(--color-primary);
+    font-size:.68rem;
+    font-weight:700;
+    white-space:nowrap;
+
+}
+
+.gym-builder-exercise-fields{
+
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    gap:8px;
+
+}
+
+.gym-builder-exercise-fields label{
+
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+
+}
+
+.gym-builder-exercise-fields span{
+
+    color:var(--text-secondary);
+    font-size:.68rem;
+    text-transform:uppercase;
+
+}
+
+.gym-builder-exercise-fields input{
+
+    padding:8px 10px;
+    border-radius:var(--radius-sm);
+    border:1px solid var(--card-border);
+    background:color-mix(in srgb, var(--card-background) 70%, transparent);
+    color:var(--text-primary);
+    font-family:inherit;
+    font-size:.88rem;
+    width:100%;
+
+}
+
+.gym-builder-add-day,
+.gym-builder-add-exercise{
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    padding:12px;
+    border-radius:var(--radius-md);
+    border:1px dashed var(--card-border);
+    background:transparent;
+    color:var(--color-primary);
+    font-weight:700;
+    font-size:.88rem;
+    cursor:pointer;
+
+}
+
+/*==========================
+    SELECTOR DE EJERCICIO
+==========================*/
+
+.gym-picker-overlay{
+
+    position:fixed;
+    inset:0;
+    /* Por encima de la barra de navegación inferior (z-index:100 en
+       BottomNavigation.css) -- si no, sus botones interceptan los clics
+       de la parte baja del selector (el formulario de ejercicio propio). */
+    z-index:110;
+
+    background:color-mix(in srgb, var(--color-background, #000) 70%, transparent);
+    backdrop-filter:blur(4px);
+
+    display:flex;
+    align-items:flex-end;
+
+}
+
+.gym-picker{
+
+    width:100%;
+    max-height:85vh;
+
+    padding:20px;
+    padding-bottom:calc(20px + env(safe-area-inset-bottom));
+
+    border-radius:24px 24px 0 0;
+    background:var(--card-background);
+    border:1px solid var(--card-border);
+
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+    overflow:hidden;
+
+}
+
+.gym-picker-header{
+
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+
+}
+
+.gym-picker-header h3{
+
+    color:var(--text-primary);
+    font-size:1.05rem;
+    font-weight:800;
+
+}
+
+.gym-picker-search{
+
+    padding:12px 14px;
+    border-radius:var(--radius-sm);
+    border:1px solid var(--card-border);
+    background:color-mix(in srgb, var(--card-background) 40%, black 10%);
+    color:var(--text-primary);
+    font-family:inherit;
+    font-size:.95rem;
+
+}
+
+.gym-picker-pills{
+
+    display:flex;
+    gap:6px;
+    overflow-x:auto;
+    padding-bottom:2px;
+
+}
+
+.gym-picker-pill{
+
+    flex-shrink:0;
+    padding:6px 12px;
+    border-radius:999px;
+    border:1px solid var(--card-border);
+    background:transparent;
+    color:var(--text-secondary);
+    font-size:.78rem;
+    font-weight:600;
+    white-space:nowrap;
+    cursor:pointer;
+
+}
+
+.gym-picker-pill.is-active{
+
+    background:var(--color-primary);
+    border-color:var(--color-primary);
+    color:#04121f;
+
+}
+
+.gym-picker-results{
+
+    flex:1;
+    overflow-y:auto;
+
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+
+}
+
+.gym-picker-result{
+
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+
+    padding:11px 8px;
+    border:none;
+    border-bottom:1px solid color-mix(in srgb, var(--card-border) 60%, transparent);
+    background:transparent;
+    color:var(--text-primary);
+    font-size:.9rem;
+    text-align:left;
+    cursor:pointer;
+
+}
+
+.gym-picker-result-muscle{
+
+    flex-shrink:0;
+    color:var(--text-secondary);
+    font-size:.72rem;
+
+}
+
+.gym-picker-empty,
+.gym-picker-more{
+
+    color:var(--text-secondary);
+    font-size:.85rem;
+    padding:12px 4px;
+    text-align:center;
+
+}
+
+.gym-picker-custom{
+
+    padding-top:10px;
+    border-top:1px solid var(--card-border);
+
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+
+}
+
+.gym-picker-custom p{
+
+    color:var(--text-secondary);
+    font-size:.8rem;
+
+}
+
+.gym-picker-custom form{
+
+    display:flex;
+    gap:8px;
+
+}
+
+.gym-picker-custom input,
+.gym-picker-custom select{
+
+    flex:1;
+    min-width:0;
+    padding:10px;
+    border-radius:var(--radius-sm);
+    border:1px solid var(--card-border);
+    background:color-mix(in srgb, var(--card-background) 40%, black 10%);
+    color:var(--text-primary);
+    font-family:inherit;
+    font-size:.85rem;
+
+}
+
+.gym-picker-custom button{
+
+    flex-shrink:0;
+    padding:10px 16px;
+    border-radius:var(--radius-sm);
+    border:none;
+    background:var(--color-primary);
+    color:#04121f;
+    font-weight:700;
+    cursor:pointer;
+
+}
+
+/*==========================
+    LISTA DE RUTINAS
+==========================*/
+
+.gym-routine-list{
+
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+
+}
+
+.gym-routine-card{
+
+    padding:20px;
+    border-radius:var(--radius-xl);
+    background:color-mix(in srgb, var(--card-background) 70%, transparent);
+    border:1px solid var(--card-border);
+
+}
+
+.gym-routine-card-header{
+
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-bottom:12px;
+
+}
+
+.gym-routine-card-header h2{
+
+    flex:1;
+    color:var(--text-primary);
+    font-size:1.1rem;
+    font-weight:800;
+
+}
+
+.gym-routine-card-actions{
+
+    display:flex;
+    gap:6px;
+
+}
+
+.gym-routine-action{
+
+    width:34px;
+    height:34px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:50%;
+    border:1px solid var(--card-border);
+    background:transparent;
+    color:var(--text-secondary);
+    cursor:pointer;
+
+}
+
+.gym-routine-action:hover{
+
+    border-color:var(--color-primary);
+    color:var(--color-primary);
+
+}
+
+.gym-routine-action.is-danger:hover{
+
+    border-color:var(--color-danger);
+    color:var(--color-danger);
+
+}
+
+.gym-routine-card-days{
+
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+
+}
+
+.gym-day-row{
+
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+
+    padding:12px 14px;
+    border-radius:var(--radius-md);
+    border:1px solid var(--card-border);
+    background:color-mix(in srgb, var(--card-background) 55%, transparent);
+    color:var(--text-primary);
+    font-size:.9rem;
+    font-weight:700;
+    cursor:pointer;
+
+}
+
+.gym-day-row-count{
+
+    color:var(--text-secondary);
+    font-size:.76rem;
+    font-weight:500;
+
+}
+
+.gym-routine-empty{
+
+    padding:32px 20px;
+    border-radius:var(--radius-lg);
+    border:1px dashed var(--card-border);
+    text-align:center;
+    color:var(--text-secondary);
+
+}
+
+.gym-routine-empty iconify-icon{
+
+    font-size:36px;
+    color:var(--color-primary);
+    margin-bottom:8px;
+
+}

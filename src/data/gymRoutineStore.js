@@ -1,11 +1,12 @@
-import { STORES, getAll, get, put } from "./db.js";
+// Rutinas de gimnasio guardadas -- store CRUD real (antes solo existía
+// "importar" + un único puntero de "rutina activa"; ver CLAUDE.md). Todas
+// las rutinas guardadas viven aquí y son igual de gestionables (ver/editar/
+// borrar) — ya no hay concepto de "activa", la pantalla de Gimnasio lista
+// todas a la vez (ver Gym.js).
+import { STORES, getAll, put, remove } from "./db.js";
 import { generateId } from "../utils/id.js";
-import { gymDays as defaultGymDays } from "./gymData.js";
-
-const ACTIVE_ROUTINE_KEY = "activeGymRoutineId";
 
 const routines = [];
-let activeRoutineId = null;
 
 let hydrated = null;
 
@@ -13,17 +14,13 @@ export function hydrate() {
 
     if (hydrated) return hydrated;
 
-    hydrated = Promise.all([
-        getAll(STORES.gymRoutines),
-        get(STORES.meta, ACTIVE_ROUTINE_KEY)
-    ]).then(([loadedRoutines, activeRecord]) => {
+    hydrated = getAll(STORES.gymRoutines).then(loaded => {
 
-        routines.push(...loadedRoutines);
-        activeRoutineId = activeRecord ? activeRecord.value : null;
+        routines.push(...loaded);
 
     }).catch(err => {
 
-        console.warn("No se pudo cargar la rutina de gimnasio importada — la app sigue con la rutina por defecto.", err);
+        console.warn("No se pudieron cargar las rutinas de gimnasio — la app sigue sin persistencia.", err);
 
     });
 
@@ -31,51 +28,89 @@ export function hydrate() {
 
 }
 
-export function getGymDays() {
+export function getRoutines() {
 
-    const active = routines.find(r => r.id === activeRoutineId);
-    return active ? active.days : defaultGymDays;
+    return routines;
 
 }
 
+export function getRoutineById(id) {
+
+    return routines.find(r => r.id === id) || null;
+
+}
+
+// Busca en TODAS las rutinas guardadas -- ya no hay una única "rutina
+// activa" de la que tirar primero, cada día vive dentro de la rutina que
+// lo contiene y hace falta recorrerlas todas para encontrarlo.
 export function getGymDay(dayId) {
 
-    return getGymDays().find(day => day.id === dayId) || null;
+    for (const routine of routines) {
+
+        const day = routine.days.find(d => d.id === dayId);
+        if (day) return day;
+
+    }
+
+    return null;
 
 }
 
-// Deshacer una importación no borra la rutina nueva (queda en la store por
-// si se quiere volver a activar) — solo mueve el puntero de "activa" de
-// vuelta a la anterior. Sin window.confirm ni nada que perder: mucho más
-// simple que el borrado por lote de Plan (ver deletePlannedSessionsByBatch)
-// porque aquí no hay "sesiones ya registradas" que puedan quedar huérfanas
-// (los ids de ejercicio son deterministas por nombre, así que el histórico
-// de gymSessionStore sigue encontrando el mismo exerciseId tras deshacer).
-export function saveImportedRoutine(days, sourceName) {
+function upsertInto(routine) {
 
-    const previousActiveId = activeRoutineId;
+    const index = routines.findIndex(r => r.id === routine.id);
+    if (index === -1) routines.push(routine);
+    else routines[index] = routine;
+
+    return put(STORES.gymRoutines, routine).catch(() => {});
+
+}
+
+// days ya viene con ids puestos (el constructor los genera al añadir cada
+// día/ejercicio, ver gymRoutineBuilderStore.js) -- aquí solo se envuelve
+// con id/fechas de la rutina en sí.
+export function createRoutine({ name, days, progressionNote }) {
+
+    const now = new Date().toISOString();
 
     const routine = {
         id: generateId(),
-        importedAt: new Date().toISOString(),
-        sourceName,
-        days
+        name,
+        days,
+        progressionNote: progressionNote || "",
+        createdAt: now,
+        updatedAt: now
     };
 
     routines.push(routine);
-    activeRoutineId = routine.id;
 
-    return Promise.all([
-        put(STORES.gymRoutines, routine),
-        put(STORES.meta, { key: ACTIVE_ROUTINE_KEY, value: routine.id })
-    ]).then(() => ({ routineId: routine.id, previousActiveId }));
+    return put(STORES.gymRoutines, routine).then(() => routine);
 
 }
 
-export function undoRoutineImport(previousActiveId) {
+export function updateRoutine(id, { name, days, progressionNote }) {
 
-    activeRoutineId = previousActiveId;
+    const routine = getRoutineById(id);
+    if (!routine) return null;
 
-    return put(STORES.meta, { key: ACTIVE_ROUTINE_KEY, value: previousActiveId }).catch(() => {});
+    routine.name = name;
+    routine.days = days;
+    routine.progressionNote = progressionNote || "";
+    routine.updatedAt = new Date().toISOString();
+
+    upsertInto(routine);
+
+    return routine;
+
+}
+
+export function deleteRoutine(id) {
+
+    const index = routines.findIndex(r => r.id === id);
+    if (index === -1) return;
+
+    routines.splice(index, 1);
+
+    remove(STORES.gymRoutines, id).catch(() => {});
 
 }

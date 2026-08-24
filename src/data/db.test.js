@@ -20,7 +20,7 @@ function resetFakeIndexedDB() {
 // migración original no vuelva a ejecutarse sola) y unas plannedRaces con
 // region a null porque un reimport del calendario de Murcia (que no trae
 // "region" en el JSON) pisó el valor que la migración había puesto.
-function seedLegacyDatabase(version, { meta = [], plannedRaces = [], workouts = [] }) {
+function seedLegacyDatabase(version, { meta = [], plannedRaces = [], workouts = [], gymRoutines = [] }) {
 
     return new Promise((resolve, reject) => {
 
@@ -33,10 +33,12 @@ function seedLegacyDatabase(version, { meta = [], plannedRaces = [], workouts = 
             const racesStore = db.createObjectStore("plannedRaces", { keyPath: "id" });
             racesStore.createIndex("date", "date", { unique: false });
             const workoutsStore = db.createObjectStore("workouts", { keyPath: "id" });
+            const gymRoutinesStore = db.createObjectStore("gymRoutines", { keyPath: "id" });
 
             meta.forEach(m => metaStore.put(m));
             plannedRaces.forEach(r => racesStore.put(r));
             workouts.forEach(w => workoutsStore.put(w));
+            gymRoutines.forEach(r => gymRoutinesStore.put(r));
 
         };
 
@@ -249,6 +251,68 @@ describe("migración incremental: instalaciones ya existentes reciben las carrer
 
         // si se repitiera, volvería a meter las 125 que faltan
         expect(result).toHaveLength(1);
+
+    });
+
+});
+
+describe("migración: las 3 rutinas por defecto pasan de fallback hardcodeado a registros reales de gymRoutines", () => {
+
+    beforeEach(() => {
+
+        resetFakeIndexedDB();
+        vi.resetModules();
+
+    });
+
+    it("instalación completamente nueva recibe las 3 rutinas por defecto, conservando los ids de día/ejercicio de gymData.js", async () => {
+
+        const { gymDays } = await import("./gymData.js");
+        const { getAll, STORES } = await import("./db.js");
+        const result = await getAll(STORES.gymRoutines);
+
+        expect(result).toHaveLength(3);
+
+        const byId = Object.fromEntries(result.map(r => [r.id, r]));
+
+        gymDays.forEach(day => {
+
+            const routine = byId[`default-${day.id}`];
+            expect(routine).toBeTruthy();
+            expect(routine.name).toBe(day.title);
+            expect(routine.days).toEqual([day]);
+            expect(routine.progressionNote).toBe("");
+
+        });
+
+    });
+
+    it("una instalación que ya importó una rutina (gymRoutines no vacía) no recibe las 3 por defecto de más", async () => {
+
+        await seedLegacyDatabase(8, {
+            meta: [],
+            gymRoutines: [{ id: "importada-1", name: "Mi rutina importada", days: [], progressionNote: "" }]
+        });
+
+        const { getAll, STORES } = await import("./db.js");
+        const result = await getAll(STORES.gymRoutines);
+
+        expect(result).toHaveLength(1);
+        expect(result[0].id).toBe("importada-1");
+
+    });
+
+    it("no repite la siembra en una instalación que ya la tiene aplicada, ni siquiera si el usuario borró las 3 (no resucitan)", async () => {
+
+        await seedLegacyDatabase(8, {
+            meta: [{ key: "gymDefaultRoutinesSeeded", value: true }],
+            gymRoutines: []
+        });
+
+        const { getAll, STORES } = await import("./db.js");
+        const result = await getAll(STORES.gymRoutines);
+
+        expect(result).toHaveLength(0);
 
     });
 

@@ -1,10 +1,11 @@
 import { addDays, getWeekStartDate, parseISODate } from "../../utils/date.js";
 
-// Mismo vocabulario que src/importers/gym/pdf.js (WEEKDAYS, normalizeText
-// sin tildes), indexado como Date.getDay() (0 = domingo). Los días de la
-// rutina por defecto (gymData.js) no tienen `weekday` — solo lo tienen los
-// días de una rutina importada (ver pdf.js) — así que todo lo de aquí
-// depende de que exista ese campo.
+// Indexado como Date.getDay() (0 = domingo). El constructor manual de
+// rutinas (ver gymRoutineBuilderStore.js) no asigna `weekday` a los días
+// que crea — solo lo tendría un día que lo traiga por algún otro medio —
+// así que todo lo de aquí depende de que exista ese campo, y hoy no se
+// activa para ninguna rutina (ninguna regresión: tampoco lo tenían las 3
+// rutinas por defecto antes de este cambio).
 const WEEKDAYS_BY_INDEX = ["domingo", "lunes", "martes", "miercoles", "jueves", "viernes", "sabado"];
 
 function weekdayOf(iso) {

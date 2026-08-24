@@ -1,7 +1,8 @@
 import { rerender } from "../../core/router.js";
 import { startSession, updateSet, updateExerciseNotes, finishSession, getSessionById, deleteSession, hydrate } from "../../data/gymSessionStore.js";
-import { saveImportedRoutine, undoRoutineImport } from "../../data/gymRoutineStore.js";
-import { importGymRoutine } from "../../importers/gym/index.js";
+import { getRoutineById, createRoutine, updateRoutine, deleteRoutine } from "../../data/gymRoutineStore.js";
+import { addCustomExercise } from "../../data/customExerciseStore.js";
+import { getAllExercises } from "./exerciseSearch.js";
 
 import {
     getActiveSessionId,
@@ -26,55 +27,57 @@ import {
 } from "./gymStore.js";
 
 import {
-    getImportStep,
-    setImportStep,
-    resetGymImport,
-    getParsedRoutine,
-    setParsedRoutine,
-    setImportParseError,
-    setImportSaveError,
-    setImportSavedRoutineId,
-    setImportSavedPreviousActiveId,
-    updateImportExerciseField
-} from "./gymImportStore.js";
-
-import { GYM_EXERCISE_REVIEW_FIELDS, parseExerciseFieldValue } from "./components/GymImportReviewStep.js";
+    isBuilderOpen,
+    getBuilderState,
+    openBuilder,
+    closeBuilder,
+    setRoutineName,
+    setProgressionNote,
+    setSaveError,
+    addDay,
+    removeDay,
+    setDayTitle,
+    openExercisePicker,
+    closeExercisePicker,
+    setPickerQuery,
+    setPickerFilter,
+    addExerciseToDay,
+    removeExerciseFromDay,
+    updateExerciseField
+} from "./gymRoutineBuilderStore.js";
 
 const WEIGHT_STEP = 2.5;
 const REPS_STEP = 1;
-const RIR_STEP = 1;
 
-const GYM_IMPORT_HISTORY_STATE = { gymImport: true };
+const GYM_BUILDER_HISTORY_STATE = { gymBuilder: true };
 const GYM_EXERCISE_DETAIL_HISTORY_STATE = { gymExerciseDetail: true };
 
-function openGymImport() {
+// Igual que openPlanImport() en initPlanEvents.js — su propia entrada de
+// historial para que el gesto de atrás del móvil cierre el constructor en
+// vez de salir de la app.
+function openRoutineBuilder(routine = null) {
 
-    resetGymImport();
-    setImportStep("upload");
-
-    // Sin esto, el gesto de atrás del móvil no tiene una entrada de
-    // historial propia que consumir y se sale directo de la app — mismo
-    // motivo que openPlanImport() en initPlanEvents.js.
-    history.pushState(GYM_IMPORT_HISTORY_STATE, "");
+    openBuilder(routine);
+    history.pushState(GYM_BUILDER_HISTORY_STATE, "");
 
     rerender();
 
 }
 
-function closeGymImport() {
+function closeRoutineBuilder() {
 
-    if (history.state?.gymImport) {
+    if (history.state?.gymBuilder) {
         history.back();
         return;
     }
 
-    setImportStep("closed");
+    closeBuilder();
     rerender();
 
 }
 
-// Igual que openGymImport() — su propia entrada de historial para que el
-// gesto de atrás del móvil cierre el detalle en vez de salir de la app.
+// Igual que openExerciseDetail — su propia entrada de historial para que
+// el gesto de atrás del móvil cierre el detalle en vez de salir de la app.
 function openExerciseDetail(exerciseId) {
 
     setDetailExerciseId(exerciseId);
@@ -109,8 +112,8 @@ function closeExerciseDetail() {
 // equivalente de initPlanEvents.js.
 window.addEventListener("popstate", () => {
 
-    if (getImportStep() !== "closed") {
-        setImportStep("closed");
+    if (isBuilderOpen()) {
+        closeBuilder();
         rerender();
         return;
     }
@@ -123,72 +126,46 @@ window.addEventListener("popstate", () => {
 
 });
 
-// pdfText.js carga pdfjs-dist, que pesa — solo se importa cuando de verdad
-// se elige un archivo, mismo motivo que handlePdfFileSelected() en
-// initPlanEvents.js. Solo PDF por ahora (sin sniff de firma): todo archivo
-// elegido aquí se trata directamente como PDF.
-async function handleGymFileSelected(file) {
+function saveRoutine() {
 
-    setImportParseError(null);
+    const state = getBuilderState();
+    if (!state) return;
 
-    let extractPdfRows;
-    try {
-        ({ extractPdfRows } = await import("../../importers/gym/pdfText.js"));
-    } catch {
-        setImportParseError("No se pudo cargar el lector de PDF — comprueba la conexión e inténtalo de nuevo.");
+    const name = state.name.trim();
+
+    if (!name) {
+        setSaveError("Ponle un nombre a la rutina antes de guardar.");
         rerender();
         return;
     }
 
-    try {
-
-        const rows = await extractPdfRows(file);
-        const routine = importGymRoutine("pdf", rows);
-
-        setParsedRoutine(routine);
-        setImportStep("review");
-
-    } catch (err) {
-
-        setImportParseError(err.message);
-
+    if (!state.days.length || state.days.every(day => day.exercises.length === 0)) {
+        setSaveError("Añade al menos un día con un ejercicio antes de guardar.");
+        rerender();
+        return;
     }
 
-    rerender();
+    const payload = { name, days: state.days, progressionNote: state.progressionNote.trim() };
 
-}
+    const saved = state.routineId
+        ? Promise.resolve(updateRoutine(state.routineId, payload))
+        : createRoutine(payload);
 
-function performGymImport() {
+    Promise.resolve(saved).then(() => {
 
-    const routine = getParsedRoutine();
-    if (!routine) return;
-
-    saveImportedRoutine(routine.days, routine.routineName).then(({ routineId, previousActiveId }) => {
-
-        setImportSavedRoutineId(routineId);
-        setImportSavedPreviousActiveId(previousActiveId);
-        setImportSaveError(null);
-        setImportStep("success");
+        closeBuilder();
         rerender();
 
     });
 
 }
 
-// Deshace de golpe la importación que se acaba de guardar — la rutina
-// nueva se queda en la store (ver undoRoutineImport en gymRoutineStore.js),
-// solo se mueve el puntero de "activa" de vuelta a la anterior. Sin
-// window.confirm: a diferencia de deletePlannedSessionsByBatch en Plan, no
-// se borra nada, así que no hay nada que perder de verdad.
-function undoGymImport(previousActiveIdRaw) {
+function deleteRoutineWithConfirm(id) {
 
-    const previousActiveId = previousActiveIdRaw || null;
+    if (!window.confirm("¿Borrar esta rutina? No se puede deshacer.")) return;
 
-    undoRoutineImport(previousActiveId).then(() => {
-
-        closeGymImport();
-
-    });
+    deleteRoutine(id);
+    rerender();
 
 }
 
@@ -223,18 +200,6 @@ function adjustReps(exerciseId, setIndex, delta) {
     const next = Math.max(0, (set.reps ?? 0) + delta);
 
     updateSet(getActiveSessionId(), exerciseId, setIndex, { reps: next });
-    rerender();
-
-}
-
-function adjustRir(exerciseId, setIndex, delta) {
-
-    const set = currentSet(exerciseId, setIndex);
-    if (!set) return;
-
-    const next = Math.max(0, (set.rir ?? 0) + delta);
-
-    updateSet(getActiveSessionId(), exerciseId, setIndex, { rir: next });
     rerender();
 
 }
@@ -375,8 +340,6 @@ export function initGymEvents() {
     wireStepper("dec-weight", (exerciseId, setIndex) => adjustWeight(exerciseId, setIndex, -WEIGHT_STEP));
     wireStepper("inc-reps", (exerciseId, setIndex) => adjustReps(exerciseId, setIndex, REPS_STEP));
     wireStepper("dec-reps", (exerciseId, setIndex) => adjustReps(exerciseId, setIndex, -REPS_STEP));
-    wireStepper("inc-rir", (exerciseId, setIndex) => adjustRir(exerciseId, setIndex, RIR_STEP));
-    wireStepper("dec-rir", (exerciseId, setIndex) => adjustRir(exerciseId, setIndex, -RIR_STEP));
     wireStepper("toggle-done", toggleDone);
 
     document.querySelectorAll('[data-action="prev-exercise"]').forEach(button => {
@@ -520,62 +483,189 @@ export function initGymEvents() {
 
     });
 
-    document.querySelectorAll('[data-action="open-gym-import"]').forEach(button => {
+    /*==========================
+        RUTINAS: crear / editar / borrar
+    ==========================*/
 
-        button.addEventListener("click", openGymImport);
+    document.querySelectorAll('[data-action="open-routine-builder"]').forEach(button => {
 
-    });
-
-    document.querySelectorAll('[data-action="close-gym-import"]').forEach(button => {
-
-        button.addEventListener("click", closeGymImport);
+        button.addEventListener("click", () => openRoutineBuilder());
 
     });
 
-    const fileInput = document.querySelector("#gym-import-file-input");
+    document.querySelectorAll('[data-action="edit-gym-routine"]').forEach(button => {
 
-    if (fileInput) {
+        button.addEventListener("click", () => {
 
-        fileInput.addEventListener("change", () => {
+            const routine = getRoutineById(button.dataset.routineId);
+            if (routine) openRoutineBuilder(routine);
 
-            const file = fileInput.files?.[0];
-            if (!file) return;
+        });
 
-            handleGymFileSelected(file);
+    });
 
+    document.querySelectorAll('[data-action="delete-gym-routine"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+            deleteRoutineWithConfirm(button.dataset.routineId);
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="close-routine-builder"]').forEach(button => {
+
+        button.addEventListener("click", closeRoutineBuilder);
+
+    });
+
+    document.querySelectorAll('[data-action="save-routine"]').forEach(button => {
+
+        button.addEventListener("click", saveRoutine);
+
+    });
+
+    const routineNameInput = document.querySelector('[data-action="set-routine-name"]');
+    if (routineNameInput) {
+        routineNameInput.addEventListener("change", () => setRoutineName(routineNameInput.value));
+    }
+
+    const progressionNoteInput = document.querySelector('[data-action="set-progression-note"]');
+    if (progressionNoteInput) {
+        progressionNoteInput.addEventListener("change", () => setProgressionNote(progressionNoteInput.value));
+    }
+
+    document.querySelectorAll('[data-action="add-routine-day"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+            addDay();
+            rerender();
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="remove-routine-day"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+            removeDay(button.dataset.dayId);
+            rerender();
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="set-day-title"]').forEach(input => {
+
+        input.addEventListener("change", () => {
+            setDayTitle(input.dataset.dayId, input.value);
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="remove-routine-exercise"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+            removeExerciseFromDay(button.dataset.dayId, button.dataset.exerciseId);
+            rerender();
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="set-exercise-sets"]').forEach(input => {
+
+        input.addEventListener("change", () => {
+            updateExerciseField(input.dataset.dayId, input.dataset.exerciseId, "sets", input.value);
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="set-exercise-reps"]').forEach(input => {
+
+        input.addEventListener("change", () => {
+            updateExerciseField(input.dataset.dayId, input.dataset.exerciseId, "targetReps", input.value);
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="set-exercise-weight"]').forEach(input => {
+
+        input.addEventListener("change", () => {
+            updateExerciseField(input.dataset.dayId, input.dataset.exerciseId, "targetWeight", input.value);
+        });
+
+    });
+
+    /*==========================
+        SELECTOR DE EJERCICIO
+    ==========================*/
+
+    document.querySelectorAll('[data-action="open-exercise-picker"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+            openExercisePicker(button.dataset.dayId);
+            rerender();
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="close-exercise-picker"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+            closeExercisePicker();
+            rerender();
+        });
+
+    });
+
+    const pickerSearchInput = document.querySelector('[data-action="set-picker-query"]');
+    if (pickerSearchInput) {
+
+        pickerSearchInput.addEventListener("input", () => {
+            setPickerQuery(pickerSearchInput.value);
+            rerender();
         });
 
     }
 
-    document.querySelectorAll(".gym-review-row [data-day][data-exercise][data-field]").forEach(input => {
+    document.querySelectorAll('[data-action="set-picker-filter"]').forEach(button => {
 
-        input.addEventListener("change", () => {
+        button.addEventListener("click", () => {
+            setPickerFilter(button.dataset.filter);
+            rerender();
+        });
 
-            const field = GYM_EXERCISE_REVIEW_FIELDS.find(f => f.key === input.dataset.field);
-            if (!field) return;
+    });
 
-            const dayIndex = Number(input.dataset.day);
-            const exerciseIndex = Number(input.dataset.exercise);
+    document.querySelectorAll('[data-action="pick-exercise"]').forEach(button => {
 
-            updateImportExerciseField(dayIndex, exerciseIndex, field.key, parseExerciseFieldValue(field, input.value));
+        button.addEventListener("click", () => {
+
+            const exercise = getAllExercises().find(e => e.id === button.dataset.exerciseId);
+            if (!exercise) return;
+
+            addExerciseToDay(button.dataset.dayId, exercise);
             rerender();
 
         });
 
     });
 
-    document.querySelectorAll('[data-action="confirm-gym-import"]').forEach(button => {
+    const customExerciseForm = document.querySelector('[data-action="add-custom-exercise-form"]');
+    if (customExerciseForm) {
 
-        button.addEventListener("click", performGymImport);
+        customExerciseForm.addEventListener("submit", event => {
 
-    });
+            event.preventDefault();
 
-    document.querySelectorAll('[data-action="undo-gym-import"]').forEach(button => {
+            const formData = new FormData(customExerciseForm);
+            const name = formData.get("name")?.toString().trim();
+            const muscleGroup = formData.get("muscleGroup")?.toString().trim();
+            if (!name || !muscleGroup) return;
 
-        button.addEventListener("click", () => {
-            undoGymImport(button.dataset.previousActiveId);
+            const exercise = addCustomExercise({ name, muscleGroup });
+            addExerciseToDay(customExerciseForm.dataset.dayId, exercise);
+            rerender();
+
         });
 
-    });
+    }
 
 }

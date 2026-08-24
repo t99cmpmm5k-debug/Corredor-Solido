@@ -1,7 +1,8 @@
 import { SEED_RACES } from "./seedRaces.js";
+import { gymDays as DEFAULT_GYM_DAYS } from "./gymData.js";
 
 const DB_NAME = "corredor-solido";
-const DB_VERSION = 8;
+const DB_VERSION = 9;
 
 // Bookkeeping en meta (misma store que lastExportAt, ver backup.js) — se
 // escribe una sola vez, la primera vez que esta instalación pasa por
@@ -103,9 +104,62 @@ export const STORES = {
     meta: "meta",
     gymSessions: "gymSessions",
     gymRoutines: "gymRoutines",
-    plannedRaces: "plannedRaces"
+    plannedRaces: "plannedRaces",
+    customExercises: "customExercises"
 
 };
+
+// Rediseño de Gimnasio (constructor manual + gestión de rutinas): las 3
+// rutinas que hasta ahora eran un fallback hardcodeado en gymData.js (sin
+// registro real en gymRoutines, sin editar/borrar posible) pasan a ser
+// registros reales y gestionables -- una rutina por día por defecto, mismo
+// id de día/ejercicio que ya tenían (day1/day2/day3, press-banca...) para
+// que el histórico de sesiones ya guardado (gymSessionStore, indexado por
+// esos mismos ids) las siga encontrando sin romperse. Solo si gymRoutines
+// está vacía en este momento -- un usuario que ya importó algo por PDF no
+// recibe estas 3 de más.
+const GYM_DEFAULT_ROUTINES_SEEDED_KEY = "gymDefaultRoutinesSeeded";
+
+function seedDefaultGymRoutinesIfNeeded(transaction) {
+
+    const metaStore = transaction.objectStore(STORES.meta);
+    const getRequest = metaStore.get(GYM_DEFAULT_ROUTINES_SEEDED_KEY);
+
+    getRequest.onsuccess = () => {
+
+        if (getRequest.result) return;
+
+        const routinesStore = transaction.objectStore(STORES.gymRoutines);
+        const countRequest = routinesStore.count();
+
+        countRequest.onsuccess = () => {
+
+            if (countRequest.result === 0) {
+
+                const now = new Date().toISOString();
+
+                DEFAULT_GYM_DAYS.forEach(day => {
+
+                    routinesStore.put({
+                        id: `default-${day.id}`,
+                        name: day.title,
+                        days: [day],
+                        progressionNote: "",
+                        createdAt: now,
+                        updatedAt: now
+                    });
+
+                });
+
+            }
+
+            metaStore.put({ key: GYM_DEFAULT_ROUTINES_SEEDED_KEY, value: true });
+
+        };
+
+    };
+
+}
 
 let dbPromise = null;
 let storageAvailable = true;
@@ -279,7 +333,14 @@ function upgrade(db, transaction) {
 
     }
 
+    if (!db.objectStoreNames.contains(STORES.customExercises)) {
+
+        db.createObjectStore(STORES.customExercises, { keyPath: "id" });
+
+    }
+
     seedPlannedRacesIfNeeded(transaction);
+    seedDefaultGymRoutinesIfNeeded(transaction);
 
 }
 

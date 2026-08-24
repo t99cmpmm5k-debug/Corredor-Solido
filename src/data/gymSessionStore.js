@@ -57,13 +57,9 @@ function buildInitialSets(exercise) {
     // Cada serie parte del peso de ESA MISMA serie la última vez (pirámide:
     // serie 1 con la serie 1, serie 2 con la serie 2...), no de un único
     // valor repetido en las 4 — ver getLastLoggedSetWeight más abajo.
-    // rir empieza en null (sin dato) — no se prerrellena con nada, a
-    // diferencia de weight/reps, porque no hay un "objetivo" de RIR en el
-    // modelo de datos como sí lo hay para peso/reps.
     return Array.from({ length: exercise.sets }, (_, index) => ({
         weight: getLastLoggedSetWeight(exercise.id, index) ?? exercise.targetWeight,
         reps,
-        rir: null,
         done: false
     }));
 
@@ -232,10 +228,15 @@ export function getExerciseHistory(exerciseId, { limit = 8, excludeSessionId = n
 // Histórico completo (sin tope) para la pantalla de detalle de ejercicio
 // (Fase 4) — a diferencia de getExerciseHistory(), que solo saca el mejor
 // peso de cada sesión para el mini-gráfico, aquí hace falta cada serie
-// hecha (peso, reps, rir) para poder construir la tabla de HISTORIAL, el
+// hecha (peso, reps) para poder construir la tabla de HISTORIAL, el
 // desglose por fila y el volumen (peso×reps sumado) de cada sesión.
 // excludeSessionId con el mismo motivo que en getExerciseHistory: la
 // sesión en curso no cuenta como "historial" todavía.
+//
+// No se lee/expone `rir` aquí aunque una sesión antigua todavía lo tenga
+// guardado en IndexedDB (campo retirado de la interfaz, no de los datos
+// históricos ya guardados) — este es el único sitio por el que ese dato
+// llegaba a la UI, así que basta con dejar de mapearlo.
 export function getExerciseSessionHistory(exerciseId, { excludeSessionId = null } = {}) {
 
     const sorted = [...sessions].sort((a, b) => a.date.localeCompare(b.date));
@@ -254,7 +255,7 @@ export function getExerciseSessionHistory(exerciseId, { excludeSessionId = null 
         history.push({
             sessionId: session.id,
             date: session.date,
-            sets: doneSets.map(({ weight, reps, rir }) => ({ weight, reps, rir })),
+            sets: doneSets.map(({ weight, reps }) => ({ weight, reps })),
             bestWeight: Math.max(...doneSets.map(s => s.weight)),
             volume: doneSets.reduce((sum, s) => sum + s.weight * s.reps, 0)
         });

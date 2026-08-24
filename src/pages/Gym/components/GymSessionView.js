@@ -70,34 +70,8 @@ function repsStepper(exerciseId, setIndex, set) {
 
 }
 
-// Más compacto que weightStepper/repsStepper — vive en su propia línea
-// bajo Peso/Reps (ver setRow), no comparte fila con ellos: las 3 columnas
-// completas no caben en el ancho de un móvil normal. A diferencia de
-// peso/reps tampoco viene de ningún objetivo (nace en null, ver
-// buildInitialSets en gymSessionStore.js).
-function rirStepper(exerciseId, setIndex, set) {
-
-    return `
-
-        <div class="gym-stepper gym-stepper--compact">
-
-            <button class="gym-stepper-btn" data-action="dec-rir" data-exercise-id="${exerciseId}" data-set-index="${setIndex}">−</button>
-
-            <span class="gym-stepper-value">${set.rir != null ? set.rir : "—"}</span>
-
-            <button class="gym-stepper-btn" data-action="inc-rir" data-exercise-id="${exerciseId}" data-set-index="${setIndex}">+</button>
-
-        </div>
-
-    `;
-
-}
-
 // Cabecera de columnas de la tabla de series — una sola vez por ejercicio,
-// no repetida en cada fila. Solo Peso/Reps: RIR va en su propia línea bajo
-// cada serie (ver setRow), con su propia etiqueta inline, porque las tres
-// columnas completas no caben en el ancho de un móvil normal (ver
-// gym-set-rir-row en GymSessionView.css).
+// no repetida en cada fila.
 function SetColumnsHeader(definition) {
 
     return `
@@ -150,14 +124,6 @@ function setRow(definition, sessionExercise, set, index) {
                     <iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon>
 
                 </button>
-
-            </div>
-
-            <div class="gym-set-rir-row">
-
-                <span class="gym-set-rir-label">RIR</span>
-
-                ${rirStepper(sessionExercise.exerciseId, index, set)}
 
             </div>
 

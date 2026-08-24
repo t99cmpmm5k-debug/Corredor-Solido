@@ -115,7 +115,6 @@ function HistoryRow(entry, weightUnit, expandedSessionId) {
                         <div class="gym-history-set-line">
                             <span class="gym-history-set-index">Serie ${index + 1}</span>
                             <span>${formatWeight(set.weight, weightUnit)} × ${set.reps}</span>
-                            <span class="gym-history-set-rir">${set.rir != null ? `RIR ${set.rir}` : "—"}</span>
                         </div>
 
                     `).join("")}
