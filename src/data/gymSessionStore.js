@@ -87,7 +87,10 @@ export function startSession(dayId) {
         id: generateId(),
         date: today,
         dayId,
+        startedAt: new Date().toISOString(),
         finishedAt: null,
+        durationSec: null,
+        durationUnreliable: false,
 
         exercises: day.exercises.map(exercise => ({
             exerciseId: exercise.id,
@@ -153,12 +156,43 @@ export function updateExerciseNotes(sessionId, exerciseId, notes) {
 
 }
 
+// Tope razonable para lo que puede durar un entrenamiento de verdad —
+// primer paso hacia el entrenador de carga (ACWR): la duración real es la
+// unidad común entre Running y Gimnasio, pero solo sirve si es de fiar.
+// Por encima de esto no es "una sesión larga", es la app cerrada a medio
+// entrenamiento (pantalla bloqueada, el móvil se quedó sin batería...) y
+// reanudada horas después vía el "checkpoint" de startSession() — mejor no
+// guardar ningún número que fingir que esas horas fueron entrenamiento.
+const MAX_REASONABLE_SESSION_DURATION_SEC = 4 * 60 * 60;
+
+// null+unreliable si no hay startedAt que fiarse (sesión previa a este
+// cambio, aunque hoy ya no debería poder pasar por finishSession sin él),
+// si el reloj da una duración negativa, o si supera el tope de arriba.
+function computeDuration(startedAtIso, finishedAtIso) {
+
+    if (!startedAtIso) return { durationSec: null, durationUnreliable: false };
+
+    const seconds = Math.round((new Date(finishedAtIso) - new Date(startedAtIso)) / 1000);
+
+    if (seconds < 0 || seconds > MAX_REASONABLE_SESSION_DURATION_SEC) {
+        return { durationSec: null, durationUnreliable: true };
+    }
+
+    return { durationSec: seconds, durationUnreliable: false };
+
+}
+
 export function finishSession(sessionId) {
 
     const session = getSessionById(sessionId);
     if (!session) return null;
 
-    session.finishedAt = new Date().toISOString();
+    const finishedAt = new Date().toISOString();
+    const { durationSec, durationUnreliable } = computeDuration(session.startedAt, finishedAt);
+
+    session.finishedAt = finishedAt;
+    session.durationSec = durationSec;
+    session.durationUnreliable = durationUnreliable;
 
     upsertInto(session);
 
