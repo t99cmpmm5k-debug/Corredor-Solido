@@ -9,8 +9,9 @@ import { PlanMoveDayPicker } from "./components/PlanMoveDayPicker.js";
 import { PlanMovePanel } from "./components/PlanMovePanel.js";
 import { PlanImportWizard } from "./components/PlanImportWizard.js";
 import { PlanMonthCalendar } from "./components/PlanMonthCalendar.js";
+import { PlanCreateSessionPanel } from "./components/PlanCreateSessionPanel.js";
 
-import { getSelectedWorkout, getViewedWeekStart, getMovingSessionId, getPlanViewMode, getViewedMonth } from "./planStore";
+import { getSelectedWorkout, getViewedWeekStart, getMovingSessionId, getPlanViewMode, getViewedMonth, getCreatingSessionDate, getNewSessionType, getNewSessionNotes } from "./planStore";
 import { getImportStep } from "./planImportStore.js";
 import { getWeekSessions, getSessionById, getPlannedSessions } from "../../data/workoutStore.js";
 import { BottomNavigation } from "../../components/Navigation/BottomNavigation.js";
@@ -131,6 +132,20 @@ export function Plan() {
 
     const selectedWorkout = getSelectedWorkout();
 
+    // Qué tarjeta ocupa el hueco de detalle bajo el calendario/línea
+    // temporal -- las tres son mutuamente excluyentes (ver planStore.js),
+    // creando una sesión manda sobre moviendo una y sobre la seleccionada.
+    // Compartido entre semanal y mensual para que "tocar un día vacío"
+    // abra el mismo formulario venga de donde venga (ver requisito en
+    // initPlanEvents.js: selectCalendarDay() / listener de ".timeline-day").
+    const creatingSessionDate = getCreatingSessionDate();
+
+    const detailCardHtml = creatingSessionDate
+        ? PlanCreateSessionPanel(creatingSessionDate, getNewSessionType(), getNewSessionNotes())
+        : movingSession
+            ? PlanMovePanel(movingSession)
+            : PlanWorkoutCard(selectedWorkout);
+
     if (viewMode === "month") {
 
         const calendarHtml = PlanMonthCalendar(getViewedMonth(), selectedWorkout?.date ?? null);
@@ -147,7 +162,7 @@ export function Plan() {
 
                 </div>
 
-                ${PlanWorkoutCard(selectedWorkout)}
+                ${detailCardHtml}
 
             </section>
 
@@ -169,7 +184,7 @@ export function Plan() {
 
             ${PlanConnector()}
 
-            ${movingSession ? PlanMovePanel(movingSession) : PlanWorkoutCard(selectedWorkout)}
+            ${detailCardHtml}
 
         </section>
 

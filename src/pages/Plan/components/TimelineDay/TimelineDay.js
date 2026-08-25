@@ -24,6 +24,7 @@ export function TimelineDay(session, { isToday, isSelected, isCompleted, isRest 
                 ${isRest ? "is-rest" : ""}
             "
             data-session-id="${session.id}"
+            data-date="${session.date}"
             data-gym-day-id="${session.gymDayId ?? ""}"
             data-gym-completed="${session.gymCompleted ? "true" : ""}"
         >

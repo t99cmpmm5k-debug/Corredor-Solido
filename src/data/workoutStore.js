@@ -550,6 +550,37 @@ export function importPlannedSessions(sessions) {
 
 }
 
+// Alta manual de una única sesión (ver Plan → tocar un día "Descanso" en
+// la línea semanal o en el calendario mensual) — a diferencia de
+// importPlannedSessions(), no viene en lote ni trae importBatchId (nada
+// que deshacer de golpe, se borra igual que cualquier otra con
+// deletePlannedSession()). Escribe en el mismo array/store que el resto,
+// así que la línea semanal y el calendario mensual la reflejan sin
+// ningún cambio adicional (ambos ya leen de aquí).
+export function addPlannedSession({ date, type, description = null }) {
+
+    const slot = plannedSessions.filter(ps => ps.date === date).length;
+
+    const session = {
+        id: generateId(),
+        date,
+        slot,
+        weekStartDate: getWeekStartDate(date),
+        type,
+        title: null,
+        description,
+        distanceKm: null,
+        durationSec: null,
+        targetPaceSecPerKm: null,
+        targetHrZone: null
+    };
+
+    upsertInto(plannedSessions, STORES.plannedSessions, session);
+
+    return session;
+
+}
+
 // Borra una carrera planificada (calendario de Carreras) — no toca ningún
 // workout real, son dos stores distintos igual que deletePlannedSession()
 // frente a workouts.

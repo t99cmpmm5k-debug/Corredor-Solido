@@ -130,5 +130,62 @@ export function resetPlanView() {
     setState("movingSessionId", null);
     setState("planViewMode", "week");
     setState("viewedMonth", null);
+    setState("creatingSessionDate", null);
+    setState("newSessionType", null);
+    setState("newSessionNotes", null);
+
+}
+
+// Fecha (ISO) del día "Descanso" que se acaba de tocar para crear una
+// sesión manual a mano — null cuando el formulario no está abierto.
+// Aparte de selectedWorkout/movingSessionId a propósito: son tres estados
+// de la misma tarjeta (ver PlanWorkoutCard/PlanMovePanel/
+// PlanCreateSessionPanel en Plan.js) que nunca conviven a la vez.
+const DEFAULT_NEW_SESSION_TYPE = "z2";
+
+export function getCreatingSessionDate() {
+
+    return getState().creatingSessionDate ?? null;
+
+}
+
+// Abre el formulario para `date` con los valores de partida de siempre
+// (no arrastra lo que se hubiera escrito la última vez que se abrió para
+// otro día).
+export function startCreateSession(date) {
+
+    setState("creatingSessionDate", date);
+    setState("newSessionType", DEFAULT_NEW_SESSION_TYPE);
+    setState("newSessionNotes", "");
+
+}
+
+export function cancelCreateSession() {
+
+    setState("creatingSessionDate", null);
+
+}
+
+export function getNewSessionType() {
+
+    return getState().newSessionType ?? DEFAULT_NEW_SESSION_TYPE;
+
+}
+
+export function setNewSessionType(type) {
+
+    setState("newSessionType", type);
+
+}
+
+export function getNewSessionNotes() {
+
+    return getState().newSessionNotes ?? "";
+
+}
+
+export function setNewSessionNotes(notes) {
+
+    setState("newSessionNotes", notes);
 
 }

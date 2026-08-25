@@ -86,3 +86,71 @@ describe("importPlannedRaces - dedupe por fecha+nombre conserva region al reimpo
     });
 
 });
+
+describe("addPlannedSession — creación manual de una sesión (ver Plan → tocar un día vacío)", () => {
+
+    beforeEach(() => {
+
+        resetFakeIndexedDB();
+        vi.resetModules();
+
+    });
+
+    it("crea una sesión suelta con el tipo y la fecha dados, sin distancia/duración/título", async () => {
+
+        const { hydrate, addPlannedSession, getSessionsForDate } = await import("./workoutStore.js");
+        await hydrate();
+
+        const session = addPlannedSession({ date: "2026-08-27", type: "z2", description: "Rodaje suave" });
+
+        expect(session).toMatchObject({
+            date: "2026-08-27",
+            type: "z2",
+            description: "Rodaje suave",
+            title: null,
+            distanceKm: null,
+            durationSec: null
+        });
+
+        expect(getSessionsForDate("2026-08-27")).toHaveLength(1);
+
+    });
+
+    it("sin notas, description queda null (no una cadena vacía)", async () => {
+
+        const { hydrate, addPlannedSession } = await import("./workoutStore.js");
+        await hydrate();
+
+        const session = addPlannedSession({ date: "2026-08-27", type: "recovery" });
+
+        expect(session.description).toBeNull();
+
+    });
+
+    it("la sesión creada aparece en getWeekSessions() y en getSessionById() -- misma fuente que la línea temporal y el calendario mensual", async () => {
+
+        const { hydrate, addPlannedSession, getWeekSessions, getSessionById } = await import("./workoutStore.js");
+        await hydrate();
+
+        const session = addPlannedSession({ date: "2026-08-27", type: "tempo" }); // jueves
+
+        expect(getWeekSessions("2026-08-24").some(s => s.id === session.id)).toBe(true);
+        expect(getSessionById(session.id)).toMatchObject({ type: "tempo", date: "2026-08-27" });
+
+    });
+
+    it("dos sesiones creadas el mismo día reciben slots distintos, sin pisarse", async () => {
+
+        const { hydrate, addPlannedSession, getSessionsForDate } = await import("./workoutStore.js");
+        await hydrate();
+
+        const first = addPlannedSession({ date: "2026-08-27", type: "z2" });
+        const second = addPlannedSession({ date: "2026-08-27", type: "intervals" });
+
+        expect(first.slot).toBe(0);
+        expect(second.slot).toBe(1);
+        expect(getSessionsForDate("2026-08-27")).toHaveLength(2);
+
+    });
+
+});

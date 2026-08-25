@@ -1,8 +1,8 @@
-import { setSelectedWorkout, getViewedWeekStart, setViewedWeekStart, getMovingSessionId, setMovingSessionId, getPlanViewMode, setPlanViewMode, shiftViewedMonth } from "./planStore";
+import { setSelectedWorkout, getViewedWeekStart, setViewedWeekStart, getMovingSessionId, setMovingSessionId, getPlanViewMode, setPlanViewMode, shiftViewedMonth, getCreatingSessionDate, startCreateSession, cancelCreateSession, getNewSessionType, setNewSessionType, getNewSessionNotes, setNewSessionNotes } from "./planStore";
 import { rerender, navigate } from "../../core/router";
 
 import { importPlan } from "../../importers/plan/index.js";
-import { importPlannedSessions, getWeekSessions, getSessionById, getSessionsForDate, movePlannedSession, deletePlannedSession, deletePlannedSessionsByBatch } from "../../data/workoutStore.js";
+import { importPlannedSessions, addPlannedSession, getWeekSessions, getSessionById, getSessionsForDate, movePlannedSession, deletePlannedSession, deletePlannedSessionsByBatch } from "../../data/workoutStore.js";
 import { addDays } from "../../utils/date.js";
 import { PLAN_SESSION_REVIEW_FIELDS, parseSessionFieldValue } from "./components/PlanImportReviewStep.js";
 import { Running } from "../Running/Running.js";
@@ -196,6 +196,12 @@ function changeViewedWeek(deltaWeeks) {
     const sessions = getWeekSessions(newWeekStart);
     setSelectedWorkout(sessions[0] ?? null);
 
+    // Un formulario de creación abierto pertenece a la fecha que se tocó
+    // antes de deslizar -- esa fecha deja de estar a la vista, así que el
+    // formulario ya no tiene sentido colgado ahí (mismo motivo que
+    // reasignar selectedWorkout justo encima).
+    cancelCreateSession();
+
     rerender();
 
 }
@@ -210,6 +216,7 @@ function togglePlanView() {
     setPlanViewMode(getPlanViewMode() === "week" ? "month" : "week");
 
     if (getMovingSessionId()) setMovingSessionId(null);
+    if (getCreatingSessionDate()) cancelCreateSession();
 
     rerender();
 
@@ -226,13 +233,43 @@ function changeViewedMonth(deltaMonths) {
 // ".timeline-day"): selecciona la sesión y la deja lista para
 // PlanWorkoutCard. Con varias sesiones el mismo día (running + gimnasio)
 // se queda con la primera por orden de slot — mismo criterio que
-// getWeekSessions() al ordenar la semana.
+// getWeekSessions() al ordenar la semana. Un día sin ninguna sesión abre
+// el mismo formulario de creación manual que el timeline semanal (ver
+// startCreateSession() / ".timeline-day" más abajo) — mismo punto de
+// entrada, mismo destino de guardado, solo cambia desde dónde se tocó.
 function selectCalendarDay(date) {
 
     const sessions = getSessionsForDate(date).sort((a, b) => (a.slot ?? 0) - (b.slot ?? 0));
     const first = sessions[0];
 
-    setSelectedWorkout(first ? getSessionById(first.id) : null);
+    if (first) {
+        setSelectedWorkout(getSessionById(first.id));
+        rerender();
+        return;
+    }
+
+    startCreateSession(date);
+    rerender();
+
+}
+
+// Guarda la sesión manual y deja el formulario cerrado, con la sesión
+// recién creada como seleccionada (mismo "qué se ve después" que tocar
+// cualquier otro día ya ocupado) -- así el usuario ve de inmediato que se
+// guardó, en vez de volver a un "Descanso" o a lo que hubiera antes.
+function saveManualSession() {
+
+    const date = getCreatingSessionDate();
+    if (!date) return;
+
+    const session = addPlannedSession({
+        date,
+        type: getNewSessionType(),
+        description: getNewSessionNotes().trim() || null
+    });
+
+    cancelCreateSession();
+    setSelectedWorkout(getSessionById(session.id));
 
     rerender();
 
@@ -419,11 +456,16 @@ export function initPlanEvents() {
 
             // Sin sesión real de running: si el hueco es en realidad un día
             // de gimnasio (ver attachGymInfo() en PlanTimeline.js), salta a
-            // Gimnasio -- un Descanso de verdad (sin gymDayId) no hace nada,
-            // igual que antes.
+            // Gimnasio.
             if (day.dataset.gymDayId) {
                 viewGymDay(day.dataset.gymDayId, day.dataset.gymCompleted === "true");
+                return;
             }
+
+            // Un Descanso de verdad (sin sesión, sin gimnasio) abre el
+            // formulario de creación manual en vez de no hacer nada.
+            startCreateSession(day.dataset.date);
+            rerender();
 
         });
 
@@ -548,6 +590,37 @@ export function initPlanEvents() {
 
         button.addEventListener("click", () => {
             undoPlanImport(button.dataset.batchId);
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="cancel-manual-session"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+            cancelCreateSession();
+            rerender();
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="save-manual-session"]').forEach(button => {
+
+        button.addEventListener("click", saveManualSession);
+
+    });
+
+    document.querySelectorAll('[data-action="set-manual-session-type"]').forEach(select => {
+
+        select.addEventListener("change", () => {
+            setNewSessionType(select.value);
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="set-manual-session-notes"]').forEach(textarea => {
+
+        textarea.addEventListener("change", () => {
+            setNewSessionNotes(textarea.value);
         });
 
     });

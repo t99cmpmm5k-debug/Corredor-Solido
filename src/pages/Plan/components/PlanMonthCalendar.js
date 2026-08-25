@@ -68,7 +68,12 @@ export function PlanMonthCalendar(monthIso, selectedDate = null) {
     return MonthCalendar(monthDate, {
         markersByDate,
         selectedDate,
-        dataAction: "select-plan-calendar-day"
+        dataAction: "select-plan-calendar-day",
+        // A diferencia del uso "solo lectura" por defecto (ver
+        // MonthCalendar.js): en Plan un día sin marcadores SÍ es tocable —
+        // abre el formulario de creación manual de sesión, mismo punto de
+        // entrada que un "Descanso" en la línea temporal semanal.
+        disableEmptyDays: false
     });
 
 }

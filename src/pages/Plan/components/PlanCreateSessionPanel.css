@@ -1,0 +1,119 @@
+.plan-create-session-panel{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:16px;
+
+}
+
+.plan-create-session-date{
+
+    margin:0;
+
+    color:var(--color-primary);
+
+    font-size:.8rem;
+
+    font-weight:700;
+
+    letter-spacing:.08em;
+
+    text-transform:uppercase;
+
+}
+
+/* Mismo lenguaje que .review-field en PlanImportReviewStep.css (cristal
+   suave + borde tenue), a un solo campo por fila en vez de la rejilla de
+   revisión -- aquí solo hay dos campos, no hace falta esa densidad. */
+.plan-create-session-field{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:8px;
+
+    padding:14px 16px;
+
+    border-radius:var(--radius-md);
+
+    background:color-mix(in srgb, var(--card-background) 60%, transparent);
+
+    border:1px solid var(--card-border);
+
+}
+
+.plan-create-session-field > span{
+
+    color:var(--text-secondary);
+
+    font-size:.78rem;
+
+    font-weight:600;
+
+    text-transform:uppercase;
+
+    letter-spacing:.04em;
+
+}
+
+.plan-create-session-field select,
+.plan-create-session-field textarea{
+
+    background:transparent;
+
+    border:none;
+
+    outline:none;
+
+    color:var(--text-primary);
+
+    font-size:1.05rem;
+
+    font-weight:700;
+
+    font-family:inherit;
+
+    color-scheme:dark light;
+
+}
+
+.plan-create-session-field select option{
+
+    color:#000;
+
+}
+
+.plan-create-session-field textarea{
+
+    resize:none;
+
+    min-height:4.5em;
+
+    line-height:1.45;
+
+    font-weight:400;
+
+}
+
+.plan-create-session-field textarea::placeholder{
+
+    color:var(--color-text-muted);
+
+}
+
+.plan-create-session-actions{
+
+    display:flex;
+
+    gap:12px;
+
+}
+
+.plan-create-session-actions .workout-button{
+
+    margin-top:0;
+
+}

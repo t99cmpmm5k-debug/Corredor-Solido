@@ -6,7 +6,14 @@ import {
     setViewedMonth,
     setViewedWeekStart,
     shiftViewedMonth,
-    resetPlanView
+    resetPlanView,
+    getCreatingSessionDate,
+    startCreateSession,
+    cancelCreateSession,
+    getNewSessionType,
+    setNewSessionType,
+    getNewSessionNotes,
+    setNewSessionNotes
 } from "./planStore.js";
 
 describe("planStore — vista semanal/mensual", () => {
@@ -94,6 +101,70 @@ describe("planStore — vista semanal/mensual", () => {
         // se re-deriva de ahí la próxima vez que se pida, no se queda en
         // julio 2026.
         expect(getViewedMonth()).not.toBe("2026-07-01");
+
+    });
+
+});
+
+describe("planStore — creación manual de sesión (tocar un día vacío en Plan)", () => {
+
+    beforeEach(() => {
+        resetPlanView();
+    });
+
+    it("por defecto no hay ningún formulario de creación abierto", () => {
+        expect(getCreatingSessionDate()).toBeNull();
+    });
+
+    it("startCreateSession abre el formulario para esa fecha con valores de partida", () => {
+
+        startCreateSession("2026-08-27");
+
+        expect(getCreatingSessionDate()).toBe("2026-08-27");
+        expect(getNewSessionType()).toBe("z2");
+        expect(getNewSessionNotes()).toBe("");
+
+    });
+
+    it("cancelCreateSession cierra el formulario sin tocar lo demás", () => {
+
+        startCreateSession("2026-08-27");
+        cancelCreateSession();
+
+        expect(getCreatingSessionDate()).toBeNull();
+
+    });
+
+    it("setNewSessionType/setNewSessionNotes actualizan el borrador mientras está abierto", () => {
+
+        startCreateSession("2026-08-27");
+        setNewSessionType("intervals");
+        setNewSessionNotes("Series 6x400");
+
+        expect(getNewSessionType()).toBe("intervals");
+        expect(getNewSessionNotes()).toBe("Series 6x400");
+
+    });
+
+    it("abrir el formulario para un día nuevo no arrastra lo escrito para el anterior", () => {
+
+        startCreateSession("2026-08-27");
+        setNewSessionType("intervals");
+        setNewSessionNotes("Series 6x400");
+
+        startCreateSession("2026-08-28");
+
+        expect(getNewSessionType()).toBe("z2");
+        expect(getNewSessionNotes()).toBe("");
+
+    });
+
+    it("resetPlanView cierra cualquier formulario de creación en curso", () => {
+
+        startCreateSession("2026-08-27");
+        resetPlanView();
+
+        expect(getCreatingSessionDate()).toBeNull();
 
     });
 

@@ -39,11 +39,12 @@ export function buildCalendarWeeks(monthDate) {
 
 }
 
-function CalendarDayCell(iso, { monthIndex, markers, isSelected, dataAction }) {
+function CalendarDayCell(iso, { monthIndex, markers, isSelected, dataAction, disableEmptyDays }) {
 
     const date = parseISODate(iso);
     const inMonth = date.getMonth() === monthIndex;
     const hasMarkers = markers.length > 0;
+    const isTappable = hasMarkers || !disableEmptyDays;
 
     return `
 
@@ -55,9 +56,9 @@ function CalendarDayCell(iso, { monthIndex, markers, isSelected, dataAction }) {
                 ${isSelected ? "is-selected" : ""}
                 ${hasMarkers ? "has-marker" : ""}
             "
-            data-action="${hasMarkers ? dataAction : ""}"
+            data-action="${isTappable ? dataAction : ""}"
             data-date="${iso}"
-            ${hasMarkers ? "" : "disabled"}
+            ${isTappable ? "" : "disabled"}
         >
 
             <span class="month-calendar-day-number">${date.getDate()}</span>
@@ -84,12 +85,17 @@ function CalendarDayCell(iso, { monthIndex, markers, isSelected, dataAction }) {
 // día con carrera), pensado para que Plan lo reutilice cuando aborde su
 // propia vista mensual (ver CLAUDE.md, "known duplication").
 //
-// markersByDate: { [iso]: { icon, color }[] } — un día sin entrada o con
-// array vacío no es tocable (sin data-action, disabled). Navegar de mes
+// markersByDate: { [iso]: { icon, color }[] } — por defecto (disableEmptyDays
+// true) un día sin entrada o con array vacío no es tocable (sin
+// data-action, disabled), pensado para un calendario de solo lectura como
+// el de Carreras. Plan pasa disableEmptyDays:false (ver PlanMonthCalendar.js)
+// porque ahí un día vacío SÍ es tocable -- abre el formulario de creación
+// manual de sesión (ver initPlanEvents.js), mismo punto de entrada que un
+// día "Descanso" en la línea temporal semanal. Navegar de mes
 // (data-action="calendar-prev-month"/"calendar-next-month") y tocar un
-// día marcado (dataAction, por defecto "select-calendar-day") los cablea
-// quien use el componente, igual que el resto de data-action de la app.
-export function MonthCalendar(monthDate, { markersByDate = {}, selectedDate = null, dataAction = "select-calendar-day" } = {}) {
+// día (dataAction, por defecto "select-calendar-day") los cablea quien
+// use el componente, igual que el resto de data-action de la app.
+export function MonthCalendar(monthDate, { markersByDate = {}, selectedDate = null, dataAction = "select-calendar-day", disableEmptyDays = true } = {}) {
 
     const weeks = buildCalendarWeeks(monthDate);
 
@@ -127,7 +133,8 @@ export function MonthCalendar(monthDate, { markersByDate = {}, selectedDate = nu
                             monthIndex: monthDate.getMonth(),
                             markers: markersByDate[iso] || [],
                             isSelected: iso === selectedDate,
-                            dataAction
+                            dataAction,
+                            disableEmptyDays
                         })).join("")}
 
                     </div>

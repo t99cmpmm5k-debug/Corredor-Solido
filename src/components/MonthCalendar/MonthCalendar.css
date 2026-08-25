@@ -153,13 +153,18 @@
 
 }
 
-.month-calendar-day.has-marker{
+/* No solo .has-marker: en Plan un día sin marcador también es tocable
+   (abre el formulario de creación manual, ver disableEmptyDays en
+   MonthCalendar.js) y necesita el mismo feedback de tocable — :disabled
+   ya cubre el caso de solo-lectura (Carreras, o Plan con
+   disableEmptyDays:true) sin necesitar una clase aparte. */
+.month-calendar-day:not(:disabled){
 
     cursor:pointer;
 
 }
 
-.month-calendar-day.has-marker:hover{
+.month-calendar-day:not(:disabled):hover{
 
     background:color-mix(in srgb, var(--card-border) 40%, transparent);
 
