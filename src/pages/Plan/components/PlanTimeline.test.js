@@ -120,28 +120,28 @@ describe("PlanTimeline", () => {
 
 });
 
-describe("fillWeekDays + gimnasio (Gimnasio↔Plan, ver gymTimelineBridge.js)", () => {
+describe("fillWeekDays + gimnasio (Gimnasio↔Plan, ver gymTimelineBridge.js) -- por day.weekday, la misma fuente que 'Próximos entrenamientos' en Gimnasio", () => {
 
     afterEach(() => {
         gymRoutines = [];
     });
 
-    it("un día sin running pero con una rutina de gimnasio para ese día de la semana deja de ser Descanso", () => {
+    it("un día sin running pero con una rutina de gimnasio programada (day.weekday) para ese día de la semana deja de ser Descanso -- título sin ningún indicio de día, igual que las 3 rutinas por defecto reales", () => {
 
-        gymRoutines = [{ id: "r1", name: "Fuerza", days: [{ id: "d1", title: "Viernes - Pierna", exercises: [] }] }];
+        gymRoutines = [{ id: "r1", name: "Pierna Funcional", days: [{ id: "d1", weekday: "viernes", title: "Pierna Funcional", exercises: [] }] }];
 
         const days = fillWeekDays(MONDAY, []);
         const friday = days[4]; // 2026-08-21, viernes
 
         expect(friday.isRest).toBe(false);
         expect(friday.type).toBe("strength");
-        expect(friday.title).toBe("Viernes - Pierna");
-        expect(friday.subtitle).toBe("Fuerza");
+        expect(friday.title).toBe("Pierna Funcional");
+        expect(friday.subtitle).toBe("Pierna Funcional");
         expect(friday.gymOnly).toBe(true);
         expect(friday.gymDayId).toBe("d1");
 
-        // El resto de la semana, sin rutina para ese día, se queda como
-        // Descanso normal.
+        // El resto de la semana, sin rutina programada para ese día, se
+        // queda como Descanso normal.
         expect(days[0].isRest).toBe(true);
         expect(days[0].gymOnly).toBeUndefined();
 
@@ -149,7 +149,7 @@ describe("fillWeekDays + gimnasio (Gimnasio↔Plan, ver gymTimelineBridge.js)", 
 
     it("un día con running Y gimnasio conserva la sesión real y solo añade hasGym, sin ocultarla", () => {
 
-        gymRoutines = [{ id: "r1", name: "Fuerza", days: [{ id: "d1", title: "Jueves - Torso", exercises: [] }] }];
+        gymRoutines = [{ id: "r1", name: "Torso Completo", days: [{ id: "d1", weekday: "jueves", title: "Torso Completo", exercises: [] }] }];
 
         const sessions = [{ id: "s1", date: "2026-08-20", slot: 0, type: "z2", title: "Rodaje" }]; // jueves
 
@@ -164,9 +164,9 @@ describe("fillWeekDays + gimnasio (Gimnasio↔Plan, ver gymTimelineBridge.js)", 
 
     });
 
-    it("un título de rutina que no menciona ningún día de la semana no afecta a ninguna columna", () => {
+    it("un día de gimnasio sin day.weekday no afecta a ninguna columna, aunque su título mencione un día de la semana", () => {
 
-        gymRoutines = [{ id: "r1", name: "Fuerza", days: [{ id: "d1", title: "Torso Completo", exercises: [] }] }];
+        gymRoutines = [{ id: "r1", name: "Fuerza", days: [{ id: "d1", title: "Lunes - Torso", exercises: [] }] }]; // sin weekday
 
         const days = fillWeekDays(MONDAY, []);
 
