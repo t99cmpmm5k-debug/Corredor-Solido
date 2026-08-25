@@ -543,6 +543,14 @@
     font-weight:700;
     cursor:pointer;
 
+    /* Sin esto, scrollIntoView() (ver openGymDay() en initGymEvents.js,
+       llegada desde Plan) puede centrar la fila justo debajo de la barra
+       de navegación inferior (position:fixed) -- visible en la práctica,
+       no solo en teoría: confirmado con Playwright/WebKit contra el sitio
+       desplegado. Mismo margen que ya reserva .gym-content como
+       padding-bottom (ver Gym.css) para el mismo hueco. */
+    scroll-margin-bottom:calc(110px + env(safe-area-inset-bottom));
+
 }
 
 /* Llegada desde Plan (ver openGymDay() en initGymEvents.js) -- mismo color

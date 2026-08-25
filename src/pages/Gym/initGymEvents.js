@@ -291,13 +291,38 @@ function wireStepper(action, handler) {
 
 }
 
+// Mismo hueco que .gym-content reserva como padding-bottom (ver Gym.css,
+// misma convención que el resto de páginas) para la barra de navegación
+// inferior (position:fixed). scrollIntoView({block:"center"}) centra en el
+// viewport COMPLETO sin saber que sus últimos ~110px están tapados por la
+// barra -- confirmado con Playwright/WebKit contra el sitio ya desplegado:
+// la fila resaltada quedaba centrada justo debajo de la barra, invisible
+// en la práctica aunque is-highlighted sí se aplicaba. Se calcula el
+// scroll a mano centrando dentro del área realmente visible en vez de
+// depender de scroll-margin (probado también, mismo resultado incorrecto
+// en WebKit con block:"center").
+const BOTTOM_NAV_RESERVED_PX = 110;
+
+function scrollToHighlightedDay() {
+
+    const row = document.querySelector(".gym-day-row.is-highlighted");
+    if (!row) return;
+
+    const rect = row.getBoundingClientRect();
+    const visibleHeight = window.innerHeight - BOTTOM_NAV_RESERVED_PX;
+    const targetY = window.scrollY + rect.top - (visibleHeight / 2 - rect.height / 2);
+
+    window.scrollTo({ top: Math.max(0, targetY), behavior: "smooth" });
+
+}
+
 export function initGymEvents() {
 
     const highlightedDayId = getHighlightedDayId();
 
     if (highlightedDayId) {
 
-        document.querySelector(`.gym-day-row.is-highlighted`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+        scrollToHighlightedDay();
 
         // Un solo resaltado -- se limpia después de mostrarse una vez, no
         // debe seguir marcado en visitas posteriores a Gimnasio.
