@@ -3,7 +3,7 @@ import "./Gym.css";
 import { BottomNavigation } from "../../components/Navigation/BottomNavigation.js";
 import { getRoutines, getGymDay } from "../../data/gymRoutineStore.js";
 import { getSessionById, getGymSessions, getExerciseSessionHistory } from "../../data/gymSessionStore.js";
-import { getStep, getActiveSessionId, getDetailExerciseId, getDetailTab, getDetailExpandedSessionId, getWeekSummaryExpanded } from "./gymStore.js";
+import { getStep, getActiveSessionId, getDetailExerciseId, getDetailTab, getDetailExpandedSessionId, getWeekSummaryExpanded, getHighlightedDayId } from "./gymStore.js";
 import { GymSessionView } from "./components/GymSessionView.js";
 import { GymExerciseDetailView } from "./components/GymExerciseDetailView.js";
 import { GymRoutineBuilder } from "./components/GymRoutineBuilder.js";
@@ -14,9 +14,11 @@ import { formatISODate } from "../../utils/date.js";
 
 function DayRow(day) {
 
+    const highlighted = getHighlightedDayId() === day.id;
+
     return `
 
-        <button class="gym-day-row" data-action="select-day" data-day-id="${day.id}">
+        <button class="gym-day-row ${highlighted ? "is-highlighted" : ""}" data-action="select-day" data-day-id="${day.id}">
 
             <span>${day.title}</span>
 

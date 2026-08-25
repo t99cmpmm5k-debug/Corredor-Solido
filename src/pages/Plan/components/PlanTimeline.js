@@ -2,6 +2,7 @@ import "./PlanTimeline.css";
 
 import { isToday, addDays, getDayAbbreviation } from "../../../utils/date.js";
 import { TimelineDay } from "./TimelineDay/TimelineDay";
+import { getGymDayForDate } from "../gymTimelineBridge.js";
 
 // Mismos colores por tipo que WorkoutIcon.css (ahí es donde vive la
 // fuente de verdad — esto es su equivalente en JS para poder construir
@@ -44,12 +45,47 @@ function restDayPlaceholder(date) {
 
 }
 
+// Superpone el día de gimnasio de esa fecha (si existe, ver
+// gymTimelineBridge.js) sobre la celda ya resuelta. Con sesión real de
+// running se deja tal cual y solo se marca hasGym para el indicador
+// secundario (running manda al tocar el día, ver initPlanEvents.js); sin
+// sesión real, el propio hueco de "Descanso" pasa a representar el día de
+// gimnasio (mismo tipo "strength" que ya usa el resto de la app).
+function attachGymInfo(dayCell, date) {
+
+    const match = getGymDayForDate(date);
+    if (!match) return dayCell;
+
+    const { routine, day: gymDay } = match;
+
+    if (!dayCell.isRest) {
+        return { ...dayCell, hasGym: true, gymDayId: gymDay.id, gymRoutineId: routine.id };
+    }
+
+    return {
+        id: `gym-${date}`,
+        date,
+        day: dayCell.day,
+        type: "strength",
+        title: gymDay.title,
+        subtitle: routine.name,
+        status: "rest",
+        volume: 0,
+        isRest: false,
+        gymOnly: true,
+        gymDayId: gymDay.id,
+        gymRoutineId: routine.id
+    };
+
+}
+
 // Siempre 7 columnas (lunes-domingo), tenga la semana sesiones o no — los
-// días sin sesión real se rellenan con un hueco de "Descanso". Con más
-// de una sesión real el mismo día (p. ej. tras mover una) se queda con
-// la primera por slot, mismo criterio que ya usa PlanMonthCalendar al
-// tocar un día del mes. Exportada aparte para poder testear el relleno
-// sin montar HTML.
+// días sin sesión real se rellenan con un hueco de "Descanso" (o, si hay
+// un día de gimnasio programado ese día de la semana, con ese día de
+// gimnasio -- ver attachGymInfo). Con más de una sesión real el mismo día
+// (p. ej. tras mover una) se queda con la primera por slot, mismo criterio
+// que ya usa PlanMonthCalendar al tocar un día del mes. Exportada aparte
+// para poder testear el relleno sin montar HTML.
 export function fillWeekDays(weekStartDate, sessions) {
 
     const byDate = new Map();
@@ -65,7 +101,8 @@ export function fillWeekDays(weekStartDate, sessions) {
 
     return Array.from({ length: 7 }, (_, i) => {
         const date = addDays(weekStartDate, i);
-        return byDate.get(date) ?? restDayPlaceholder(date);
+        const dayCell = byDate.get(date) ?? restDayPlaceholder(date);
+        return attachGymInfo(dayCell, date);
     });
 
 }

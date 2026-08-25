@@ -1,5 +1,14 @@
-import { describe, it, expect } from "vitest";
-import { fillWeekDays, PlanTimeline, TIMELINE_TYPE_COLOR } from "./PlanTimeline.js";
+import { describe, it, expect, vi, afterEach } from "vitest";
+
+// getRoutines() se sustituye por un stub -- estos tests cubren cómo
+// fillWeekDays()/PlanTimeline() superponen un día de gimnasio (ver
+// gymTimelineBridge.js), no el CRUD real de gymRoutineStore.js.
+let gymRoutines = [];
+vi.mock("../../../data/gymRoutineStore.js", () => ({
+    getRoutines: () => gymRoutines
+}));
+
+const { fillWeekDays, PlanTimeline, TIMELINE_TYPE_COLOR } = await import("./PlanTimeline.js");
 
 const MONDAY = "2026-08-17"; // lunes
 
@@ -106,6 +115,65 @@ describe("PlanTimeline", () => {
         const html = PlanTimeline(null, [], MONDAY);
 
         expect(html).toContain(TIMELINE_TYPE_COLOR.free);
+
+    });
+
+});
+
+describe("fillWeekDays + gimnasio (Gimnasio↔Plan, ver gymTimelineBridge.js)", () => {
+
+    afterEach(() => {
+        gymRoutines = [];
+    });
+
+    it("un día sin running pero con una rutina de gimnasio para ese día de la semana deja de ser Descanso", () => {
+
+        gymRoutines = [{ id: "r1", name: "Fuerza", days: [{ id: "d1", title: "Viernes - Pierna", exercises: [] }] }];
+
+        const days = fillWeekDays(MONDAY, []);
+        const friday = days[4]; // 2026-08-21, viernes
+
+        expect(friday.isRest).toBe(false);
+        expect(friday.type).toBe("strength");
+        expect(friday.title).toBe("Viernes - Pierna");
+        expect(friday.subtitle).toBe("Fuerza");
+        expect(friday.gymOnly).toBe(true);
+        expect(friday.gymDayId).toBe("d1");
+
+        // El resto de la semana, sin rutina para ese día, se queda como
+        // Descanso normal.
+        expect(days[0].isRest).toBe(true);
+        expect(days[0].gymOnly).toBeUndefined();
+
+    });
+
+    it("un día con running Y gimnasio conserva la sesión real y solo añade hasGym, sin ocultarla", () => {
+
+        gymRoutines = [{ id: "r1", name: "Fuerza", days: [{ id: "d1", title: "Jueves - Torso", exercises: [] }] }];
+
+        const sessions = [{ id: "s1", date: "2026-08-20", slot: 0, type: "z2", title: "Rodaje" }]; // jueves
+
+        const days = fillWeekDays(MONDAY, sessions);
+        const thursday = days[3];
+
+        expect(thursday.id).toBe("s1");
+        expect(thursday.type).toBe("z2"); // running manda, no se pisa el tipo
+        expect(thursday.hasGym).toBe(true);
+        expect(thursday.gymDayId).toBe("d1");
+        expect(thursday.isRest).toBeUndefined();
+
+    });
+
+    it("un título de rutina que no menciona ningún día de la semana no afecta a ninguna columna", () => {
+
+        gymRoutines = [{ id: "r1", name: "Fuerza", days: [{ id: "d1", title: "Torso Completo", exercises: [] }] }];
+
+        const days = fillWeekDays(MONDAY, []);
+
+        days.forEach(d => {
+            expect(d.isRest).toBe(true);
+            expect(d.gymOnly).toBeUndefined();
+        });
 
     });
 

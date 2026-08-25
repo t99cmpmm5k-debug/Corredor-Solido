@@ -8,7 +8,9 @@ const store = {
     detailTab: "historial",
     detailExpandedSessionId: null,
 
-    weekSummaryExpanded: false
+    weekSummaryExpanded: false,
+
+    highlightedDayId: null
 
 };
 
@@ -112,6 +114,22 @@ export function getWeekSummaryExpanded() {
 export function toggleWeekSummaryExpanded() {
 
     store.weekSummaryExpanded = !store.weekSummaryExpanded;
+
+}
+
+/*==========================
+   DÍA RESALTADO (llegada desde Plan, ver initGymEvents.js/openGymDay)
+==========================*/
+
+export function getHighlightedDayId() {
+
+    return store.highlightedDayId;
+
+}
+
+export function setHighlightedDayId(id) {
+
+    store.highlightedDayId = id;
 
 }
 

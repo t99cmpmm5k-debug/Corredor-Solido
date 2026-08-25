@@ -7,6 +7,8 @@ import { addDays } from "../../utils/date.js";
 import { PLAN_SESSION_REVIEW_FIELDS, parseSessionFieldValue } from "./components/PlanImportReviewStep.js";
 import { Running } from "../Running/Running.js";
 import { openDetail as openRunningDetail } from "../Running/initRunningEvents.js";
+import { Gym } from "../Gym/Gym.js";
+import { openGymDay } from "../Gym/initGymEvents.js";
 
 import {
     getImportStep,
@@ -167,6 +169,19 @@ function viewSessionWorkout(workoutId) {
 
     navigate(Running);
     openRunningDetail(workoutId);
+
+}
+
+// Mismo patrón que viewSessionWorkout(), pero hacia Gimnasio -- solo se usa
+// cuando el día tocado NO tiene running real (ver ".timeline-day" más
+// abajo: con running y gimnasio a la vez, running manda y esto ni se
+// llama). openGymDay() resalta y lleva a la vista esa fila, no arranca la
+// sesión por sí solo -- eso sigue siendo una acción explícita del usuario
+// dentro de Gimnasio.
+function viewGymDay(dayId) {
+
+    navigate(Gym);
+    openGymDay(dayId);
 
 }
 
@@ -396,11 +411,19 @@ export function initPlanEvents() {
 
             const workout = getSessionById(day.dataset.sessionId);
 
-            if (!workout) return;
+            if (workout) {
+                setSelectedWorkout(workout);
+                rerender();
+                return;
+            }
 
-            setSelectedWorkout(workout);
-
-            rerender();
+            // Sin sesión real de running: si el hueco es en realidad un día
+            // de gimnasio (ver attachGymInfo() en PlanTimeline.js), salta a
+            // Gimnasio -- un Descanso de verdad (sin gymDayId) no hace nada,
+            // igual que antes.
+            if (day.dataset.gymDayId) {
+                viewGymDay(day.dataset.gymDayId);
+            }
 
         });
 

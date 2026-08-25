@@ -9,6 +9,9 @@ import { formatDayNumber } from "../../../../utils/date.js";
 // PlanTimeline.js) -- no necesita cursor de "tocable", el click en la
 // franja ya no hace nada por sí solo (getSessionById() de su id sintético
 // no encuentra ninguna sesión real).
+// session.hasGym / gymOnly / gymDayId: día de gimnasio superpuesto por
+// attachGymInfo() en PlanTimeline.js -- ver initPlanEvents.js para cómo se
+// usa data-gym-day-id al tocar la columna.
 export function TimelineDay(session, { isToday, isSelected, isCompleted, isRest = false }) {
 
     return `
@@ -21,6 +24,7 @@ export function TimelineDay(session, { isToday, isSelected, isCompleted, isRest 
                 ${isRest ? "is-rest" : ""}
             "
             data-session-id="${session.id}"
+            data-gym-day-id="${session.gymDayId ?? ""}"
         >
 
             <div class="timeline-top">
@@ -46,6 +50,12 @@ export function TimelineDay(session, { isToday, isSelected, isCompleted, isRest 
                 ${isCompleted ? `
                     <span class="day-check">
                         <iconify-icon icon="solar:check-circle-bold"></iconify-icon>
+                    </span>
+                ` : ""}
+
+                ${session.hasGym ? `
+                    <span class="day-gym-badge">
+                        <iconify-icon icon="solar:dumbbell-large-bold-duotone"></iconify-icon>
                     </span>
                 ` : ""}
 

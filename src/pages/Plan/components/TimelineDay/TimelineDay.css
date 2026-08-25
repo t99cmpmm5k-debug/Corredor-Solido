@@ -205,6 +205,43 @@
 }
 
 /*========================
+      INDICADOR GIMNASIO
+   Día con running Y gimnasio a la vez -- el icono principal sigue siendo
+   el de running (running manda al tocar, ver initPlanEvents.js), esto es
+   solo la señal de que también hay gimnasio ese día. Arriba-derecha para
+   no pisar el check de completado (abajo-derecha). Mismo color #2faeff
+   que ya usa "strength" en TIMELINE_TYPE_COLOR/WorkoutIcon.css.
+========================*/
+
+.day-gym-badge{
+
+    position:absolute;
+
+    top:-2px;
+    right:-2px;
+
+    width:14px;
+    height:14px;
+
+    border-radius:50%;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    background:#2faeff;
+    border:2px solid var(--card-background);
+    color:#FFFFFF;
+
+}
+
+.day-gym-badge iconify-icon{
+
+    font-size:8px;
+
+}
+
+/*========================
         TEXTO (solo seleccionado)
 ========================*/
 

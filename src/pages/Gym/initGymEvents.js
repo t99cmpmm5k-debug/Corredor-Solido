@@ -23,7 +23,9 @@ import {
     getDetailExpandedSessionId,
     setDetailExpandedSessionId,
     resetExerciseDetail,
-    toggleWeekSummaryExpanded
+    toggleWeekSummaryExpanded,
+    getHighlightedDayId,
+    setHighlightedDayId
 } from "./gymStore.js";
 
 import {
@@ -125,6 +127,21 @@ window.addEventListener("popstate", () => {
     }
 
 });
+
+const GYM_DAY_HIGHLIGHT_MS = 1600;
+
+// Llamada desde Plan (ver viewGymDay() en initPlanEvents.js) al tocar un
+// día que solo tiene gimnasio en la línea temporal semanal -- resalta y
+// deja a la vista esa fila en la lista de rutinas, sin arrancar la sesión
+// por sí solo: eso sigue siendo una acción explícita del usuario, no algo
+// que un tap en Plan deba disparar. El resaltado se limpia solo, ver
+// initGymEvents() más abajo.
+export function openGymDay(dayId) {
+
+    setHighlightedDayId(dayId);
+    rerender();
+
+}
 
 function saveRoutine() {
 
@@ -275,6 +292,21 @@ function wireStepper(action, handler) {
 }
 
 export function initGymEvents() {
+
+    const highlightedDayId = getHighlightedDayId();
+
+    if (highlightedDayId) {
+
+        document.querySelector(`.gym-day-row.is-highlighted`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+
+        // Un solo resaltado -- se limpia después de mostrarse una vez, no
+        // debe seguir marcado en visitas posteriores a Gimnasio.
+        setTimeout(() => {
+            setHighlightedDayId(null);
+            rerender();
+        }, GYM_DAY_HIGHLIGHT_MS);
+
+    }
 
     document.querySelectorAll('[data-action="select-day"]').forEach(card => {
 
