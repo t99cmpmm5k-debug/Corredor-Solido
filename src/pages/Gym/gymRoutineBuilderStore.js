@@ -85,6 +85,7 @@ export function addDay() {
     state.days.push({
         id: generateId(),
         title: `Día ${state.days.length + 1}`,
+        weekday: null,
         exercises: []
     });
 
@@ -102,6 +103,21 @@ export function setDayTitle(dayId, title) {
 
     const day = state?.days.find(d => d.id === dayId);
     if (day) day.title = title;
+
+}
+
+// weekday: uno de WEEKDAY_OPTIONS (gymSchedule.js) o null ("Sin día
+// fijo") -- el único campo real que conecta esta rutina con "Próximos
+// entrenamientos" en Gimnasio y con la línea temporal de Plan (ver
+// getTodayGymDay() en gymSchedule.js y getGymDayForDate() en
+// gymTimelineBridge.js). Antes de esto no existía ninguna forma de
+// asignarlo desde el constructor manual -- una rutina creada a mano
+// nunca podía aparecer en ninguno de los dos sitios, no por un bug sino
+// porque nunca se pudo fijar el dato de partida.
+export function setDayWeekday(dayId, weekday) {
+
+    const day = state?.days.find(d => d.id === dayId);
+    if (day) day.weekday = weekday || null;
 
 }
 

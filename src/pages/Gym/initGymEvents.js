@@ -39,6 +39,7 @@ import {
     addDay,
     removeDay,
     setDayTitle,
+    setDayWeekday,
     openExercisePicker,
     closeExercisePicker,
     setPickerQuery,
@@ -638,6 +639,14 @@ export function initGymEvents() {
 
         input.addEventListener("change", () => {
             setDayTitle(input.dataset.dayId, input.value);
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="set-day-weekday"]').forEach(select => {
+
+        select.addEventListener("change", () => {
+            setDayWeekday(select.dataset.dayId, select.value);
         });
 
     });

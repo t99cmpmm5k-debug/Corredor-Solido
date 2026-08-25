@@ -9,6 +9,7 @@ import {
     addDay,
     removeDay,
     setDayTitle,
+    setDayWeekday,
     addExerciseToDay,
     removeExerciseFromDay,
     updateExerciseField,
@@ -70,6 +71,45 @@ describe("gymRoutineBuilderStore", () => {
         removeDay(firstDayId);
 
         expect(getBuilderState().days).toHaveLength(1);
+
+    });
+
+    it("un día nuevo no tiene día de la semana asignado por defecto (\"Sin día fijo\")", () => {
+
+        openBuilder();
+        addDay();
+
+        expect(getBuilderState().days[0].weekday).toBeNull();
+
+    });
+
+    // Bug real 2026-08-26: el constructor nunca tuvo forma de asignar
+    // weekday -- ninguna rutina creada a mano podía aparecer nunca en
+    // "Próximos entrenamientos" (Gimnasio) ni en la línea temporal de
+    // Plan, no por un fallo puntual sino porque no existía el campo de
+    // origen. setDayWeekday() es el selector nuevo en GymRoutineBuilder.js.
+    it("setDayWeekday asigna el día de la semana de un día concreto -- el único vínculo real con Gimnasio/Plan", () => {
+
+        openBuilder();
+        addDay();
+        const dayId = getBuilderState().days[0].id;
+
+        setDayWeekday(dayId, "miercoles");
+
+        expect(getBuilderState().days[0].weekday).toBe("miercoles");
+
+    });
+
+    it("setDayWeekday con cadena vacía (opción \"Sin día fijo\") vuelve a dejarlo en null, no en \"\"", () => {
+
+        openBuilder();
+        addDay();
+        const dayId = getBuilderState().days[0].id;
+
+        setDayWeekday(dayId, "viernes");
+        setDayWeekday(dayId, "");
+
+        expect(getBuilderState().days[0].weekday).toBeNull();
 
     });
 

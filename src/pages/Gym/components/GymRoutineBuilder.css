@@ -118,6 +118,33 @@
 
 }
 
+/* Mismo -gap:8px que .gym-builder-field, pero sin el margen extra de las
+   demás (aquí vive dentro de .gym-builder-day, ya con su propio padding). */
+.gym-builder-day-weekday-field{
+
+    gap:6px;
+
+}
+
+.gym-builder-day-weekday{
+
+    padding:10px 12px;
+    border-radius:var(--radius-sm);
+    border:1px solid var(--card-border);
+    background:color-mix(in srgb, var(--card-background) 55%, transparent);
+    color:var(--text-primary);
+    font-family:inherit;
+    font-size:.92rem;
+    color-scheme:dark light;
+
+}
+
+.gym-builder-day-weekday option{
+
+    color:#000;
+
+}
+
 .gym-builder-remove{
 
     flex-shrink:0;

@@ -1,12 +1,29 @@
 import { addDays, getWeekStartDate, parseISODate } from "../../utils/date.js";
 
-// Indexado como Date.getDay() (0 = domingo). El constructor manual de
-// rutinas (ver gymRoutineBuilderStore.js) no asigna `weekday` a los días
-// que crea — solo lo tendría un día que lo traiga por algún otro medio —
-// así que todo lo de aquí depende de que exista ese campo, y hoy no se
-// activa para ninguna rutina (ninguna regresión: tampoco lo tenían las 3
-// rutinas por defecto antes de este cambio).
+// Indexado como Date.getDay() (0 = domingo). Hasta 2026-08-26 el
+// constructor manual de rutinas (ver gymRoutineBuilderStore.js) no tenía
+// ninguna forma de que el usuario asignara `weekday` a un día -- ni las 3
+// rutinas por defecto lo traían tampoco -- así que todo lo de aquí
+// dependía de un campo que en la práctica nunca llegaba a existir. Ahora
+// el constructor SÍ lo asigna (selector de día en GymRoutineBuilder.js,
+// ver WEEKDAY_OPTIONS más abajo, mismo vocabulario que este array).
 const WEEKDAYS_BY_INDEX = ["domingo", "lunes", "martes", "miercoles", "jueves", "viernes", "sabado"];
+
+// Opciones del selector de día de semana del constructor (lunes primero,
+// convención habitual de calendario en español -- WEEKDAYS_BY_INDEX de
+// arriba sigue indexado como Date.getDay() a propósito, para el cálculo
+// de fechas, son dos cosas distintas). Exportado para no duplicar aquí
+// ni el vocabulario ("miercoles" sin tilde, etc.) ni el orden en
+// GymRoutineBuilder.js.
+export const WEEKDAY_OPTIONS = [
+    { id: "lunes", label: "Lunes" },
+    { id: "martes", label: "Martes" },
+    { id: "miercoles", label: "Miércoles" },
+    { id: "jueves", label: "Jueves" },
+    { id: "viernes", label: "Viernes" },
+    { id: "sabado", label: "Sábado" },
+    { id: "domingo", label: "Domingo" }
+];
 
 function weekdayOf(iso) {
 

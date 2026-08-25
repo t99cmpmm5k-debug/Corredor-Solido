@@ -2,6 +2,7 @@ import "./GymRoutineBuilder.css";
 
 import { getBuilderState } from "../gymRoutineBuilderStore.js";
 import { searchExercises, FILTER_OPTIONS, MUSCLE_GROUPS } from "../exerciseSearch.js";
+import { WEEKDAY_OPTIONS } from "../gymSchedule.js";
 
 function ExerciseRow(dayId, exercise) {
 
@@ -54,13 +55,29 @@ function DayEditor(day) {
 
             <div class="gym-builder-day-header">
 
-                <input type="text" class="gym-builder-day-title" data-action="set-day-title" data-day-id="${day.id}" value="${day.title}" placeholder="Ej. Lunes - Torso">
+                <input type="text" class="gym-builder-day-title" data-action="set-day-title" data-day-id="${day.id}" value="${day.title}" placeholder="Ej. Torso">
 
                 <button class="gym-builder-remove" data-action="remove-routine-day" data-day-id="${day.id}">
                     <iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon>
                 </button>
 
             </div>
+
+            <label class="gym-builder-field gym-builder-day-weekday-field">
+
+                <span>Día de la semana</span>
+
+                <select class="gym-builder-day-weekday" data-action="set-day-weekday" data-day-id="${day.id}">
+
+                    <option value="" ${!day.weekday ? "selected" : ""}>Sin día fijo</option>
+
+                    ${WEEKDAY_OPTIONS.map(option => `
+                        <option value="${option.id}" ${day.weekday === option.id ? "selected" : ""}>${option.label}</option>
+                    `).join("")}
+
+                </select>
+
+            </label>
 
             <div class="gym-builder-exercises">
 
