@@ -56,10 +56,18 @@ function attachGymInfo(dayCell, date) {
     const match = getGymDayForDate(date);
     if (!match) return dayCell;
 
-    const { routine, day: gymDay } = match;
+    const { routine, day: gymDay, finishedSession } = match;
+    const gymCompleted = finishedSession != null;
 
     if (!dayCell.isRest) {
-        return { ...dayCell, hasGym: true, gymDayId: gymDay.id, gymRoutineId: routine.id };
+        return {
+            ...dayCell,
+            hasGym: true,
+            gymDayId: gymDay.id,
+            gymRoutineId: routine.id,
+            gymCompleted,
+            gymSessionId: finishedSession?.id ?? null
+        };
     }
 
     return {
@@ -69,12 +77,17 @@ function attachGymInfo(dayCell, date) {
         type: "strength",
         title: gymDay.title,
         subtitle: routine.name,
-        status: "rest",
+        // "completed" activa el mismo day-check que ya usa running (ver
+        // isCompleted en PlanTimeline()/TimelineDay.js) -- un día solo de
+        // gimnasio no necesita un segundo indicador aparte.
+        status: gymCompleted ? "completed" : "rest",
         volume: 0,
         isRest: false,
         gymOnly: true,
+        gymCompleted,
         gymDayId: gymDay.id,
-        gymRoutineId: routine.id
+        gymRoutineId: routine.id,
+        gymSessionId: finishedSession?.id ?? null
     };
 
 }

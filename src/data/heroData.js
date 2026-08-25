@@ -166,3 +166,34 @@ export function getHeroData(type) {
     return heroData[type] ?? heroData.generic;
 
 }
+
+/**
+ * ==========================================================
+ * Hero para cuando la sesión de hoy (running o gimnasio) ya
+ * está finalizada -- mismo contenido sea cual sea el tipo, para
+ * no tener que mantener una variante "completada" por cada
+ * WORKOUT_TYPE además de la ya existente por "por hacer".
+ * ==========================================================
+ */
+
+const completedHeroData = {
+
+    title: [
+        "Sesión",
+        "completada"
+    ],
+
+    coachTitle: "Entreno de hoy hecho",
+
+    coachMessages: [
+        "Ya has entrenado hoy.",
+        "Descansa o revisa el resumen cuando quieras."
+    ]
+
+};
+
+export function getCompletedHeroData() {
+
+    return completedHeroData;
+
+}

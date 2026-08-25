@@ -241,6 +241,16 @@
 
 }
 
+/* Running manda al tocar el día (ver initPlanEvents.js) incluso cuando
+   ambos están hechos, así que el estado de gimnasio en el caso combinado
+   solo puede ser visual -- verde éxito en vez del azul de "programado",
+   mismo criterio de color que .day-check para "hecho". */
+.day-gym-badge.is-completed{
+
+    background:var(--color-success);
+
+}
+
 /*========================
         TEXTO (solo seleccionado)
 ========================*/

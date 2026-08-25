@@ -1,7 +1,7 @@
 import { formatSecondsAsClock } from "../../../utils/format.js";
 import { getState } from "../../../core/state.js";
 import { PlanTimeline } from "../../../pages/Plan/components/PlanTimeline.js";
-import { getCurrentWeekSessions } from "../../../data/workoutStore.js";
+import { getCurrentWeekSessions, getWorkoutForSession } from "../../../data/workoutStore.js";
 import { formatISODate, getWeekStartDate } from "../../../utils/date.js";
 
 // Mismos iconos Lucide que ya usaba planData.js en sus arrays "metrics"
@@ -37,6 +37,15 @@ export function SessionCard(workout) {
     const detailExpanded = getState().sessionDetailExpanded;
     const weekPickerExpanded = getState().weekPickerExpanded;
 
+    // status ya viene resuelto por withDerivedFields()/getSessionStatus()
+    // (workoutStore.js) -- "completed" solo si un Workout real tiene
+    // linkedSessionId === workout.id, nunca por fecha/heurística. Si es
+    // "completed", SIEMPRE hay un workout real que lo respalda (es el
+    // mismo campo que decidió el status), así que completedWorkoutId no
+    // puede quedar null aquí -- nada que inventar.
+    const completed = workout.status === "completed";
+    const completedWorkoutId = completed ? getWorkoutForSession(workout.id)?.id ?? null : null;
+
     return `
 
 <section class="session-card">
@@ -63,17 +72,33 @@ export function SessionCard(workout) {
 
             </div>
 
-            <button
-                class="session-change"
-                data-action="toggle-week-picker"
-                aria-expanded="${weekPickerExpanded}"
-            >
+            <div class="session-header-actions">
 
-                <i data-lucide="refresh-cw"></i>
+                ${completed ? `
 
-                ${weekPickerExpanded ? "Cerrar" : "Cambiar"}
+                    <span class="session-completed-badge">
 
-            </button>
+                        <i data-lucide="check-circle"></i>
+
+                        Finalizada
+
+                    </span>
+
+                ` : ""}
+
+                <button
+                    class="session-change"
+                    data-action="toggle-week-picker"
+                    aria-expanded="${weekPickerExpanded}"
+                >
+
+                    <i data-lucide="refresh-cw"></i>
+
+                    ${weekPickerExpanded ? "Cerrar" : "Cambiar"}
+
+                </button>
+
+            </div>
 
         </header>
 
@@ -117,7 +142,21 @@ export function SessionCard(workout) {
 
         ` : ""}
 
-        ${workout.description ? `
+        ${completed ? `
+
+            <button
+                class="session-button"
+                data-action="view-completed-workout"
+                data-workout-id="${completedWorkoutId ?? ""}"
+            >
+
+                <i data-lucide="check"></i>
+
+                Ver resumen
+
+            </button>
+
+        ` : workout.description ? `
 
             <button
                 class="session-button"

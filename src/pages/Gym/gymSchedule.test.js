@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { hasWeeklySchedule, getTodayGymDay, getUpcomingGymDays, getWeekProgress, getWeekSessions } from "./gymSchedule.js";
+import { hasWeeklySchedule, getTodayGymDay, getUpcomingGymDays, getWeekProgress, getWeekSessions, getFinishedGymSessionForDay } from "./gymSchedule.js";
 
 // jueves 27 de agosto de 2026, para poder razonar "viernes" como
 // "mañana" en los tests de abajo sin ambigüedad.
@@ -126,6 +126,34 @@ describe("getWeekProgress / getWeekSessions", () => {
         expect(progress).toEqual({ completed: 1, total: 1 });
 
         expect(getWeekSessions(days, sessions, TODAY).map(s => s.id)).toEqual(["s1"]);
+
+    });
+
+});
+
+describe("getFinishedGymSessionForDay", () => {
+
+    it("devuelve la sesión terminada para ese dayId en esa fecha exacta", () => {
+
+        const sessions = [{ id: "s1", dayId: "d-jueves", date: TODAY, finishedAt: "2026-08-27T20:00:00.000Z" }];
+        expect(getFinishedGymSessionForDay("d-jueves", sessions, TODAY)?.id).toBe("s1");
+
+    });
+
+    it("null si esa sesión no tiene finishedAt (en curso)", () => {
+
+        const sessions = [{ id: "s1", dayId: "d-jueves", date: TODAY, finishedAt: null }];
+        expect(getFinishedGymSessionForDay("d-jueves", sessions, TODAY)).toBeNull();
+
+    });
+
+    it("null si la sesión terminada es de otro dayId o de otra fecha", () => {
+
+        const sessions = [
+            { id: "s1", dayId: "otro-dia", date: TODAY, finishedAt: "2026-08-27T20:00:00.000Z" },
+            { id: "s2", dayId: "d-jueves", date: "2026-08-20", finishedAt: "2026-08-20T20:00:00.000Z" }
+        ];
+        expect(getFinishedGymSessionForDay("d-jueves", sessions, TODAY)).toBeNull();
 
     });
 

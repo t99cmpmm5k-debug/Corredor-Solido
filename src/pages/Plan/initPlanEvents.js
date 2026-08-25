@@ -178,10 +178,10 @@ function viewSessionWorkout(workoutId) {
 // llama). openGymDay() resalta y lleva a la vista esa fila, no arranca la
 // sesión por sí solo -- eso sigue siendo una acción explícita del usuario
 // dentro de Gimnasio.
-function viewGymDay(dayId) {
+function viewGymDay(dayId, completed) {
 
     navigate(Gym);
-    openGymDay(dayId);
+    openGymDay(dayId, { completed });
 
 }
 
@@ -422,7 +422,7 @@ export function initPlanEvents() {
             // Gimnasio -- un Descanso de verdad (sin gymDayId) no hace nada,
             // igual que antes.
             if (day.dataset.gymDayId) {
-                viewGymDay(day.dataset.gymDayId);
+                viewGymDay(day.dataset.gymDayId, day.dataset.gymCompleted === "true");
             }
 
         });

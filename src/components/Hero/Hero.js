@@ -1,12 +1,13 @@
 import "./Hero.css";
 
 import { themeManager } from "../../theme/themeManager.js";
-import { getHeroData } from "../../data/heroData.js";
+import { getHeroData, getCompletedHeroData } from "../../data/heroData.js";
 import { WORKOUT_TYPES } from "../../data/workoutTypes.js";
 import { getTodaySession, getWorkouts } from "../../data/workoutStore.js";
-import { formatCurrentDate } from "../../utils/date.js";
+import { formatCurrentDate, formatISODate } from "../../utils/date.js";
 import { buildRestDayHero } from "../../utils/restDayHero.js";
 import { HERO_IMAGES } from "../../assets/hero";
+import { getGymDayForDate } from "../../pages/Plan/gymTimelineBridge.js";
 
 export function Hero() {
 
@@ -14,15 +15,28 @@ export function Hero() {
 
     const todaySession = getTodaySession();
 
-    const workout = WORKOUT_TYPES[todaySession?.type] ?? WORKOUT_TYPES.generic;
+    // Sin running planificado hoy, se comprueba si hoy toca gimnasio
+    // (mismo mecanismo que ya usa Plan, ver gymTimelineBridge.js) antes de
+    // caer al mensaje de día libre -- si no, el Hero podía decir "hoy no
+    // tienes ningún entrenamiento planificado" con una rutina de gimnasio
+    // programada de verdad ese mismo día.
+    const gymMatch = !todaySession ? getGymDayForDate(formatISODate(new Date())) : null;
 
-    // Sin sesión planificada hoy, el Hero no usa el genérico fijo "A
-    // entrenar / hoy toca" — en su lugar, una frase calculada a partir de
-    // los entrenos reales (ver restDayHero.js), o el mensaje neutro si no
-    // hay datos suficientes para decir algo veraz.
+    const workout = WORKOUT_TYPES[todaySession?.type]
+        ?? (gymMatch ? WORKOUT_TYPES.strength : WORKOUT_TYPES.generic);
+
+    // Sin sesión planificada hoy NI gimnasio programado, el Hero no usa el
+    // genérico fijo "A entrenar / hoy toca" — en su lugar, una frase
+    // calculada a partir de los entrenos reales (ver restDayHero.js), o el
+    // mensaje neutro si no hay datos suficientes para decir algo veraz.
+    // "completed" (running vía status ya resuelto, gimnasio vía
+    // finishedSession) siempre usa el mismo mensaje de "ya lo hiciste" en
+    // vez de seguir invitando a entrenar algo que ya está hecho.
     const hero = todaySession
-        ? getHeroData(todaySession.type)
-        : buildRestDayHero(getWorkouts());
+        ? (todaySession.status === "completed" ? getCompletedHeroData() : getHeroData(todaySession.type))
+        : gymMatch
+            ? (gymMatch.finishedSession ? getCompletedHeroData() : getHeroData("strength"))
+            : buildRestDayHero(getWorkouts());
 
     return `
 

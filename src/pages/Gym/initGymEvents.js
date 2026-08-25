@@ -130,13 +130,49 @@ window.addEventListener("popstate", () => {
 
 const GYM_DAY_HIGHLIGHT_MS = 1600;
 
+// Arranca o retoma (startSession ya tiene el checkpoint por dayId+fecha,
+// terminada o no, ver gymSessionStore.js) la sesión de un día y deja la
+// pantalla en la vista de sesión -- exactamente lo mismo que tocar la fila
+// del día a mano en Gimnasio (ver "select-day" más abajo, que ahora reutiliza
+// esta misma función). También es el mecanismo para "ver el resumen de una
+// sesión ya terminada hoy": no hay una pantalla de solo-lectura aparte
+// (ver openGymDay más abajo) -- reabrir vía startSession() muestra
+// exactamente lo registrado (ejercicios, series, reps, peso), reutilizando
+// GymSessionView tal cual en vez de construir una vista nueva.
+export function openDaySession(dayId) {
+
+    return hydrate().then(() => {
+
+        const session = startSession(dayId);
+        if (!session) return;
+
+        setActiveSessionId(session.id);
+        setCurrentExerciseIndex(0);
+        stopRestTimer();
+        setStep("session");
+        rerender();
+
+    });
+
+}
+
 // Llamada desde Plan (ver viewGymDay() en initPlanEvents.js) al tocar un
-// día que solo tiene gimnasio en la línea temporal semanal -- resalta y
-// deja a la vista esa fila en la lista de rutinas, sin arrancar la sesión
-// por sí solo: eso sigue siendo una acción explícita del usuario, no algo
-// que un tap en Plan deba disparar. El resaltado se limpia solo, ver
-// initGymEvents() más abajo.
-export function openGymDay(dayId) {
+// día de gimnasio en la línea temporal semanal.
+// - Sin completar: resalta y deja a la vista esa fila en la lista de
+//   rutinas, sin arrancar la sesión por sí solo -- eso sigue siendo una
+//   acción explícita del usuario, no algo que un tap en Plan deba
+//   disparar. El resaltado se limpia solo, ver initGymEvents() más abajo.
+// - Ya completado hoy: la sesión ya existe (terminada), así que abrirla
+//   directamente con openDaySession() no "arranca" nada nuevo, solo
+//   muestra lo ya registrado -- aquí sí tiene sentido saltar directo, es
+//   el equivalente de "ver detalle" que Running ya tiene para un workout
+//   real (viewSessionWorkout() en initPlanEvents.js).
+export function openGymDay(dayId, { completed = false } = {}) {
+
+    if (completed) {
+        openDaySession(dayId);
+        return;
+    }
 
     setHighlightedDayId(dayId);
     rerender();
@@ -343,20 +379,9 @@ export function initGymEvents() {
             // bloqueada entre series) y se toca un día antes de que
             // gymSessionStore haya cargado lo ya guardado, startSession()
             // no encontraba la sesión de hoy y creaba otra desde cero,
-            // perdiendo de vista los pesos ya registrados. hydrate() está
-            // memoizado, así que esperar aquí no repite la carga.
-            hydrate().then(() => {
-
-                const session = startSession(card.dataset.dayId);
-                if (!session) return;
-
-                setActiveSessionId(session.id);
-                setCurrentExerciseIndex(0);
-                stopRestTimer();
-                setStep("session");
-                rerender();
-
-            });
+            // perdiendo de vista los pesos ya registrados. openDaySession()
+            // espera a hydrate() (memoizado) antes de tocar nada por esto.
+            openDaySession(card.dataset.dayId);
 
         });
 

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 
 // getRoutines() se sustituye por un stub -- gymTimelineBridge.js es un
 // puente de solo lectura, no le corresponde probar el CRUD real de
@@ -7,8 +7,12 @@ import { describe, it, expect, vi } from "vitest";
 // solo que reutiliza esa misma fuente de verdad (day.weekday) en vez de
 // inventar una propia por texto.
 let routines = [];
+let gymSessions = [];
 vi.mock("../../data/gymRoutineStore.js", () => ({
     getRoutines: () => routines
+}));
+vi.mock("../../data/gymSessionStore.js", () => ({
+    getGymSessions: () => gymSessions
 }));
 
 const { getGymDayForDate } = await import("./gymTimelineBridge.js");
@@ -67,6 +71,50 @@ describe("getGymDayForDate", () => {
         routines = [routine("Fuerza", [viernes, { ...viernes }])];
 
         expect(getGymDayForDate("2026-08-28")?.day.id).toBe("d-viernes"); // viernes
+
+    });
+
+});
+
+describe("getGymDayForDate -- finishedSession", () => {
+
+    afterEach(() => {
+        gymSessions = [];
+    });
+
+    it("sin ninguna sesión terminada ese dayId/fecha, finishedSession es null", () => {
+
+        routines = [routine("Fuerza", [day("d1", "lunes")])];
+        gymSessions = [];
+
+        expect(getGymDayForDate(MONDAY)?.finishedSession).toBeNull();
+
+    });
+
+    it("con una sesión terminada para ese dayId en esa fecha exacta, la devuelve", () => {
+
+        routines = [routine("Fuerza", [day("d1", "lunes")])];
+        gymSessions = [{ id: "s1", dayId: "d1", date: MONDAY, finishedAt: "2026-08-24T10:00:00.000Z" }];
+
+        expect(getGymDayForDate(MONDAY)?.finishedSession?.id).toBe("s1");
+
+    });
+
+    it("una sesión sin finishedAt (en curso, no terminada) no cuenta", () => {
+
+        routines = [routine("Fuerza", [day("d1", "lunes")])];
+        gymSessions = [{ id: "s1", dayId: "d1", date: MONDAY, finishedAt: null }];
+
+        expect(getGymDayForDate(MONDAY)?.finishedSession).toBeNull();
+
+    });
+
+    it("una sesión terminada de OTRO día (fecha distinta) no cuenta para hoy", () => {
+
+        routines = [routine("Fuerza", [day("d1", "lunes")])];
+        gymSessions = [{ id: "s1", dayId: "d1", date: "2026-08-17", finishedAt: "2026-08-17T10:00:00.000Z" }]; // lunes pasado
+
+        expect(getGymDayForDate(MONDAY)?.finishedSession).toBeNull();
 
     });
 

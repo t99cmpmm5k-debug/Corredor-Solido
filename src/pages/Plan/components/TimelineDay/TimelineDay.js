@@ -25,6 +25,7 @@ export function TimelineDay(session, { isToday, isSelected, isCompleted, isRest 
             "
             data-session-id="${session.id}"
             data-gym-day-id="${session.gymDayId ?? ""}"
+            data-gym-completed="${session.gymCompleted ? "true" : ""}"
         >
 
             <div class="timeline-top">
@@ -54,7 +55,7 @@ export function TimelineDay(session, { isToday, isSelected, isCompleted, isRest 
                 ` : ""}
 
                 ${session.hasGym ? `
-                    <span class="day-gym-badge">
+                    <span class="day-gym-badge ${session.gymCompleted ? "is-completed" : ""}">
                         <iconify-icon icon="solar:dumbbell-large-bold-duotone"></iconify-icon>
                     </span>
                 ` : ""}

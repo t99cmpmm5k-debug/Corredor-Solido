@@ -115,3 +115,16 @@ export function getWeekSessions(days, sessions, todayISO) {
         .sort((a, b) => b.date.localeCompare(a.date));
 
 }
+
+// La sesión terminada (finishedAt) para un día concreto en una fecha
+// concreta -- null si no hay ninguna o sigue sin terminar. A diferencia de
+// completedThisWeek()/getWeekProgress(), que cuentan CUALQUIER día
+// programado de toda la semana, esta busca un dayId ya resuelto (por
+// getTodayGymDay/getGymDayForDate) en una fecha exacta -- la usan Home y
+// Plan para saber si "hoy" (o el día que se esté pintando) ya se hizo de
+// verdad, no solo si está programado.
+export function getFinishedGymSessionForDay(dayId, sessions, dateISO) {
+
+    return sessions.find(s => s.dayId === dayId && s.date === dateISO && s.finishedAt) ?? null;
+
+}

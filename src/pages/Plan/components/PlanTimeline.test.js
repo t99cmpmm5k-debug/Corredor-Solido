@@ -4,8 +4,12 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 // fillWeekDays()/PlanTimeline() superponen un día de gimnasio (ver
 // gymTimelineBridge.js), no el CRUD real de gymRoutineStore.js.
 let gymRoutines = [];
+let gymSessions = [];
 vi.mock("../../../data/gymRoutineStore.js", () => ({
     getRoutines: () => gymRoutines
+}));
+vi.mock("../../../data/gymSessionStore.js", () => ({
+    getGymSessions: () => gymSessions
 }));
 
 const { fillWeekDays, PlanTimeline, TIMELINE_TYPE_COLOR } = await import("./PlanTimeline.js");
@@ -124,6 +128,7 @@ describe("fillWeekDays + gimnasio (Gimnasio↔Plan, ver gymTimelineBridge.js) --
 
     afterEach(() => {
         gymRoutines = [];
+        gymSessions = [];
     });
 
     it("un día sin running pero con una rutina de gimnasio programada (day.weekday) para ese día de la semana deja de ser Descanso -- título sin ningún indicio de día, igual que las 3 rutinas por defecto reales", () => {
@@ -174,6 +179,88 @@ describe("fillWeekDays + gimnasio (Gimnasio↔Plan, ver gymTimelineBridge.js) --
             expect(d.isRest).toBe(true);
             expect(d.gymOnly).toBeUndefined();
         });
+
+    });
+
+});
+
+describe("fillWeekDays + gimnasio -- estado 'finalizada' (sesión ya registrada ese día)", () => {
+
+    afterEach(() => {
+        gymRoutines = [];
+        gymSessions = [];
+    });
+
+    it("un día solo-gimnasio con una sesión terminada ese día pasa a status 'completed' (mismo day-check que running)", () => {
+
+        gymRoutines = [{ id: "r1", name: "Pierna Funcional", days: [{ id: "d1", weekday: "viernes", title: "Pierna Funcional", exercises: [] }] }];
+        gymSessions = [{ id: "s1", dayId: "d1", date: "2026-08-21", finishedAt: "2026-08-21T20:00:00.000Z" }]; // viernes
+
+        const friday = fillWeekDays(MONDAY, [])[4];
+
+        expect(friday.status).toBe("completed");
+        expect(friday.gymCompleted).toBe(true);
+        expect(friday.gymSessionId).toBe("s1");
+
+    });
+
+    it("un día solo-gimnasio SIN sesión terminada se queda en 'rest' aunque esté programado", () => {
+
+        gymRoutines = [{ id: "r1", name: "Pierna Funcional", days: [{ id: "d1", weekday: "viernes", title: "Pierna Funcional", exercises: [] }] }];
+        gymSessions = [];
+
+        const friday = fillWeekDays(MONDAY, [])[4];
+
+        expect(friday.status).toBe("rest");
+        expect(friday.gymCompleted).toBe(false);
+        expect(friday.gymSessionId).toBeNull();
+
+    });
+
+    it("un día con running Y gimnasio, con SOLO gimnasio terminado: cada uno refleja su estado real de forma independiente", () => {
+
+        gymRoutines = [{ id: "r1", name: "Torso Completo", days: [{ id: "d1", weekday: "jueves", title: "Torso Completo", exercises: [] }] }];
+        gymSessions = [{ id: "s1", dayId: "d1", date: "2026-08-20", finishedAt: "2026-08-20T20:00:00.000Z" }]; // jueves
+
+        // La sesión de running NO trae status "completed" (sin workout real
+        // enlazado) -- withDerivedFields()/getSessionStatus() son cosa de
+        // workoutStore.js, aquí se simula ya resuelta como "pending".
+        const sessions = [{ id: "run1", date: "2026-08-20", slot: 0, type: "z2", title: "Rodaje", status: "pending" }];
+
+        const thursday = fillWeekDays(MONDAY, sessions)[3];
+
+        expect(thursday.id).toBe("run1");
+        expect(thursday.status).toBe("pending"); // running: no hecho
+        expect(thursday.gymCompleted).toBe(true); // gimnasio: sí hecho
+        expect(thursday.gymSessionId).toBe("s1");
+
+    });
+
+    it("un día con running Y gimnasio, con SOLO running terminado: gymCompleted en false, sin contaminar el status de running", () => {
+
+        gymRoutines = [{ id: "r1", name: "Torso Completo", days: [{ id: "d1", weekday: "jueves", title: "Torso Completo", exercises: [] }] }];
+        gymSessions = []; // gimnasio no hecho
+
+        const sessions = [{ id: "run1", date: "2026-08-20", slot: 0, type: "z2", title: "Rodaje", status: "completed" }];
+
+        const thursday = fillWeekDays(MONDAY, sessions)[3];
+
+        expect(thursday.status).toBe("completed"); // running: hecho (viene ya resuelto de fuera)
+        expect(thursday.gymCompleted).toBe(false); // gimnasio: no hecho
+        expect(thursday.gymSessionId).toBeNull();
+
+    });
+
+    it("PlanTimeline(): el badge de gimnasio lleva la clase is-completed solo cuando gymCompleted es true", () => {
+
+        gymRoutines = [{ id: "r1", name: "Torso Completo", days: [{ id: "d1", weekday: "jueves", title: "Torso Completo", exercises: [] }] }];
+        gymSessions = [{ id: "s1", dayId: "d1", date: "2026-08-20", finishedAt: "2026-08-20T20:00:00.000Z" }];
+
+        const sessions = [{ id: "run1", date: "2026-08-20", slot: 0, type: "z2", title: "Rodaje", status: "pending" }];
+
+        const html = PlanTimeline(null, sessions, MONDAY);
+
+        expect(html).toContain('day-gym-badge is-completed');
 
     });
 
