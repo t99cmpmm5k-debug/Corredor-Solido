@@ -27,6 +27,7 @@ import { hydrate as hydrateGymRoutine } from "./data/gymRoutineStore.js";
 import { hydrate as hydrateCustomExercises } from "./data/customExerciseStore.js";
 import { hydrateBackupMeta } from "./utils/backup.js";
 import { loadHourlyWeather } from "./pages/Home/homeWeatherStore.js";
+import { initUpdateNotifier } from "./pwa/updateNotifier.js";
 
 // TEMPORAL - QUITAR ANTES DE PRODUCCIÓN
 import { mountThemeSwitcher } from "./dev/ThemeSwitcher.js";
@@ -90,9 +91,7 @@ if (navigator.storage?.persist) {
     navigator.storage.persist().catch(() => {});
 }
 
-if (import.meta.env.PROD && "serviceWorker" in navigator) {
-    window.addEventListener("load", () => {
-        navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`);
-    });
+if (import.meta.env.PROD) {
+    window.addEventListener("load", initUpdateNotifier);
 }
 

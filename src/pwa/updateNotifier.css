@@ -1,0 +1,93 @@
+.update-banner{
+
+    position:fixed;
+
+    top:calc(12px + env(safe-area-inset-top));
+    left:50%;
+
+    transform:translateX(-50%);
+
+    z-index:1000;
+
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+
+    max-width:calc(100vw - 32px);
+
+    padding:10px 10px 10px 16px;
+
+    border-radius:999px;
+
+    background:color-mix(in srgb, var(--card-background) 88%, transparent);
+
+    backdrop-filter:blur(20px);
+    -webkit-backdrop-filter:blur(20px);
+
+    border:1px solid color-mix(in srgb, var(--color-primary) 55%, transparent);
+
+    box-shadow:
+        0 10px 25px rgba(0,0,0,.28),
+        0 0 20px color-mix(in srgb, var(--color-glow) 40%, transparent);
+
+}
+
+.update-banner-text{
+
+    color:var(--text-primary);
+
+    font-size:.82rem;
+
+    font-weight:600;
+
+    white-space:nowrap;
+
+    overflow:hidden;
+
+    text-overflow:ellipsis;
+
+}
+
+.update-banner-reload{
+
+    flex-shrink:0;
+
+    padding:8px 16px;
+
+    border:none;
+
+    border-radius:999px;
+
+    background:linear-gradient(90deg, var(--color-primary), var(--color-secondary));
+
+    color:var(--button-text);
+
+    font-size:.8rem;
+
+    font-weight:800;
+
+    cursor:pointer;
+
+}
+
+.update-banner-dismiss{
+
+    flex-shrink:0;
+
+    display:flex;
+
+    background:none;
+
+    border:none;
+
+    padding:4px;
+
+    cursor:pointer;
+
+    color:var(--text-secondary);
+
+    font-size:20px;
+
+}
