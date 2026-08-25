@@ -103,7 +103,18 @@ function parseHrRows(lines) {
 
     });
 
-    laps.forEach((lap, index) => { lap.lap = index + 1; });
+    // Numeradas por orden de aparición (1, 2, 3...), NUNCA por ese primer
+    // dígito corrompido -- ver comentario junto a HR_TOKEN. Pero esa
+    // numeración es solo relativa a ESTA captura: si el entrenamiento no
+    // cupo en una sola pantalla y hay una segunda captura de esta misma
+    // vista desplazada más abajo en la tabla (p. ej. vueltas 5-9 en vez de
+    // 1-6), esa segunda captura también empezaría a contar desde 1 —
+    // colisionando con la primera en vez de continuar donde la deja. Se
+    // marca numberingIsRelative para que fusion.js sepa que este número
+    // hay que realinearlo contra las vueltas ya conocidas de otras
+    // capturas (por coincidencia exacta de FC en las filas solapadas)
+    // antes de darlo por bueno — ver findOverlapOffset() en fusion.js.
+    laps.forEach((lap, index) => { lap.lap = index + 1; lap.numberingIsRelative = true; });
 
     return laps;
 

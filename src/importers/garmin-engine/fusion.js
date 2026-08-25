@@ -20,6 +20,144 @@ function durationToSeconds(duration) {
     return null;
 }
 
+function mergeLapIntoMap(lapsByNumber, lap) {
+
+    const existing = lapsByNumber.get(lap.lap);
+    if (!existing) {
+        lapsByNumber.set(lap.lap, { ...lap });
+        return;
+    }
+
+    Object.entries(lap).forEach(([key, value]) => {
+        if (value != null && existing[key] == null) existing[key] = value;
+    });
+
+}
+
+function hrPairsEqual(a, b) {
+
+    return a.avg_heart_rate_bpm != null && a.max_heart_rate_bpm != null
+        && a.avg_heart_rate_bpm === b.avg_heart_rate_bpm
+        && a.max_heart_rate_bpm === b.max_heart_rate_bpm;
+
+}
+
+// Una captura de la tabla de Vueltas desplazada (solo FC, ver
+// parser-splits.js) numera sus filas por orden de aparición (1, 2, 3...)
+// porque el primer dígito de cada fila viene corrompido por basura de
+// scroll de forma poco fiable — pero esa numeración es relativa a ESA
+// captura. Con dos capturas de esa misma vista (el entreno no cupo en una
+// sola pantalla), la segunda también "empieza en 1", así que hace falta
+// averiguar en qué vuelta real empieza de verdad antes de fusionarla.
+//
+// La única señal fiable disponible es la propia FC: al volver a capturar
+// más abajo en la tabla, es habitual que un par de filas queden repetidas
+// (solape de scroll) — si la FC media Y máxima de una fila de la captura
+// nueva coincide EXACTAMENTE con una vuelta ya conocida, esa coincidencia
+// (sobre todo si son dos o más filas seguidas) ancla el desplazamiento
+// real. Cualquier vuelta solapada que NO coincida descarta ese
+// desplazamiento entero — no basta con que "una" cuadre por azar.
+function findOverlapOffset(lapsByNumber, candidateLaps) {
+
+    let bestOffset = null;
+    let bestMatches = 0;
+
+    lapsByNumber.forEach((knownLap, knownNumber) => {
+
+        if (knownLap.avg_heart_rate_bpm == null) return;
+
+        candidateLaps.forEach(candidate => {
+
+            const offset = knownNumber - candidate.lap;
+            let matches = 0;
+            let contradicted = false;
+
+            candidateLaps.forEach(c => {
+                const target = lapsByNumber.get(c.lap + offset);
+                if (!target || target.avg_heart_rate_bpm == null) return;
+                if (hrPairsEqual(target, c)) matches++;
+                else contradicted = true;
+            });
+
+            if (!contradicted && matches > bestMatches) {
+                bestMatches = matches;
+                bestOffset = offset;
+            }
+
+        });
+
+    });
+
+    return bestMatches > 0 ? bestOffset : null;
+
+}
+
+// Parciales: se juntan los de TODAS las capturas de Vueltas (una carrera
+// larga puede no caber en una sola pantalla, o la FC viene de una segunda
+// captura de la tabla desplazada — ver parser-splits.js), ordenados por
+// número de vuelta. Se combinan campo a campo (no "la primera captura de
+// esa vuelta gana entera"): así la distancia/ritmo de la vista estándar y
+// la FC de la vista desplazada, para la misma vuelta, conviven en el
+// mismo lap en vez de que la segunda captura pierda sus datos porque esa
+// vuelta "ya estaba" con otro campo.
+//
+// Las capturas se procesan EN ORDEN (no un flatMap de todas a la vez): una
+// captura con numeración relativa (ver parser-splits.js) se realinea
+// contra lo que ya se sabe de las capturas anteriores (findOverlapOffset)
+// antes de fusionarla, así sus vueltas 7-9 no colisionan con las 1-3 de
+// otra captura que también "empieza en 1".
+//
+// "Ya se sabe algo con lo que realinear" significa concretamente "ya hay
+// FC de otra captura relativa" — no basta con que ya existan vueltas de la
+// vista ESTÁNDAR (distancia/ritmo, sin FC): esas no aportan ninguna señal
+// de solape (ver el filtro por avg_heart_rate_bpm en findOverlapOffset), y
+// tratarlas como "ya conocido" hacía que la primera captura de FC cayera
+// siempre al fallback de "continúa después de la última vuelta" aunque sus
+// números locales (1..6) ya fueran los reales — un entreno con vista
+// estándar (9 vueltas) + 2 capturas de FC (1-6 y 5-9) desplazaba la
+// primera de FC a las vueltas 10-15 en vez de dejarla en 1-6. La primera
+// captura con FC que se procesa se acepta tal cual con su numeración local
+// (no hay nada de FC contra lo que realinearla todavía, y en la práctica
+// las capturas se suben en el mismo orden en que se hicieron — de arriba
+// abajo en la tabla — así que su "1" ya es la vuelta 1 real).
+//
+// Sin solape detectable entre dos capturas de FC (ninguna FC coincide), se
+// asume que la segunda continúa justo después de la última vuelta ya
+// conocida — mejor esa suposición razonable que perder las vueltas
+// enteras, que es el bug que esto corrige.
+function mergeLaps(results) {
+
+    const lapsByNumber = new Map();
+
+    results
+        .filter(r => Array.isArray(r.extras?.laps) && r.extras.laps.length)
+        .forEach(result => {
+
+            const capturedLaps = result.extras.laps;
+            const isRelative = capturedLaps.some(l => l.numberingIsRelative);
+            const hasKnownHr = [...lapsByNumber.values()].some(l => l.avg_heart_rate_bpm != null);
+
+            if (!isRelative || !hasKnownHr) {
+                capturedLaps.forEach(lap => mergeLapIntoMap(lapsByNumber, lap));
+                return;
+            }
+
+            const knownNumbers = [...lapsByNumber.keys()];
+            const localNumbers = capturedLaps.map(l => l.lap);
+
+            const offset = findOverlapOffset(lapsByNumber, capturedLaps)
+                ?? (Math.max(...knownNumbers) - Math.min(...localNumbers) + 1);
+
+            capturedLaps.forEach(lap => mergeLapIntoMap(lapsByNumber, { ...lap, lap: lap.lap + offset }));
+
+        });
+
+    return [...lapsByNumber.values()]
+        .map(({ numberingIsRelative, ...lap }) => lap)
+        .sort((a, b) => a.lap - b.lap);
+
+}
+
 export function merge(results) {
     const fields = {};
     const fieldParser = {};
@@ -79,29 +217,7 @@ export function merge(results) {
     const data = Object.fromEntries(KEYS.map(k => [k, fields[k].value]));
     const warnings = [];
 
-    // Parciales: se juntan los de TODAS las capturas de Vueltas (una
-    // carrera larga puede no caber en una sola pantalla, o la FC viene de
-    // una segunda captura de la tabla desplazada — ver parser-splits.js),
-    // ordenados por número de vuelta. Se combinan campo a campo (no "la
-    // primera captura de esa vuelta gana entera"): así la distancia/ritmo
-    // de la vista estándar y la FC de la vista desplazada, para la misma
-    // vuelta, conviven en el mismo lap en vez de que la segunda captura
-    // pierda sus datos porque esa vuelta "ya estaba" con otro campo.
-    const lapsByNumber = new Map();
-    results
-        .filter(r => Array.isArray(r.extras?.laps))
-        .flatMap(r => r.extras.laps)
-        .forEach(lap => {
-            const existing = lapsByNumber.get(lap.lap);
-            if (!existing) {
-                lapsByNumber.set(lap.lap, { ...lap });
-                return;
-            }
-            Object.entries(lap).forEach(([key, value]) => {
-                if (value != null && existing[key] == null) existing[key] = value;
-            });
-        });
-    const laps = [...lapsByNumber.values()].sort((a, b) => a.lap - b.lap);
+    const laps = mergeLaps(results);
 
     if (!data.title) warnings.push("Falta el título del entrenamiento.");
     if (!data.date) warnings.push("Falta la fecha del entrenamiento.");

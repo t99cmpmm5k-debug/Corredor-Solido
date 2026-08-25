@@ -112,12 +112,12 @@ describe("parser-splits — vista con FC (GAP medio/FC media/FC máx.)", () => {
         const { extras } = parse(REAL_HR_TABLE_TEXT);
 
         expect(extras.laps).toEqual([
-            { avg_heart_rate_bpm: 140, max_heart_rate_bpm: 152, lap: 1 },
-            { avg_heart_rate_bpm: 153, max_heart_rate_bpm: 157, lap: 2 },
-            { avg_heart_rate_bpm: 154, max_heart_rate_bpm: 158, lap: 3 },
-            { avg_heart_rate_bpm: 154, max_heart_rate_bpm: 158, lap: 4 },
-            { avg_heart_rate_bpm: 154, max_heart_rate_bpm: 158, lap: 5 },
-            { avg_heart_rate_bpm: 156, max_heart_rate_bpm: 158, lap: 6 }
+            { avg_heart_rate_bpm: 140, max_heart_rate_bpm: 152, lap: 1, numberingIsRelative: true },
+            { avg_heart_rate_bpm: 153, max_heart_rate_bpm: 157, lap: 2, numberingIsRelative: true },
+            { avg_heart_rate_bpm: 154, max_heart_rate_bpm: 158, lap: 3, numberingIsRelative: true },
+            { avg_heart_rate_bpm: 154, max_heart_rate_bpm: 158, lap: 4, numberingIsRelative: true },
+            { avg_heart_rate_bpm: 154, max_heart_rate_bpm: 158, lap: 5, numberingIsRelative: true },
+            { avg_heart_rate_bpm: 156, max_heart_rate_bpm: 158, lap: 6, numberingIsRelative: true }
         ]);
 
     });
@@ -135,11 +135,11 @@ describe("parser-splits — vista con FC (GAP medio/FC media/FC máx.)", () => {
         const { extras } = parse(REAL_HR_TABLE_TEXT_SCROLL2);
 
         expect(extras.laps).toEqual([
-            { avg_heart_rate_bpm: 154, max_heart_rate_bpm: 158, lap: 1 },
-            { avg_heart_rate_bpm: 154, max_heart_rate_bpm: 158, lap: 2 },
-            { avg_heart_rate_bpm: 156, max_heart_rate_bpm: 158, lap: 3 },
-            { avg_heart_rate_bpm: 154, max_heart_rate_bpm: 157, lap: 4 },
-            { avg_heart_rate_bpm: 155, max_heart_rate_bpm: 157, lap: 5 }
+            { avg_heart_rate_bpm: 154, max_heart_rate_bpm: 158, lap: 1, numberingIsRelative: true },
+            { avg_heart_rate_bpm: 154, max_heart_rate_bpm: 158, lap: 2, numberingIsRelative: true },
+            { avg_heart_rate_bpm: 156, max_heart_rate_bpm: 158, lap: 3, numberingIsRelative: true },
+            { avg_heart_rate_bpm: 154, max_heart_rate_bpm: 157, lap: 4, numberingIsRelative: true },
+            { avg_heart_rate_bpm: 155, max_heart_rate_bpm: 157, lap: 5, numberingIsRelative: true }
         ]);
 
     });
@@ -165,9 +165,9 @@ describe("parser-splits — vista con FC sin GAP medio (Ascenso/Descenso en su l
         const { extras } = parse(SYNTHETIC_HR_TABLE_NO_GAP_TEXT);
 
         expect(extras.laps).toEqual([
-            { avg_heart_rate_bpm: 140, max_heart_rate_bpm: 152, lap: 1 },
-            { avg_heart_rate_bpm: 153, max_heart_rate_bpm: 157, lap: 2 },
-            { avg_heart_rate_bpm: 154, max_heart_rate_bpm: 158, lap: 3 }
+            { avg_heart_rate_bpm: 140, max_heart_rate_bpm: 152, lap: 1, numberingIsRelative: true },
+            { avg_heart_rate_bpm: 153, max_heart_rate_bpm: 157, lap: 2, numberingIsRelative: true },
+            { avg_heart_rate_bpm: 154, max_heart_rate_bpm: 158, lap: 3, numberingIsRelative: true }
         ]);
 
     });
