@@ -34,6 +34,17 @@ export function formatShoeName(shoe) {
 
 }
 
+// Un decimal como mucho, sin arrastrar ceros de sobra ("56" en vez de
+// "56,0") -- coma decimal, convención española usada en el resto de la
+// app (ver raceFormat.js/Running.js).
+export function formatKm(km) {
+
+    const rounded = Math.round((km ?? 0) * 10) / 10;
+
+    return (Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1)).replace(".", ",");
+
+}
+
 export function parseClockToSeconds(text) {
 
     const trimmed = String(text ?? "").trim();

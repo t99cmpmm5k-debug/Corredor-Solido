@@ -5,8 +5,10 @@ import { BottomNavigation } from "../../components/Navigation/BottomNavigation.j
 import { MasterCard } from "../../components/MasterCard/MasterCard.js";
 import { WeekSummary } from "../../components/WeekSummary/WeekSummary.js";
 import { HourlyWeather } from "./components/HourlyWeather.js";
-import { getCurrentWeekSessions, getWeekVolume } from "../../data/workoutStore.js";
+import { MonthlyKmWidget } from "./components/MonthlyKmWidget.js";
+import { getCurrentWeekSessions, getWeekVolume, getWorkouts } from "../../data/workoutStore.js";
 import { buildWeekInsight } from "../../utils/weekInsight.js";
+import { buildMonthlyKmStats } from "../../utils/monthlyKm.js";
 import { getHourlyWeatherState } from "./homeWeatherStore.js";
 
 export function Home(){
@@ -19,6 +21,10 @@ export function Home(){
     ).length;
 
     const insight = buildWeekInsight(week, { completed, goal });
+
+    // Solo entrenos reales (getWorkouts(), nunca sesiones planificadas) --
+    // ver buildMonthlyKmStats() para qué se degrada cuando falta historial.
+    const monthlyKm = buildMonthlyKmStats(getWorkouts());
 
     // El pronóstico se pide una sola vez desde main.js (boot) y se cachea
     // en homeWeatherStore -- Home() solo lee el estado ya resuelto, nunca
@@ -36,6 +42,12 @@ export function Home(){
                 ${Hero()}
 
                 ${MasterCard()}
+
+                <section class="monthly-km-card">
+
+                    ${MonthlyKmWidget(monthlyKm)}
+
+                </section>
 
                 <section class="week-chart-card">
 

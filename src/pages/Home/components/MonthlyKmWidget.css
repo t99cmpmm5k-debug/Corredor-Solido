@@ -1,0 +1,247 @@
+/* Mismo lenguaje que .plan-workout-card/.week-summary--card (cristal +
+   borde en --color-primary + franja de luz superior), pero a la
+   intensidad más alta de toda Inicio -- es el widget "que llama la
+   atención", al nivel del propio Hero, no uno más que acompaña. */
+.monthly-km-widget{
+
+    position:relative;
+
+    overflow:hidden;
+
+    padding:28px 24px 22px;
+
+    border-radius:28px;
+
+    display:flex;
+
+    flex-direction:column;
+
+    align-items:center;
+
+    text-align:center;
+
+    gap:10px;
+
+    background:color-mix(in srgb, var(--card-background) 82%, transparent);
+
+    backdrop-filter:blur(26px);
+    -webkit-backdrop-filter:blur(26px);
+
+    border:1px solid color-mix(in srgb, var(--color-primary) 60%, transparent);
+
+    box-shadow:
+        0 10px 25px rgba(0,0,0,.22),
+        0 30px 70px rgba(0,0,0,.35),
+        0 0 10px color-mix(in srgb, var(--color-glow) 60%, transparent),
+        0 0 46px color-mix(in srgb, var(--color-glow) 45%, transparent);
+
+}
+
+.monthly-km-widget::before{
+
+    content:"";
+
+    position:absolute;
+
+    left:2px;
+    right:2px;
+    top:2px;
+
+    height:80px;
+
+    border-radius:26px 26px 0 0;
+
+    background:linear-gradient(
+        180deg,
+        rgba(255,255,255,.14) 0%,
+        rgba(255,255,255,.05) 40%,
+        transparent 100%
+    );
+
+    pointer-events:none;
+
+    z-index:0;
+
+}
+
+/* Halo suelto detrás de la cifra -- el mismo truco que --color-glow del
+   resto de la app, aquí más grande porque el número es el protagonista. */
+.monthly-km-glow{
+
+    position:absolute;
+
+    top:-40px;
+
+    left:50%;
+
+    transform:translateX(-50%);
+
+    width:220px;
+    height:180px;
+
+    background:radial-gradient(
+        closest-side,
+        color-mix(in srgb, var(--color-glow) 40%, transparent),
+        transparent 75%
+    );
+
+    filter:blur(6px);
+
+    pointer-events:none;
+
+    z-index:0;
+
+}
+
+.monthly-km-widget > *{
+
+    position:relative;
+
+    z-index:1;
+
+}
+
+.monthly-km-label{
+
+    color:var(--text-secondary);
+
+    font-size:.75rem;
+
+    font-weight:800;
+
+    letter-spacing:.1em;
+
+    text-transform:uppercase;
+
+}
+
+.monthly-km-hero{
+
+    display:flex;
+
+    align-items:baseline;
+
+    gap:8px;
+
+}
+
+.monthly-km-number{
+
+    font-size:clamp(3.2rem, 16vw, 4.6rem);
+
+    font-weight:900;
+
+    line-height:1;
+
+    letter-spacing:-.02em;
+
+    background:linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+
+    -webkit-background-clip:text;
+    background-clip:text;
+
+    color:transparent;
+
+    filter:drop-shadow(0 0 20px color-mix(in srgb, var(--color-glow) 55%, transparent));
+
+}
+
+.monthly-km-unit{
+
+    font-size:1.3rem;
+
+    font-weight:700;
+
+    color:var(--text-secondary);
+
+}
+
+.monthly-km-comparison{
+
+    display:inline-flex;
+
+    align-items:center;
+
+    gap:5px;
+
+    padding:5px 12px;
+
+    border-radius:999px;
+
+    font-size:.8rem;
+
+    font-weight:700;
+
+    background:rgba(255,255,255,.05);
+
+}
+
+.monthly-km-comparison iconify-icon{
+
+    font-size:16px;
+
+}
+
+.monthly-km-comparison.is-up{
+
+    color:var(--color-success);
+
+}
+
+.monthly-km-comparison.is-down{
+
+    color:var(--color-danger);
+
+}
+
+/* ==========================================================
+   MINI GRÁFICO -- refuerzo visual, sin ejes ni etiquetas (ver
+   MonthlyKmWidget.js): solo barras, el mes actual resaltado con el
+   mismo acento que la cifra grande, el resto apagado.
+========================================================== */
+
+.monthly-km-chart{
+
+    width:100%;
+
+    margin-top:8px;
+
+    display:flex;
+
+    align-items:flex-end;
+
+    justify-content:center;
+
+    gap:8px;
+
+    height:40px;
+
+}
+
+.monthly-km-bar{
+
+    width:14px;
+
+    max-width:20px;
+
+    flex:1;
+
+    border-radius:5px 5px 2px 2px;
+
+    background:var(--color-primary);
+
+    opacity:.28;
+
+    transition:.25s;
+
+}
+
+.monthly-km-bar.is-current{
+
+    opacity:1;
+
+    background:linear-gradient(180deg, var(--color-secondary), var(--color-primary));
+
+    box-shadow:0 0 14px color-mix(in srgb, var(--color-glow) 55%, transparent);
+
+}
