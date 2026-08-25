@@ -27,9 +27,16 @@ export function openBuilder(routine = null) {
         ? {
             routineId: routine.id,
             name: routine.name,
+            // Copia TODOS los campos del día (spread), no solo id/title --
+            // listarlos a mano aquí fue justo el bug: day.weekday (el
+            // vínculo real con Plan, ver gymTimelineBridge.js) se quedaba
+            // fuera de la copia y se perdía para siempre en cuanto se
+            // guardaba la rutina desde este formulario, aunque lo único que
+            // se tocara fuera el nombre. exercises sí se copia a mano
+            // (nueva referencia) para que editar el borrador no mute los
+            // ejercicios de la rutina guardada mientras el modal está abierto.
             days: routine.days.map(day => ({
-                id: day.id,
-                title: day.title,
+                ...day,
                 exercises: day.exercises.map(ex => ({ ...ex }))
             })),
             progressionNote: routine.progressionNote || "",
