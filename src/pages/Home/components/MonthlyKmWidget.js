@@ -2,8 +2,8 @@ import "./MonthlyKmWidget.css";
 
 import { formatKm } from "../../../utils/format.js";
 
-const MAX_BAR_HEIGHT = 40;
-const MIN_BAR_HEIGHT = 4;
+const MAX_BAR_HEIGHT = 22;
+const MIN_BAR_HEIGHT = 3;
 
 // "AAAA-MM" -> "Agosto" (capitalizado, sin año -- el año no aporta nada
 // aquí, todo el widget vive en el mismo año la inmensa mayoría de veces
@@ -34,6 +34,15 @@ function barHeight(km, months) {
 // gráfico plano. `stats` viene ya calculado y solo con datos reales (ver
 // buildMonthlyKmStats() en utils/monthlyKm.js) -- este componente es puro
 // renderizado, no decide qué mostrar a partir de los workouts.
+//
+// Compactado 2026-08-26 (fase 3 del pulido de densidad): la cabecera
+// (mes) y la cifra+comparación ya no van en 3 bloques apilados
+// (etiqueta / número enorme en su propia fila / chip de comparación
+// debajo) sino en 2 líneas cortas -- "AGOSTO" y "52,7 km · +50% vs
+// julio" en la misma línea, número seguido de la unidad y la
+// comparación como texto, no como badge aparte. Sigue siendo el
+// elemento más grande de su línea (font-size mayor que el resto), solo
+// que ya no ocupa una fila entera para sí solo.
 export function MonthlyKmWidget(stats) {
 
     const { currentMonthKey, currentMonthKm, previousMonthKey, comparisonPercent, chartMonths } = stats;
@@ -48,29 +57,27 @@ export function MonthlyKmWidget(stats) {
 
             <span class="monthly-km-label">
 
-                KM TOTALES · ${monthName(currentMonthKey).toUpperCase()}
+                ${monthName(currentMonthKey).toUpperCase()}
 
             </span>
 
-            <div class="monthly-km-hero">
+            <div class="monthly-km-line">
 
                 <span class="monthly-km-number">${formatKm(currentMonthKm)}</span>
 
                 <span class="monthly-km-unit">km</span>
 
+                ${comparisonPercent != null ? `
+
+                    <span class="monthly-km-comparison ${isUp ? "is-up" : "is-down"}">
+
+                        · ${isUp ? "+" : ""}${comparisonPercent}% vs ${monthName(previousMonthKey)}
+
+                    </span>
+
+                ` : ""}
+
             </div>
-
-            ${comparisonPercent != null ? `
-
-                <span class="monthly-km-comparison ${isUp ? "is-up" : "is-down"}">
-
-                    <iconify-icon icon="solar:${isUp ? "graph-up" : "graph-down"}-bold-duotone"></iconify-icon>
-
-                    ${isUp ? "+" : ""}${comparisonPercent}% vs ${monthName(previousMonthKey)}
-
-                </span>
-
-            ` : ""}
 
             ${chartMonths ? `
 

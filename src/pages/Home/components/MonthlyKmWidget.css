@@ -4,16 +4,21 @@
    grande (.monthly-km-glow, el halo detrás de la cifra, y el
    drop-shadow de .monthly-km-number más abajo) -- eso es tipografía/
    protagonismo del dato, no el borde+resplandor de tarjeta que antes
-   competía con el resto de Inicio por atención. */
+   competía con el resto de Inicio por atención.
+
+   Compactado 2026-08-26 (fase 3 del pulido de densidad) -- a la mitad
+   de alto aprox. respecto a la primera versión: cabecera + cifra ya no
+   ocupan 3 filas apiladas (etiqueta / número enorme / chip de
+   comparación) sino 2 líneas cortas, ver MonthlyKmWidget.js. */
 .monthly-km-widget{
 
     position:relative;
 
     overflow:hidden;
 
-    padding:28px 24px 22px;
+    padding:16px 20px 14px;
 
-    border-radius:28px;
+    border-radius:22px;
 
     display:flex;
 
@@ -23,7 +28,7 @@
 
     text-align:center;
 
-    gap:10px;
+    gap:4px;
 
     background:color-mix(in srgb, var(--card-background) 82%, transparent);
 
@@ -48,9 +53,9 @@
     right:2px;
     top:2px;
 
-    height:80px;
+    height:48px;
 
-    border-radius:26px 26px 0 0;
+    border-radius:20px 20px 0 0;
 
     background:linear-gradient(
         180deg,
@@ -71,14 +76,14 @@
 
     position:absolute;
 
-    top:-40px;
+    top:-30px;
 
     left:50%;
 
     transform:translateX(-50%);
 
-    width:220px;
-    height:180px;
+    width:170px;
+    height:120px;
 
     background:radial-gradient(
         closest-side,
@@ -106,7 +111,7 @@
 
     color:var(--text-secondary);
 
-    font-size:.75rem;
+    font-size:.7rem;
 
     font-weight:800;
 
@@ -116,19 +121,23 @@
 
 }
 
-.monthly-km-hero{
+.monthly-km-line{
 
     display:flex;
 
     align-items:baseline;
 
-    gap:8px;
+    justify-content:center;
+
+    flex-wrap:wrap;
+
+    gap:6px;
 
 }
 
 .monthly-km-number{
 
-    font-size:clamp(3.2rem, 16vw, 4.6rem);
+    font-size:2.1rem;
 
     font-weight:900;
 
@@ -143,13 +152,13 @@
 
     color:transparent;
 
-    filter:drop-shadow(0 0 20px color-mix(in srgb, var(--color-glow) 55%, transparent));
+    filter:drop-shadow(0 0 14px color-mix(in srgb, var(--color-glow) 55%, transparent));
 
 }
 
 .monthly-km-unit{
 
-    font-size:1.3rem;
+    font-size:.9rem;
 
     font-weight:700;
 
@@ -159,27 +168,9 @@
 
 .monthly-km-comparison{
 
-    display:inline-flex;
-
-    align-items:center;
-
-    gap:5px;
-
-    padding:5px 12px;
-
-    border-radius:999px;
-
-    font-size:.8rem;
+    font-size:.85rem;
 
     font-weight:700;
-
-    background:rgba(255,255,255,.05);
-
-}
-
-.monthly-km-comparison iconify-icon{
-
-    font-size:16px;
 
 }
 
@@ -205,7 +196,7 @@
 
     width:100%;
 
-    margin-top:8px;
+    margin-top:6px;
 
     display:flex;
 
@@ -213,21 +204,21 @@
 
     justify-content:center;
 
-    gap:8px;
+    gap:6px;
 
-    height:40px;
+    height:22px;
 
 }
 
 .monthly-km-bar{
 
-    width:14px;
+    width:10px;
 
-    max-width:20px;
+    max-width:16px;
 
     flex:1;
 
-    border-radius:5px 5px 2px 2px;
+    border-radius:4px 4px 2px 2px;
 
     background:var(--color-primary);
 

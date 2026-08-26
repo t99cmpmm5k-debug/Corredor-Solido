@@ -1,35 +1,34 @@
 import { isToday, formatWeekday } from "./date.js";
 
-// Etiqueta natural por tipo de sesión, para construir frases legibles.
-// Ids de WORKOUT_TYPES (src/data/workoutTypes.js) — frases conversacionales
-// propias, distintas de las etiquetas de la pantalla de revisión a propósito.
-const TYPE_LABEL = {
-    longRun:"la tirada larga",
-    z2:"un rodaje",
+// Etiqueta corta por tipo de sesión -- a diferencia de TYPE_LABEL de
+// antes ("un rodaje", "la tirada larga"), esta va pegada a un número de
+// km en una frase de una sola línea ("8 km Z2", "13 km de tirada
+// larga"), así que tiene que leerse igual de bien ahí que sola.
+const SHORT_TYPE_LABEL = {
+    longRun:"tirada larga",
+    z2:"Z2",
     intervals:"series",
-    tempo:"un tempo",
+    tempo:"tempo",
     strength:"fuerza",
     recovery:"descanso",
-    race:"la carrera",
-    free:"día libre",
-    generic:"tu entrenamiento"
+    race:"carrera",
+    free:"libre",
+    generic:"entreno"
 };
 
-function labelFor(session) {
-    return TYPE_LABEL[session.type] ?? session.title?.toLowerCase() ?? "tu sesión";
+function shortLabelFor(session) {
+    return SHORT_TYPE_LABEL[session.type] ?? session.title?.toLowerCase() ?? "sesión";
 }
 
-// Coletilla según cuánto pesa esa sesión sobre el objetivo semanal.
-function tailFor(proportion) {
-    if (proportion >= 0.45) return " — ahí está la mitad de la semana.";
-    if (proportion >= 0.25) return " — el tramo más exigente de lo que queda.";
-    return ".";
-}
-
-// Genera la frase de interpretación de la semana a partir de datos reales:
-// km completados vs objetivo, qué sesión pesa más en lo que queda, y qué
-// toca hoy. Si falta alguna pieza, esa parte se omite — nada de texto fijo.
-export function buildWeekInsight(week, { completed, goal }) {
+// Formato "entrenador" (fase 3 del pulido de densidad, 2026-08-26):
+// una frase corta por línea, sin la coletilla interpretativa de antes
+// ("ahí está la mitad de la semana...") ni el "Llevas X de Y km" inicial
+// -- ese dato ya lo muestra el anillo de WeekSummary.js justo encima,
+// repetirlo en texto era ruido. Solo queda lo accionable: qué toca hoy y,
+// si hay una sesión más relevante más adelante en la semana, cuál y
+// cuándo. Sigue devolviendo "" si no hay datos reales que sustenten
+// ninguna de las dos frases (mismo criterio de siempre).
+export function buildWeekInsight(week, { goal }) {
 
     if (!week?.length || goal <= 0) return "";
 
@@ -43,33 +42,20 @@ export function buildWeekInsight(week, { completed, goal }) {
 
     const keyIsToday = keySession?.date === todaySession.date;
 
-    const parts = [`Llevas ${completed} de ${goal} km.`];
+    const parts = [];
 
-    if (keySession && !keyIsToday) {
-        const proportion = keySession.volume / goal;
-        parts.push(`El ${formatWeekday(keySession.date)} tienes ${labelFor(keySession)} de ${keySession.volume} km${tailFor(proportion)}`);
+    // "Hoy: ..." solo cuando hay algo concreto que decir -- una sesión
+    // con km reales, o un tipo sin km pero igual de real (fuerza/
+    // descanso/libre). Una sesión de running sin volumen ni esos tres
+    // tipos (dato incompleto) no genera esta línea, nunca un "Hoy: 0 km".
+    if (todaySession.volume > 0) {
+        parts.push(`Hoy: ${todaySession.volume} km ${shortLabelFor(todaySession)}.`);
+    } else if (["strength", "recovery", "free"].includes(todaySession.type)) {
+        parts.push(`Hoy: ${shortLabelFor(todaySession)}.`);
     }
 
-    if (keyIsToday) {
-
-        const proportion = keySession.volume / goal;
-        parts.push(`Hoy toca ${labelFor(todaySession)} de ${todaySession.volume} km${tailFor(proportion)}`);
-
-    } else if (todaySession.volume > 0) {
-
-        parts.push(`Hoy toca ${labelFor(todaySession)} de ${todaySession.volume} km.`);
-
-    } else if (todaySession.type === "strength") {
-
-        parts.push(`Hoy toca ${labelFor(todaySession)}: no suma kilómetros, pero suma.`);
-
-    } else {
-
-        const hasFutureKey = Boolean(keySession);
-        parts.push(hasFutureKey
-            ? `Hoy toca ${labelFor(todaySession)}, así que guarda fuerzas.`
-            : `Hoy toca ${labelFor(todaySession)}.`);
-
+    if (keySession && !keyIsToday) {
+        parts.push(`El ${formatWeekday(keySession.date)}, ${keySession.volume} km de ${shortLabelFor(keySession)}.`);
     }
 
     return parts.join(" ");
