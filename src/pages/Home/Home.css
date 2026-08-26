@@ -46,17 +46,11 @@
 
 .hourly-weather-card {
 
+    /* Siempre el último bloque de Inicio (orden fijo definitivo, ver
+       Home.js) -- mismo colchón lateral/inferior que el resto de
+       tarjetas secundarias, el padding-bottom de .home de arriba ya se
+       encarga de que la barra de navegación nunca lo tape. */
     margin: 0 20px 28px;
-}
-
-/* El tirón hacia arriba (-14px) solo tiene sentido pegado justo debajo
-   de MasterCard (orden de día, ver homeLayout.js/Home.js) -- de noche el
-   Tiempo baja al final de Inicio, detrás de otra tarjeta cualquiera, y
-   ese mismo -14px lo solaparía con ella en vez de acercarlo a
-   MasterCard. */
-.hourly-weather-card.is-right-after-today {
-
-    margin-top: -14px;
 }
 
 .home-content {

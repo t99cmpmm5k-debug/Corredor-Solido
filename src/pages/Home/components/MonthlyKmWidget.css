@@ -1,22 +1,18 @@
-/* Tarjeta "normal" (ver jerarquía de glow en MasterCard.css/
-   WeekSummary.css) -- borde azul muy tenue, sin resplandor propio DE LA
-   TARJETA. El glow que sí se conserva aquí es el del propio número
-   grande (.monthly-km-glow, el halo detrás de la cifra, y el
-   drop-shadow de .monthly-km-number más abajo) -- eso es tipografía/
-   protagonismo del dato, no el borde+resplandor de tarjeta que antes
-   competía con el resto de Inicio por atención.
-
-   Compactado 2026-08-26 (fase 3 del pulido de densidad) -- a la mitad
-   de alto aprox. respecto a la primera versión: cabecera + cifra ya no
-   ocupan 3 filas apiladas (etiqueta / número enorme / chip de
-   comparación) sino 2 líneas cortas, ver MonthlyKmWidget.js. */
+/* Mismo padding/radio/borde/sombra que el resto de tarjetas secundarias
+   de Inicio (WeekSummary/NextGoalWidget/HourlyWeather, ronda de cierre
+   del rediseño) -- sin resplandor propio DE LA TARJETA. El glow que sí
+   se conserva aquí es el del propio número grande (.monthly-km-glow, el
+   halo detrás de la cifra, y el drop-shadow de .monthly-km-number más
+   abajo) -- eso es tipografía/protagonismo del dato, no el
+   borde+resplandor de tarjeta que antes competía con el resto de Inicio
+   por atención. */
 .monthly-km-widget{
 
     position:relative;
 
     overflow:hidden;
 
-    padding:16px 20px 16px;
+    padding:16px 20px;
 
     border-radius:22px;
 
@@ -30,7 +26,7 @@
 
     text-align:center;
 
-    gap:3px;
+    gap:2px;
 
     background:color-mix(in srgb, var(--card-background) 82%, transparent);
 
@@ -39,9 +35,7 @@
 
     border:1px solid color-mix(in srgb, var(--color-primary) 18%, transparent);
 
-    box-shadow:
-        0 10px 25px rgba(0,0,0,.22),
-        0 30px 70px rgba(0,0,0,.35);
+    box-shadow:0 8px 20px rgba(0,0,0,.18);
 
 }
 
@@ -55,7 +49,7 @@
     right:2px;
     top:2px;
 
-    height:48px;
+    height:38px;
 
     border-radius:20px 20px 0 0;
 
@@ -73,19 +67,21 @@
 }
 
 /* Halo suelto detrás de la cifra -- el mismo truco que --color-glow del
-   resto de la app, aquí más grande porque el número es el protagonista. */
+   resto de la app, aquí más grande porque el número es el protagonista.
+   Recortado (era top:-30px/120px de alto) para que no se lea como aire
+   vacío por encima de la cifra -- ronda de cierre, punto 2. */
 .monthly-km-glow{
 
     position:absolute;
 
-    top:-30px;
+    top:-18px;
 
     left:50%;
 
     transform:translateX(-50%);
 
-    width:170px;
-    height:120px;
+    width:150px;
+    height:90px;
 
     background:radial-gradient(
         closest-side,

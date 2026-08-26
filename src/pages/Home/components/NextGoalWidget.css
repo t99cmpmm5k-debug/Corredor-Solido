@@ -14,6 +14,9 @@
        revisar. */
     margin:0 20px 28px;
 
+    /* Mismo padding/radio/borde/sombra que el resto de tarjetas
+       secundarias de Inicio (MonthlyKmWidget/WeekSummary/HourlyWeather,
+       ronda de cierre del rediseño). */
     padding:16px 20px;
 
     border-radius:22px;

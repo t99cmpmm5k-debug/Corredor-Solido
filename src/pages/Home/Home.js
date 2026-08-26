@@ -10,7 +10,6 @@ import { NextGoalWidget } from "./components/NextGoalWidget.js";
 import { getCurrentWeekSessions, getWeekVolume, getWorkouts } from "../../data/workoutStore.js";
 import { buildWeekInsight } from "../../utils/weekInsight.js";
 import { buildMonthlyKmStats } from "../../utils/monthlyKm.js";
-import { getHomeSectionOrder } from "../../utils/homeLayout.js";
 import { getHourlyWeatherState } from "./homeWeatherStore.js";
 import { getGymDayForDate } from "../Plan/gymTimelineBridge.js";
 import { formatISODate } from "../../utils/date.js";
@@ -44,62 +43,6 @@ export function Home(){
     // y la sección desaparece sin dejar hueco ni dato inventado.
     const weather = getHourlyWeatherState();
 
-    // Bloques movibles (ver homeLayout.js): de día el Tiempo va justo
-    // después del entreno de hoy, de noche baja al final -- Hero y
-    // MasterCard NUNCA se reordenan, son el ancla fija de la pantalla.
-    // Cada bloque se omite solo si no tiene nada real que mostrar (mismo
-    // criterio de siempre), independientemente de en qué orden le toque
-    // pintarse hoy.
-    const order = getHomeSectionOrder();
-
-    // El tirón visual hacia MasterCard (-14px, ver Home.css) solo aplica
-    // cuando el Tiempo cae justo después de MasterCard (orden de día) --
-    // de noche va al final, detrás de otra tarjeta distinta.
-    const weatherRightAfterToday = order[0] === "weather";
-
-    const sections = {
-
-        weather: weather.status === "ready" ? `
-
-            <section class="hourly-weather-card ${weatherRightAfterToday ? "is-right-after-today" : ""}">
-
-                ${HourlyWeather(weather)}
-
-            </section>
-
-        ` : "",
-
-        week: `
-
-            <section class="week-chart-card">
-
-                ${WeekSummary({
-                    title:"ESTA SEMANA",
-                    kmDone: completed,
-                    kmTarget: goal,
-                    workoutCount,
-                    insight,
-                    variant:"card"
-                })}
-
-            </section>
-
-        `,
-
-        goal: NextGoalWidget(),
-
-        km: `
-
-            <section class="monthly-km-card">
-
-                ${MonthlyKmWidget(monthlyKm, getState().selectedMonthKey)}
-
-            </section>
-
-        `
-
-    };
-
     return `
 
         <main class="home">
@@ -110,7 +53,36 @@ export function Home(){
 
                 ${MasterCard()}
 
-                ${order.map(key => sections[key]).join("")}
+                <section class="week-chart-card">
+
+                    ${WeekSummary({
+                        title:"ESTA SEMANA",
+                        kmDone: completed,
+                        kmTarget: goal,
+                        workoutCount,
+                        insight,
+                        variant:"card"
+                    })}
+
+                </section>
+
+                ${NextGoalWidget()}
+
+                <section class="monthly-km-card">
+
+                    ${MonthlyKmWidget(monthlyKm, getState().selectedMonthKey)}
+
+                </section>
+
+                ${weather.status === "ready" ? `
+
+                    <section class="hourly-weather-card">
+
+                        ${HourlyWeather(weather)}
+
+                    </section>
+
+                ` : ""}
 
             </section>
 

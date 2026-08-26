@@ -36,17 +36,17 @@ describe("NextGoalWidget", () => {
 
     });
 
-    it("una carrera hoy muestra la cápsula HOY y 'Hoy' en la segunda línea, no un conteo de días", () => {
+    it("una carrera hoy muestra la cápsula HOY, sin repetir 'Hoy' en la segunda línea (versión final, ronda de cierre)", () => {
 
         vi.mocked(getUpcomingPlannedRaces).mockReturnValue([
-            { id: "r1", name: "10K Murcia", date: "2026-08-26" }
+            { id: "r1", name: "10K Murcia", date: "2026-08-26", distanceKm: 10, location: "Murcia" }
         ]);
 
         const html = NextGoalWidget(REFERENCE);
 
         expect(html).toContain("next-goal-today-pill");
         expect(html).toContain("HOY");
-        expect(html).toContain("Hoy");
+        expect(html).not.toContain("Hoy");
 
     });
 
@@ -100,7 +100,24 @@ describe("NextGoalWidget", () => {
 
     });
 
-    it("sin distanceKm ni disciplineType ni location, la segunda línea solo trae la fecha real", () => {
+    it("sin distanceKm ni type ni location, para una carrera futura la segunda línea solo trae la fecha real", () => {
+
+        vi.mocked(getUpcomingPlannedRaces).mockReturnValue([
+            { id: "r1", name: "Carrera Nocturna", date: "2026-09-22" }
+        ]);
+
+        const html = NextGoalWidget(REFERENCE);
+
+        expect(html).toContain("next-goal-subtitle\">Martes, 22 sept<");
+
+    });
+
+    // Versión final (ronda de cierre): la cápsula "HOY" ya dice que es
+    // hoy, así que la segunda línea no repite la fecha -- si además la
+    // carrera no trae ni tipo ni ubicación, no queda nada real que
+    // mostrar en esa línea, y se omite entera en vez de dejar un <span>
+    // vacío.
+    it("una carrera de hoy sin type/distanceKm/location no deja ninguna segunda línea (nada real que mostrar)", () => {
 
         vi.mocked(getUpcomingPlannedRaces).mockReturnValue([
             { id: "r1", name: "Carrera Nocturna", date: "2026-08-26" }
@@ -108,7 +125,7 @@ describe("NextGoalWidget", () => {
 
         const html = NextGoalWidget(REFERENCE);
 
-        expect(html).toContain("next-goal-subtitle\">Hoy<");
+        expect(html).not.toContain("next-goal-subtitle");
 
     });
 

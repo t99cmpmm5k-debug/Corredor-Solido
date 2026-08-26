@@ -35,11 +35,16 @@ function dateLabel(dateISO, days) {
 }
 
 // Segunda línea del widget: tipo/distancia real (si el import la trae) ·
-// ubicación real · fecha real -- cada pieza se omite si esa carrera en
-// concreto no la tiene, en vez de fingirla (mismo criterio que
-// RaceListCard.js). Nunca las 3 piezas fijas de un tirón: unas carreras
-// solo tienen disciplina (RU/TRS) sin distancia en km, y no todas traen
-// ubicación.
+// ubicación real -- cada pieza se omite si esa carrera en concreto no la
+// tiene, en vez de fingirla (mismo criterio que RaceListCard.js). Nunca
+// las piezas fijas de un tirón: unas carreras solo tienen disciplina
+// (RU/TRS) sin distancia en km, y no todas traen ubicación.
+//
+// La fecha/"Hoy" YA NO va aquí para una carrera de HOY (versión final,
+// ronda de cierre) -- la cápsula "HOY" de al lado ya lo dice, repetirlo
+// en la propia línea era redundante. Para cualquier otra carrera (sin
+// cápsula) la fecha real sigue siendo la única pista de cuándo es, así
+// que se mantiene.
 function buildSubtitle(race, days) {
 
     const parts = [];
@@ -56,7 +61,7 @@ function buildSubtitle(race, days) {
 
     if (race.location) parts.push(race.location);
 
-    parts.push(dateLabel(race.date, days));
+    if (days > 0) parts.push(dateLabel(race.date, days));
 
     return parts.join(" · ");
 
@@ -75,6 +80,15 @@ function buildSubtitle(race, days) {
 // la carrera es literalmente hoy -- para el resto, "Mañana"/el día de la
 // semana ya va dentro de esa segunda línea, no hace falta repetirlo en
 // una cápsula aparte.
+//
+// Hora de salida junto a la cápsula (p. ej. "HOY · 21:30"): pedida en la
+// ronda de cierre, RE-verificado el schema real de plannedRaces
+// (seedRaces.js, importPlannedRaces() en workoutStore.js,
+// RaceImportReviewStep.js) -- sigue sin existir ningún campo de hora de
+// SALIDA en ningún registro real (solo date, sin hora, y
+// registrationDeadline, que es la fecha límite de INSCRIPCIÓN). Por eso
+// la cápsula se queda en "HOY" a secas: añadir una hora aquí sería
+// inventar un dato que no tenemos.
 export function NextGoalWidget(referenceDate = new Date()) {
 
     const race = getUpcomingPlannedRaces()[0];
@@ -82,6 +96,7 @@ export function NextGoalWidget(referenceDate = new Date()) {
     if (!race) return "";
 
     const days = daysUntil(race.date, referenceDate);
+    const subtitle = buildSubtitle(race, days);
 
     return `
 
@@ -97,7 +112,7 @@ export function NextGoalWidget(referenceDate = new Date()) {
 
             </div>
 
-            <span class="next-goal-subtitle">${buildSubtitle(race, days)}</span>
+            ${subtitle ? `<span class="next-goal-subtitle">${subtitle}</span>` : ""}
 
         </section>
 

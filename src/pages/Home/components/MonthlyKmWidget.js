@@ -7,7 +7,14 @@ import { formatKm } from "../../../utils/format.js";
 // la tarjeta, con la etiqueta de cada mes debajo -- antes solo llevaba
 // aria-label, sin texto visible.
 const MAX_BAR_HEIGHT = 64;
-const MIN_BAR_HEIGHT = 6;
+
+// Antes 6px -- con barras de 64px de alto eso se leía como una rayita,
+// no como una barra, para cualquier mes bajo (p. ej. abril con 0 km
+// reales, o marzo con muchos menos km que agosto). Ronda de cierre,
+// punto 2: mínimo legible aunque el dato real sea bajo -- sigue siendo
+// claramente más bajo que un mes alto, solo que ya se distingue como
+// barra.
+const MIN_BAR_HEIGHT = 18;
 
 // "AAAA-MM" -> "Agosto" (capitalizado, sin año -- el año no aporta nada
 // aquí, todo el widget vive en el mismo año la inmensa mayoría de veces
