@@ -442,7 +442,17 @@ function undoPlanImport(batchId) {
 
 export function initPlanEvents() {
 
-    document.querySelectorAll(".timeline-day").forEach(day => {
+    // Escopado a .plan-page: PlanTimeline también se reutiliza dentro del
+    // selector de día de Inicio (SessionCard.js, ver
+    // initSessionCardEvents.js para su propio listener) -- sin este
+    // escopado, tocar un día en Inicio disparaba EXACTAMENTE esta misma
+    // lógica de Plan (seleccionar/gimnasio/crear sesión), incluyendo
+    // guardar en selectedWorkout (el estado de Plan, no el de Inicio) y
+    // colándose como "sesión de hoy" en MasterCard.js al volver a Inicio
+    // -- bug real, corregido 2026-08-26. Mismo criterio que
+    // initTimelineSwipe() unas líneas más abajo, que ya escopaba por el
+    // mismo motivo.
+    document.querySelectorAll(".plan-page .timeline-day").forEach(day => {
 
         day.addEventListener("click", () => {
 

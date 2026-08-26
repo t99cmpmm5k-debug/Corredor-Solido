@@ -4,6 +4,15 @@ const state = {
 
     selectedWorkout: null,
 
+    // Selección propia del selector de día de Inicio (botón "Cambiar" en
+    // SessionCard.js) -- aparte de selectedWorkout (que es de Plan) a
+    // propósito, aunque los dos reutilicen el mismo PlanTimeline() para
+    // pintar la semana: son dos "qué sesión estoy mirando" independientes.
+    // Antes compartían selectedWorkout y tocar un día en Plan se filtraba
+    // a Inicio como si fuera "la sesión de hoy" (bug real, corregido
+    // 2026-08-26 -- ver MasterCard.js/SessionCard.js/initSessionCardEvents.js).
+    homeSelectedWorkout: null,
+
     viewedWeekStart: null,
 
     selectedRun: null,

@@ -3,9 +3,50 @@ import { rerender, navigate } from "../../core/router.js";
 import { Running } from "../../pages/Running/Running.js";
 import { openDetail as openRunningDetail } from "../../pages/Running/initRunningEvents.js";
 import { Gym } from "../../pages/Gym/Gym.js";
-import { openDaySession } from "../../pages/Gym/initGymEvents.js";
+import { openDaySession, openGymDay } from "../../pages/Gym/initGymEvents.js";
+import { getSessionById } from "../../data/workoutStore.js";
+
+// Selector de día propio de Inicio (el "Cambiar" de SessionCard.js,
+// PlanTimeline dentro de .session-week-picker) -- escrito aparte del
+// listener equivalente de Plan (ver initPlanEvents.js, escopado a
+// .plan-page) para que tocar un día AQUÍ guarde en homeSelectedWorkout
+// (state.js), nunca en selectedWorkout (el de Plan). Un día de gimnasio
+// sigue saltando a Gimnasio igual que en Plan -- eso no es lo que
+// generaba el bug real. Un "Descanso" de verdad aquí no abre el
+// formulario de creación de Plan a propósito: este selector es solo
+// para elegir qué sesión de la semana previsualizar en Inicio, no para
+// crear una nueva -- y como el propio panel de creación vive en la
+// pantalla de Plan, abrirlo desde aquí no se vería en ningún sitio hasta
+// que el usuario navegara a Plan por su cuenta, una sorpresa igual de
+// mala que el bug que se está corrigiendo.
+function initHomeWeekPickerEvents() {
+
+    document.querySelectorAll(".session-week-picker .timeline-day").forEach(day => {
+
+        day.addEventListener("click", () => {
+
+            const workout = getSessionById(day.dataset.sessionId);
+
+            if (workout) {
+                setState("homeSelectedWorkout", workout);
+                rerender();
+                return;
+            }
+
+            if (day.dataset.gymDayId) {
+                navigate(Gym);
+                openGymDay(day.dataset.gymDayId, { completed: day.dataset.gymCompleted === "true" });
+            }
+
+        });
+
+    });
+
+}
 
 export function initSessionCardEvents() {
+
+    initHomeWeekPickerEvents();
 
     // Cada botón se cablea por separado -- un early return compartido
     // dejaba el de "Cambiar" sin cablear en cualquier sesión sin

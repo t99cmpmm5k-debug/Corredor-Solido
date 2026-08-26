@@ -22,6 +22,7 @@ describe("MasterCard -- prioridad running > gimnasio > vacío (running siempre m
         todaySession = null;
         gymMatch = null;
         setState("selectedWorkout", null);
+        setState("homeSelectedWorkout", null);
     });
 
     it("con running planificado hoy, muestra SessionCard aunque también haya gimnasio programado", () => {
@@ -60,16 +61,39 @@ describe("MasterCard -- prioridad running > gimnasio > vacío (running siempre m
 
     });
 
-    it("una selección manual de otro día (selectedWorkout) tiene prioridad y no activa el hueco de gimnasio", () => {
+    it("una selección manual de otro día en Inicio (homeSelectedWorkout, botón \"Cambiar\") tiene prioridad y no activa el hueco de gimnasio", () => {
 
         todaySession = null;
         gymMatch = { routine: { id: "r1", name: "Torso" }, day: { id: "d1", title: "Torso" }, finishedSession: null };
-        setState("selectedWorkout", { id: "other-day", title: "Descanso", status: "pending" });
+        setState("homeSelectedWorkout", { id: "other-day", title: "Descanso", status: "pending" });
 
         const html = MasterCard();
 
         expect(html).toContain("SESIÓN DE HOY");
         expect(html).not.toContain("GIMNASIO DE HOY");
+
+    });
+
+    // Bug real 2026-08-26: Inicio y Plan compartían el mismo
+    // selectedWorkout (state.js) -- tocar cualquier día en la línea
+    // temporal de Plan se colaba aquí como si fuera "la sesión de hoy".
+    // homeSelectedWorkout (propio de Inicio) y selectedWorkout (propio de
+    // Plan, ver planStore.js) son dos claves de estado independientes
+    // desde entonces -- este test confirma que MasterCard() ignora por
+    // completo la de Plan.
+    it("selectedWorkout (el estado de Plan) NO afecta a Inicio -- son estados independientes", () => {
+
+        todaySession = null;
+        gymMatch = null;
+        setState("selectedWorkout", { id: "plan-tuesday", title: "Series", status: "pending" });
+
+        const html = MasterCard();
+
+        // Sin sesión hoy ni en Inicio ni en Plan, el hueco vacío de
+        // siempre -- si selectedWorkout se colara, aquí aparecería
+        // "Series" en su lugar.
+        expect(html).toContain("session-card--empty");
+        expect(html).not.toContain("Series");
 
     });
 

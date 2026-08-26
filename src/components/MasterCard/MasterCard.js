@@ -23,12 +23,17 @@ function EmptySessionCard() {
 
 export function MasterCard(){
 
-    // Lectura directa de state en vez de planStore.getSelectedWorkout():
-    // ese getter auto-inicializa la selección a sessions[0] si no hay
-    // sesión hoy, y aquí eso mostraría el lunes como si fuera "hoy" en
+    // homeSelectedWorkout (propio de Inicio, ver core/state.js) en vez de
+    // planStore.getSelectedWorkout()/state.selectedWorkout: ese es el
+    // estado de Plan, y compartirlo aquí causaba que tocar un día
+    // cualquiera en Plan se colara en Inicio como si fuera "la sesión de
+    // hoy" (bug real, corregido 2026-08-26). Tampoco se usa
+    // planStore.getSelectedWorkout() directamente aunque estuviera bien
+    // aislado: ese getter auto-inicializa la selección a sessions[0] si no
+    // hay sesión hoy, y aquí eso mostraría el lunes como si fuera "hoy" en
     // un día de descanso real. Solo se sustituye getTodaySession() cuando
-    // el usuario ha elegido otro día de verdad (botón "Cambiar").
-    const workout = getState().selectedWorkout ?? getTodaySession();
+    // el usuario ha elegido otro día de verdad en Inicio (botón "Cambiar").
+    const workout = getState().homeSelectedWorkout ?? getTodaySession();
 
     if (workout) {
 
