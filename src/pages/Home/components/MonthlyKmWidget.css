@@ -226,6 +226,13 @@
 
     transition:.25s;
 
+    border:none;
+    padding:0;
+    font:inherit;
+
+    cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+
 }
 
 .monthly-km-bar.is-current{
@@ -235,5 +242,29 @@
     background:linear-gradient(180deg, var(--color-secondary), var(--color-primary));
 
     box-shadow:0 0 14px color-mix(in srgb, var(--color-glow) 55%, transparent);
+
+}
+
+/* Mes tocado (distinto al actual, ver MonthlyKmWidget.js) -- opacidad
+   plena como el mes actual para que se note que está "activo", pero sin
+   el degradado ni el glow propios de is-current (esos siguen siendo
+   exclusivos del mes en curso). */
+.monthly-km-bar.is-selected{
+
+    opacity:.85;
+
+    background:var(--text-secondary);
+
+}
+
+.monthly-km-detail{
+
+    margin-top:6px;
+
+    font-size:.78rem;
+
+    font-weight:600;
+
+    color:var(--text-secondary);
 
 }

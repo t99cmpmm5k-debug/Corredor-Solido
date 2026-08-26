@@ -6,12 +6,14 @@ import { MasterCard } from "../../components/MasterCard/MasterCard.js";
 import { WeekSummary } from "../../components/WeekSummary/WeekSummary.js";
 import { HourlyWeather } from "./components/HourlyWeather.js";
 import { MonthlyKmWidget } from "./components/MonthlyKmWidget.js";
+import { NextGoalWidget } from "./components/NextGoalWidget.js";
 import { getCurrentWeekSessions, getWeekVolume, getWorkouts } from "../../data/workoutStore.js";
 import { buildWeekInsight } from "../../utils/weekInsight.js";
 import { buildMonthlyKmStats } from "../../utils/monthlyKm.js";
 import { getHourlyWeatherState } from "./homeWeatherStore.js";
 import { getGymDayForDate } from "../Plan/gymTimelineBridge.js";
 import { formatISODate } from "../../utils/date.js";
+import { getState } from "../../core/state.js";
 
 export function Home(){
 
@@ -76,9 +78,11 @@ export function Home(){
 
                 <section class="monthly-km-card">
 
-                    ${MonthlyKmWidget(monthlyKm)}
+                    ${MonthlyKmWidget(monthlyKm, getState().selectedMonthKey)}
 
                 </section>
+
+                ${NextGoalWidget()}
 
             </section>
 

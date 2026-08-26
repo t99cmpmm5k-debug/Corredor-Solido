@@ -1,0 +1,90 @@
+/* Tarjeta "normal" (ver jerarquía de glow en MasterCard.css/
+   WeekSummary.css) -- borde azul muy tenue, sin resplandor propio, igual
+   que WeekSummary/MonthlyKmWidget. */
+.next-goal-widget{
+
+    position:relative;
+
+    /* Mismo colchón lateral/inferior que .monthly-km-card/.week-chart-card
+       en Home.css -- este widget, a diferencia de esos, no lleva un
+       <section> envoltorio con margen propio en Home.js (ver MasterCard.js,
+       que tampoco lo lleva y por eso también define su propio margen aquí
+       en vez de depender de un wrapper). Sin esto quedaba pegado a
+       BottomNavigation, el propio bug de solape que esta fase pedía
+       revisar. */
+    margin:0 20px 28px;
+
+    padding:16px 20px;
+
+    border-radius:22px;
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:6px;
+
+    background:color-mix(in srgb, var(--card-background) 82%, transparent);
+
+    backdrop-filter:blur(20px);
+    -webkit-backdrop-filter:blur(20px);
+
+    border:1px solid color-mix(in srgb, var(--color-primary) 18%, transparent);
+
+    box-shadow:0 8px 20px rgba(0,0,0,.18);
+
+}
+
+.next-goal-label{
+
+    color:var(--text-secondary);
+
+    font-size:.7rem;
+
+    font-weight:800;
+
+    letter-spacing:.1em;
+
+    text-transform:uppercase;
+
+}
+
+.next-goal-line{
+
+    display:flex;
+
+    align-items:baseline;
+
+    justify-content:space-between;
+
+    gap:10px;
+
+}
+
+.next-goal-name{
+
+    font-size:1rem;
+
+    font-weight:800;
+
+    color:var(--text-primary);
+
+    overflow:hidden;
+
+    text-overflow:ellipsis;
+
+    white-space:nowrap;
+
+}
+
+.next-goal-days{
+
+    flex-shrink:0;
+
+    font-size:.9rem;
+
+    font-weight:700;
+
+    color:var(--color-primary);
+
+}

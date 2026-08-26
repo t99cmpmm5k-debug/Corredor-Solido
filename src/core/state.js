@@ -25,7 +25,13 @@ const state = {
 
     sessionDetailExpanded: false,
 
-    weekPickerExpanded: false
+    weekPickerExpanded: false,
+
+    // Mes tocado en el gráfico interactivo de MonthlyKmWidget.js (Inicio)
+    // -- null cuando no se ha tocado ninguno (o se ha tocado el mismo dos
+    // veces, para quitar el detalle). El mes actual no necesita esto para
+    // verse, ya se muestra siempre arriba del todo del widget.
+    selectedMonthKey: null
 
 };
 

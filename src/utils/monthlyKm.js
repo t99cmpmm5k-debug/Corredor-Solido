@@ -16,9 +16,13 @@ function shiftMonthKey(key, delta) {
 
 }
 
-// Suma real de distanceKm por mes (clave "AAAA-MM") -- solo entrenos con
-// fecha y con distancia real, nunca un mes inventado.
-function sumKmByMonth(workouts) {
+// Suma de km y nº de entrenos reales por mes (clave "AAAA-MM") -- solo
+// entrenos con fecha, nunca un mes inventado. count cuenta CUALQUIER
+// entreno real de ese mes (aunque no traiga distanceKm), para que el
+// detalle interactivo del gráfico ("Julio · 35,1 km · 7 entrenamientos",
+// ver MonthlyKmWidget.js) no diga "0 entrenamientos" en un mes que sí
+// tuvo actividad real sin distancia registrada.
+function statsByMonth(workouts) {
 
     const totals = new Map();
 
@@ -27,7 +31,9 @@ function sumKmByMonth(workouts) {
         if (!w.date) return;
 
         const key = monthKeyOf(w.date);
-        totals.set(key, (totals.get(key) ?? 0) + (w.distanceKm || 0));
+        const current = totals.get(key) ?? { km: 0, count: 0 };
+
+        totals.set(key, { km: current.km + (w.distanceKm || 0), count: current.count + 1 });
 
     });
 
@@ -53,26 +59,30 @@ function sumKmByMonth(workouts) {
 //   "todavía no usabas la app").
 export function buildMonthlyKmStats(workouts, referenceDate = new Date()) {
 
-    const totals = sumKmByMonth(workouts);
+    const totals = statsByMonth(workouts);
     const currentMonthKey = monthKeyOf(formatISODate(referenceDate));
-    const currentMonthKm = totals.get(currentMonthKey) ?? 0;
+    const currentMonthKm = totals.get(currentMonthKey)?.km ?? 0;
     const previousMonthKey = shiftMonthKey(currentMonthKey, -1);
 
     if (totals.size < MIN_MONTHS_OF_HISTORY) {
         return { currentMonthKey, currentMonthKm, previousMonthKey, comparisonPercent: null, chartMonths: null };
     }
 
-    const previousMonthKm = totals.get(previousMonthKey);
+    const previousMonthKm = totals.get(previousMonthKey)?.km;
 
     const comparisonPercent = (previousMonthKm != null && previousMonthKm > 0)
         ? Math.round(((currentMonthKm - previousMonthKm) / previousMonthKm) * 100)
         : null;
 
+    // count real (nº de entrenos, ver statsByMonth) junto al km real de
+    // siempre -- para el detalle interactivo al tocar una barra (ver
+    // MonthlyKmWidget.js), 0 si ese mes no tuvo ningún entreno.
     const chartMonths = Array.from({ length: CHART_MONTHS }, (_, i) => {
 
         const key = shiftMonthKey(currentMonthKey, i - (CHART_MONTHS - 1));
+        const stats = totals.get(key);
 
-        return { key, km: totals.get(key) ?? 0, isCurrent: key === currentMonthKey };
+        return { key, km: stats?.km ?? 0, count: stats?.count ?? 0, isCurrent: key === currentMonthKey };
 
     });
 

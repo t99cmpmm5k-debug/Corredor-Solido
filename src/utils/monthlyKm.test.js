@@ -134,4 +134,47 @@ describe("buildMonthlyKmStats", () => {
 
     });
 
+    // Gráfico interactivo (fase 3, 2026-08-26): al tocar una barra hace
+    // falta también el nº de entrenos reales de ese mes, no solo los km.
+    describe("count por mes (detalle interactivo del gráfico)", () => {
+
+        it("cuenta los entrenos reales de cada mes, junto al km ya existente", () => {
+
+            const workouts = [
+                workout("2026-07-01", 20),
+                workout("2026-07-15", 15),
+                workout("2026-08-01", 40)
+            ];
+
+            const stats = buildMonthlyKmStats(workouts, REFERENCE);
+
+            expect(stats.chartMonths.find(m => m.key === "2026-07")).toMatchObject({ km: 35, count: 2 });
+            expect(stats.chartMonths.find(m => m.key === "2026-08")).toMatchObject({ km: 40, count: 1 });
+
+        });
+
+        it("un mes sin ningún entreno tiene count 0, no inventado", () => {
+
+            const workouts = [workout("2026-03-01", 10), workout("2026-08-01", 10)];
+            const stats = buildMonthlyKmStats(workouts, REFERENCE);
+
+            expect(stats.chartMonths.find(m => m.key === "2026-04").count).toBe(0);
+
+        });
+
+        it("un entreno sin distanceKm SÍ cuenta como entreno real, aunque no sume km", () => {
+
+            const workouts = [
+                workout("2026-07-01", null),
+                workout("2026-08-01", 10)
+            ];
+
+            const stats = buildMonthlyKmStats(workouts, REFERENCE);
+
+            expect(stats.chartMonths.find(m => m.key === "2026-07")).toMatchObject({ km: 0, count: 1 });
+
+        });
+
+    });
+
 });

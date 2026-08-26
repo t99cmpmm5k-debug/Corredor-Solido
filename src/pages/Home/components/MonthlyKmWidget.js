@@ -43,11 +43,22 @@ function barHeight(km, months) {
 // comparación como texto, no como badge aparte. Sigue siendo el
 // elemento más grande de su línea (font-size mayor que el resto), solo
 // que ya no ocupa una fila entera para sí solo.
-export function MonthlyKmWidget(stats) {
+//
+// Interactivo desde 2026-08-26: tocar una barra muestra el detalle real
+// de ESE mes (km + nº de entrenos, ver count en monthlyKm.js) sin salir
+// de Inicio -- selectedMonthKey vive en core/state.js (propio de este
+// widget), lo lee y lo pasa Home.js igual que homeSelectedWorkout. El
+// mes actual no necesita esto: ya se ve siempre arriba, tocar su propia
+// barra no añade ningún detalle nuevo.
+export function MonthlyKmWidget(stats, selectedMonthKey = null) {
 
     const { currentMonthKey, currentMonthKm, previousMonthKey, comparisonPercent, chartMonths } = stats;
 
     const isUp = comparisonPercent != null && comparisonPercent >= 0;
+
+    const selected = (chartMonths && selectedMonthKey && selectedMonthKey !== currentMonthKey)
+        ? chartMonths.find(m => m.key === selectedMonthKey) ?? null
+        : null;
 
     return `
 
@@ -85,14 +96,28 @@ export function MonthlyKmWidget(stats) {
 
                     ${chartMonths.map(m => `
 
-                        <div
-                            class="monthly-km-bar ${m.isCurrent ? "is-current" : ""}"
+                        <button
+                            type="button"
+                            class="monthly-km-bar ${m.isCurrent ? "is-current" : ""} ${m.key === selectedMonthKey ? "is-selected" : ""}"
                             style="height:${barHeight(m.km, chartMonths)}px"
-                        ></div>
+                            data-action="select-month"
+                            data-month-key="${m.key}"
+                            aria-label="${monthName(m.key)}"
+                        ></button>
 
                     `).join("")}
 
                 </div>
+
+            ` : ""}
+
+            ${selected ? `
+
+                <p class="monthly-km-detail">
+
+                    ${monthName(selected.key)} · ${formatKm(selected.km)} km · ${selected.count} entrenamiento${selected.count === 1 ? "" : "s"}
+
+                </p>
 
             ` : ""}
 

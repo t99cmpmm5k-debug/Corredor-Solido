@@ -28,9 +28,13 @@ Nunca parece pegada encima.
 
 ## Regla 3
 
-Solo existe una tarjeta principal.
+Normalmente solo existe una tarjeta principal.
 
 Toda la atención va dirigida a ella.
+
+Excepción confirmada (2026-08-26): si hoy toca running Y gimnasio a la
+vez, se apilan las dos — nunca una tapando a la otra como si no
+existiera. Sigue siendo el mismo lenguaje visual, solo dos en vez de una.
 
 ---
 
