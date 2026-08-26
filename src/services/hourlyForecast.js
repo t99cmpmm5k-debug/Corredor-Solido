@@ -196,11 +196,29 @@ export function remainingHours(hours, now = new Date()) {
 // cae a la de menor temperatura sin más (ver findBestRunningHour).
 const PRECIPITATION_ICONS = new Set(["rain", "storm", "snow"]);
 
-// La hora "mejor para correr" dentro de las horas ya mostradas -- menor
-// temperatura entre las que no llevan lluvia/tormenta/nieve; si todas
-// llevan precipitación, la de menor temperatura entre todas. Nunca
-// inventa el criterio si no hay horas: devuelve null y HourlyWeather.js
-// omite la línea entera en vez de mostrar un dato fabricado.
+// "Cuánto de agradable es correr en esta hora", no solo su temperatura
+// aislada -- nublado resta algo (menos sol directo, se corre más
+// fresco de lo que dice el termómetro) y algo de brisa también ayuda a
+// disipar calor, con un tope para que un vendaval no gane puntos de más.
+// Cuanto más bajo, mejor. Nunca decide en solitario si una hora entra
+// en el cálculo (eso ya lo hace el filtro de precipitación de arriba),
+// solo desempata entre las que sí compiten.
+function comfortScore(hour) {
+
+    const cloudBonus = hour.icon === "cloud" ? 1.5 : 0;
+    const windBonus = hour.windKmh != null ? Math.min(hour.windKmh, 20) * 0.1 : 0;
+
+    return hour.temp - cloudBonus - windBonus;
+
+}
+
+// La hora "mejor para correr" dentro de las horas ya mostradas -- la de
+// mejor comfortScore (temperatura ajustada por nubosidad/viento, nunca
+// solo la temperatura más baja aislada) entre las que no llevan lluvia/
+// tormenta/nieve; si todas llevan precipitación, la de menor
+// comfortScore entre todas. Nunca inventa el criterio si no hay horas:
+// devuelve null y HourlyWeather.js omite la línea entera en vez de
+// mostrar un dato fabricado.
 export function findBestRunningHour(hours) {
 
     if (!hours?.length) return null;
@@ -208,8 +226,38 @@ export function findBestRunningHour(hours) {
     const dry = hours.filter(h => !PRECIPITATION_ICONS.has(h.icon));
     const pool = dry.length ? dry : hours;
 
-    return pool.reduce((best, h) => (h.temp < best.temp ? h : best), pool[0]);
+    return pool.reduce((best, h) => (comfortScore(h) < comfortScore(best) ? h : best), pool[0]);
 
+}
+
+// Recorta `hours` (ya filtradas por remainingHours, en orden
+// cronológico desde ahora) a las que siguen siendo HOY -- nunca cruza
+// la medianoche. isNewDay ya marca, dentro de esa misma secuencia, la
+// primera hora que pertenece a mañana (ver parseForecastHours), así que
+// cortar ahí basta: no hace falta reconstruir fechas absolutas. Bug real
+// que esto corrige (2026-08-26): a las 13:49 la franja "mejor para
+// correr" recomendaba "00:00-01:00" -- técnicamente una hora futura
+// dentro de las 24h cacheadas, pero sin sentido práctico como
+// recomendación de HOY. Se usa solo antes de findBestRunningHour(), la
+// franja de 24h de abajo sigue mostrando también la madrugada de mañana
+// a propósito.
+export function todayRemainingHours(hours) {
+
+    const boundaryIndex = hours.findIndex(h => h.isNewDay);
+    return boundaryIndex === -1 ? hours : hours.slice(0, boundaryIndex);
+
+}
+
+// Umbral de "franja claramente favorable para correr" -- por encima de
+// esta temperatura, la hora menos mala del día ya no es una
+// recomendación de verdad, así que HourlyWeather.js cambia el mensaje a
+// uno más honesto ("hoy no hay una franja especialmente favorable")
+// aunque siga citando la hora y temperatura reales. Umbral de diseño,
+// no un dato que venga del pronóstico.
+const FAVORABLE_MAX_TEMP = 24;
+
+export function isFavorableHour(hour) {
+    return hour != null && hour.temp <= FAVORABLE_MAX_TEMP;
 }
 
 // El bloque "current" de Open-Meteo es la lectura de ahora mismo del

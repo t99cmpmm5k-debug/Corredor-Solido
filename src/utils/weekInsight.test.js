@@ -11,17 +11,17 @@ function insight(week, opts = {}) {
     return buildWeekInsight(week, { referenceDate: WEDNESDAY, ...opts });
 }
 
-describe("buildWeekInsight -- formato corto tipo entrenador (fase 3, 2026-08-25)", () => {
+describe("buildWeekInsight -- redacción natural (ronda final de Inicio, 2026-08-26)", () => {
 
     it("sin sesiones o sin objetivo semanal, no hay texto", () => {
         expect(insight([], { goal: 20 })).toBe("");
         expect(insight([session("2026-08-26", "z2", 8)], { goal: 0 })).toBe("");
     });
 
-    it("hoy con km reales: 'Hoy: X km TIPO.'", () => {
+    it("hoy con km reales: 'Hoy: TIPO · X km.'", () => {
 
         const week = [session("2026-08-26", "z2", 8)];
-        expect(insight(week, { goal: 21 })).toBe("Hoy: 8 km Z2.");
+        expect(insight(week, { goal: 21 })).toBe("Hoy: Z2 · 8 km.");
 
     });
 
@@ -46,7 +46,7 @@ describe("buildWeekInsight -- formato corto tipo entrenador (fase 3, 2026-08-25)
             session("2026-08-29", "longRun", 13)
         ];
 
-        expect(insight(week, { goal: 21 })).toBe("Hoy: 8 km Z2. Sábado: 13 km de tirada larga.");
+        expect(insight(week, { goal: 21 })).toBe("Hoy: Z2 · 8 km. Sábado: tirada larga · 13 km.");
 
     });
 
@@ -57,7 +57,7 @@ describe("buildWeekInsight -- formato corto tipo entrenador (fase 3, 2026-08-25)
             session("2026-08-26", "longRun", 13)
         ];
 
-        expect(insight(week, { goal: 21 })).toBe("Hoy: 13 km tirada larga.");
+        expect(insight(week, { goal: 21 })).toBe("Hoy: tirada larga · 13 km.");
 
     });
 
@@ -68,7 +68,7 @@ describe("buildWeekInsight -- formato corto tipo entrenador (fase 3, 2026-08-25)
             session("2026-08-29", "longRun", 13, "completed")
         ];
 
-        expect(insight(week, { goal: 21 })).toBe("Hoy: 8 km Z2.");
+        expect(insight(week, { goal: 21 })).toBe("Hoy: Z2 · 8 km.");
 
     });
 
@@ -86,7 +86,7 @@ describe("buildWeekInsight -- formato corto tipo entrenador (fase 3, 2026-08-25)
 
             const todayGymMatch = { day: { id: "d1", title: "Pierna" } };
 
-            expect(insight(week, { goal: 21, todayGymMatch })).toBe("Hoy: Pierna (gimnasio). Sábado: 13 km de tirada larga.");
+            expect(insight(week, { goal: 21, todayGymMatch })).toBe("Hoy: Pierna · Gym. Sábado: tirada larga · 13 km.");
 
         });
 
@@ -101,7 +101,7 @@ describe("buildWeekInsight -- formato corto tipo entrenador (fase 3, 2026-08-25)
 
             expect(html).not.toContain("lunes");
             expect(html).not.toContain("Lunes");
-            expect(html).toBe("Sábado: 13 km de tirada larga.");
+            expect(html).toBe("Sábado: tirada larga · 13 km.");
 
         });
 
@@ -110,7 +110,7 @@ describe("buildWeekInsight -- formato corto tipo entrenador (fase 3, 2026-08-25)
             const week = [session("2026-08-26", "z2", 8)];
             const todayGymMatch = { day: { id: "d1", title: "Pierna" } };
 
-            expect(insight(week, { goal: 8, todayGymMatch })).toBe("Hoy: 8 km Z2 + Pierna (gimnasio).");
+            expect(insight(week, { goal: 8, todayGymMatch })).toBe("Hoy: Z2 · 8 km + Pierna · Gym.");
 
         });
 
@@ -121,7 +121,7 @@ describe("buildWeekInsight -- formato corto tipo entrenador (fase 3, 2026-08-25)
                 session("2026-08-29", "z2", 5) // sábado, futuro -- esta sí
             ];
 
-            expect(insight(week, { goal: 35, todayGymMatch: null })).toBe("Sábado: 5 km de Z2.");
+            expect(insight(week, { goal: 35, todayGymMatch: null })).toBe("Sábado: Z2 · 5 km.");
 
         });
 

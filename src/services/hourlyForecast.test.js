@@ -6,6 +6,8 @@ import {
     parseForecastHours,
     findBestRunningHour,
     remainingHours,
+    todayRemainingHours,
+    isFavorableHour,
     resolveLocation,
     getHourlyForecast
 } from "./hourlyForecast.js";
@@ -260,6 +262,66 @@ describe("findBestRunningHour", () => {
 
         expect(findBestRunningHour(hours).time).toBe("19:00");
 
+    });
+
+    // Bug real (2026-08-26): la temperatura más baja aislada no siempre es
+    // la más agradable para correr -- una hora algo más cálida pero
+    // nublada y con brisa puede ganar a una despejada y en calma.
+    it("no elige solo por la temperatura más baja aislada -- nubosidad y viento entran en el criterio", () => {
+
+        const hours = [
+            { time: "12:00", temp: 24, icon: "sun", isNewDay: false, windKmh: null, humidity: null },
+            { time: "13:00", temp: 25, icon: "cloud", isNewDay: false, windKmh: 18, humidity: null }
+        ];
+
+        expect(findBestRunningHour(hours).time).toBe("13:00");
+
+    });
+
+});
+
+describe("todayRemainingHours", () => {
+
+    function hour(time, isNewDay = false) {
+        return { time, temp: 20, icon: "sun", isNewDay, windKmh: null, humidity: null };
+    }
+
+    it("corta antes de la primera hora marcada como isNewDay -- nunca cruza la medianoche", () => {
+
+        const hours = [hour("21:00"), hour("22:00"), hour("23:00"), hour("00:00", true), hour("01:00")];
+
+        expect(todayRemainingHours(hours).map(h => h.time)).toEqual(["21:00", "22:00", "23:00"]);
+
+    });
+
+    it("sin ninguna hora de mañana en la lista, la deja tal cual", () => {
+
+        const hours = [hour("10:00"), hour("11:00")];
+        expect(todayRemainingHours(hours)).toEqual(hours);
+
+    });
+
+    it("si ya no queda ninguna hora de hoy, devuelve un array vacío", () => {
+
+        const hours = [hour("00:00", true), hour("01:00")];
+        expect(todayRemainingHours(hours)).toEqual([]);
+
+    });
+
+});
+
+describe("isFavorableHour", () => {
+
+    it("sin hora, no es favorable", () => {
+        expect(isFavorableHour(null)).toBe(false);
+    });
+
+    it("por debajo del umbral, es favorable", () => {
+        expect(isFavorableHour({ temp: 18 })).toBe(true);
+    });
+
+    it("por encima del umbral, no es favorable", () => {
+        expect(isFavorableHour({ temp: 28 })).toBe(false);
     });
 
 });

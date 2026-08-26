@@ -53,7 +53,7 @@
 
     display:flex;
 
-    align-items:baseline;
+    align-items:flex-start;
 
     justify-content:space-between;
 
@@ -61,30 +61,58 @@
 
 }
 
+/* 2 líneas como mucho (antes 1, cortando nombres largos de carreras
+   reales tipo "30ª Carrera Nocturna Fiestas de Las Torres 2026" a media
+   frase) -- la fecha/tipo real ya va debajo en .next-goal-subtitle, así
+   que el nombre completo no necesita caber en una sola línea. */
 .next-goal-name{
 
     font-size:1rem;
 
     font-weight:800;
 
+    line-height:1.25;
+
     color:var(--text-primary);
+
+    display:-webkit-box;
+    -webkit-line-clamp:2;
+    -webkit-box-orient:vertical;
 
     overflow:hidden;
 
-    text-overflow:ellipsis;
-
-    white-space:nowrap;
-
 }
 
-.next-goal-days{
+.next-goal-today-pill{
 
     flex-shrink:0;
 
-    font-size:.9rem;
+    margin-top:2px;
 
-    font-weight:700;
+    padding:3px 10px;
+
+    border-radius:999px;
+
+    font-size:.68rem;
+
+    font-weight:800;
+
+    letter-spacing:.04em;
 
     color:var(--color-primary);
+
+    background:color-mix(in srgb, var(--color-primary) 16%, transparent);
+
+    border:1px solid color-mix(in srgb, var(--color-primary) 32%, transparent);
+
+}
+
+.next-goal-subtitle{
+
+    font-size:.82rem;
+
+    font-weight:600;
+
+    color:var(--text-secondary);
 
 }

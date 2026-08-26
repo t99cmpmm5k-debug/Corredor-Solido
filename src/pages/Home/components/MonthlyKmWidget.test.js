@@ -1,10 +1,11 @@
 import { describe, it, expect } from "vitest";
 import { MonthlyKmWidget } from "./MonthlyKmWidget.js";
 
-function stats({ chartMonths = null } = {}) {
+function stats({ chartMonths = null, currentMonthCount = 9 } = {}) {
     return {
         currentMonthKey: "2026-08",
         currentMonthKm: 52.7,
+        currentMonthCount,
         previousMonthKey: "2026-07",
         comparisonPercent: 12,
         chartMonths
@@ -20,9 +21,19 @@ const CHART_MONTHS = [
 
 describe("MonthlyKmWidget", () => {
 
-    it("sin selección, no muestra ninguna línea de detalle", () => {
+    it("sin selección, muestra el resumen real del mes en curso (entrenos + km/sesión)", () => {
 
         const html = MonthlyKmWidget(stats({ chartMonths: CHART_MONTHS }));
+
+        expect(html).toContain("monthly-km-detail");
+        expect(html).toContain("9 entrenamientos");
+        expect(html).toContain("5,9 km/sesión"); // 52,7 / 9
+
+    });
+
+    it("sin ningún entreno este mes, no inventa un resumen ni una media", () => {
+
+        const html = MonthlyKmWidget(stats({ chartMonths: CHART_MONTHS, currentMonthCount: 0 }));
         expect(html).not.toContain("monthly-km-detail");
 
     });
@@ -49,9 +60,6 @@ describe("MonthlyKmWidget", () => {
 
     it("un mes con un solo entreno usa el singular", () => {
 
-        const html = MonthlyKmWidget(stats({ chartMonths: CHART_MONTHS }), "2026-05");
-        // 2026-05 no tiene count 1 en este fixture -- se comprueba el
-        // singular con un fixture dedicado en vez de reusar CHART_MONTHS.
         const singularStats = stats({
             chartMonths: CHART_MONTHS.map(m => m.key === "2026-05" ? { ...m, count: 1 } : m)
         });
@@ -59,23 +67,24 @@ describe("MonthlyKmWidget", () => {
 
         expect(singularHtml).toContain("1 entrenamiento");
         expect(singularHtml).not.toContain("1 entrenamientos");
-        expect(html).toContain("monthly-km-detail");
 
     });
 
-    it("seleccionar el mes actual no añade ningún detalle (ya se ve arriba)", () => {
+    it("seleccionar el mes actual no cambia nada (ya es lo que se ve por defecto)", () => {
 
         const html = MonthlyKmWidget(stats({ chartMonths: CHART_MONTHS }), "2026-08");
-        expect(html).not.toContain("monthly-km-detail");
+
+        expect(html).toContain("9 entrenamientos");
+        expect(html).toContain("5,9 km/sesión");
 
     });
 
-    it("sin chartMonths (usuario nuevo), no hay gráfico ni intenta leer una selección", () => {
+    it("sin chartMonths (usuario nuevo), no hay gráfico pero sí puede haber resumen del mes actual", () => {
 
         const html = MonthlyKmWidget(stats({ chartMonths: null }), "2026-07");
 
         expect(html).not.toContain("monthly-km-chart");
-        expect(html).not.toContain("monthly-km-detail");
+        expect(html).toContain("9 entrenamientos");
 
     });
 

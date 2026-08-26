@@ -1,6 +1,6 @@
 import "./HourlyWeather.css";
 
-import { findBestRunningHour, remainingHours } from "../../../services/hourlyForecast.js";
+import { findBestRunningHour, remainingHours, todayRemainingHours, isFavorableHour } from "../../../services/hourlyForecast.js";
 
 // icon (ver weatherIconForCode en services/hourlyForecast.js) -> icono
 // Solar ya usado en el resto de la app (ver WorkoutIcon.js). "cloud" es el
@@ -90,19 +90,49 @@ function nextHourLabel(time) {
 }
 
 // Línea orientada a correr, no a meteorología genérica -- la hora de
-// menor temperatura entre las que no llevan lluvia/tormenta/nieve, y que
-// además todavía no ha empezado respecto al reloj real de ahora mismo
+// mejor comfortScore (temperatura + nubosidad + viento, no solo la
+// temperatura más baja aislada, ver comfortScore() en hourlyForecast.js)
+// entre las que no llevan lluvia/tormenta/nieve, restringida a HOY
+// (todayRemainingHours -- nunca cruza la medianoche, aunque la hora más
+// fría de las 24h cacheadas caiga de madrugada de mañana) y que además
+// todavía no ha empezado respecto al reloj real de ahora mismo
 // (remainingHours() -- nunca se propone una franja ya pasada, aunque el
 // pronóstico llevara un rato cacheado sin recargar, ver
-// homeWeatherStore.js). La franja de horas de abajo NO pasa por este
-// filtro a propósito, sigue mostrando también lo que ya pasó.
+// homeWeatherStore.js). La franja de horas de abajo NO pasa por ninguno
+// de estos dos filtros a propósito, sigue mostrando también lo que ya
+// pasó y la madrugada de mañana.
+//
+// Si la menos mala del día sigue siendo poco favorable (isFavorableHour,
+// ver umbral en hourlyForecast.js) el mensaje cambia a uno más honesto
+// en vez de vender esa hora como una recomendación de verdad -- sigue
+// citando la hora y temperatura reales, nunca inventadas.
 // viento/humedad se omiten sueltos si esa hora en concreto no los trae
 // (nunca "viento null km/h") -- nunca inventados, vienen del mismo
 // hourly de Open-Meteo que ya usa el resto del widget.
 function BestRunningHour(hours, now) {
 
-    const best = findBestRunningHour(remainingHours(hours, now));
+    const best = findBestRunningHour(todayRemainingHours(remainingHours(hours, now)));
     if (!best) return "";
+
+    if (!isFavorableHour(best)) {
+        return `
+
+            <div class="hourly-weather-best hourly-weather-best-fallback">
+
+                <p class="hourly-weather-best-headline">
+
+                    <iconify-icon icon="solar:info-circle-bold-duotone"></iconify-icon>
+
+                    Hoy no hay una franja especialmente favorable
+
+                </p>
+
+                <p class="hourly-weather-best-detail">Mejor a partir de las <strong>${best.time}</strong> · ${best.temp}°</p>
+
+            </div>
+
+        `;
+    }
 
     const details = [`${best.temp}°`];
     if (best.windKmh != null) details.push(`viento ${best.windKmh} km/h`);

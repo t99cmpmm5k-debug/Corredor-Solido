@@ -11,8 +11,18 @@
        Profile, ver sus .css) para que .bottom-nav (position:fixed, altura
        fija + env(safe-area-inset-bottom), ver BottomNavigation.css) nunca
        tape el final del contenido -- Inicio era la única sin el safe-area
-       aquí, aunque la propia nav ya lo aplicaba igual en todas. */
-    padding-bottom: calc(110px + env(safe-area-inset-bottom));
+       aquí, aunque la propia nav ya lo aplicaba igual en todas.
+
+       Subido de 110 a 140px (bug de solape reportado varias veces): la
+       píldora mide 58px + 20px de separación del borde = 78px de su
+       propio alto real, así que 110px solo dejaba ~32px de aire tras el
+       margen inferior de la última tarjeta (28px en NextGoalWidget/
+       MonthlyKmWidget/WeekSummary) -- de sobra en el escritorio, pero sin
+       margen de maniobra ante overscroll/rebote de iOS Safari o una
+       tarjeta más alta de lo medido aquí. 140px deja un colchón real
+       tras cualquier tarjeta, verificado con capturas de scroll hasta el
+       final. */
+    padding-bottom: calc(140px + env(safe-area-inset-bottom));
 
     overflow-x: hidden;
 }

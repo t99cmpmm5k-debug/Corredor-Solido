@@ -47,18 +47,30 @@ function barHeight(km, months) {
 // Interactivo desde 2026-08-26: tocar una barra muestra el detalle real
 // de ESE mes (km + nº de entrenos, ver count en monthlyKm.js) sin salir
 // de Inicio -- selectedMonthKey vive en core/state.js (propio de este
-// widget), lo lee y lo pasa Home.js igual que homeSelectedWorkout. El
-// mes actual no necesita esto: ya se ve siempre arriba, tocar su propia
-// barra no añade ningún detalle nuevo.
+// widget), lo lee y lo pasa Home.js igual que homeSelectedWorkout. La
+// línea inferior nunca queda vacía sin selección: por defecto muestra el
+// resumen del propio mes en curso ("9 entrenamientos · 5,8 km/sesión",
+// ver summaryLine), así que tocar la barra del mes actual no cambia
+// nada (ya es lo que se ve por defecto).
 export function MonthlyKmWidget(stats, selectedMonthKey = null) {
 
-    const { currentMonthKey, currentMonthKm, previousMonthKey, comparisonPercent, chartMonths } = stats;
+    const { currentMonthKey, currentMonthKm, currentMonthCount, previousMonthKey, comparisonPercent, chartMonths } = stats;
 
     const isUp = comparisonPercent != null && comparisonPercent >= 0;
 
     const selected = (chartMonths && selectedMonthKey && selectedMonthKey !== currentMonthKey)
         ? chartMonths.find(m => m.key === selectedMonthKey) ?? null
         : null;
+
+    // Línea de resumen inferior: el detalle de un mes tocado (si lo hay)
+    // o, por defecto, el propio mes en curso -- "9 entrenamientos · 5,8
+    // km/sesión", siempre con datos reales (nunca al dividir entre 0
+    // entrenos, ver guarda de abajo).
+    const summaryLine = selected
+        ? `${monthName(selected.key)} · ${formatKm(selected.km)} km · ${selected.count} entrenamiento${selected.count === 1 ? "" : "s"}`
+        : (currentMonthCount > 0
+            ? `${currentMonthCount} entrenamiento${currentMonthCount === 1 ? "" : "s"} · ${formatKm(currentMonthKm / currentMonthCount)} km/sesión`
+            : null);
 
     return `
 
@@ -111,13 +123,9 @@ export function MonthlyKmWidget(stats, selectedMonthKey = null) {
 
             ` : ""}
 
-            ${selected ? `
+            ${summaryLine ? `
 
-                <p class="monthly-km-detail">
-
-                    ${monthName(selected.key)} · ${formatKm(selected.km)} km · ${selected.count} entrenamiento${selected.count === 1 ? "" : "s"}
-
-                </p>
+                <p class="monthly-km-detail">${summaryLine}</p>
 
             ` : ""}
 

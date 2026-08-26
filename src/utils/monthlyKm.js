@@ -62,10 +62,15 @@ export function buildMonthlyKmStats(workouts, referenceDate = new Date()) {
     const totals = statsByMonth(workouts);
     const currentMonthKey = monthKeyOf(formatISODate(referenceDate));
     const currentMonthKm = totals.get(currentMonthKey)?.km ?? 0;
+    // count real del mes en curso -- independiente de que haya o no
+    // suficiente historial para gráfico/comparación (ver más abajo), la
+    // línea de resumen del widget ("9 entrenamientos · 5,8 km/sesión") lo
+    // necesita también para un usuario nuevo con un único mes de datos.
+    const currentMonthCount = totals.get(currentMonthKey)?.count ?? 0;
     const previousMonthKey = shiftMonthKey(currentMonthKey, -1);
 
     if (totals.size < MIN_MONTHS_OF_HISTORY) {
-        return { currentMonthKey, currentMonthKm, previousMonthKey, comparisonPercent: null, chartMonths: null };
+        return { currentMonthKey, currentMonthKm, currentMonthCount, previousMonthKey, comparisonPercent: null, chartMonths: null };
     }
 
     const previousMonthKm = totals.get(previousMonthKey)?.km;
@@ -86,6 +91,6 @@ export function buildMonthlyKmStats(workouts, referenceDate = new Date()) {
 
     });
 
-    return { currentMonthKey, currentMonthKm, previousMonthKey, comparisonPercent, chartMonths };
+    return { currentMonthKey, currentMonthKm, currentMonthCount, previousMonthKey, comparisonPercent, chartMonths };
 
 }

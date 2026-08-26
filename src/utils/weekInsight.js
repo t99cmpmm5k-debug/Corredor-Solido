@@ -1,9 +1,9 @@
 import { formatISODate, formatWeekday } from "./date.js";
 
 // Etiqueta corta por tipo de sesión -- a diferencia de TYPE_LABEL de
-// antes ("un rodaje", "la tirada larga"), esta va pegada a un número de
-// km en una frase de una sola línea ("8 km Z2", "13 km de tirada
-// larga"), así que tiene que leerse igual de bien ahí que sola.
+// antes ("un rodaje", "la tirada larga"), esta va delante de un número de
+// km en una frase de una sola línea ("Z2 · 8 km", "tirada larga · 13
+// km"), así que tiene que leerse igual de bien ahí que sola.
 const SHORT_TYPE_LABEL = {
     longRun:"tirada larga",
     z2:"Z2",
@@ -71,13 +71,13 @@ export function buildWeekInsight(week, { goal, todayGymMatch = null, referenceDa
     const todayParts = [];
 
     if (todaySession?.volume > 0) {
-        todayParts.push(`${todaySession.volume} km ${shortLabelFor(todaySession)}`);
+        todayParts.push(`${shortLabelFor(todaySession)} · ${todaySession.volume} km`);
     } else if (todaySession && ["strength", "recovery", "free"].includes(todaySession.type)) {
         todayParts.push(shortLabelFor(todaySession));
     }
 
     if (todayGymMatch) {
-        todayParts.push(`${todayGymMatch.day.title} (gimnasio)`);
+        todayParts.push(`${todayGymMatch.day.title} · Gym`);
     }
 
     if (todayParts.length) {
@@ -85,7 +85,7 @@ export function buildWeekInsight(week, { goal, todayGymMatch = null, referenceDa
     }
 
     if (keySession && !keyIsToday) {
-        parts.push(`${capitalize(formatWeekday(keySession.date))}: ${keySession.volume} km de ${shortLabelFor(keySession)}.`);
+        parts.push(`${capitalize(formatWeekday(keySession.date))}: ${shortLabelFor(keySession)} · ${keySession.volume} km.`);
     }
 
     return parts.join(" ");

@@ -15,8 +15,28 @@ describe("buildMonthlyKmStats", () => {
 
         expect(stats.currentMonthKey).toBe("2026-08");
         expect(stats.currentMonthKm).toBe(0);
+        expect(stats.currentMonthCount).toBe(0);
         expect(stats.comparisonPercent).toBeNull();
         expect(stats.chartMonths).toBeNull();
+
+    });
+
+    it("currentMonthCount cuenta los entrenos reales del mes en curso, con o sin historial suficiente para gráfico", () => {
+
+        const withoutHistory = buildMonthlyKmStats([
+            workout("2026-08-05", 10),
+            workout("2026-08-12", 8)
+        ], REFERENCE);
+        expect(withoutHistory.currentMonthCount).toBe(2);
+        expect(withoutHistory.chartMonths).toBeNull();
+
+        const withHistory = buildMonthlyKmStats([
+            workout("2026-07-01", 50),
+            workout("2026-08-01", 20),
+            workout("2026-08-10", 36)
+        ], REFERENCE);
+        expect(withHistory.currentMonthCount).toBe(2);
+        expect(withHistory.chartMonths).not.toBeNull();
 
     });
 
