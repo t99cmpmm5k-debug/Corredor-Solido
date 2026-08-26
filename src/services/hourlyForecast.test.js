@@ -4,6 +4,7 @@ import {
     mostRecentLocatableWorkout,
     weatherIconForCode,
     parseForecastHours,
+    findBestRunningHour,
     resolveLocation,
     getHourlyForecast
 } from "./hourlyForecast.js";
@@ -82,9 +83,9 @@ describe("parseForecastHours", () => {
         const hours = parseForecastHours(data, now);
 
         expect(hours).toEqual([
-            { time: "11:00", temp: 23, icon: "sun", isNewDay: false },
-            { time: "12:00", temp: 25, icon: "cloud", isNewDay: false },
-            { time: "13:00", temp: 26, icon: "cloud", isNewDay: false }
+            { time: "11:00", temp: 23, icon: "sun", isNewDay: false, windKmh: null, humidity: null },
+            { time: "12:00", temp: 25, icon: "cloud", isNewDay: false, windKmh: null, humidity: null },
+            { time: "13:00", temp: 26, icon: "cloud", isNewDay: false, windKmh: null, humidity: null }
         ]);
 
     });
@@ -181,6 +182,82 @@ describe("parseForecastHours", () => {
 
         expect(result).toHaveLength(4);
         expect(result).not.toHaveLength(HOURS_AHEAD);
+
+    });
+
+    it("parsea viento y humedad reales de Open-Meteo cuando la respuesta los trae", () => {
+
+        const data = {
+            hourly: {
+                time: ["2026-08-22T10:00", "2026-08-22T11:00"],
+                temperature_2m: [22, 23],
+                weathercode: [0, 0],
+                is_day: [1, 1],
+                wind_speed_10m: [12.4, 9.1],
+                relative_humidity_2m: [41.8, 55]
+            }
+        };
+
+        const hours = parseForecastHours(data, new Date("2026-08-22T10:15:00"));
+
+        expect(hours[0]).toMatchObject({ windKmh: 12, humidity: 42 });
+        expect(hours[1]).toMatchObject({ windKmh: 9, humidity: 55 });
+
+    });
+
+    it("sin viento/humedad en la respuesta, quedan en null -- nunca un 0 inventado", () => {
+
+        const data = {
+            hourly: {
+                time: ["2026-08-22T10:00"],
+                temperature_2m: [22],
+                weathercode: [0],
+                is_day: [1]
+            }
+        };
+
+        const hours = parseForecastHours(data, new Date("2026-08-22T10:15:00"));
+
+        expect(hours[0].windKmh).toBeNull();
+        expect(hours[0].humidity).toBeNull();
+
+    });
+
+});
+
+describe("findBestRunningHour", () => {
+
+    function hour(time, temp, icon = "sun") {
+        return { time, temp, icon, isNewDay: false, windKmh: null, humidity: null };
+    }
+
+    it("sin horas, no hay nada que calcular", () => {
+        expect(findBestRunningHour([])).toBeNull();
+        expect(findBestRunningHour(undefined)).toBeNull();
+    });
+
+    it("elige la hora de menor temperatura entre las que no llevan lluvia/tormenta/nieve", () => {
+
+        const hours = [
+            hour("18:00", 28, "sun"),
+            hour("20:00", 24, "rain"), // más fría, pero con lluvia -- se descarta
+            hour("21:00", 25, "cloud"),
+            hour("22:00", 23, "cloud")
+        ];
+
+        expect(findBestRunningHour(hours).time).toBe("22:00");
+
+    });
+
+    it("si TODAS las horas llevan precipitación, cae a la de menor temperatura entre todas", () => {
+
+        const hours = [
+            hour("18:00", 22, "rain"),
+            hour("19:00", 20, "storm"),
+            hour("20:00", 21, "rain")
+        ];
+
+        expect(findBestRunningHour(hours).time).toBe("19:00");
 
     });
 

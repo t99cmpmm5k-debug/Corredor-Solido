@@ -59,7 +59,7 @@ export function BottomNavigation() {
 
                 <iconify-icon icon="solar:dumbbell-large-bold-duotone"></iconify-icon>
 
-                <small>Gimnasio</small>
+                <small>Gym</small>
 
             </button>
 

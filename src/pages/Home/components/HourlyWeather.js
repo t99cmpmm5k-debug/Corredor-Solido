@@ -1,5 +1,7 @@
 import "./HourlyWeather.css";
 
+import { findBestRunningHour } from "../../../services/hourlyForecast.js";
+
 // icon (ver weatherIconForCode en services/hourlyForecast.js) -> icono
 // Solar ya usado en el resto de la app (ver WorkoutIcon.js). "cloud" es el
 // fallback de cualquier código sin categoría clara, así que también lo es
@@ -75,6 +77,41 @@ function TemperatureTrend(hours) {
 
 }
 
+// Línea orientada a correr, no a meteorología genérica -- la hora de
+// menor temperatura entre las que no llevan lluvia/tormenta/nieve
+// dentro de la propia franja ya mostrada (ver findBestRunningHour() en
+// hourlyForecast.js). viento/humedad se omiten sueltos si esa hora en
+// concreto no los trae (nunca "viento null km/h") -- nunca inventados,
+// vienen del mismo hourly de Open-Meteo que ya usa el resto del widget.
+function BestRunningHour(hours) {
+
+    const best = findBestRunningHour(hours);
+    if (!best) return "";
+
+    const details = [`${best.temp}°`];
+    if (best.windKmh != null) details.push(`viento ${best.windKmh} km/h`);
+    if (best.humidity != null) details.push(`humedad ${best.humidity}%`);
+
+    return `
+
+        <div class="hourly-weather-best">
+
+            <p class="hourly-weather-best-headline">
+
+                <iconify-icon icon="solar:sort-by-time-bold-duotone"></iconify-icon>
+
+                Mejor hora para correr: <strong>${best.time}</strong>
+
+            </p>
+
+            <p class="hourly-weather-best-detail">${details.join(" · ")}</p>
+
+        </div>
+
+    `;
+
+}
+
 // current: { temp, icon } | null -- state.status ya garantiza que si esto
 // se llama, hours no está vacío (ver Home.js), pero current puede faltar
 // en respuestas raras de la API sin el bloque "current".
@@ -102,6 +139,8 @@ export function HourlyWeather({ hours, current, label }) {
                 ` : ""}
 
             </div>
+
+            ${BestRunningHour(hours)}
 
             <div class="hourly-weather-scroll">
 

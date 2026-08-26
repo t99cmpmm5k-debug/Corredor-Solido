@@ -78,9 +78,9 @@
 
     bottom:calc(20px + env(safe-area-inset-bottom));
 
-    height:68px;
+    height:58px;
 
-    padding:0 8px;
+    padding:0 6px;
 
     display:flex;
     align-items:center;
@@ -106,13 +106,13 @@
     flex:1;
     min-width:0;
 
-    height:54px;
+    height:46px;
 
     background:transparent;
 
     border:none;
 
-    border-radius:18px;
+    border-radius:16px;
 
     color:var(--text-secondary);
 
@@ -124,7 +124,7 @@
 
     align-items:center;
 
-    gap:4px;
+    gap:2px;
 
     cursor:pointer;
 
@@ -134,12 +134,12 @@
 
 .nav-item iconify-icon{
 
-    font-size:30px;
+    font-size:23px;
 
 }
 
 .nav-item small{
-    font-size:11px;
+    font-size:10px;
     font-weight:600;
 }
 

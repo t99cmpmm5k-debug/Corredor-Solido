@@ -107,6 +107,8 @@ export function parseForecastHours(data, now = new Date()) {
     const temps = data?.hourly?.temperature_2m || [];
     const codes = data?.hourly?.weathercode || [];
     const isDayFlags = data?.hourly?.is_day || [];
+    const winds = data?.hourly?.wind_speed_10m || [];
+    const humidities = data?.hourly?.relative_humidity_2m || [];
 
     if (!times.length) return [];
 
@@ -133,10 +135,37 @@ export function parseForecastHours(data, now = new Date()) {
             time: t.slice(11, 16),
             temp: Math.round(temps[idx]),
             icon: weatherIconForCode(codes[idx], isDayFlags[idx] !== 0),
-            isNewDay
+            isNewDay,
+            // null (no "0 inventado") si el propio Open-Meteo no trae el
+            // dato para esa hora -- mismo criterio que temp/icon de arriba.
+            windKmh: winds[idx] != null ? Math.round(winds[idx]) : null,
+            humidity: humidities[idx] != null ? Math.round(humidities[idx]) : null
         };
 
     });
+
+}
+
+// Códigos de icono con precipitación real -- una hora con cualquiera de
+// estos no es "favorable para correr" aunque tenga la temperatura más
+// baja de la franja, así que se descarta primero. Si TODAS las horas
+// llevan precipitación, no hay ninguna hora "seca" que preferir y se
+// cae a la de menor temperatura sin más (ver findBestRunningHour).
+const PRECIPITATION_ICONS = new Set(["rain", "storm", "snow"]);
+
+// La hora "mejor para correr" dentro de las horas ya mostradas -- menor
+// temperatura entre las que no llevan lluvia/tormenta/nieve; si todas
+// llevan precipitación, la de menor temperatura entre todas. Nunca
+// inventa el criterio si no hay horas: devuelve null y HourlyWeather.js
+// omite la línea entera en vez de mostrar un dato fabricado.
+export function findBestRunningHour(hours) {
+
+    if (!hours?.length) return null;
+
+    const dry = hours.filter(h => !PRECIPITATION_ICONS.has(h.icon));
+    const pool = dry.length ? dry : hours;
+
+    return pool.reduce((best, h) => (h.temp < best.temp ? h : best), pool[0]);
 
 }
 
@@ -166,7 +195,11 @@ async function fetchOpenMeteoForecast(lat, lon, onLog) {
         latitude: lat,
         longitude: lon,
         current: "temperature_2m,weathercode,is_day",
-        hourly: "temperature_2m,weathercode,is_day",
+        // wind_speed_10m/relative_humidity_2m: mismo endpoint "forecast" de
+        // siempre, sin clave nueva -- Open-Meteo ya las ofrece como
+        // variables hourly reales, se usan para la línea de "mejor hora
+        // para correr" (ver findBestRunningHour()).
+        hourly: "temperature_2m,weathercode,is_day,wind_speed_10m,relative_humidity_2m",
         forecast_days: "2",
         timezone: "auto"
     });

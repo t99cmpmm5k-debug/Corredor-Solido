@@ -84,6 +84,70 @@
 
 }
 
+/* Línea destacada orientada a correr (ver findBestRunningHour() en
+   hourlyForecast.js) -- lo único con fondo propio dentro de la tarjeta,
+   para que se lea primero que la franja de 24h de debajo (es el dato
+   accionable, la franja es contexto). */
+.hourly-weather-best {
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:2px;
+
+    padding:10px 12px;
+
+    border-radius:14px;
+
+    background:color-mix(in srgb, var(--color-primary) 10%, transparent);
+
+}
+
+.hourly-weather-best-headline {
+
+    margin:0;
+
+    display:flex;
+
+    align-items:center;
+
+    gap:6px;
+
+    font-size:.82rem;
+
+    font-weight:600;
+
+    color:var(--text-primary);
+
+}
+
+.hourly-weather-best-headline iconify-icon {
+
+    font-size:1rem;
+
+    color:var(--color-primary);
+
+}
+
+.hourly-weather-best-headline strong {
+
+    color:var(--color-primary);
+
+    font-weight:800;
+
+}
+
+.hourly-weather-best-detail {
+
+    margin:0 0 0 22px;
+
+    font-size:.74rem;
+
+    color:var(--text-secondary);
+
+}
+
 .hourly-weather-scroll {
 
     display: flex;
