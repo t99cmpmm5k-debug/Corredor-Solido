@@ -7,6 +7,7 @@ import {
     findBestRunningHour,
     remainingHours,
     todayRemainingHours,
+    withinRecommendableWindow,
     isFavorableHour,
     isNowWithinHour,
     resolveLocation,
@@ -306,6 +307,38 @@ describe("todayRemainingHours", () => {
 
         const hours = [hour("00:00", true), hour("01:00")];
         expect(todayRemainingHours(hours)).toEqual([]);
+
+    });
+
+});
+
+describe("withinRecommendableWindow", () => {
+
+    function hour(time) {
+        return { time, temp: 20, icon: "sun", isNewDay: false, windKmh: null, humidity: null };
+    }
+
+    // Ajustes finales de cierre (B4): de madrugada no se recomienda salir
+    // a correr aunque sea la hora más fresca del pronóstico.
+    it("descarta las horas de madrugada (antes de las 06:00)", () => {
+
+        const hours = [hour("03:00"), hour("05:00"), hour("06:00"), hour("07:00")];
+
+        expect(withinRecommendableWindow(hours).map(h => h.time)).toEqual(["06:00", "07:00"]);
+
+    });
+
+    it("no descarta ninguna hora del resto del día (06:00-23:00)", () => {
+
+        const hours = [hour("06:00"), hour("12:00"), hour("23:00")];
+        expect(withinRecommendableWindow(hours)).toEqual(hours);
+
+    });
+
+    it("sin ninguna hora dentro de la ventana, devuelve un array vacío", () => {
+
+        const hours = [hour("02:00"), hour("04:00")];
+        expect(withinRecommendableWindow(hours)).toEqual([]);
 
     });
 

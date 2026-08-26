@@ -1,6 +1,6 @@
 import "./HourlyWeather.css";
 
-import { findBestRunningHour, remainingHours, todayRemainingHours, isFavorableHour, isNowWithinHour } from "../../../services/hourlyForecast.js";
+import { findBestRunningHour, remainingHours, todayRemainingHours, withinRecommendableWindow, isFavorableHour, isNowWithinHour } from "../../../services/hourlyForecast.js";
 
 // icon (ver weatherIconForCode en services/hourlyForecast.js) -> icono
 // Solar ya usado en el resto de la app (ver WorkoutIcon.js). "cloud" es el
@@ -94,13 +94,15 @@ function nextHourLabel(time) {
 // temperatura más baja aislada, ver comfortScore() en hourlyForecast.js)
 // entre las que no llevan lluvia/tormenta/nieve, restringida a HOY
 // (todayRemainingHours -- nunca cruza la medianoche, aunque la hora más
-// fría de las 24h cacheadas caiga de madrugada de mañana) y que además
-// todavía no ha empezado respecto al reloj real de ahora mismo
-// (remainingHours() -- nunca se propone una franja ya pasada, aunque el
-// pronóstico llevara un rato cacheado sin recargar, ver
+// fría de las 24h cacheadas caiga de madrugada de mañana), a la ventana
+// 06:00-23:00 (withinRecommendableWindow -- de madrugada no se recomienda
+// salir a correr aunque sea la hora más fresca, ajustes finales de
+// cierre, B4) y que además todavía no ha empezado respecto al reloj real
+// de ahora mismo (remainingHours() -- nunca se propone una franja ya
+// pasada, aunque el pronóstico llevara un rato cacheado sin recargar, ver
 // homeWeatherStore.js). La franja de horas de abajo NO pasa por ninguno
-// de estos dos filtros a propósito, sigue mostrando también lo que ya
-// pasó y la madrugada de mañana.
+// de estos filtros a propósito, sigue mostrando también lo que ya pasó,
+// la madrugada de mañana y las horas de madrugada de hoy.
 //
 // Si la menos mala del día sigue siendo poco favorable (isFavorableHour,
 // ver umbral en hourlyForecast.js) el mensaje cambia a uno más honesto
@@ -117,7 +119,7 @@ function nextHourLabel(time) {
 // hourly de Open-Meteo que ya usa el resto del widget.
 function BestRunningHour(hours, now) {
 
-    const best = findBestRunningHour(todayRemainingHours(remainingHours(hours, now)));
+    const best = findBestRunningHour(withinRecommendableWindow(todayRemainingHours(remainingHours(hours, now))));
     if (!best) return "";
 
     if (!isFavorableHour(best)) {

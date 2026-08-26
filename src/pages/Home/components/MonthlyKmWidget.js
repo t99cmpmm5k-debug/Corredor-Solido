@@ -8,13 +8,15 @@ import { formatKm } from "../../../utils/format.js";
 // aria-label, sin texto visible.
 const MAX_BAR_HEIGHT = 64;
 
-// Antes 6px -- con barras de 64px de alto eso se leía como una rayita,
-// no como una barra, para cualquier mes bajo (p. ej. abril con 0 km
-// reales, o marzo con muchos menos km que agosto). Ronda de cierre,
-// punto 2: mínimo legible aunque el dato real sea bajo -- sigue siendo
-// claramente más bajo que un mes alto, solo que ya se distingue como
-// barra.
-const MIN_BAR_HEIGHT = 18;
+// Ajuste de los ajustes finales (B3): 18px (ronda de cierre anterior)
+// resultaba demasiado alto como suelo -- cualquier mes por debajo de
+// ~28% del máximo quedaba igualado a esos mismos 18px, así que dos meses
+// claramente distintos (p. ej. 5 km y 15 km, con un máximo de 52,7 km)
+// se veían como la MISMA barra. 8px es lo bastante pequeño como para que
+// el suelo solo entre en juego con meses realmente cercanos a 0 -- por
+// encima de eso, barHeight() ya deja la proporción real intacta sin
+// tocarla.
+const MIN_BAR_HEIGHT = 8;
 
 // "AAAA-MM" -> "Agosto" (capitalizado, sin año -- el año no aporta nada
 // aquí, todo el widget vive en el mismo año la inmensa mayoría de veces

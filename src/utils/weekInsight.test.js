@@ -39,6 +39,27 @@ describe("buildWeekInsight -- redacción natural (ronda final de Inicio, 2026-08
 
     });
 
+    // Ajuste de cierre (B1): un día de series real casi nunca trae
+    // distanceKm (se mide en repeticiones/tiempo) -- antes se omitía en
+    // silencio como si no fuera un entreno real de hoy.
+    it("hoy series (intervals) sin km real: muestra el tipo igual que fuerza/descanso/libre", () => {
+
+        const week = [session("2026-08-26", "intervals", 0)];
+        expect(insight(week, { goal: 21 })).toBe("Hoy: series.");
+
+    });
+
+    it("hoy series sin km, además del hito real de la semana: se combinan las dos frases", () => {
+
+        const week = [
+            session("2026-08-26", "intervals", 0),
+            session("2026-08-29", "longRun", 13)
+        ];
+
+        expect(insight(week, { goal: 21 })).toBe("Hoy: series. Sábado: tirada larga · 13 km.");
+
+    });
+
     it("añade la sesión clave de más adelante en la semana (más km, aún pendiente)", () => {
 
         const week = [

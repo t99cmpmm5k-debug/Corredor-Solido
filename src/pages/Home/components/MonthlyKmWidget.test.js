@@ -122,4 +122,47 @@ describe("MonthlyKmWidget", () => {
 
     });
 
+    // Ajuste B3 (ajustes finales de cierre): el mínimo visible solo debe
+    // aplicarse a meses realmente cercanos a 0 -- dos meses bajos pero
+    // genuinamente distintos (5 km y 15 km, con agosto en 52,7 km) deben
+    // seguir viéndose distintos entre sí, no igualados al mismo mínimo.
+    it("dos meses bajos pero distintos entre sí muestran alturas distintas, no ambos igualados al mínimo", () => {
+
+        const months = [
+            { key: "2026-05", km: 5, count: 2, isCurrent: false },
+            { key: "2026-06", km: 15, count: 3, isCurrent: false },
+            { key: "2026-07", km: 35.1, count: 7, isCurrent: false },
+            { key: "2026-08", km: 52.7, count: 9, isCurrent: true }
+        ];
+
+        const html = MonthlyKmWidget(stats({ chartMonths: months }));
+
+        const heightOf = key => {
+            const idx = html.indexOf(`data-month-key="${key}"`);
+            return Number(html.slice(idx - 200, idx).match(/height:(\d+)px/)[1]);
+        };
+
+        expect(heightOf("2026-06")).toBeGreaterThan(heightOf("2026-05"));
+
+    });
+
+    // Un mes en 0 km real (o muy cerca) sigue dibujando una barra visible
+    // -- nunca desaparece del todo -- pero ya no se traga la diferencia
+    // con otro mes bajo real (ver test de arriba).
+    it("un mes en 0 km real sigue dibujando una barra visible (nunca 0px)", () => {
+
+        const months = [
+            { key: "2026-04", km: 0, count: 0, isCurrent: false },
+            { key: "2026-08", km: 52.7, count: 9, isCurrent: true }
+        ];
+
+        const html = MonthlyKmWidget(stats({ chartMonths: months }));
+
+        const idx = html.indexOf('data-month-key="2026-04"');
+        const height = Number(html.slice(idx - 200, idx).match(/height:(\d+)px/)[1]);
+
+        expect(height).toBeGreaterThan(0);
+
+    });
+
 });

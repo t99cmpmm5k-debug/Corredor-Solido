@@ -248,7 +248,11 @@
 
     max-width:34px;
 
-    border-radius:8px 8px 3px 3px;
+    /* Radio más bajo que antes (era 8px 8px) -- con el mínimo de barra
+       bajado a 8px (ver MIN_BAR_HEIGHT en MonthlyKmWidget.js) un radio
+       igual de grande convertía la barra más baja en una píldora/gota,
+       no en un rectángulo con la esquina solo apuntada. */
+    border-radius:4px 4px 2px 2px;
 
     background:var(--color-primary);
 

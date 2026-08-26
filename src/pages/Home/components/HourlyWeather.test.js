@@ -173,4 +173,29 @@ describe("HourlyWeather", () => {
 
     });
 
+    // Ajustes finales de cierre (B4): ni siquiera la hora más fresca del
+    // día se recomienda si cae de madrugada -- se elige la mejor opción
+    // real dentro de 06:00-23:00.
+    it("ignora la hora más fresca si cae de madrugada, y recomienda la mejor real dentro de 06:00-23:00", () => {
+
+        function h(time, temp) {
+            return { time, temp, icon: "sun", isNewDay: false, windKmh: null, humidity: null };
+        }
+
+        const hours = [h("04:00", 14), h("05:00", 15), h("06:00", 17), h("07:00", 19), h("20:00", 22)];
+        const now = new Date("2026-08-22T03:30:00");
+
+        const html = HourlyWeather({ hours, current: null, label: null }, now);
+
+        const bestBlock = html.slice(
+            html.indexOf('class="hourly-weather-best'),
+            html.indexOf('class="hourly-weather-scroll')
+        );
+
+        expect(bestBlock).not.toContain("04:00");
+        expect(bestBlock).not.toContain("05:00");
+        expect(bestBlock).toContain("06:00-07:00");
+
+    });
+
 });

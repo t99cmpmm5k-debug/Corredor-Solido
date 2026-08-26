@@ -43,6 +43,29 @@ export function Home(){
     // y la sección desaparece sin dejar hueco ni dato inventado.
     const weather = getHourlyWeatherState();
 
+    const weekSummaryHtml = `
+
+        <section class="week-chart-card">
+
+            ${WeekSummary({
+                title:"ESTA SEMANA",
+                kmDone: completed,
+                kmTarget: goal,
+                workoutCount,
+                insight,
+                variant:"card"
+            })}
+
+        </section>
+
+    `;
+
+    // "Próximas carreras" (NextGoalWidget) devuelve "" sin ninguna carrera
+    // próxima real -- en ese caso Esta semana vuelve a ocupar el ancho
+    // completo en vez de dejar una columna vacía a su lado (ver
+    // .home-two-col en Home.css).
+    const nextGoalHtml = NextGoalWidget();
+
     return `
 
         <main class="home">
@@ -53,20 +76,17 @@ export function Home(){
 
                 ${MasterCard()}
 
-                <section class="week-chart-card">
+                ${nextGoalHtml ? `
 
-                    ${WeekSummary({
-                        title:"ESTA SEMANA",
-                        kmDone: completed,
-                        kmTarget: goal,
-                        workoutCount,
-                        insight,
-                        variant:"card"
-                    })}
+                    <div class="home-two-col">
 
-                </section>
+                        ${weekSummaryHtml}
 
-                ${NextGoalWidget()}
+                        ${nextGoalHtml}
+
+                    </div>
+
+                ` : weekSummaryHtml}
 
                 <section class="monthly-km-card">
 

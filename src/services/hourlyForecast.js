@@ -248,6 +248,21 @@ export function todayRemainingHours(hours) {
 
 }
 
+// Ajustes finales de cierre (B4): además de no cruzar la medianoche
+// (todayRemainingHours) ni proponer una hora ya pasada (remainingHours),
+// tampoco tiene sentido recomendar salir a correr de madrugada aunque
+// sea la hora más fresca del pronóstico -- 06:00 es el límite de
+// diseño, no un dato del pronóstico. El límite superior (23:00) ya lo
+// pone todayRemainingHours() de forma natural, esta función solo recorta
+// el extremo de abajo.
+const EARLIEST_RECOMMENDABLE_HOUR = 6;
+
+export function withinRecommendableWindow(hours) {
+
+    return hours.filter(h => Number(h.time.slice(0, 2)) >= EARLIEST_RECOMMENDABLE_HOUR);
+
+}
+
 // Umbral de "franja claramente favorable para correr" -- por encima de
 // esta temperatura, la hora menos mala del día ya no es una
 // recomendación de verdad, así que HourlyWeather.js cambia el mensaje a

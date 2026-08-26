@@ -234,3 +234,89 @@
     color:var(--text-secondary);
 
 }
+
+/* ==========================================================
+   COMPACTO A MEDIA COLUMNA — ajustes finales de cierre (A1): desde que
+   esta tarjeta vive junto a Próximas Carreras en dos columnas (ver
+   .home-two-col en Home.css), el anillo de 64px + las estadísticas en
+   fila ya no caben uno al lado del otro sin romperse. Mismos datos de
+   siempre (ver WeekSummary.js), solo más compactos. Escapado por clase
+   del padre en vez de tocar los estilos base porque WeekSummary.js no
+   tiene otro consumidor hoy, pero podría tenerlo.
+========================================================== */
+
+.home-two-col .week-summary--card{
+
+    padding:14px 14px 12px;
+
+}
+
+.home-two-col .week-summary-title{
+
+    font-size:.66rem;
+
+    letter-spacing:.04em;
+
+}
+
+.home-two-col .week-summary-body{
+
+    gap:10px;
+
+}
+
+.home-two-col .week-summary-ring{
+
+    width:44px;
+
+    height:44px;
+
+}
+
+.home-two-col .week-summary-ring::before{
+
+    inset:4px;
+
+}
+
+.home-two-col .week-summary-percent{
+
+    font-size:.66rem;
+
+}
+
+.home-two-col .week-summary-km{
+
+    flex-direction:column;
+
+    align-items:flex-start;
+
+    gap:0;
+
+}
+
+.home-two-col .week-summary-km strong{
+
+    font-size:.82rem;
+
+}
+
+.home-two-col .week-summary-km span{
+
+    font-size:.62rem;
+
+}
+
+.home-two-col .week-summary-count{
+
+    font-size:.66rem;
+
+}
+
+.home-two-col .week-summary-insight{
+
+    font-size:.72rem;
+
+    line-height:1.4;
+
+}

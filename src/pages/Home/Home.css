@@ -44,6 +44,34 @@
     margin: 0 20px 28px;
 }
 
+/* Ajustes finales de cierre (A1): "Esta semana" y "Próximas carreras"
+   (NextGoalWidget, que no lleva wrapper propio -- ver sus márgenes
+   propios en NextGoalWidget.css) lado a lado en dos columnas de media
+   anchura. El margen lateral/inferior lo pone esta fila; los hijos se
+   quedan sin el suyo propio para no duplicarlo (ver más abajo). Sin
+   ninguna carrera próxima real, Home.js no envuelve nada en esta fila --
+   "Esta semana" vuelve a ir sola a ancho completo. */
+.home-two-col {
+
+    display: flex;
+
+    align-items: stretch;
+
+    gap: 12px;
+
+    margin: 0 20px 28px;
+}
+
+.home-two-col > .week-chart-card,
+.home-two-col > .next-goal-widget {
+
+    margin: 0;
+
+    flex: 1 1 0;
+
+    min-width: 0;
+}
+
 .hourly-weather-card {
 
     /* Siempre el último bloque de Inicio (orden fijo definitivo, ver

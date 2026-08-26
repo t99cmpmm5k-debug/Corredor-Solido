@@ -38,6 +38,18 @@
 
 }
 
+.next-goal-header{
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:space-between;
+
+    gap:8px;
+
+}
+
 .next-goal-label{
 
     color:var(--text-secondary);
@@ -52,25 +64,43 @@
 
 }
 
-.next-goal-line{
+/* Indicador sutil de que hay más carreras en la pantalla Carreras -- el
+   widget solo muestra la más próxima a propósito (ver NextGoalWidget.js),
+   esta flecha es la única pista visual de que no es la única. */
+.next-goal-more-hint{
+
+    color:var(--text-secondary);
+
+    font-size:.85rem;
+
+    opacity:.6;
+
+}
+
+/* Cápsula + flecha comparten la fila de cabecera, a la derecha del
+   título -- ver NextGoalWidget.js para por qué no comparten fila con el
+   nombre. */
+.next-goal-header-right{
 
     display:flex;
 
-    align-items:flex-start;
+    align-items:center;
 
-    justify-content:space-between;
+    gap:8px;
 
-    gap:10px;
+    flex-shrink:0;
 
 }
 
 /* 2 líneas como mucho (antes 1, cortando nombres largos de carreras
    reales tipo "30ª Carrera Nocturna Fiestas de Las Torres 2026" a media
    frase) -- la fecha/tipo real ya va debajo en .next-goal-subtitle, así
-   que el nombre completo no necesita caber en una sola línea. */
+   que el nombre completo no necesita caber en una sola línea. Ya usa
+   TODO el ancho de la tarjeta (ver NextGoalWidget.js) para tener sitio
+   de sobra a media columna. */
 .next-goal-name{
 
-    font-size:1rem;
+    font-size:.88rem;
 
     font-weight:800;
 
@@ -86,11 +116,12 @@
 
 }
 
-.next-goal-today-pill{
+/* Mismo lenguaje visual para HOY y MAÑANA (ver dayPillLabel() en
+   NextGoalWidget.js) -- una sola cápsula, cambia el texto, no el
+   tratamiento. */
+.next-goal-day-pill{
 
     flex-shrink:0;
-
-    margin-top:2px;
 
     padding:3px 10px;
 
