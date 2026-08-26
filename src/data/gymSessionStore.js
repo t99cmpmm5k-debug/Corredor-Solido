@@ -41,6 +41,28 @@ export function getGymSessions() {
 
 }
 
+// Duración media REAL (segundos) de las últimas `limit` sesiones ya
+// terminadas de ese dayId concreto -- para GymTodayCard.js, que necesita
+// mostrar "~45 min" en un día que todavía no se ha empezado hoy. Nunca
+// una estimación inventada: null si no hay ningún historial real de ese
+// día (durationUnreliable descarta sesiones con reloj poco fiable, ver
+// computeDuration() más abajo -- mismo criterio que el resto de la app,
+// mejor omitir el dato que mostrar uno dudoso).
+export function getAverageDurationForDay(dayId, { limit = 5 } = {}) {
+
+    const finished = sessions
+        .filter(s => s.dayId === dayId && s.finishedAt && s.durationSec != null && !s.durationUnreliable)
+        .sort((a, b) => b.date.localeCompare(a.date))
+        .slice(0, limit);
+
+    if (!finished.length) return null;
+
+    const avgSec = finished.reduce((sum, s) => sum + s.durationSec, 0) / finished.length;
+
+    return Math.round(avgSec);
+
+}
+
 // Primer número que aparece en la cifra de la tabla ("6-8" → 6,
 // "40-60s" → 40) — punto de partida de cada serie nueva.
 function firstNumber(text) {

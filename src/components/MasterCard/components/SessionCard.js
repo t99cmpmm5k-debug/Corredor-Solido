@@ -1,39 +1,56 @@
-import { formatSecondsAsClock } from "../../../utils/format.js";
 import { getState } from "../../../core/state.js";
 import { PlanTimeline } from "../../../pages/Plan/components/PlanTimeline.js";
 import { getCurrentWeekSessions, getWorkoutForSession } from "../../../data/workoutStore.js";
 import { formatISODate, getWeekStartDate } from "../../../utils/date.js";
 
-// Mismos iconos Lucide que ya usaba planData.js en sus arrays "metrics"
-// hardcodeados — aquí se construyen desde los campos reales presentes en
-// vez de venir ya hechos, mostrando solo los que de verdad tengan valor.
-function buildMetrics(workout) {
+// Etiqueta corta por tipo -- la "zona" que pide el formato compacto
+// ("8 km · Zona 2 · ~46 min") es la del propio tipo de sesión, no un
+// campo aparte (targetHrZone ya no se muestra aquí, ver comentario en
+// compactSummary()).
+const ZONE_LABEL = {
+    z2: "Zona 2",
+    tempo: "Tempo",
+    intervals: "Series",
+    longRun: "Tirada larga",
+    recovery: "Recuperación",
+    race: "Carrera",
+    strength: "Fuerza",
+    free: "Libre",
+    generic: "Entreno"
+};
 
-    const metrics = [];
+// Compactado 2026-08-26: antes esta cabecera solo traía workout.title
+// (genérico) y una rejilla de métricas aparte debajo (distancia/
+// duración/ritmo/FC en tarjetas grandes) -- ahora es una sola línea con
+// lo esencial. La duración es real si el propio plan la trae
+// (durationSec), o una estimación calculada de dos datos reales ya
+// existentes (distancia × ritmo objetivo) si no -- nunca un número
+// inventado sin ninguna de las dos piezas. targetHrZone se deja fuera:
+// la "zona" ya la representa el tipo (Z2, Tempo...), mostrar las dos
+// hubiera sido redundante en una línea que se quiere leer de un vistazo.
+function compactSummary(workout) {
 
-    if (workout.distanceKm != null) {
-        metrics.push({ icon: "map-pinned", label: "Distancia", value: workout.distanceKm, unit: "km" });
-    }
+    const parts = [];
 
-    if (workout.durationSec != null) {
-        metrics.push({ icon: "clock-3", label: "Duración", value: formatSecondsAsClock(workout.durationSec) });
-    }
+    if (workout.distanceKm != null) parts.push(`${workout.distanceKm} km`);
 
-    if (workout.targetPaceSecPerKm != null) {
-        metrics.push({ icon: "gauge", label: "Ritmo objetivo", value: formatSecondsAsClock(workout.targetPaceSecPerKm), unit: "/km" });
-    }
+    parts.push(ZONE_LABEL[workout.type] ?? workout.title ?? "Entreno");
 
-    if (workout.targetHrZone != null) {
-        metrics.push({ icon: "heart", label: "Zona FC", value: workout.targetHrZone });
-    }
+    const durationSec = workout.durationSec ?? (
+        workout.distanceKm != null && workout.targetPaceSecPerKm != null
+            ? Math.round(workout.distanceKm * workout.targetPaceSecPerKm)
+            : null
+    );
 
-    return metrics;
+    if (durationSec != null) parts.push(`~${Math.round(durationSec / 60)} min`);
+
+    return parts.join(" · ");
 
 }
 
 export function SessionCard(workout) {
 
-    const metrics = buildMetrics(workout);
+    const summary = compactSummary(workout);
     const detailExpanded = getState().sessionDetailExpanded;
     const weekPickerExpanded = getState().weekPickerExpanded;
 
@@ -66,9 +83,9 @@ export function SessionCard(workout) {
 
             <div class="session-title">
 
-                <i data-lucide="zap"></i>
+                <i data-lucide="footprints"></i>
 
-                <span>SESIÓN DE HOY</span>
+                <span>RUNNING DE HOY</span>
 
             </div>
 
@@ -116,31 +133,9 @@ export function SessionCard(workout) {
 
             <i data-lucide="footprints"></i>
 
-            <span>${workout.title ?? "Entrenamiento"}</span>
+            <span>${summary}</span>
 
         </div>
-
-        ${metrics.length ? `
-
-            <div class="session-metrics">
-
-                ${metrics.map(metric => `
-
-                    <div class="metric">
-
-                        <i data-lucide="${metric.icon}"></i>
-
-                        <strong>${metric.value}${metric.unit ? `<span class="metric-unit">${metric.unit}</span>` : ""}</strong>
-
-                        <span>${metric.label}</span>
-
-                    </div>
-
-                `).join("")}
-
-            </div>
-
-        ` : ""}
 
         ${completed ? `
 

@@ -1,3 +1,22 @@
+import { getAverageDurationForDay } from "../../../data/gymSessionStore.js";
+
+// Compactado 2026-08-26: "Pierna · 6 ejercicios · 45 min" en vez de solo
+// el título del día -- ejercicios reales (day.exercises.length), y una
+// duración real solo si hay historial de ESTE día concreto ya terminado
+// (media de las últimas sesiones, ver getAverageDurationForDay() en
+// gymSessionStore.js) -- un día que nunca se ha hecho todavía no tiene
+// duración que mostrar, y no se inventa una.
+function compactSummary(day) {
+
+    const parts = [day.title, `${day.exercises.length} ejercicio${day.exercises.length === 1 ? "" : "s"}`];
+
+    const avgDurationSec = getAverageDurationForDay(day.id);
+    if (avgDurationSec != null) parts.push(`~${Math.round(avgDurationSec / 60)} min`);
+
+    return parts.join(" · ");
+
+}
+
 // Rellena el mismo hueco de tarjeta que SessionCard cuando hoy no hay
 // running planificado pero sí toca gimnasio (ver getGymDayForDate() en
 // gymTimelineBridge.js, misma fuente que Plan) -- running sigue mandando
@@ -55,7 +74,7 @@ export function GymTodayCard({ routine, day, finishedSession }) {
 
             <i data-lucide="dumbbell"></i>
 
-            <span>${day.title}</span>
+            <span>${compactSummary(day)}</span>
 
         </div>
 

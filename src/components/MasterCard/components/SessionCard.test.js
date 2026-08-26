@@ -58,4 +58,50 @@ describe("SessionCard -- estado finalizada", () => {
 
     });
 
+    it("cabecera 'RUNNING DE HOY' (no genérica) -- para distinguir de 'GIMNASIO DE HOY' cuando se apilan las dos", () => {
+
+        const html = SessionCard(baseWorkout());
+        expect(html).toContain("RUNNING DE HOY");
+
+    });
+
+});
+
+describe("SessionCard -- resumen compacto (fase 2, coherencia 2026-08-26)", () => {
+
+    afterEach(() => {
+        workoutForSession = null;
+    });
+
+    it("km real + etiqueta de zona por tipo + duración real, en una sola línea", () => {
+
+        const html = SessionCard(baseWorkout({ type: "z2", distanceKm: 8, durationSec: 2760 }));
+        expect(html).toContain("8 km · Zona 2 · ~46 min");
+
+    });
+
+    it("sin duración real pero con ritmo objetivo, la estima de distancia × ritmo -- no la inventa de la nada", () => {
+
+        // 8 km a 5:45/km (345 s/km) = 2760 s = 46 min
+        const html = SessionCard(baseWorkout({ type: "z2", distanceKm: 8, targetPaceSecPerKm: 345 }));
+        expect(html).toContain("8 km · Zona 2 · ~46 min");
+
+    });
+
+    it("sin duración real ni ritmo objetivo, omite el segmento de duración en vez de inventarlo", () => {
+
+        const html = SessionCard(baseWorkout({ type: "z2", distanceKm: 8 }));
+        expect(html).toContain("8 km · Zona 2");
+        expect(html).not.toMatch(/~\d+ min/);
+
+    });
+
+    it("sin distancia (p. ej. un tipo sin km, sesión libre), no antepone un km inventado", () => {
+
+        const html = SessionCard(baseWorkout({ type: "recovery", distanceKm: null }));
+        expect(html).toContain("Recuperación");
+        expect(html).not.toMatch(/^\d+ km/);
+
+    });
+
 });

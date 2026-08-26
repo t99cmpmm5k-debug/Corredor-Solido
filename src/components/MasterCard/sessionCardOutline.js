@@ -46,6 +46,29 @@ function buildOutline(width, height) {
 
 let observer = null;
 
+function applyOutline(card, width, height) {
+
+    const glass = card.querySelector(".session-glass");
+    const highlight = card.querySelector(".session-highlight");
+    const stroke = card.querySelector(".session-outline-stroke");
+
+    if (!glass || !stroke) return;
+
+    const d = buildOutline(width, height);
+
+    glass.style.clipPath = `path("${d}")`;
+
+    if (highlight) highlight.style.clipPath = `path("${d}")`;
+
+    stroke.setAttribute("d", d);
+
+}
+
+// querySelectorAll, no querySelector -- desde que MasterCard() puede
+// apilar dos tarjetas a la vez (running + gimnasio el mismo día, ver
+// MasterCard.js), puede haber más de un .session-card en el DOM y cada
+// una necesita su propio recorte según SU propio tamaño real (entry.target
+// identifica de cuál de las dos viene cada medición del ResizeObserver).
 export function initSessionCardOutline() {
 
     if (observer) {
@@ -53,14 +76,8 @@ export function initSessionCardOutline() {
         observer = null;
     }
 
-    const card = document.querySelector(".session-card");
-    if (!card) return;
-
-    const glass = card.querySelector(".session-glass");
-    const highlight = card.querySelector(".session-highlight");
-    const stroke = card.querySelector(".session-outline-stroke");
-
-    if (!glass || !stroke) return;
+    const cards = document.querySelectorAll(".session-card");
+    if (!cards.length) return;
 
     observer = new ResizeObserver(entries => {
 
@@ -70,18 +87,12 @@ export function initSessionCardOutline() {
 
             if (width === 0 || height === 0) continue;
 
-            const d = buildOutline(width, height);
-
-            glass.style.clipPath = `path("${d}")`;
-
-            if (highlight) highlight.style.clipPath = `path("${d}")`;
-
-            stroke.setAttribute("d", d);
+            applyOutline(entry.target, width, height);
 
         }
 
     });
 
-    observer.observe(card);
+    cards.forEach(card => observer.observe(card));
 
 }

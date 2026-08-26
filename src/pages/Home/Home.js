@@ -10,6 +10,8 @@ import { getCurrentWeekSessions, getWeekVolume, getWorkouts } from "../../data/w
 import { buildWeekInsight } from "../../utils/weekInsight.js";
 import { buildMonthlyKmStats } from "../../utils/monthlyKm.js";
 import { getHourlyWeatherState } from "./homeWeatherStore.js";
+import { getGymDayForDate } from "../Plan/gymTimelineBridge.js";
+import { formatISODate } from "../../utils/date.js";
 
 export function Home(){
 
@@ -20,7 +22,13 @@ export function Home(){
         session => session.status === "completed" && session.type !== "recovery" && session.type !== "free"
     ).length;
 
-    const insight = buildWeekInsight(week, { completed, goal });
+    // Para que "Esta semana" nunca describa un día distinto de "hoy"
+    // cuando hoy no hay running -- ver corrección de coherencia en
+    // weekInsight.js. Misma fuente que MasterCard.js y Plan, no una
+    // comprobación nueva.
+    const todayGymMatch = getGymDayForDate(formatISODate(new Date()));
+
+    const insight = buildWeekInsight(week, { completed, goal, todayGymMatch });
 
     // Solo entrenos reales (getWorkouts(), nunca sesiones planificadas) --
     // ver buildMonthlyKmStats() para qué se degrada cuando falta historial.

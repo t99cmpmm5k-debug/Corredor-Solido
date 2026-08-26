@@ -1,48 +1,41 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
+import { buildWeekInsight } from "./weekInsight.js";
 
-vi.mock("./date.js", async () => {
-    const actual = await vi.importActual("./date.js");
-    return {
-        ...actual,
-        isToday: (date) => date === "2026-08-26",
-        formatWeekday: (date) => {
-            const map = { "2026-08-24": "lunes", "2026-08-29": "sábado" };
-            return map[date] ?? date;
-        }
-    };
-});
-
-const { buildWeekInsight } = await import("./weekInsight.js");
+const WEDNESDAY = new Date(2026, 7, 26); // miércoles 26 ago 2026
 
 function session(date, type, volume, status = "pending") {
     return { date, type, volume, status };
 }
 
-describe("buildWeekInsight -- formato corto tipo entrenador (fase 3, 2026-08-26)", () => {
+function insight(week, opts = {}) {
+    return buildWeekInsight(week, { referenceDate: WEDNESDAY, ...opts });
+}
+
+describe("buildWeekInsight -- formato corto tipo entrenador (fase 3, 2026-08-25)", () => {
 
     it("sin sesiones o sin objetivo semanal, no hay texto", () => {
-        expect(buildWeekInsight([], { goal: 20 })).toBe("");
-        expect(buildWeekInsight([session("2026-08-26", "z2", 8)], { goal: 0 })).toBe("");
+        expect(insight([], { goal: 20 })).toBe("");
+        expect(insight([session("2026-08-26", "z2", 8)], { goal: 0 })).toBe("");
     });
 
     it("hoy con km reales: 'Hoy: X km TIPO.'", () => {
 
         const week = [session("2026-08-26", "z2", 8)];
-        expect(buildWeekInsight(week, { goal: 21 })).toBe("Hoy: 8 km Z2.");
+        expect(insight(week, { goal: 21 })).toBe("Hoy: 8 km Z2.");
 
     });
 
     it("hoy sin km pero de tipo fuerza/descanso/libre: solo el tipo, sin '0 km'", () => {
 
         const week = [session("2026-08-26", "strength", 0)];
-        expect(buildWeekInsight(week, { goal: 21 })).toBe("Hoy: fuerza.");
+        expect(insight(week, { goal: 21 })).toBe("Hoy: fuerza.");
 
     });
 
     it("hoy sin km y de un tipo sin dato concreto que decir: no inventa una línea", () => {
 
         const week = [session("2026-08-26", "z2", 0)];
-        expect(buildWeekInsight(week, { goal: 21 })).toBe("");
+        expect(insight(week, { goal: 21 })).toBe("");
 
     });
 
@@ -53,7 +46,7 @@ describe("buildWeekInsight -- formato corto tipo entrenador (fase 3, 2026-08-26)
             session("2026-08-29", "longRun", 13)
         ];
 
-        expect(buildWeekInsight(week, { goal: 21 })).toBe("Hoy: 8 km Z2. El sábado, 13 km de tirada larga.");
+        expect(insight(week, { goal: 21 })).toBe("Hoy: 8 km Z2. Sábado: 13 km de tirada larga.");
 
     });
 
@@ -64,7 +57,7 @@ describe("buildWeekInsight -- formato corto tipo entrenador (fase 3, 2026-08-26)
             session("2026-08-26", "longRun", 13)
         ];
 
-        expect(buildWeekInsight(week, { goal: 21 })).toBe("Hoy: 13 km tirada larga.");
+        expect(insight(week, { goal: 21 })).toBe("Hoy: 13 km tirada larga.");
 
     });
 
@@ -75,7 +68,62 @@ describe("buildWeekInsight -- formato corto tipo entrenador (fase 3, 2026-08-26)
             session("2026-08-29", "longRun", 13, "completed")
         ];
 
-        expect(buildWeekInsight(week, { goal: 21 })).toBe("Hoy: 8 km Z2.");
+        expect(insight(week, { goal: 21 })).toBe("Hoy: 8 km Z2.");
+
+    });
+
+    // Bug de coherencia real 2026-08-26: antes "hoy" se resolvía por
+    // posición en el array (week[0]) cuando no había running programado
+    // hoy -- podía mostrar el lunes como si fuera el jueves real.
+    describe("coherencia con Plan -- sin running hoy", () => {
+
+        it("sin running hoy, con gimnasio programado hoy (Plan): lo dice explícitamente, no otro día", () => {
+
+            const week = [
+                session("2026-08-24", "z2", 5), // lunes -- NO es hoy
+                session("2026-08-29", "longRun", 13) // sábado -- clave real
+            ];
+
+            const todayGymMatch = { day: { id: "d1", title: "Pierna" } };
+
+            expect(insight(week, { goal: 21, todayGymMatch })).toBe("Hoy: Pierna (gimnasio). Sábado: 13 km de tirada larga.");
+
+        });
+
+        it("sin running hoy y sin gimnasio programado hoy tampoco: omite 'Hoy' del todo, nunca otro día", () => {
+
+            const week = [
+                session("2026-08-24", "z2", 5), // lunes -- pasado, no debería aparecer como "hoy" ni como clave
+                session("2026-08-29", "longRun", 13)
+            ];
+
+            const html = insight(week, { goal: 21, todayGymMatch: null });
+
+            expect(html).not.toContain("lunes");
+            expect(html).not.toContain("Lunes");
+            expect(html).toBe("Sábado: 13 km de tirada larga.");
+
+        });
+
+        it("running Y gimnasio programados hoy a la vez: combina las dos piezas con \"+\", nunca solo una", () => {
+
+            const week = [session("2026-08-26", "z2", 8)];
+            const todayGymMatch = { day: { id: "d1", title: "Pierna" } };
+
+            expect(insight(week, { goal: 8, todayGymMatch })).toBe("Hoy: 8 km Z2 + Pierna (gimnasio).");
+
+        });
+
+        it("una sesión de un día YA PASADO nunca cuenta como 'sesión clave' aunque tenga más km que las futuras", () => {
+
+            const week = [
+                session("2026-08-24", "longRun", 30), // lunes, pasado -- no debe elegirse
+                session("2026-08-29", "z2", 5) // sábado, futuro -- esta sí
+            ];
+
+            expect(insight(week, { goal: 35, todayGymMatch: null })).toBe("Sábado: 5 km de Z2.");
+
+        });
 
     });
 

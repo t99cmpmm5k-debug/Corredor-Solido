@@ -275,3 +275,88 @@ describe("gymSessionStore — duración real de la sesión (primer paso del entr
     });
 
 });
+
+describe("getAverageDurationForDay -- duración real para un día aún no empezado hoy (GymTodayCard.js)", () => {
+
+    beforeEach(() => {
+        resetFakeIndexedDB();
+        vi.resetModules();
+    });
+
+    // Push directo al array en memoria (misma referencia que devuelve
+    // getGymSessions()) -- suficiente para esta función, que solo lee del
+    // array ya cargado, sin depender de IndexedDB ni de startSession()
+    // (que solo puede crear sesiones "de hoy", no del histórico pasado
+    // que hace falta aquí para promediar).
+    function fakeFinishedSession(dayId, date, durationSec, overrides = {}) {
+        return { id: `s-${date}`, dayId, date, startedAt: `${date}T10:00:00.000Z`, finishedAt: `${date}T10:${String(Math.round(durationSec / 60)).padStart(2, "0")}:00.000Z`, durationSec, durationUnreliable: false, exercises: [], ...overrides };
+    }
+
+    it("sin ninguna sesión terminada de ese día, no hay media que calcular", async () => {
+
+        const { hydrate, getAverageDurationForDay } = await import("./gymSessionStore.js");
+        await hydrate();
+
+        expect(getAverageDurationForDay("d1")).toBeNull();
+
+    });
+
+    it("con historial real, calcula la media de las últimas sesiones terminadas de ese dayId", async () => {
+
+        const { hydrate, getGymSessions, getAverageDurationForDay } = await import("./gymSessionStore.js");
+        await hydrate();
+
+        getGymSessions().push(
+            fakeFinishedSession("d1", "2026-08-05", 2400), // 40 min
+            fakeFinishedSession("d1", "2026-08-12", 3000), // 50 min
+            fakeFinishedSession("d2", "2026-08-12", 600)   // otro día -- no debe contar
+        );
+
+        expect(getAverageDurationForDay("d1")).toBe(2700); // media de 2400 y 3000
+
+    });
+
+    it("una sesión en curso (sin finishedAt) no cuenta para la media", async () => {
+
+        const { hydrate, getGymSessions, getAverageDurationForDay } = await import("./gymSessionStore.js");
+        await hydrate();
+
+        getGymSessions().push(
+            fakeFinishedSession("d1", "2026-08-05", 2400),
+            { id: "s-en-curso", dayId: "d1", date: "2026-08-20", startedAt: "2026-08-20T10:00:00.000Z", finishedAt: null, durationSec: null, exercises: [] }
+        );
+
+        expect(getAverageDurationForDay("d1")).toBe(2400);
+
+    });
+
+    it("una sesión con duración marcada como no fiable no cuenta para la media", async () => {
+
+        const { hydrate, getGymSessions, getAverageDurationForDay } = await import("./gymSessionStore.js");
+        await hydrate();
+
+        getGymSessions().push(
+            fakeFinishedSession("d1", "2026-08-05", 2400),
+            fakeFinishedSession("d1", "2026-08-12", 99999, { durationUnreliable: true })
+        );
+
+        expect(getAverageDurationForDay("d1")).toBe(2400);
+
+    });
+
+    it("solo promedia las últimas `limit` sesiones, no todo el histórico", async () => {
+
+        const { hydrate, getGymSessions, getAverageDurationForDay } = await import("./gymSessionStore.js");
+        await hydrate();
+
+        getGymSessions().push(
+            fakeFinishedSession("d1", "2026-01-01", 6000), // muy vieja, fuera del límite
+            fakeFinishedSession("d1", "2026-08-01", 1200),
+            fakeFinishedSession("d1", "2026-08-08", 1200)
+        );
+
+        expect(getAverageDurationForDay("d1", { limit: 2 })).toBe(1200); // ignora la de enero
+
+    });
+
+});
