@@ -1,7 +1,10 @@
-/* Mismo lenguaje que .plan-workout-card/.week-summary--card (cristal +
-   borde en --color-primary + franja de luz superior), pero a la
-   intensidad más alta de toda Inicio -- es el widget "que llama la
-   atención", al nivel del propio Hero, no uno más que acompaña. */
+/* Tarjeta "normal" (ver jerarquía de glow en MasterCard.css/
+   WeekSummary.css) -- borde azul muy tenue, sin resplandor propio DE LA
+   TARJETA. El glow que sí se conserva aquí es el del propio número
+   grande (.monthly-km-glow, el halo detrás de la cifra, y el
+   drop-shadow de .monthly-km-number más abajo) -- eso es tipografía/
+   protagonismo del dato, no el borde+resplandor de tarjeta que antes
+   competía con el resto de Inicio por atención. */
 .monthly-km-widget{
 
     position:relative;
@@ -27,13 +30,11 @@
     backdrop-filter:blur(26px);
     -webkit-backdrop-filter:blur(26px);
 
-    border:1px solid color-mix(in srgb, var(--color-primary) 60%, transparent);
+    border:1px solid color-mix(in srgb, var(--color-primary) 18%, transparent);
 
     box-shadow:
         0 10px 25px rgba(0,0,0,.22),
-        0 30px 70px rgba(0,0,0,.35),
-        0 0 10px color-mix(in srgb, var(--color-glow) 60%, transparent),
-        0 0 46px color-mix(in srgb, var(--color-glow) 45%, transparent);
+        0 30px 70px rgba(0,0,0,.35);
 
 }
 

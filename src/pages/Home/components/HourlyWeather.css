@@ -1,7 +1,8 @@
 /* ==========================================================
    HourlyWeather -- misma familia visual que .week-summary--card
-   (cristal + acento de tema), pero más discreta: sin anillo ni
-   sombra propia, para no competir con el hero ni con MasterCard.
+   (cristal + borde azul muy tenue, sin glow -- ver jerarquía de glow),
+   mismo token de borde que WeekSummary/MonthlyKmWidget para que las
+   tres tarjetas "normales" de Inicio lean como un mismo grupo.
 ========================================================== */
 
 .hourly-weather {
@@ -23,7 +24,7 @@
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
 
-    border: 1px solid color-mix(in srgb, var(--card-border) 70%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-primary) 18%, transparent);
 
 }
 

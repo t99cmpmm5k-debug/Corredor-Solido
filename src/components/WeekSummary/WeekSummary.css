@@ -28,11 +28,15 @@
     backdrop-filter:blur(16px);
     -webkit-backdrop-filter:blur(16px);
 
-    border:1px solid color-mix(in srgb, var(--color-primary) 50%, transparent);
+    /* Tarjeta "normal" (ver jerarquía de glow) -- borde azul muy tenue,
+       sin resplandor propio. Antes llevaba el mismo tratamiento que la
+       tarjeta de sesión activa (borde al 50% + glow), lo que hacía que
+       nada de Inicio destacara sobre lo demás. El glow real de la app
+       ahora se reserva para la tarjeta de sesión (.session-outline-stroke
+       en MasterCard.css) y para el CTA (.session-button). */
+    border:1px solid color-mix(in srgb, var(--color-primary) 18%, transparent);
 
-    box-shadow:
-        0 8px 20px rgba(0,0,0,.18),
-        0 0 18px color-mix(in srgb, var(--color-glow) 30%, transparent);
+    box-shadow:0 8px 20px rgba(0,0,0,.18);
 
 }
 

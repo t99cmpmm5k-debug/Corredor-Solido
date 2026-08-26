@@ -29,7 +29,16 @@
 
     position:relative;
 
-    min-height:270px;
+    /* Antes 270px fijos -- con el contenido simple (chip + botón, sin
+       métricas) eso dejaba ~40px de hueco vacío bajo el botón, porque
+       .session-content no estira sus hijos (flex-start por defecto) para
+       rellenar un contenedor forzado más alto de lo que pide su propio
+       contenido. min-height bajo (no 0: una tarjeta con muy poco texto no
+       debe colapsar de golpe) dejando que el alto real lo decida el
+       contenido -- el caso simple ronda ahora los 220-230px pedidos, y
+       una tarjeta con métricas o descripción expandida crece sin dejar
+       hueco de sobra en ningún caso. */
+    min-height:232px;
 
 }
 
@@ -174,9 +183,9 @@
 
     flex-direction:column;
 
-    gap:18px;
+    gap:14px;
 
-    padding:24px;
+    padding:20px;
 
     height:100%;
 
@@ -350,7 +359,7 @@
 
     max-width:100%;
 
-    padding:12px 18px;
+    padding:10px 16px;
     background:color-mix(in srgb, var(--color-primary) 12%, transparent);
 
     border:1px solid color-mix(in srgb, var(--color-primary) 22%, transparent);
@@ -513,9 +522,9 @@
 
     width:100%;
 
-    height:54px;
+    height:52px;
 
-    margin-top:8px;
+    margin-top:4px;
 
     border:none;
 
@@ -535,7 +544,15 @@
 
     cursor:pointer;
 
-    box-shadow:0 8px 20px rgba(0,0,0,.25);
+    /* El CTA de la app -- el elemento con más contraste de toda la
+       pantalla (ver criterio de jerarquía de glow), así que lleva su
+       propio resplandor YA en reposo, no solo al pasar el cursor/tocar
+       (antes solo glow al :hover -- en pantalla táctil eso nunca llega a
+       verse, así que el botón se leía tan apagado como cualquier borde
+       tenue de una tarjeta normal). */
+    box-shadow:
+        0 8px 20px rgba(0,0,0,.25),
+        0 0 22px color-mix(in srgb, var(--color-glow) 45%, transparent);
 
     transition:.25s;
 
