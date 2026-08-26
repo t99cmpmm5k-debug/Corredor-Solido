@@ -1,6 +1,6 @@
 import "./HourlyWeather.css";
 
-import { findBestRunningHour } from "../../../services/hourlyForecast.js";
+import { findBestRunningHour, remainingHours } from "../../../services/hourlyForecast.js";
 
 // icon (ver weatherIconForCode en services/hourlyForecast.js) -> icono
 // Solar ya usado en el resto de la app (ver WorkoutIcon.js). "cloud" es el
@@ -77,15 +77,31 @@ function TemperatureTrend(hours) {
 
 }
 
-// Línea orientada a correr, no a meteorología genérica -- la hora de
-// menor temperatura entre las que no llevan lluvia/tormenta/nieve
-// dentro de la propia franja ya mostrada (ver findBestRunningHour() en
-// hourlyForecast.js). viento/humedad se omiten sueltos si esa hora en
-// concreto no los trae (nunca "viento null km/h") -- nunca inventados,
-// vienen del mismo hourly de Open-Meteo que ya usa el resto del widget.
-function BestRunningHour(hours) {
+// "HH:MM" -> "HH:MM" de la hora siguiente en punto -- cada entrada del
+// pronóstico es un tramo horario completo (ver parseForecastHours()), así
+// que la franja recomendada es ese tramo entero, no un instante suelto.
+function nextHourLabel(time) {
 
-    const best = findBestRunningHour(hours);
+    const [hh, mm] = time.split(":").map(Number);
+    const next = (hh + 1) % 24;
+
+    return `${String(next).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
+
+}
+
+// Línea orientada a correr, no a meteorología genérica -- la hora de
+// menor temperatura entre las que no llevan lluvia/tormenta/nieve, y que
+// además todavía no ha empezado respecto al reloj real de ahora mismo
+// (remainingHours() -- nunca se propone una franja ya pasada, aunque el
+// pronóstico llevara un rato cacheado sin recargar, ver
+// homeWeatherStore.js). La franja de horas de abajo NO pasa por este
+// filtro a propósito, sigue mostrando también lo que ya pasó.
+// viento/humedad se omiten sueltos si esa hora en concreto no los trae
+// (nunca "viento null km/h") -- nunca inventados, vienen del mismo
+// hourly de Open-Meteo que ya usa el resto del widget.
+function BestRunningHour(hours, now) {
+
+    const best = findBestRunningHour(remainingHours(hours, now));
     if (!best) return "";
 
     const details = [`${best.temp}°`];
@@ -100,7 +116,7 @@ function BestRunningHour(hours) {
 
                 <iconify-icon icon="solar:sort-by-time-bold-duotone"></iconify-icon>
 
-                Mejor hora para correr: <strong>${best.time}</strong>
+                Mejor franja restante para correr: <strong>${best.time}-${nextHourLabel(best.time)}</strong>
 
             </p>
 
@@ -114,8 +130,10 @@ function BestRunningHour(hours) {
 
 // current: { temp, icon } | null -- state.status ya garantiza que si esto
 // se llama, hours no está vacío (ver Home.js), pero current puede faltar
-// en respuestas raras de la API sin el bloque "current".
-export function HourlyWeather({ hours, current, label }) {
+// en respuestas raras de la API sin el bloque "current". `now` solo se
+// pasa distinto de new Date() en tests (ver remainingHours() en
+// hourlyForecast.js, usada dentro de BestRunningHour()).
+export function HourlyWeather({ hours, current, label }, now = new Date()) {
 
     if (!hours || hours.length === 0) return "";
 
@@ -140,7 +158,7 @@ export function HourlyWeather({ hours, current, label }) {
 
             </div>
 
-            ${BestRunningHour(hours)}
+            ${BestRunningHour(hours, now)}
 
             <div class="hourly-weather-scroll">
 

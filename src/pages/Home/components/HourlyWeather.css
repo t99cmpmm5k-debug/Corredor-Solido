@@ -136,6 +136,11 @@
 
     font-weight:800;
 
+    /* El rango "HH:MM-HH:MM" (antes una sola hora) es más largo -- sin
+       esto, una línea justa partía el propio rango a la mitad
+       ("05:00-" / "06:00") en vez de envolver por una palabra completa. */
+    white-space:nowrap;
+
 }
 
 .hourly-weather-best-detail {

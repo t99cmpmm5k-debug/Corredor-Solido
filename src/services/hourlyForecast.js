@@ -152,6 +152,43 @@ export function parseForecastHours(data, now = new Date()) {
 
 }
 
+// Horas de `hours` (ver parseForecastHours) que, comparadas con el reloj
+// real EN EL MOMENTO DE PINTAR, no han empezado todavía -- filtro
+// aparte del recorte que ya hace parseForecastHours() porque ese se
+// aplica solo al pedir el pronóstico, y loadHourlyWeather() lo cachea en
+// memoria (una sola petición por sesión, ver homeWeatherStore.js): si el
+// usuario deja la pestaña abierta un rato, las primeras horas de ese
+// array ya cacheado pueden haber pasado de verdad sin que nadie vuelva a
+// pedir el pronóstico. Se usa solo antes de findBestRunningHour() -- la
+// franja de 24h de abajo se deja tal cual, mostrando también lo que ya
+// pasó (pedido explícito).
+//
+// Cada entrada solo trae "HH:MM" (sin fecha) -- se reconstruye el
+// instante de calendario más cercano a `now` (hoy o mañana, nunca más
+// lejos: la ventana nunca cubre más de dos días de calendario) en vez de
+// comparar el texto tal cual, que fallaría al cruzar medianoche. Se
+// compara contra la HORA de `now` (sin minutos): la hora en curso cuenta
+// como "todavía por delante", igual que ya hace parseForecastHours() al
+// pedir el pronóstico.
+export function remainingHours(hours, now = new Date()) {
+
+    const nowFloor = new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours());
+
+    return hours.filter(h => {
+
+        const [hh, mm] = h.time.split(":").map(Number);
+        const candidate = new Date(nowFloor.getFullYear(), nowFloor.getMonth(), nowFloor.getDate(), hh, mm);
+
+        if (candidate.getTime() < nowFloor.getTime() - 12 * 60 * 60 * 1000) {
+            candidate.setDate(candidate.getDate() + 1);
+        }
+
+        return candidate.getTime() >= nowFloor.getTime();
+
+    });
+
+}
+
 // Códigos de icono con precipitación real -- una hora con cualquiera de
 // estos no es "favorable para correr" aunque tenga la temperatura más
 // baja de la franja, así que se descarta primero. Si TODAS las horas

@@ -5,6 +5,7 @@ import {
     weatherIconForCode,
     parseForecastHours,
     findBestRunningHour,
+    remainingHours,
     resolveLocation,
     getHourlyForecast
 } from "./hourlyForecast.js";
@@ -258,6 +259,50 @@ describe("findBestRunningHour", () => {
         ];
 
         expect(findBestRunningHour(hours).time).toBe("19:00");
+
+    });
+
+});
+
+describe("remainingHours", () => {
+
+    function hour(time) {
+        return { time, temp: 20, icon: "sun", isNewDay: false, windKmh: null, humidity: null };
+    }
+
+    it("descarta las horas cuyo tramo ya empezó respecto al reloj real de ahora", () => {
+
+        const hours = [hour("08:00"), hour("09:00"), hour("10:00"), hour("11:00")];
+        const now = new Date("2026-08-22T10:20:00");
+
+        expect(remainingHours(hours, now).map(h => h.time)).toEqual(["10:00", "11:00"]);
+
+    });
+
+    it("la hora en curso cuenta como restante, igual que al pedir el pronóstico", () => {
+
+        const hours = [hour("09:00"), hour("10:00")];
+        const now = new Date("2026-08-22T10:59:00");
+
+        expect(remainingHours(hours, now).map(h => h.time)).toEqual(["10:00"]);
+
+    });
+
+    it("un array cacheado desde hace horas puede quedarse sin ninguna hora restante, en vez de proponer una ya pasada", () => {
+
+        const hours = [hour("08:00"), hour("09:00")];
+        const now = new Date("2026-08-22T12:00:00");
+
+        expect(remainingHours(hours, now)).toEqual([]);
+
+    });
+
+    it("no confunde una hora de después de medianoche con una ya pasada de hoy", () => {
+
+        const hours = [hour("22:00"), hour("23:00"), hour("00:00"), hour("01:00")];
+        const now = new Date("2026-08-22T23:30:00");
+
+        expect(remainingHours(hours, now).map(h => h.time)).toEqual(["23:00", "00:00", "01:00"]);
 
     });
 
