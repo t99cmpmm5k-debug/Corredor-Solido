@@ -2,8 +2,12 @@ import "./MonthlyKmWidget.css";
 
 import { formatKm } from "../../../utils/format.js";
 
-const MAX_BAR_HEIGHT = 22;
-const MIN_BAR_HEIGHT = 3;
+// Barras grandes (ronda final del rediseño, 2026-08-26): el gráfico pasa
+// de "refuerzo visual discreto" a ocupar de verdad la mitad inferior de
+// la tarjeta, con la etiqueta de cada mes debajo -- antes solo llevaba
+// aria-label, sin texto visible.
+const MAX_BAR_HEIGHT = 64;
+const MIN_BAR_HEIGHT = 6;
 
 // "AAAA-MM" -> "Agosto" (capitalizado, sin año -- el año no aporta nada
 // aquí, todo el widget vive en el mismo año la inmensa mayoría de veces
@@ -14,6 +18,20 @@ function monthName(monthKey) {
     const label = new Intl.DateTimeFormat("es-ES", { month: "long" }).format(new Date(year, month - 1, 1));
 
     return label.charAt(0).toUpperCase() + label.slice(1);
+
+}
+
+// "AAAA-MM" -> "AGO" -- misma convención de abreviatura que
+// raceFormat.js/date.js (Intl short + mayúsculas, sin forzar 3 letras a
+// la fuerza: "sept" de septiembre se queda tal cual, no se trunca).
+function monthAbbrev(monthKey) {
+
+    const [year, month] = monthKey.split("-").map(Number);
+
+    return new Intl.DateTimeFormat("es-ES", { month: "short" })
+        .format(new Date(year, month - 1, 1))
+        .toUpperCase()
+        .replace(".", "");
 
 }
 
@@ -108,14 +126,24 @@ export function MonthlyKmWidget(stats, selectedMonthKey = null) {
 
                     ${chartMonths.map(m => `
 
-                        <button
-                            type="button"
-                            class="monthly-km-bar ${m.isCurrent ? "is-current" : ""} ${m.key === selectedMonthKey ? "is-selected" : ""}"
-                            style="height:${barHeight(m.km, chartMonths)}px"
-                            data-action="select-month"
-                            data-month-key="${m.key}"
-                            aria-label="${monthName(m.key)}"
-                        ></button>
+                        <div class="monthly-km-col">
+
+                            <div class="monthly-km-bar-track">
+
+                                <button
+                                    type="button"
+                                    class="monthly-km-bar ${m.isCurrent ? "is-current" : ""} ${m.key === selectedMonthKey ? "is-selected" : ""}"
+                                    style="height:${barHeight(m.km, chartMonths)}px"
+                                    data-action="select-month"
+                                    data-month-key="${m.key}"
+                                    aria-label="${monthName(m.key)}"
+                                ></button>
+
+                            </div>
+
+                            <span class="monthly-km-bar-label ${m.isCurrent ? "is-current" : ""}">${monthAbbrev(m.key)}</span>
+
+                        </div>
 
                     `).join("")}
 

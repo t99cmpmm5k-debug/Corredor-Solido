@@ -8,6 +8,7 @@ import {
     remainingHours,
     todayRemainingHours,
     isFavorableHour,
+    isNowWithinHour,
     resolveLocation,
     getHourlyForecast
 } from "./hourlyForecast.js";
@@ -322,6 +323,26 @@ describe("isFavorableHour", () => {
 
     it("por encima del umbral, no es favorable", () => {
         expect(isFavorableHour({ temp: 28 })).toBe(false);
+    });
+
+});
+
+describe("isNowWithinHour", () => {
+
+    it("sin hora, nunca está dentro", () => {
+        expect(isNowWithinHour(null, new Date("2026-08-22T23:08:00"))).toBe(false);
+    });
+
+    it("con el reloj real dentro de la franja (23:08 y franja 23:00-00:00), está dentro", () => {
+        expect(isNowWithinHour({ time: "23:00" }, new Date("2026-08-22T23:08:00"))).toBe(true);
+    });
+
+    it("con el reloj real todavía antes de que empiece la franja, no está dentro", () => {
+        expect(isNowWithinHour({ time: "23:00" }, new Date("2026-08-22T19:30:00"))).toBe(false);
+    });
+
+    it("con el reloj real ya después de que termine la franja, no está dentro", () => {
+        expect(isNowWithinHour({ time: "20:00" }, new Date("2026-08-22T21:05:00"))).toBe(false);
     });
 
 });

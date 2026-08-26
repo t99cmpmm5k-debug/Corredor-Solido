@@ -88,4 +88,38 @@ describe("MonthlyKmWidget", () => {
 
     });
 
+    // Barras grandes (ronda final, 2026-08-26): cada mes lleva ahora su
+    // abreviatura visible debajo de la barra, no solo el aria-label de
+    // antes.
+    it("cada barra lleva su etiqueta de mes visible debajo (MAY, JUN, JUL, AGO)", () => {
+
+        const html = MonthlyKmWidget(stats({ chartMonths: CHART_MONTHS }));
+
+        expect(html).toContain("monthly-km-bar-label");
+        expect(html).toContain(">MAY<");
+        expect(html).toContain(">JUN<");
+        expect(html).toContain(">JUL<");
+        expect(html).toContain(">AGO<");
+
+    });
+
+    it("la altura de cada barra es proporcional al mes más alto de la ventana", () => {
+
+        const html = MonthlyKmWidget(stats({ chartMonths: CHART_MONTHS }));
+
+        // 52.7 (agosto, el más alto) -> altura máxima; 20 (mayo) ->
+        // proporcional; nunca todas iguales aunque los km sean distintos.
+        const heightOf = key => {
+            const idx = html.indexOf(`data-month-key="${key}"`);
+            const barHtml = html.slice(idx - 200, idx);
+            return Number(barHtml.match(/height:(\d+)px/)[1]);
+        };
+
+        const mayHeight = heightOf("2026-05");
+        const augHeight = heightOf("2026-08");
+
+        expect(augHeight).toBeGreaterThan(mayHeight);
+
+    });
+
 });

@@ -46,7 +46,17 @@
 
 .hourly-weather-card {
 
-    margin: -14px 20px 28px;
+    margin: 0 20px 28px;
+}
+
+/* El tirón hacia arriba (-14px) solo tiene sentido pegado justo debajo
+   de MasterCard (orden de día, ver homeLayout.js/Home.js) -- de noche el
+   Tiempo baja al final de Inicio, detrás de otra tarjeta cualquiera, y
+   ese mismo -14px lo solaparía con ella en vez de acercarlo a
+   MasterCard. */
+.hourly-weather-card.is-right-after-today {
+
+    margin-top: -14px;
 }
 
 .home-content {

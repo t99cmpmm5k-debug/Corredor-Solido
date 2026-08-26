@@ -260,6 +260,22 @@ export function isFavorableHour(hour) {
     return hour != null && hour.temp <= FAVORABLE_MAX_TEMP;
 }
 
+// Si `hour` es la franja EN CURSO ahora mismo (mismo HH que el reloj
+// real) -- bug real corregido en esta fase: a las 23:08, con la mejor
+// franja siendo "23:00-00:00", el mensaje decía "mejor franja restante:
+// 23:00-00:00" como si todavía no hubiera empezado, cuando en realidad
+// ya estás dentro. `hour` siempre pertenece a HOY en este punto (viene
+// de todayRemainingHours()), así que comparar solo la hora del reloj
+// basta, sin reconstruir fechas.
+export function isNowWithinHour(hour, now = new Date()) {
+
+    if (!hour) return false;
+
+    const [hh] = hour.time.split(":").map(Number);
+    return now.getHours() === hh;
+
+}
+
 // El bloque "current" de Open-Meteo es la lectura de ahora mismo del
 // modelo -- más precisa para "temperatura actual" que asumir que coincide
 // con el primer valor de "hourly" (que es un promedio/instantánea horaria,

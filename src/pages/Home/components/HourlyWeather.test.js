@@ -134,4 +134,43 @@ describe("HourlyWeather", () => {
 
     });
 
+    // Bug real corregido en esta fase: con el reloj real ya DENTRO de la
+    // mejor franja (23:08, franja "23:00-00:00"), el mensaje hablaba en
+    // futuro ("mejor franja restante: 23:00-00:00") como si aún no
+    // hubiera empezado.
+    it("con el reloj real ya dentro de la mejor franja, dice 'ahora' en vez de un rango futuro", () => {
+
+        function h(time, temp) {
+            return { time, temp, icon: "sun", isNewDay: false, windKmh: null, humidity: null };
+        }
+
+        const hours = [h("21:00", 27), h("22:00", 25), h("23:00", 18)];
+        const now = new Date("2026-08-22T23:08:00");
+
+        const html = HourlyWeather({ hours, current: null, label: null }, now);
+
+        expect(html).toContain("Ahora es una buena franja");
+        expect(html).toContain("18°");
+        expect(html).not.toContain("Mejor franja restante");
+        expect(html).not.toContain("23:00-00:00");
+
+    });
+
+    it("con la mejor franja todavía sin empezar, mantiene el mensaje en futuro", () => {
+
+        function h(time, temp) {
+            return { time, temp, icon: "sun", isNewDay: false, windKmh: null, humidity: null };
+        }
+
+        const hours = [h("21:00", 27), h("22:00", 25), h("23:00", 18)];
+        const now = new Date("2026-08-22T20:15:00");
+
+        const html = HourlyWeather({ hours, current: null, label: null }, now);
+
+        expect(html).toContain("Mejor franja restante para correr");
+        expect(html).toContain("23:00-00:00");
+        expect(html).not.toContain("Ahora es una buena franja");
+
+    });
+
 });

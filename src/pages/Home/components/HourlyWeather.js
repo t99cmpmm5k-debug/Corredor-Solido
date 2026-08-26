@@ -1,6 +1,6 @@
 import "./HourlyWeather.css";
 
-import { findBestRunningHour, remainingHours, todayRemainingHours, isFavorableHour } from "../../../services/hourlyForecast.js";
+import { findBestRunningHour, remainingHours, todayRemainingHours, isFavorableHour, isNowWithinHour } from "../../../services/hourlyForecast.js";
 
 // icon (ver weatherIconForCode en services/hourlyForecast.js) -> icono
 // Solar ya usado en el resto de la app (ver WorkoutIcon.js). "cloud" es el
@@ -106,6 +106,12 @@ function nextHourLabel(time) {
 // ver umbral en hourlyForecast.js) el mensaje cambia a uno más honesto
 // en vez de vender esa hora como una recomendación de verdad -- sigue
 // citando la hora y temperatura reales, nunca inventadas.
+//
+// Si la franja favorable YA ha empezado (isNowWithinHour -- el reloj
+// real cae dentro de ella, p. ej. son las 23:08 y la franja es
+// "23:00-00:00"), el mensaje deja de hablar en futuro ("mejor franja
+// restante: HH:MM-HH:MM") y pasa a "ahora es una buena franja", con el
+// mismo detalle real de temperatura/viento/humedad debajo.
 // viento/humedad se omiten sueltos si esa hora en concreto no los trae
 // (nunca "viento null km/h") -- nunca inventados, vienen del mismo
 // hourly de Open-Meteo que ya usa el resto del widget.
@@ -137,6 +143,32 @@ function BestRunningHour(hours, now) {
     const details = [`${best.temp}°`];
     if (best.windKmh != null) details.push(`viento ${best.windKmh} km/h`);
     if (best.humidity != null) details.push(`humedad ${best.humidity}%`);
+
+    // Bug real corregido en esta fase: con la mejor franja siendo, p. ej.,
+    // "23:00-00:00" y el reloj real ya dentro de ella (23:08), el mensaje
+    // decía "mejor franja restante: 23:00-00:00" como si aún no hubiera
+    // empezado. isNowWithinHour() compara la hora del reloj con la de la
+    // franja (best siempre pertenece a HOY, ver todayRemainingHours) para
+    // distinguir "ya estás en ella" de "todavía por llegar".
+    if (isNowWithinHour(best, now)) {
+        return `
+
+            <div class="hourly-weather-best">
+
+                <p class="hourly-weather-best-headline">
+
+                    <iconify-icon icon="solar:sort-by-time-bold-duotone"></iconify-icon>
+
+                    Ahora es una buena franja para correr
+
+                </p>
+
+                <p class="hourly-weather-best-detail">${details.join(" · ")}</p>
+
+            </div>
+
+        `;
+    }
 
     return `
 
