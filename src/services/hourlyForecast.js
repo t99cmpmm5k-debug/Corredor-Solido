@@ -41,9 +41,15 @@ export function mostRecentLocatableWorkout(workouts) {
 }
 
 // Primer tramo de "Ciudad, Provincia" -- lo bastante corto para el
-// "Hoy · [ubicación]" del widget sin repetir la provincia.
+// "Hoy · [ubicación]" del widget sin repetir la provincia. El recorte de
+// la letra suelta final (mismo patrón que stripTrailingLetterFragment()
+// en garmin-engine/parser-summary.js) cubre los workouts YA importados
+// antes de ese fix -- bug real "Hoy · Puerto Lumbreras A" (2026-08-26):
+// el import guardó location con un fragmento de OCR sin limpiar, y sin
+// esto aquí seguiría mostrándose mal hasta reimportar ese entreno.
 function shortLocationLabel(location) {
-    return location.split(",")[0].trim() || null;
+    const firstSegment = location.split(",")[0].trim();
+    return firstSegment.replace(/\s+[A-Za-z]{1,2}$/, "").trim() || null;
 }
 
 // { lat, lon, label } o null -- label es el nombre de sitio para mostrar

@@ -139,7 +139,13 @@
     display:flex;
     flex-direction:column;
 
-    padding:42px 30px 46px;
+    /* env(safe-area-inset-top) -- Inicio era la única pantalla principal
+       sin esto (Plan/Running/Gimnasio/Carreras/Perfil ya lo aplican todas
+       en su padding-top, mismo valor base de 24px), así que el saludo
+       podía quedar pegado a/detrás de la isla dinámica en un iPhone real.
+       Bug real 2026-08-26, no solo percepción -- confirmado por grep
+       contra el resto de la app. */
+    padding:calc(24px + env(safe-area-inset-top)) 30px 46px;
 
     color:#FFFFFF;
 
@@ -395,7 +401,7 @@ text-shadow:
 
     .hero-content{
 
-        padding:36px 24px 44px;
+        padding:calc(20px + env(safe-area-inset-top)) 24px 44px;
 
     }
 

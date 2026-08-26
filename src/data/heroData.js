@@ -58,8 +58,8 @@ export const heroData = {
     intervals: {
 
         title: [
-            "Corre",
-            "rápido"
+            "Gana",
+            "velocidad"
         ],
 
         coachTitle: "Entrenamiento de series",

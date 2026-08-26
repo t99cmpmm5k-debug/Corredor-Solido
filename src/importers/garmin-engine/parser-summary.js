@@ -1,6 +1,19 @@
 import * as U from "./garmin-utils.js";
 import * as E from "./extractor-engine.js";
 
+// Quita un único token final suelto de 1-2 letras -- mismo patrón que
+// cleanLocationForRetry() en weatherEstimate.js (ese se usa como
+// reintento de geocoding, este se aplica ANTES de guardar location, así
+// que cubre también el caso en que el geocoding con el texto sucio sí
+// encontraba algo por casualidad). Necesario cuando la palabra de
+// actividad viene en medio del título ("Puerto Lumbreras Carrera A" --
+// bug real 2026-08-26, la letra suelta final sobrevivía a quitar
+// "Carrera" y colapsar el hueco doble, dejando location="Puerto
+// Lumbreras A" guardado tal cual).
+function stripTrailingLetterFragment(text) {
+    return text.replace(/\s+[A-Za-z]{1,2}$/, "").trim() || null;
+}
+
 function findTitle(lines) {
     const noteIndex = lines.findIndex(x => /anadir notas|añadir notas/.test(U.normalize(x)));
     const blocked = /^(carrera|running|actividad|resumen|estadisticas|vueltas|graficos|equipo)$/i;
@@ -51,7 +64,14 @@ export function parse(text) {
             // .trim() solo limpia los extremos -- si la palabra de actividad
             // va en medio del título ("Aguilas Carrera A"), quitarla deja un
             // hueco doble donde estaba ("Aguilas  A") que hay que colapsar.
-            location = title.replace(new RegExp(`\\b${m[1]}\\b`, "i"), "").replace(/\s+/g, " ").trim() || null;
+            // stripTrailingLetterFragment() de arriba quita además la letra
+            // suelta final que sobrevive a ese colapso (bug real "Puerto
+            // Lumbreras A" guardado tal cual, ver 2026-08-26) -- se aplica
+            // aquí, no solo en el reintento de geocoding de
+            // weatherEstimate.js, para que quede bien guardado desde el
+            // origen y no solo "arreglado" al mostrarlo.
+            const collapsed = title.replace(new RegExp(`\\b${m[1]}\\b`, "i"), "").replace(/\s+/g, " ").trim();
+            location = collapsed ? stripTrailingLetterFragment(collapsed) : null;
         } else location = title;
     }
 

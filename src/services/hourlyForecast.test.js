@@ -287,6 +287,20 @@ describe("resolveLocation", () => {
 
     });
 
+    // Bug real 2026-08-26 ("Hoy · Puerto Lumbreras A"): un workout ya
+    // importado ANTES del fix en parser-summary.js puede tener guardado
+    // un location con la letra suelta de OCR sin limpiar -- esta capa
+    // arregla también esos ya guardados, sin depender de reimportarlos.
+    it("recorta una letra suelta de OCR que haya quedado guardada en location de un import anterior al fix", async () => {
+
+        const result = await resolveLocation([
+            { id: "a", date: "2026-08-22", time: "08:00", startLat: 37.567, startLon: -1.812, location: "Puerto Lumbreras A" }
+        ]);
+
+        expect(result.label).toBe("Puerto Lumbreras");
+
+    });
+
     it("sin GPS, geocodifica el texto restringido a España -- sin resultados (p. ej. fuera de España) devuelve null", async () => {
 
         vi.spyOn(globalThis, "fetch").mockResolvedValue({
