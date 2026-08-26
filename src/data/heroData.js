@@ -10,8 +10,8 @@ export const heroData = {
     recovery: {
 
         title: [
-            "Recupera",
-            "más fuerte"
+            "Hoy",
+            "recupera"
         ],
 
         coachTitle: "Recuperación activa",
@@ -27,7 +27,7 @@ export const heroData = {
 
         title: [
             "Construye",
-            "tu base"
+            "base"
         ],
 
         coachTitle: "Rodaje en Zona 2",
@@ -58,8 +58,8 @@ export const heroData = {
     intervals: {
 
         title: [
-            "Hoy toca",
-            "VOLAR"
+            "Corre",
+            "rápido"
         ],
 
         coachTitle: "Entrenamiento de series",

@@ -43,11 +43,15 @@ export function Home(){
 
                 ${MasterCard()}
 
-                <section class="monthly-km-card">
+                ${weather.status === "ready" ? `
 
-                    ${MonthlyKmWidget(monthlyKm)}
+                    <section class="hourly-weather-card">
 
-                </section>
+                        ${HourlyWeather(weather)}
+
+                    </section>
+
+                ` : ""}
 
                 <section class="week-chart-card">
 
@@ -62,15 +66,11 @@ export function Home(){
 
                 </section>
 
-                ${weather.status === "ready" ? `
+                <section class="monthly-km-card">
 
-                    <section class="hourly-weather-card">
+                    ${MonthlyKmWidget(monthlyKm)}
 
-                        ${HourlyWeather(weather)}
-
-                    </section>
-
-                ` : ""}
+                </section>
 
             </section>
 
