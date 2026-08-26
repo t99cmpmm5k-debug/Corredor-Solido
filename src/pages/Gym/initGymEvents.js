@@ -647,6 +647,12 @@ export function initGymEvents() {
 
         select.addEventListener("change", () => {
             setDayWeekday(select.dataset.dayId, select.value);
+            // A diferencia de set-day-title: el aviso de "día ya ocupado"
+            // (ver findConflictingRoutineName() en GymRoutineBuilder.js)
+            // depende de qué weekday esté elegido AHORA MISMO, así que sí
+            // hace falta repintar para que aparezca/desaparezca al momento,
+            // no solo en el siguiente render que llegue por otro motivo.
+            rerender();
         });
 
     });

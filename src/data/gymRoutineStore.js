@@ -6,6 +6,16 @@
 import { STORES, getAll, put, remove } from "./db.js";
 import { generateId } from "../utils/id.js";
 
+// Patrón habitual del usuario (lunes/miércoles/viernes) -- valor por
+// defecto SUGERIDO solo para una rutina NUEVA que no trae ningún día
+// elegido a mano (ver createRoutine() más abajo), nunca para las ya
+// existentes ni cuando el selector manual de GymRoutineBuilder.js sí
+// trae un weekday real. Mismo vocabulario que WEEKDAY_OPTIONS en
+// gymSchedule.js -- no se importa de allí para no crear un ciclo
+// (gymSchedule.js no depende de este store), se mantiene la lista en
+// paralelo a propósito.
+const DEFAULT_WEEKDAY_PATTERN = ["lunes", "miercoles", "viernes"];
+
 const routines = [];
 
 let hydrated = null;
@@ -66,17 +76,47 @@ function upsertInto(routine) {
 
 }
 
+// El primer día del patrón (lunes/miércoles/viernes) que ningún día de
+// ninguna rutina YA GUARDADA esté usando -- null si los 3 ya están
+// ocupados (no hay un cuarto día en el patrón, se deja sin asignar a
+// propósito en vez de inventar uno).
+function nextAvailablePatternWeekday() {
+
+    const usedWeekdays = new Set(
+        routines.flatMap(routine => routine.days.map(day => day.weekday)).filter(Boolean)
+    );
+
+    return DEFAULT_WEEKDAY_PATTERN.find(day => !usedWeekdays.has(day)) ?? null;
+
+}
+
 // days ya viene con ids puestos (el constructor los genera al añadir cada
 // día/ejercicio, ver gymRoutineBuilderStore.js) -- aquí solo se envuelve
 // con id/fechas de la rutina en sí.
+//
+// Asignación automática de día (lunes/miércoles/viernes, en ese orden) --
+// SOLO para una rutina nueva que no trae ningún weekday propio (el
+// selector manual se dejó en "Sin día fijo" en todos sus días). Si el
+// usuario SÍ eligió un día a mano en cualquiera de los días, ese valor
+// manda tal cual y no se toca nada aquí. Se asigna solo al primer día de
+// la rutina -- el caso real (y el único que contempla este patrón) es una
+// rutina de un solo día; una rutina con varios días sin asignar se queda
+// con el resto sin tocar, no se reparte el patrón entre ellos.
 export function createRoutine({ name, days, progressionNote }) {
 
     const now = new Date().toISOString();
 
+    const hasManualWeekday = days.some(day => day.weekday);
+    const autoWeekday = hasManualWeekday ? null : nextAvailablePatternWeekday();
+
+    const finalDays = (autoWeekday && days.length > 0)
+        ? days.map((day, index) => index === 0 ? { ...day, weekday: autoWeekday } : day)
+        : days;
+
     const routine = {
         id: generateId(),
         name,
-        days,
+        days: finalDays,
         progressionNote: progressionNote || "",
         createdAt: now,
         updatedAt: now

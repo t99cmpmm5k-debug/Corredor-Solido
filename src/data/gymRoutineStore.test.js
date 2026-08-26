@@ -128,6 +128,103 @@ describe("gymRoutineStore — CRUD real (crear/editar/borrar), ya no un único p
 
     });
 
+    it("una rutina nueva sin día asignado a mano recibe automáticamente 'lunes' (primer hueco del patrón lunes/miércoles/viernes)", async () => {
+
+        const { hydrate, createRoutine } = await import("./gymRoutineStore.js");
+        await hydrate();
+
+        const routine = await createRoutine({
+            name: "Torso Completo",
+            days: [{ id: "d1", title: "Torso", exercises: [] }],
+            progressionNote: ""
+        });
+
+        expect(routine.days[0].weekday).toBe("lunes");
+
+    });
+
+    it("la 2ª y 3ª rutina nueva sin día reciben miércoles y viernes, en ese orden", async () => {
+
+        const { hydrate, createRoutine } = await import("./gymRoutineStore.js");
+        await hydrate();
+
+        const first = await createRoutine({ name: "A", days: [{ id: "d1", title: "A", exercises: [] }], progressionNote: "" });
+        const second = await createRoutine({ name: "B", days: [{ id: "d2", title: "B", exercises: [] }], progressionNote: "" });
+        const third = await createRoutine({ name: "C", days: [{ id: "d3", title: "C", exercises: [] }], progressionNote: "" });
+
+        expect(first.days[0].weekday).toBe("lunes");
+        expect(second.days[0].weekday).toBe("miercoles");
+        expect(third.days[0].weekday).toBe("viernes");
+
+    });
+
+    it("una 4ª rutina nueva sin día se queda sin asignar -- el patrón no tiene un cuarto día que inventar", async () => {
+
+        const { hydrate, createRoutine } = await import("./gymRoutineStore.js");
+        await hydrate();
+
+        await createRoutine({ name: "A", days: [{ id: "d1", title: "A", exercises: [] }], progressionNote: "" });
+        await createRoutine({ name: "B", days: [{ id: "d2", title: "B", exercises: [] }], progressionNote: "" });
+        await createRoutine({ name: "C", days: [{ id: "d3", title: "C", exercises: [] }], progressionNote: "" });
+        const fourth = await createRoutine({ name: "D", days: [{ id: "d4", title: "D", exercises: [] }], progressionNote: "" });
+
+        expect(fourth.days[0].weekday).toBeFalsy();
+
+    });
+
+    it("el patrón salta un día ya ocupado por otra rutina, aunque esa rutina lo haya elegido a mano", async () => {
+
+        const { hydrate, createRoutine } = await import("./gymRoutineStore.js");
+        await hydrate();
+
+        // El usuario ya eligió "miercoles" a mano para esta -- el patrón
+        // automático de las siguientes debe saber que ese hueco ya no
+        // está libre.
+        await createRoutine({ name: "Manual", days: [{ id: "d1", title: "Manual", weekday: "miercoles", exercises: [] }], progressionNote: "" });
+
+        const first = await createRoutine({ name: "A", days: [{ id: "d2", title: "A", exercises: [] }], progressionNote: "" });
+        const second = await createRoutine({ name: "B", days: [{ id: "d3", title: "B", exercises: [] }], progressionNote: "" });
+
+        expect(first.days[0].weekday).toBe("lunes");
+        expect(second.days[0].weekday).toBe("viernes"); // salta miércoles, ya ocupado
+
+    });
+
+    it("una rutina nueva con día elegido a mano no se toca por el patrón automático", async () => {
+
+        const { hydrate, createRoutine } = await import("./gymRoutineStore.js");
+        await hydrate();
+
+        const routine = await createRoutine({
+            name: "Elegida a mano",
+            days: [{ id: "d1", title: "Elegida a mano", weekday: "sabado", exercises: [] }],
+            progressionNote: ""
+        });
+
+        expect(routine.days[0].weekday).toBe("sabado");
+
+    });
+
+    it("las 3 rutinas por defecto ya existentes (sin weekday) no se tocan al crear rutinas nuevas", async () => {
+
+        const { hydrate, createRoutine, getRoutines } = await import("./gymRoutineStore.js");
+        await hydrate();
+
+        const before = getRoutines()
+            .filter(r => r.id.startsWith("default-"))
+            .map(r => ({ id: r.id, weekday: r.days[0]?.weekday ?? null }));
+
+        await createRoutine({ name: "Nueva", days: [{ id: "d1", title: "Nueva", exercises: [] }], progressionNote: "" });
+
+        const after = getRoutines()
+            .filter(r => r.id.startsWith("default-"))
+            .map(r => ({ id: r.id, weekday: r.days[0]?.weekday ?? null }));
+
+        expect(after).toEqual(before);
+        expect(before.every(r => r.weekday === null)).toBe(true); // confirma la premisa: seguían sin weekday
+
+    });
+
     it("getGymDay busca en TODAS las rutinas guardadas, no solo en una 'activa'", async () => {
 
         const { hydrate, createRoutine, getGymDay } = await import("./gymRoutineStore.js");

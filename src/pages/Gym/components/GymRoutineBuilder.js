@@ -3,6 +3,29 @@ import "./GymRoutineBuilder.css";
 import { getBuilderState } from "../gymRoutineBuilderStore.js";
 import { searchExercises, FILTER_OPTIONS, MUSCLE_GROUPS } from "../exerciseSearch.js";
 import { WEEKDAY_OPTIONS } from "../gymSchedule.js";
+import { getRoutines } from "../../../data/gymRoutineStore.js";
+
+// Null si `weekday` está libre o sin elegir -- si no, el nombre de la
+// OTRA rutina (nunca la que se está editando, de ahí excludeRoutineId)
+// que ya lo tiene. Puramente informativo: dos rutinas SÍ pueden compartir
+// día (gymSchedule.js ya lo soporta -- gana la primera por orden de
+// getRoutines() al mostrarlo en Plan/Gimnasio), esto no bloquea guardar,
+// solo avisa de que la otra dejará de verse ese día. `routines` como
+// parámetro (no getRoutines() aquí dentro) para poder testear el cálculo
+// sin pasar por el store real -- mismo criterio que buildMarkersByDate()
+// en PlanMonthCalendar.js.
+export function findConflictingRoutineName(routines, weekday, excludeRoutineId) {
+
+    if (!weekday) return null;
+
+    const conflict = routines.find(routine =>
+        routine.id !== excludeRoutineId &&
+        routine.days.some(day => day.weekday === weekday)
+    );
+
+    return conflict?.name ?? null;
+
+}
 
 function ExerciseRow(dayId, exercise) {
 
@@ -47,7 +70,9 @@ function ExerciseRow(dayId, exercise) {
 
 }
 
-function DayEditor(day) {
+function DayEditor(day, routineId, routines) {
+
+    const conflictName = findConflictingRoutineName(routines, day.weekday, routineId);
 
     return `
 
@@ -78,6 +103,18 @@ function DayEditor(day) {
                 </select>
 
             </label>
+
+            ${conflictName ? `
+
+                <p class="gym-builder-day-weekday-warning">
+
+                    <iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon>
+
+                    Ya tienes "${conflictName}" programada este día — Plan y Gimnasio solo mostrarán una de las dos.
+
+                </p>
+
+            ` : ""}
 
             <div class="gym-builder-exercises">
 
@@ -221,7 +258,7 @@ export function GymRoutineBuilder() {
 
             <div class="gym-builder-days">
 
-                ${state.days.map(DayEditor).join("")}
+                ${state.days.map(day => DayEditor(day, state.routineId, getRoutines())).join("")}
 
             </div>
 

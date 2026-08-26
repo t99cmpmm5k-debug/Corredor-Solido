@@ -145,6 +145,36 @@
 
 }
 
+/* Informativo, no bloqueante -- dos rutinas SÍ pueden compartir día (ver
+   findConflictingRoutineName() en GymRoutineBuilder.js), --color-warning
+   en vez de --color-danger (ese lo usa .gym-builder-error, un fallo real
+   al guardar, no este aviso). */
+.gym-builder-day-weekday-warning{
+
+    display:flex;
+    align-items:flex-start;
+    gap:8px;
+
+    margin:0;
+    padding:10px 12px;
+    border-radius:var(--radius-sm);
+    background:color-mix(in srgb, var(--color-warning) 14%, transparent);
+    border:1px solid color-mix(in srgb, var(--color-warning) 35%, transparent);
+    color:var(--text-primary);
+    font-size:.82rem;
+    line-height:1.4;
+
+}
+
+.gym-builder-day-weekday-warning iconify-icon{
+
+    flex-shrink:0;
+    margin-top:1px;
+    color:var(--color-warning);
+    font-size:16px;
+
+}
+
 .gym-builder-remove{
 
     flex-shrink:0;
