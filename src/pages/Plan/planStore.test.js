@@ -13,7 +13,9 @@ import {
     getNewSessionType,
     setNewSessionType,
     getNewSessionNotes,
-    setNewSessionNotes
+    setNewSessionNotes,
+    isAddSheetOpen,
+    setAddSheetOpen
 } from "./planStore.js";
 
 describe("planStore — vista semanal/mensual", () => {
@@ -165,6 +167,37 @@ describe("planStore — creación manual de sesión (tocar un día vacío en Pla
         resetPlanView();
 
         expect(getCreatingSessionDate()).toBeNull();
+
+    });
+
+});
+
+describe("planStore — bottom sheet del botón \"+\" (fase 5 del pulido de Plan)", () => {
+
+    beforeEach(() => {
+        resetPlanView();
+    });
+
+    it("por defecto está cerrado", () => {
+        expect(isAddSheetOpen()).toBe(false);
+    });
+
+    it("setAddSheetOpen abre y cierra", () => {
+
+        setAddSheetOpen(true);
+        expect(isAddSheetOpen()).toBe(true);
+
+        setAddSheetOpen(false);
+        expect(isAddSheetOpen()).toBe(false);
+
+    });
+
+    it("resetPlanView lo deja cerrado", () => {
+
+        setAddSheetOpen(true);
+        resetPlanView();
+
+        expect(isAddSheetOpen()).toBe(false);
 
     });
 

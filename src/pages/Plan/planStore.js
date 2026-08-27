@@ -165,6 +165,23 @@ export function setExpandedSessionId(id) {
 
 }
 
+// Bottom sheet del botón "+" (fase 5 del pulido de Plan) -- true/false
+// simple, solo puede haber uno abierto a la vez. Aparte de
+// creatingSessionDate/movingSessionId/etc. porque no comparte tarjeta con
+// ellos: es una capa flotante por encima de toda la pantalla, no un
+// contenido del hueco de detalle.
+export function isAddSheetOpen() {
+
+    return getState().addSheetOpen ?? false;
+
+}
+
+export function setAddSheetOpen(open) {
+
+    setState("addSheetOpen", open);
+
+}
+
 // Vuelve a la semana actual y olvida cualquier sesión seleccionada de
 // otra semana — se llama solo al entrar en Plan desde la barra de
 // navegación (ver BottomNavigation.js), nunca en cada render de Plan(),
@@ -178,6 +195,7 @@ export function resetPlanView() {
     setState("duplicatingSessionId", null);
     setState("sessionMenuOpenId", null);
     setState("expandedSessionId", null);
+    setState("addSheetOpen", false);
     setState("planViewMode", "week");
     setState("viewedMonth", null);
     setState("creatingSessionDate", null);

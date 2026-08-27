@@ -70,7 +70,7 @@ export function PlanHeader(weekStartDate, sessions, timelineHtml = "", { viewMod
 
                 <div class="plan-header-actions">
 
-                    <button class="plan-add-button" data-action="open-plan-import">
+                    <button class="plan-add-button" data-action="open-plan-add-sheet">
 
                         +
 

@@ -1,9 +1,9 @@
-import { setSelectedWorkout, getViewedWeekStart, setViewedWeekStart, getMovingSessionId, setMovingSessionId, getDuplicatingSessionId, setDuplicatingSessionId, getSessionMenuOpenId, setSessionMenuOpenId, getExpandedSessionId, setExpandedSessionId, getPlanViewMode, setPlanViewMode, shiftViewedMonth, getCreatingSessionDate, getEditingSessionId, startCreateSession, startEditSession, cancelCreateSession, getNewSessionType, setNewSessionType, getNewSessionNotes, setNewSessionNotes } from "./planStore";
+import { setSelectedWorkout, getViewedWeekStart, setViewedWeekStart, getMovingSessionId, setMovingSessionId, getDuplicatingSessionId, setDuplicatingSessionId, getSessionMenuOpenId, setSessionMenuOpenId, getExpandedSessionId, setExpandedSessionId, getPlanViewMode, setPlanViewMode, shiftViewedMonth, getCreatingSessionDate, getEditingSessionId, startCreateSession, startEditSession, cancelCreateSession, getNewSessionType, setNewSessionType, getNewSessionNotes, setNewSessionNotes, isAddSheetOpen, setAddSheetOpen } from "./planStore";
 import { rerender, navigate } from "../../core/router";
 
 import { importPlan } from "../../importers/plan/index.js";
 import { importPlannedSessions, addPlannedSession, updatePlannedSession, duplicatePlannedSession, getWeekSessions, getSessionById, getSessionsForDate, movePlannedSession, deletePlannedSession, deletePlannedSessionsByBatch } from "../../data/workoutStore.js";
-import { addDays } from "../../utils/date.js";
+import { addDays, formatISODate } from "../../utils/date.js";
 import { PLAN_SESSION_REVIEW_FIELDS, parseSessionFieldValue } from "./components/PlanImportReviewStep.js";
 import { Running } from "../Running/Running.js";
 import { openDetail as openRunningDetail } from "../Running/initRunningEvents.js";
@@ -51,6 +51,74 @@ function closePlanImport() {
 
 }
 
+const PLAN_ADD_SHEET_HISTORY_STATE = { planAddSheet: true };
+
+// Bottom sheet del botón "+" (fase 5 del pulido de Plan) — mismo patrón
+// de historial que openPlanImport()/closePlanImport() para que el gesto
+// de atrás lo cierre en vez de salir de la app.
+function openAddSheet() {
+
+    history.pushState(PLAN_ADD_SHEET_HISTORY_STATE, "");
+    setAddSheetOpen(true);
+
+    rerender();
+
+}
+
+function closeAddSheet() {
+
+    if (history.state?.planAddSheet) {
+        history.back();
+        return;
+    }
+
+    setAddSheetOpen(false);
+    rerender();
+
+}
+
+// Elegir una opción del sheet no debe dejar su entrada de historial
+// colgada por debajo de la del siguiente flujo (importar SÍ apila la
+// suya propia, ver openPlanImport) — se neutraliza aquí en vez de
+// pasar por closeAddSheet()/history.back(), que dispararía un popstate
+// asíncrono y complicaría el orden con el pushState que viene justo
+// después.
+function closeAddSheetSilently() {
+
+    setAddSheetOpen(false);
+
+    if (history.state?.planAddSheet) {
+        history.replaceState(null, "");
+    }
+
+}
+
+// Mismo flujo EXACTO que tocar un día "Descanso" del timeline/calendario
+// (ver startCreateSession() en planStore.js y selectCalendarDay() más
+// abajo) — cero lógica nueva, solo un punto de entrada distinto.
+function addSheetCreateWorkout() {
+
+    closeAddSheetSilently();
+    startCreateSession(formatISODate(new Date()));
+
+    rerender();
+
+}
+
+// Variante rápida del mismo formulario -- mismo startCreateSession(), solo
+// cambia el tipo de partida a "recovery" (Recuperación, el tipo real más
+// cercano a "descanso" del catálogo de WORKOUT_TYPES) en vez del genérico
+// de siempre.
+function addSheetAddRest() {
+
+    closeAddSheetSilently();
+    startCreateSession(formatISODate(new Date()));
+    setNewSessionType("recovery");
+
+    rerender();
+
+}
+
 // Registrado una sola vez a nivel de módulo (no dentro de initPlanEvents,
 // que se vuelve a llamar en cada render) — mismo motivo que el listener
 // equivalente de initRunningEvents.js.
@@ -58,6 +126,12 @@ window.addEventListener("popstate", () => {
 
     if (getImportStep() !== "closed") {
         setImportStep("closed");
+        rerender();
+        return;
+    }
+
+    if (isAddSheetOpen()) {
+        setAddSheetOpen(false);
         rerender();
     }
 
@@ -609,6 +683,48 @@ export function initPlanEvents() {
     document.querySelectorAll('[data-action="open-plan-import"]').forEach(button => {
 
         button.addEventListener("click", openPlanImport);
+
+    });
+
+    document.querySelectorAll('[data-action="open-plan-add-sheet"]').forEach(button => {
+
+        button.addEventListener("click", openAddSheet);
+
+    });
+
+    // El backdrop entero lleva data-action="close-plan-add-sheet" (ver
+    // BottomSheet.js) pero el click dentro del panel también burbujea
+    // hasta él -- solo cierra si el click aterrizó de verdad en el
+    // backdrop mismo, no en algo dentro del panel.
+    document.querySelectorAll('[data-action="close-plan-add-sheet"]').forEach(backdrop => {
+
+        backdrop.addEventListener("click", event => {
+
+            if (event.target !== event.currentTarget) return;
+            closeAddSheet();
+
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="add-sheet-import-plan"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+            closeAddSheetSilently();
+            openPlanImport();
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="add-sheet-create-workout"]').forEach(button => {
+
+        button.addEventListener("click", addSheetCreateWorkout);
+
+    });
+
+    document.querySelectorAll('[data-action="add-sheet-add-rest"]').forEach(button => {
+
+        button.addEventListener("click", addSheetAddRest);
 
     });
 

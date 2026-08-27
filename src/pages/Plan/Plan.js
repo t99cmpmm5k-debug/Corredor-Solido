@@ -10,8 +10,9 @@ import { PlanMovePanel } from "./components/PlanMovePanel.js";
 import { PlanImportWizard } from "./components/PlanImportWizard.js";
 import { PlanMonthCalendar } from "./components/PlanMonthCalendar.js";
 import { PlanCreateSessionPanel } from "./components/PlanCreateSessionPanel.js";
+import { BottomSheet } from "../../components/BottomSheet/BottomSheet.js";
 
-import { getSelectedWorkout, getViewedWeekStart, getMovingSessionId, getDuplicatingSessionId, getPlanViewMode, getViewedMonth, getCreatingSessionDate, getEditingSessionId, getNewSessionType, getNewSessionNotes } from "./planStore";
+import { getSelectedWorkout, getViewedWeekStart, getMovingSessionId, getDuplicatingSessionId, getPlanViewMode, getViewedMonth, getCreatingSessionDate, getEditingSessionId, getNewSessionType, getNewSessionNotes, isAddSheetOpen } from "./planStore";
 import { getImportStep } from "./planImportStore.js";
 import { getWeekSessions, getSessionById, getPlannedSessions } from "../../data/workoutStore.js";
 import { BottomNavigation } from "../../components/Navigation/BottomNavigation.js";
@@ -160,6 +161,19 @@ export function Plan() {
                 ? PlanMovePanel(duplicatingSession, "duplicate")
                 : PlanWorkoutCard(selectedWorkout);
 
+    // Capa flotante por encima de toda la pantalla (fase 5 del pulido de
+    // Plan) -- independiente de qué ocupe el hueco de detalle, así que se
+    // añade al final del markup en vez de en detailCardHtml.
+    const addSheetHtml = isAddSheetOpen() ? BottomSheet({
+        title: "Añadir a la semana",
+        closeAction: "close-plan-add-sheet",
+        options: [
+            { icon: "solar:upload-square-bold-duotone", label: "Importar plan", hint: "Desde un PDF, CSV o JSON", action: "add-sheet-import-plan" },
+            { icon: "solar:add-circle-bold-duotone", label: "Crear entrenamiento", hint: "Sesión manual para hoy", action: "add-sheet-create-workout" },
+            { icon: "solar:moon-bold-duotone", label: "Añadir descanso", hint: "Recuperación para hoy", action: "add-sheet-add-rest" }
+        ]
+    }) : "";
+
     if (viewMode === "month") {
 
         const calendarHtml = PlanMonthCalendar(getViewedMonth(), selectedWorkout?.date ?? null);
@@ -181,6 +195,8 @@ export function Plan() {
             </section>
 
             ${BottomNavigation()}
+
+            ${addSheetHtml}
 
         `;
 
@@ -205,6 +221,8 @@ export function Plan() {
         </section>
 
         ${BottomNavigation()}
+
+        ${addSheetHtml}
 
     `;
 
