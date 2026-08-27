@@ -4,7 +4,7 @@ import { getWorkouts, getShoes, getPossibleDataLoss, getShoeTotalKm } from "../.
 import { RUNNING_WORKOUT_TYPES } from "../../data/runningWorkoutTypes.js";
 import { formatDayMonth } from "../../utils/date.js";
 import { formatSecondsAsClock, formatShoeName } from "../../utils/format.js";
-import { buildTypeProgressInsight, buildProgressMessage } from "./runningProgress.js";
+import { buildTypeProgressInsight, buildProgressMessage, buildPaceComparison, buildComparisonMessage } from "./runningProgress.js";
 import { buildTypeSummary } from "./runningSummary.js";
 import { buildListInsight } from "./runningListInsight.js";
 
@@ -479,8 +479,11 @@ function summaryTitle(typeFilter) {
 // "Todos" o sin histórico suficiente) aporta la segunda línea de contexto
 // real -- antes era una tarjeta separada debajo de los chips
 // (RunningProgressCard.js, retirada), ahora vive aquí mismo, dentro de la
-// propia tarjeta de resumen.
-function RunningTypeSummary(typeFilter, summary, insight) {
+// propia tarjeta de resumen. `comparison` (buildPaceComparison(),
+// runningProgress.js) es la comparación por CALENDARIO -- distinta del
+// insight de arriba (que compara por nº de entrenos) -- null con "Todos"
+// o sin suficiente histórico real de hace ~30 días.
+function RunningTypeSummary(typeFilter, summary, insight, comparison) {
 
     if (!summary) return "";
 
@@ -550,6 +553,18 @@ function RunningTypeSummary(typeFilter, summary, insight) {
 
             </div>
 
+            ${comparison ? `
+
+                <p class="running-summary-comparison">
+
+                    <iconify-icon icon="solar:calendar-search-bold-duotone"></iconify-icon>
+
+                    <span>${buildComparisonMessage(comparison)}</span>
+
+                </p>
+
+            ` : ""}
+
         </div>
 
     `;
@@ -590,6 +605,12 @@ function RunningIdleView() {
     // cuál hablar, así que la tarjeta no se muestra.
     const progressInsight = typeFilter ? buildTypeProgressInsight(workouts, { type: typeFilter }) : null;
     const typeSummary = buildTypeSummary(filtered);
+
+    // Comparación por calendario (distinta de progressInsight, ver
+    // runningProgress.js) -- mismo motivo que progressInsight para no
+    // mostrarla con "Todos": comparar ritmo entre tipos distintos no dice
+    // nada.
+    const paceComparison = typeFilter && typeSummary ? buildPaceComparison(filtered, typeSummary.avgPaceSecPerKm) : null;
 
     // Insight rotatorio sobre la lista (ver runningListInsight.js) --
     // sobre el conjunto YA filtrado (mismo que se ve debajo), salvo el %
@@ -638,7 +659,7 @@ function RunningIdleView() {
 
             `) : `
 
-                ${RunningTypeSummary(typeFilter, typeSummary, progressInsight)}
+                ${RunningTypeSummary(typeFilter, typeSummary, progressInsight, paceComparison)}
 
                 ${RunningTypeFilters(typeFilter, workouts)}
 

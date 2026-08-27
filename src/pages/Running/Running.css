@@ -330,6 +330,44 @@
 
 }
 
+/* Comparación real por calendario (ver buildPaceComparison() en
+   runningProgress.js) -- pie de la tarjeta, separado de las stats por su
+   propio borde superior, mismo lenguaje visual ligero que
+   .running-summary-insight. */
+.running-summary-comparison{
+
+    display:flex;
+
+    align-items:flex-start;
+
+    gap:8px;
+
+    margin:0;
+
+    padding-top:14px;
+
+    border-top:1px solid color-mix(in srgb, var(--card-border) 70%, transparent);
+
+    color:var(--text-secondary);
+
+    font-size:.8rem;
+
+    line-height:1.4;
+
+}
+
+.running-summary-comparison iconify-icon{
+
+    flex-shrink:0;
+
+    margin-top:1px;
+
+    font-size:15px;
+
+    color:var(--color-primary);
+
+}
+
 .running-summary-item{
 
     flex:1;

@@ -1,4 +1,6 @@
 import { RUNNING_WORKOUT_TYPES } from "../../data/runningWorkoutTypes.js";
+import { parseISODate } from "../../utils/date.js";
+import { formatSecondsAsClock } from "../../utils/format.js";
 
 // Compara los últimos N entrenos de un tipo contra los N anteriores del
 // mismo tipo — comparar ritmo entre tipos distintos (Rodaje vs. Series)
@@ -75,6 +77,61 @@ export function buildTypeProgressInsight(workouts, { type, groupSize = GROUP_SIZ
 
     const hrTrend = classifyHrTrend(recent, previous, paceDeltaSecPerKm, previousPace);
     return { status: "improved", type, groupSize, paceDeltaSecPerKm, hrTrend };
+
+}
+
+// Comparación real por CALENDARIO (distinta de buildTypeProgressInsight()
+// de arriba, que compara por nº de entrenos) -- "hace ~30 días" es una
+// ventana de 2 semanas centrada en ese día (23-37 días atrás), no un
+// único día exacto (con entrenos reales pero espaciados, un día exacto
+// casi nunca tendría ninguno). Mínimo 2 entrenos reales con ritmo dentro
+// de esa ventana para contar como "suficientes datos históricos" -- con
+// menos, un solo entreno aislado podría no ser representativo.
+const COMPARISON_DAYS_AGO = 30;
+const COMPARISON_WINDOW_HALF_SPAN_DAYS = 7;
+const MIN_COMPARISON_WORKOUTS = 2;
+
+// { currentPaceSecPerKm, pastPaceSecPerKm, deltaSecPerKm } o null si no hay
+// suficiente histórico real de hace ~30 días de ese tipo -- nunca una
+// cifra de relleno. `currentAvgPaceSecPerKm` se recibe ya calculado (mismo
+// dato que ya muestra RunningTypeSummary, buildTypeSummary() en
+// runningSummary.js) para no duplicar ese cálculo aquí.
+export function buildPaceComparison(filteredWorkouts, currentAvgPaceSecPerKm, now = new Date()) {
+
+    if (currentAvgPaceSecPerKm == null) return null;
+
+    const dayMs = 86400000;
+    const nowMs = now.getTime();
+    const windowStart = nowMs - (COMPARISON_DAYS_AGO + COMPARISON_WINDOW_HALF_SPAN_DAYS) * dayMs;
+    const windowEnd = nowMs - (COMPARISON_DAYS_AGO - COMPARISON_WINDOW_HALF_SPAN_DAYS) * dayMs;
+
+    const inWindow = filteredWorkouts.filter(w => {
+
+        if (w.avgPaceSecPerKm == null || !w.date) return false;
+
+        const t = parseISODate(w.date).getTime();
+        return t >= windowStart && t <= windowEnd;
+
+    });
+
+    if (inWindow.length < MIN_COMPARISON_WORKOUTS) return null;
+
+    const pastPaceSecPerKm = Math.round(average(inWindow.map(w => w.avgPaceSecPerKm)));
+    const deltaSecPerKm = Math.round(currentAvgPaceSecPerKm - pastPaceSecPerKm);
+
+    return { currentPaceSecPerKm: currentAvgPaceSecPerKm, pastPaceSecPerKm, deltaSecPerKm };
+
+}
+
+// Texto real de la comparación -- "Mejora" solo cuando de verdad se corre
+// más rápido ahora (delta negativo); en el sentido contrario no se
+// reclama una mejora que no existe, "Cambio" es neutro.
+export function buildComparisonMessage(comparison) {
+
+    const label = comparison.deltaSecPerKm < 0 ? "Mejora" : comparison.deltaSecPerKm > 0 ? "Cambio" : "Sin cambio";
+    const sign = comparison.deltaSecPerKm > 0 ? "+" : "";
+
+    return `Ritmo medio: ${formatSecondsAsClock(comparison.currentPaceSecPerKm)}/km · Hace 30 días: ${formatSecondsAsClock(comparison.pastPaceSecPerKm)}/km · ${label}: ${sign}${comparison.deltaSecPerKm} s/km`;
 
 }
 

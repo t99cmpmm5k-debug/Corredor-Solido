@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildTypeProgressInsight, buildProgressMessage } from "./runningProgress.js";
+import { buildTypeProgressInsight, buildProgressMessage, buildPaceComparison, buildComparisonMessage } from "./runningProgress.js";
 
 // pace en seg/km, hr en ppm — solo los campos que usa buildTypeProgressInsight.
 function w(date, avgPaceSecPerKm, avgHr, type = "easy") {
@@ -210,6 +210,70 @@ describe("buildProgressMessage -- segunda línea de insight de RunningTypeSummar
         expect(message.trend).toBe("down");
         expect(message.html).toContain("20 s/km");
         expect(message.html).not.toContain("-20");
+
+    });
+
+});
+
+describe("buildPaceComparison -- comparación real por calendario (fase 3 del pulido de Running)", () => {
+
+    const NOW = new Date("2026-08-15T12:00:00");
+
+    it("sin ritmo medio actual, no hay nada que comparar", () => {
+
+        expect(buildPaceComparison([], null, NOW)).toBeNull();
+
+    });
+
+    it("sin ningún entreno real en la ventana de hace ~30 días, devuelve null -- nunca inventa el dato pasado", () => {
+
+        const workouts = [w("2026-08-01", 300, 140), w("2026-01-01", 300, 140)];
+        expect(buildPaceComparison(workouts, 300, NOW)).toBeNull();
+
+    });
+
+    it("con un solo entreno en la ventana (por debajo del mínimo de 2), devuelve null", () => {
+
+        const workouts = [w("2026-07-15", 320)]; // dentro de la ventana 9-23 jul
+        expect(buildPaceComparison(workouts, 300, NOW)).toBeNull();
+
+    });
+
+    it("con al menos 2 entrenos reales en la ventana, calcula la comparación real", () => {
+
+        const workouts = [
+            w("2026-07-14", 320),
+            w("2026-07-18", 316),
+            w("2026-08-10", 999) // fuera de la ventana, no debe contar
+        ];
+
+        const result = buildPaceComparison(workouts, 300, NOW);
+
+        expect(result).not.toBeNull();
+        expect(result.pastPaceSecPerKm).toBe(318); // media de 320 y 316
+        expect(result.currentPaceSecPerKm).toBe(300);
+        expect(result.deltaSecPerKm).toBe(-18); // 300 - 318
+
+    });
+
+});
+
+describe("buildComparisonMessage -- texto real de la comparación de calendario", () => {
+
+    it("ritmo actual más rápido: etiqueta 'Mejora' con el delta negativo tal cual", () => {
+
+        const text = buildComparisonMessage({ currentPaceSecPerKm: 352, pastPaceSecPerKm: 372, deltaSecPerKm: -20 });
+
+        expect(text).toBe("Ritmo medio: 5:52/km · Hace 30 días: 6:12/km · Mejora: -20 s/km");
+
+    });
+
+    it("ritmo actual más lento: nunca reclama 'Mejora' -- usa 'Cambio' con el signo +", () => {
+
+        const text = buildComparisonMessage({ currentPaceSecPerKm: 320, pastPaceSecPerKm: 300, deltaSecPerKm: 20 });
+
+        expect(text).toContain("Cambio: +20 s/km");
+        expect(text).not.toContain("Mejora");
 
     });
 
