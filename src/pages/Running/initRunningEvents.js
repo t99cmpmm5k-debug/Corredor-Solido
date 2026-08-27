@@ -35,7 +35,10 @@ import {
     setNewShoePhoto,
     toggleSort,
     getHistoryMenuOpenId,
-    setHistoryMenuOpenId
+    setHistoryMenuOpenId,
+    getWarningsExpanded,
+    setWarningsExpanded,
+    setChartMetricMode
 } from "./runningStore.js";
 
 const DETAIL_HISTORY_STATE = { runningDetail: true };
@@ -644,6 +647,24 @@ export function initRunningEvents() {
     document.querySelectorAll('[data-action="close-detail"]').forEach(button => {
 
         button.addEventListener("click", closeDetail);
+
+    });
+
+    document.querySelectorAll('[data-action="toggle-import-warnings"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+            setWarningsExpanded(!getWarningsExpanded());
+            rerender();
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="set-chart-metric-mode"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+            setChartMetricMode(button.dataset.mode);
+            rerender();
+        });
 
     });
 

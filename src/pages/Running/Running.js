@@ -27,7 +27,9 @@ import {
     getNewShoePhoto,
     getSortColumn,
     getSortDirection,
-    getHistoryMenuOpenId
+    getHistoryMenuOpenId,
+    getWarningsExpanded,
+    getChartMetricMode
 } from "./runningStore.js";
 
 import { RunningUploadStep } from "./components/RunningUploadStep.js";
@@ -797,7 +799,7 @@ export function Running() {
     } else if (step === "detail") {
 
         const workout = getWorkouts().find(w => w.id === getDetailWorkoutId());
-        content = RunningDetailView(workout, getShoes());
+        content = RunningDetailView(workout, getShoes(), getWarningsExpanded(), getChartMetricMode());
 
     } else if (step === "shoes") {
 

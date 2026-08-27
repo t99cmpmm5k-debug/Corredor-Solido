@@ -284,3 +284,175 @@ describe("RunningDetailView — stat 'FC media' (independiente del gráfico)", (
     });
 
 });
+
+describe("RunningDetailView — acordeón de avisos de importación (retoque de cierre)", () => {
+
+    it("sin avisos reales, no pinta nada", () => {
+
+        const html = RunningDetailView(workout({ importWarnings: [] }));
+        expect(html).not.toContain("import-warnings");
+
+    });
+
+    it("con avisos reales, colapsado por defecto (warningsExpanded=false): se ve el contador, no el texto de cada aviso", () => {
+
+        const html = RunningDetailView(workout({ importWarnings: ["Falta el título del entrenamiento", "Año no detectado"] }), [], false);
+
+        expect(html).toContain("Avisos de importación (2)");
+        expect(html).not.toContain("import-warnings-list");
+        expect(html).not.toContain("Falta el título");
+
+    });
+
+    it("expandido (warningsExpanded=true), se ve el texto real de cada aviso", () => {
+
+        const html = RunningDetailView(workout({ importWarnings: ["Falta el título del entrenamiento"] }), [], true);
+
+        expect(html).toContain("is-expanded");
+        expect(html).toContain("import-warnings-list");
+        expect(html).toContain("Falta el título del entrenamiento");
+
+    });
+
+});
+
+describe("RunningDetailView — toggle de métricas del gráfico (Ritmo+FC / Ritmo / FC)", () => {
+
+    function hrWorkout(mode) {
+        return RunningDetailView(workout({
+            avgHr: 145,
+            splits: [
+                { lap: 1, paceSecPerKm: 295, avgHr: 140 },
+                { lap: 2, paceSecPerKm: 305, avgHr: 150 }
+            ]
+        }), [], false, mode);
+    }
+
+    it("con línea de FC real, muestra las 3 opciones del toggle", () => {
+
+        const html = hrWorkout("both");
+
+        expect(html).toContain('data-mode="both"');
+        expect(html).toContain('data-mode="pace"');
+        expect(html).toContain('data-mode="hr"');
+        expect(html).not.toContain("Cadencia</button>"); // nunca una 4ª opción de cadencia -- no hay dato real por km
+
+    });
+
+    it("sin ninguna línea de FC real, no muestra el toggle (nada que alternar)", () => {
+
+        const html = RunningDetailView(workout({ avgHr: 160 })); // sin FC por split
+
+        expect(html).not.toContain("pace-chart-mode-toggle");
+
+    });
+
+    it("el modo activo recibe la clase is-active en su propio botón", () => {
+
+        const html = hrWorkout("hr");
+
+        expect(html).toMatch(/class="pace-chart-mode-button is-active" data-action="set-chart-metric-mode" data-mode="hr"/);
+        expect(html).toContain("pace-chart--mode-hr");
+
+    });
+
+});
+
+describe("RunningDetailView — km parcial marcado en el gráfico", () => {
+
+    it("último split con menos de 1km real: lleva la etiqueta 'Parcial'", () => {
+
+        const html = RunningDetailView(workout({
+            splits: [
+                { lap: 1, paceSecPerKm: 300, distanceKm: 1 },
+                { lap: 2, paceSecPerKm: 305, distanceKm: 0.7 }
+            ]
+        }));
+
+        expect(html).toContain("pace-chart-partial-tag");
+        expect(html).toContain("Parcial");
+
+    });
+
+    it("todos los splits de 1km completo: ningún 'Parcial'", () => {
+
+        const html = RunningDetailView(workout({
+            splits: [
+                { lap: 1, paceSecPerKm: 300, distanceKm: 1 },
+                { lap: 2, paceSecPerKm: 305, distanceKm: 1 }
+            ]
+        }));
+
+        expect(html).not.toContain("pace-chart-partial-tag");
+
+    });
+
+    it("un split corto que NO es el último no se marca como parcial (solo el final puede serlo)", () => {
+
+        const html = RunningDetailView(workout({
+            splits: [
+                { lap: 1, paceSecPerKm: 300, distanceKm: 0.8 },
+                { lap: 2, paceSecPerKm: 305, distanceKm: 1 }
+            ]
+        }));
+
+        expect(html).not.toContain("pace-chart-partial-tag");
+
+    });
+
+});
+
+describe("RunningDetailView — insights reales bajo el gráfico", () => {
+
+    it("con variación real de ritmo y FC, muestra ambos insights con datos reales", () => {
+
+        const html = RunningDetailView(workout({
+            splits: [
+                { lap: 1, paceSecPerKm: 310, avgHr: 140 },
+                { lap: 2, paceSecPerKm: 290, avgHr: 155 },
+                { lap: 3, paceSecPerKm: 300, avgHr: 148 }
+            ]
+        }));
+
+        expect(html).toContain("pace-chart-insights");
+        expect(html).toContain("Km más rápido: km 2");
+        expect(html).toContain("FC más alta: km 2");
+
+    });
+
+    it("sin ninguna variación (todos los km al mismo ritmo/FC), no fuerza ningún insight", () => {
+
+        const html = RunningDetailView(workout({
+            splits: [
+                { lap: 1, paceSecPerKm: 300, avgHr: 145 },
+                { lap: 2, paceSecPerKm: 300, avgHr: 145 }
+            ]
+        }));
+
+        expect(html).not.toContain("pace-chart-insights");
+
+    });
+
+});
+
+describe("RunningDetailView — métricas agrupadas por categoría", () => {
+
+    it("agrupa en Rendimiento/Condiciones/Equipamiento, con sus títulos reales", () => {
+
+        const html = RunningDetailView(workout());
+
+        expect(html).toContain("RENDIMIENTO");
+        expect(html).toContain("CONDICIONES");
+        expect(html).toContain("EQUIPAMIENTO");
+
+    });
+
+    it("'Hora' lleva el modificador de menor peso visual dentro de Condiciones", () => {
+
+        const html = RunningDetailView(workout({ time: "07:15" }));
+
+        expect(html).toMatch(/detail-stat detail-stat--minor"[\s\S]{0,400}Hora/);
+
+    });
+
+});

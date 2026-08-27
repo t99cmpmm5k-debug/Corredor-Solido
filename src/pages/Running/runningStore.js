@@ -18,7 +18,9 @@ const initial = () => ({
     timingLog: [],
     detailWorkoutId: null,
     newShoePhoto: null,
-    editingShoeId: null
+    editingShoeId: null,
+    warningsExpanded: false,
+    chartMetricMode: "both"
 
 });
 
@@ -295,9 +297,46 @@ export function getDetailWorkoutId() {
 
 }
 
+// Cambiar de entreno reinicia tanto el acordeón de avisos como el modo de
+// métricas del gráfico -- ninguno de los dos debe arrastrarse del entreno
+// anterior al abrir uno distinto.
 export function setDetailWorkoutId(id) {
 
     wizard.detailWorkoutId = id;
+    wizard.warningsExpanded = false;
+    wizard.chartMetricMode = "both";
+
+}
+
+/*==========================
+   AVISOS DE IMPORTACIÓN (detalle del entreno, retoque de cierre)
+==========================*/
+
+export function getWarningsExpanded() {
+
+    return wizard.warningsExpanded;
+
+}
+
+export function setWarningsExpanded(value) {
+
+    wizard.warningsExpanded = value;
+
+}
+
+/*==========================
+   MODO DE MÉTRICAS DEL GRÁFICO (Ritmo+FC / Ritmo solo / FC solo)
+==========================*/
+
+export function getChartMetricMode() {
+
+    return wizard.chartMetricMode ?? "both";
+
+}
+
+export function setChartMetricMode(mode) {
+
+    wizard.chartMetricMode = mode;
 
 }
 

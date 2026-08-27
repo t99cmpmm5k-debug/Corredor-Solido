@@ -211,7 +211,45 @@ function RunningHrOverlay(splits, avgHrRef, avgPaceRef) {
 
 }
 
-function RunningPaceChart(splits, avgPaceRef, avgHrRef) {
+// Km más rápido / FC más alta (retoque de cierre) -- solo si de verdad hay
+// variación real entre splits (mismo criterio que hasVariation/is-fastest
+// de más abajo): con todos los km al mismo ritmo o la misma FC, señalar
+// uno como "el más rápido"/"el más alto" sería ruido, no un dato útil.
+function buildChartInsights(splits) {
+
+    const insights = [];
+
+    const paceSplits = splits.filter(s => s.segmentType !== "rest" && s.paceSecPerKm != null);
+    const paces = paceSplits.map(s => s.paceSecPerKm);
+
+    if (paces.length >= 2 && Math.min(...paces) !== Math.max(...paces)) {
+
+        const fastest = paceSplits.reduce((a, b) => a.paceSecPerKm <= b.paceSecPerKm ? a : b);
+        insights.push(`Km más rápido: km ${fastest.lap} (${formatSecondsAsClock(fastest.paceSecPerKm)}/km)`);
+
+    }
+
+    const hrSplits = splits.filter(s => s.avgHr != null);
+    const hrs = hrSplits.map(s => s.avgHr);
+
+    if (hrs.length >= 2 && Math.min(...hrs) !== Math.max(...hrs)) {
+
+        const highest = hrSplits.reduce((a, b) => a.avgHr >= b.avgHr ? a : b);
+        insights.push(`FC más alta: km ${highest.lap} (${Math.round(highest.avgHr)} ppm)`);
+
+    }
+
+    return insights;
+
+}
+
+// metricMode: "both" (por defecto) / "pace" / "hr" -- controla qué serie
+// se ve, no qué se calcula (las dos siguen calculándose siempre igual,
+// solo cambia qué se pinta vía CSS, ver .pace-chart--mode-* en
+// RunningDetailView.css). Sin línea de FC real (hasHrLine=false) el modo
+// se fuerza a "pace" -- no tiene sentido ofrecer "FC sola"/"Ritmo+FC"
+// cuando no hay ninguna serie de FC por km que alternar.
+function RunningPaceChart(splits, avgPaceRef, avgHrRef, metricMode = "both") {
 
     // Con Recuperación de por medio, "más lento" sería siempre un tramo de
     // descanso — obvio y sin interés. El destacado de más rápido/más lento
@@ -235,10 +273,22 @@ function RunningPaceChart(splits, avgPaceRef, avgHrRef) {
     // split con FC real que graficar — nunca se inventa.
     const hasAvgHr = avgHrRef != null;
     const hasHrLine = splits.some(s => s.avgHr != null);
+    const mode = hasHrLine ? metricMode : "pace";
+
+    // Solo el último split puede ser un km parcial de verdad -- computeSplits()
+    // (tcx.js) / el parser de Vueltas (Garmin) siempre cortan en múltiplos
+    // exactos de 1km salvo el remanente final. chartSplits() ya descarta el
+    // remanente MUY corto (<0.3km, ver RESIDUAL_LAP_THRESHOLD_KM) por poco
+    // representativo -- lo que llega aquí como parcial (0.3-1km) sí es un
+    // tramo real, solo que corto, y antes se leía igual que cualquier otro
+    // km sin ninguna marca que lo explicara.
+    const lastIndex = splits.length - 1;
+
+    const insights = buildChartInsights(splits);
 
     return `
 
-        <div class="pace-chart">
+        <div class="pace-chart pace-chart--mode-${mode}">
 
             <div class="pace-chart-header">
 
@@ -254,17 +304,34 @@ function RunningPaceChart(splits, avgPaceRef, avgHrRef) {
 
             </div>
 
+            ${hasHrLine ? `
+
+                <div class="pace-chart-mode-toggle">
+
+                    <button class="pace-chart-mode-button ${metricMode === "both" ? "is-active" : ""}" data-action="set-chart-metric-mode" data-mode="both">Ritmo+FC</button>
+
+                    <button class="pace-chart-mode-button ${metricMode === "pace" ? "is-active" : ""}" data-action="set-chart-metric-mode" data-mode="pace">Ritmo</button>
+
+                    <button class="pace-chart-mode-button ${metricMode === "hr" ? "is-active" : ""}" data-action="set-chart-metric-mode" data-mode="hr">FC</button>
+
+                </div>
+
+            ` : ""}
+
             <div class="pace-chart-track">
 
                 <div class="pace-chart-bars">
 
                     <div class="pace-chart-refline" style="bottom:${REFLINE_BOTTOM_PX}px"></div>
 
-                    ${splits.map(split => {
+                    <span class="pace-chart-refline-label" style="bottom:${REFLINE_BOTTOM_PX}px">Media</span>
+
+                    ${splits.map((split, index) => {
 
                         const isRest = split.segmentType === "rest";
                         const isFastest = !isRest && hasVariation && split.paceSecPerKm === fastestPace;
                         const isSlowest = !isRest && hasVariation && split.paceSecPerKm === slowestPace;
+                        const isPartial = index === lastIndex && split.distanceKm != null && split.distanceKm < 1;
 
                         return `
 
@@ -278,6 +345,8 @@ function RunningPaceChart(splits, avgPaceRef, avgHrRef) {
                                 ></div>
 
                                 <span class="pace-chart-lap">${split.lap}</span>
+
+                                ${isPartial ? `<span class="pace-chart-partial-tag">Parcial</span>` : ""}
 
                             </div>
 
@@ -308,6 +377,16 @@ function RunningPaceChart(splits, avgPaceRef, avgHrRef) {
                     <span class="pace-chart-legend-item"><i class="pace-chart-legend-dot pace-chart-legend-dot--hr"></i>FC</span>
 
                 </div>
+
+            ` : ""}
+
+            ${insights.length ? `
+
+                <ul class="pace-chart-insights">
+
+                    ${insights.map(text => `<li>${text}</li>`).join("")}
+
+                </ul>
 
             ` : ""}
 
@@ -378,12 +457,14 @@ function shoeSelector(workout, shoes) {
 
 // badge opcional: { icon, title } -- hoy solo lo usa Temperatura, para
 // avisar cuando el valor viene de la estimación climática de Open-Meteo
-// (ver weatherEstimate.js) y no de una medición real del reloj.
-function detailStat(icon, label, value, badge) {
+// (ver weatherEstimate.js) y no de una medición real del reloj. minor:
+// true (retoque de cierre) da menos peso visual -- solo lo usa "Hora"
+// dentro del grupo Condiciones, frente a Cadencia/Zapatilla.
+function detailStat(icon, label, value, badge, { minor = false } = {}) {
 
     return `
 
-        <div class="detail-stat">
+        <div class="detail-stat ${minor ? "detail-stat--minor" : ""}">
 
             <iconify-icon icon="${icon}"></iconify-icon>
 
@@ -407,7 +488,70 @@ function detailStat(icon, label, value, badge) {
 
 }
 
-export function RunningDetailView(workout, shoes = []) {
+// Grupo de tarjetas con su propio título -- Rendimiento/Condiciones/
+// Equipamiento (retoque de cierre), en vez de la rejilla plana de antes.
+function detailStatGroup(title, statsHtml) {
+
+    return `
+
+        <div class="detail-stat-group">
+
+            <h4 class="detail-stat-group-title">${title}</h4>
+
+            <div class="detail-stats">
+
+                ${statsHtml}
+
+            </div>
+
+        </div>
+
+    `;
+
+}
+
+// Acordeón colapsable (retoque de cierre): antes era un banner amarillo
+// siempre desplegado (mismo .wizard-banner-warning que usan
+// RunningReviewStep.js/RunningShoeStep.js para otros avisos, no tocado
+// ahí) -- en el detalle competía visualmente con el resto de la pantalla
+// cada vez que se abría un entreno con avisos reales de importación.
+// Colapsado por defecto (ver setDetailWorkoutId() en runningStore.js, que
+// resetea warningsExpanded a false al cambiar de entreno).
+function ImportWarningsBanner(warnings, expanded) {
+
+    if (!warnings.length) return "";
+
+    return `
+
+        <div class="import-warnings ${expanded ? "is-expanded" : ""}">
+
+            <button class="import-warnings-toggle" data-action="toggle-import-warnings">
+
+                <iconify-icon icon="solar:danger-circle-bold-duotone"></iconify-icon>
+
+                <span>Avisos de importación (${warnings.length})</span>
+
+                <iconify-icon icon="solar:alt-arrow-down-bold-duotone" class="import-warnings-chevron"></iconify-icon>
+
+            </button>
+
+            ${expanded ? `
+
+                <ul class="import-warnings-list">
+
+                    ${warnings.map(w => `<li>${w}</li>`).join("")}
+
+                </ul>
+
+            ` : ""}
+
+        </div>
+
+    `;
+
+}
+
+export function RunningDetailView(workout, shoes = [], warningsExpanded = false, chartMetricMode = "both") {
 
     if (!workout) return "";
 
@@ -453,21 +597,7 @@ export function RunningDetailView(workout, shoes = []) {
 
             </header>
 
-            ${warnings.length ? `
-
-                <div class="wizard-banner wizard-banner-warning">
-
-                    <iconify-icon icon="solar:danger-circle-bold-duotone"></iconify-icon>
-
-                    <ul>
-
-                        ${warnings.map(w => `<li>${w}</li>`).join("")}
-
-                    </ul>
-
-                </div>
-
-            ` : ""}
+            ${ImportWarningsBanner(warnings, warningsExpanded)}
 
             <div class="detail-summary">
 
@@ -488,19 +618,19 @@ export function RunningDetailView(workout, shoes = []) {
 
             </div>
 
-            ${splits.length >= MIN_SPLITS_FOR_CHART ? RunningPaceChart(splits, avgPaceRef, avgHrRef) : ""}
+            ${splits.length >= MIN_SPLITS_FOR_CHART ? RunningPaceChart(splits, avgPaceRef, avgHrRef, chartMetricMode) : ""}
 
-            <div class="detail-stats">
+            ${detailStatGroup("RENDIMIENTO", `
 
-                ${detailStat("solar:running-round-bold-duotone", "Zapatilla", shoeSelector(workout, shoes))}
+                ${detailStat("solar:speedometer-bold-duotone", "Ritmo medio", avgPace)}
 
-                ${detailStat("solar:fire-bold-duotone", "Calorías", workout.calories != null ? `${workout.calories} kcal` : "—")}
+                ${detailStat("solar:heart-pulse-bold-duotone", "FC media", workout.avgHr != null ? `${Math.round(workout.avgHr)} ppm` : "—")}
 
                 ${detailStat("solar:round-alt-arrow-up-bold-duotone", "Cadencia", workout.avgCadence != null ? `${workout.avgCadence} spm` : "—")}
 
-                ${detailStat("solar:route-bold-duotone", "Desnivel +", workout.elevationGainM != null ? `${workout.elevationGainM} m` : "—")}
+            `)}
 
-                ${detailStat("solar:clock-circle-bold-duotone", "Hora", workout.time || "—")}
+            ${detailStatGroup("CONDICIONES", `
 
                 ${detailStat(
                     "solar:temperature-bold-duotone",
@@ -509,9 +639,19 @@ export function RunningDetailView(workout, shoes = []) {
                     isEstimatedTemp ? { icon: "solar:cloud-bold-duotone", title: "Estimada por ubicación y fecha — no es una medición real del reloj" } : null
                 )}
 
-                ${detailStat("solar:heart-pulse-bold-duotone", "FC media", workout.avgHr != null ? `${Math.round(workout.avgHr)} ppm` : "—")}
+                ${detailStat("solar:route-bold-duotone", "Desnivel +", workout.elevationGainM != null ? `${workout.elevationGainM} m` : "—")}
 
-            </div>
+                ${detailStat("solar:clock-circle-bold-duotone", "Hora", workout.time || "—", null, { minor: true })}
+
+            `)}
+
+            ${detailStatGroup("EQUIPAMIENTO", `
+
+                ${detailStat("solar:running-round-bold-duotone", "Zapatilla", shoeSelector(workout, shoes))}
+
+                ${detailStat("solar:fire-bold-duotone", "Calorías", workout.calories != null ? `${workout.calories} kcal` : "—")}
+
+            `)}
 
         </section>
 
