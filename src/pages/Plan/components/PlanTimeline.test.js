@@ -12,7 +12,8 @@ vi.mock("../../../data/gymSessionStore.js", () => ({
     getGymSessions: () => gymSessions
 }));
 
-const { fillWeekDays, PlanTimeline, TIMELINE_TYPE_COLOR } = await import("./PlanTimeline.js");
+const { fillWeekDays, PlanTimeline } = await import("./PlanTimeline.js");
+const { resolveDayColor } = await import("../planDayColor.js");
 
 const MONDAY = "2026-08-17"; // lunes
 
@@ -85,6 +86,38 @@ describe("fillWeekDays", () => {
 
 });
 
+// Sistema de color con significado fijo (fase 2 del pulido de Plan,
+// 2026-08-27): azul=pendiente, verde=realizado, gris=descanso por
+// defecto -- series/tirada larga mantienen su color fijo pase lo que
+// pase con el estado (decisión explícita del usuario).
+describe("resolveDayColor -- color por ESTADO, con series/tirada larga como únicas excepciones fijas", () => {
+
+    it("descanso (isRest) siempre gris, sin importar el tipo", () => {
+        expect(resolveDayColor({ isRest: true, type: "z2", status: "pending" })).toBe("var(--color-text-muted)");
+    });
+
+    it("pendiente (no completado) es azul, para cualquier tipo salvo series/tirada larga", () => {
+        expect(resolveDayColor({ type: "z2", status: "pending" })).toBe("var(--color-primary)");
+        expect(resolveDayColor({ type: "strength", status: "upcoming" })).toBe("var(--color-primary)");
+    });
+
+    it("realizado es verde, para cualquier tipo salvo series/tirada larga", () => {
+        expect(resolveDayColor({ type: "z2", status: "completed" })).toBe("var(--color-success)");
+        expect(resolveDayColor({ type: "recovery", status: "completed" })).toBe("var(--color-success)");
+    });
+
+    it("series (intervals) es siempre naranja, tanto pendiente como realizada", () => {
+        expect(resolveDayColor({ type: "intervals", status: "pending" })).toBe("#ff7a33");
+        expect(resolveDayColor({ type: "intervals", status: "completed" })).toBe("#ff7a33");
+    });
+
+    it("tirada larga (longRun) es siempre amarilla, tanto pendiente como realizada", () => {
+        expect(resolveDayColor({ type: "longRun", status: "pending" })).toBe("var(--color-warning)");
+        expect(resolveDayColor({ type: "longRun", status: "completed" })).toBe("var(--color-warning)");
+    });
+
+});
+
 describe("PlanTimeline", () => {
 
     it("renderiza siempre 7 columnas .timeline-day, con o sin sesiones", () => {
@@ -114,11 +147,11 @@ describe("PlanTimeline", () => {
 
     });
 
-    it("el degradado de la línea usa el color muted de Descanso en los huecos vacíos", () => {
+    it("el degradado de la línea usa el color gris de Descanso en los huecos vacíos", () => {
 
         const html = PlanTimeline(null, [], MONDAY);
 
-        expect(html).toContain(TIMELINE_TYPE_COLOR.free);
+        expect(html).toContain(resolveDayColor({ isRest: true }));
 
     });
 

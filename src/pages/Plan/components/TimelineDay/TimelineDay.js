@@ -1,8 +1,12 @@
 import "./TimelineDay.css";
 import { WorkoutIcon } from "../../../../components/WorkoutIcon/WorkoutIcon";
 import { formatDayNumber } from "../../../../utils/date.js";
+import { resolveDayColorKey } from "../../planDayColor.js";
 
-// isToday: fecha real de hoy (más grande + más brillo)
+// isToday: fecha real de hoy -- lift+brillo (ya existía) MÁS un punto
+// pequeño (.day-today-dot) sobre el icono, señal explícita aparte del
+// halo grande de selección para que "hoy" y "seleccionado" nunca se
+// confundan cuando son el mismo día (caso por defecto al entrar en Plan).
 // isSelected: día tocado en el timeline, controla lo que se ve abajo
 // isCompleted: session.status === "completed", muestra el check
 // isRest: hueco de "Descanso" sin sesión real (ver fillWeekDays() en
@@ -13,6 +17,12 @@ import { formatDayNumber } from "../../../../utils/date.js";
 // attachGymInfo() en PlanTimeline.js -- ver initPlanEvents.js para cómo se
 // usa data-gym-day-id al tocar la columna.
 export function TimelineDay(session, { isToday, isSelected, isCompleted, isRest = false }) {
+
+    // Color con significado fijo (ver planDayColor.js) -- se aplica en
+    // .day-center para anular ahí el color por TIPO que WorkoutIcon.css ya
+    // trae de fábrica (usado tal cual en el resto de la app), sin tocar
+    // esa hoja de estilos global.
+    const colorClass = `day-color-${resolveDayColorKey(session)}`;
 
     return `
 
@@ -45,9 +55,11 @@ export function TimelineDay(session, { isToday, isSelected, isCompleted, isRest 
 
             </div>
 
-            <div class="day-center">
+            <div class="day-center ${colorClass}">
 
                 ${WorkoutIcon(session.type, { selected: isSelected })}
+
+                ${isToday ? `<span class="day-today-dot" aria-label="Hoy"></span>` : ""}
 
                 ${isCompleted ? `
                     <span class="day-check">

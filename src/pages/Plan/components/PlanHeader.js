@@ -2,6 +2,7 @@ import "./PlanHeader.css";
 import { themeManager } from "../../../theme/themeManager.js";
 import { PLAN_IMAGES } from "../../../assets/plan";
 import { parseISODate, addDays, formatDayMonth, getISOWeekNumber } from "../../../utils/date.js";
+import { formatKm } from "../../../utils/format.js";
 
 // Foto-por-tema propia del Plan, misma mecánica que el Hero
 // (themeManager decide el tema, un mapa de imágenes por tema
@@ -25,6 +26,15 @@ export function PlanHeader(weekStartDate, sessions, timelineHtml = "", { viewMod
     const completionPercent = totalCount
         ? Math.round((completedCount / totalCount) * 100)
         : 0;
+
+    // Km reales además del conteo de sesiones -- más útil para un
+    // corredor que solo el %, mismo campo `volume` (= distanceKm ?? 0,
+    // ver withDerivedFields() en workoutStore.js) que ya usa Home para su
+    // objetivo semanal.
+    const completedKm = sessions
+        .filter(session => session.status === "completed")
+        .reduce((sum, session) => sum + (session.volume || 0), 0);
+    const totalKm = sessions.reduce((sum, session) => sum + (session.volume || 0), 0);
 
     return `
 
@@ -88,31 +98,21 @@ export function PlanHeader(weekStartDate, sessions, timelineHtml = "", { viewMod
 
                         <span class="week-label">
 
-                            SEMANA ${weekNumber}
+                            SEMANA ${weekNumber} · ${dateRange}
 
                         </span>
-
-                        <span class="week-date">
-
-                            ${dateRange}
-
-                        </span>
-
-                    </div>
-
-                    <div class="plan-progress">
-
-                        <div class="progress-ring" style="--ring-percent:${completionPercent}">
-
-                            <span>${completionPercent}%</span>
-
-                        </div>
 
                         <small>
 
-                            ${completedCount}/${totalCount} SESIONES
+                            ${completedCount}/${totalCount} sesiones · ${formatKm(completedKm)}/${formatKm(totalKm)} km
 
                         </small>
+
+                    </div>
+
+                    <div class="progress-ring" style="--ring-percent:${completionPercent}">
+
+                        <span>${completionPercent}%</span>
 
                     </div>
 

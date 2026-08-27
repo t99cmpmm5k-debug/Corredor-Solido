@@ -3,10 +3,10 @@ import "./PlanCreateSessionPanel.css";
 import { WORKOUT_TYPES } from "../../../data/workoutTypes.js";
 import { formatDayMonth } from "../../../utils/date.js";
 
-// Mismos tipos que ya usa la app entera (WORKOUT_TYPES — de ahí sale
-// también TIMELINE_TYPE_COLOR en PlanTimeline.js), nunca una lista propia
-// -- ya es el mismo catálogo que ofrece el selector de tipo al revisar un
-// plan importado (ver PLAN_SESSION_REVIEW_FIELDS en PlanImportReviewStep.js).
+// Mismos tipos que ya usa la app entera (WORKOUT_TYPES), nunca una lista
+// propia -- ya es el mismo catálogo que ofrece el selector de tipo al
+// revisar un plan importado (ver PLAN_SESSION_REVIEW_FIELDS en
+// PlanImportReviewStep.js).
 const TYPE_OPTIONS = Object.values(WORKOUT_TYPES);
 
 // Sustituye a PlanWorkoutCard al tocar un día "Descanso" de la línea

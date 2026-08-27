@@ -232,7 +232,10 @@
 }
 
 /* ==========================
-   WEEK
+   WEEK -- cabecera compacta (fase 2 del pulido de Plan): "SEMANA N" y el
+   rango de fechas van ahora en UNA sola línea (antes 2), y la línea de
+   sesiones/km sustituye al viejo "%" suelto bajo el anillo -- más útil
+   para un corredor que solo un porcentaje.
 ========================== */
 
 .plan-week{
@@ -241,7 +244,7 @@
 
     flex-direction:column;
 
-    gap:8px;
+    gap:6px;
 
 }
 
@@ -249,7 +252,7 @@
 
     color:#FFFFFF;
 
-    font-size:11px;
+    font-size:12px;
 
     font-weight:800;
 
@@ -257,29 +260,21 @@
 
 }
 
-.week-date{
+.plan-week small{
 
     color:rgba(255,255,255,.85);
 
-    font-size:12px;
+    font-size:11px;
 
     text-shadow:0 2px 6px rgba(0,0,0,.45);
 
 }
 
 /* ==========================
-   PROGRESS
+   PROGRESS -- anillo reducido (84px -> 64px, fase 2 del pulido): ya no
+   lleva texto propio debajo (esa línea vive ahora en .plan-week), así
+   que puede ser más pequeño sin perder legibilidad del %.
 ========================== */
-
-.plan-progress{
-
-    display:flex;
-
-    flex-direction:column;
-
-    align-items:center;
-
-}
 
 /* Arco real, no un círculo uniforme — mismo truco que
    .week-summary-ring: conic-gradient hasta --ring-percent (puesto
@@ -292,9 +287,11 @@
 
     position:relative;
 
-    width:84px;
+    width:64px;
 
-    height:84px;
+    height:64px;
+
+    flex-shrink:0;
 
     border-radius:50%;
 
@@ -306,7 +303,7 @@
 
     color:#FFFFFF;
 
-    font-size:20px;
+    font-size:16px;
 
     font-weight:900;
 
@@ -331,7 +328,7 @@
 
     position:absolute;
 
-    inset:6px;
+    inset:5px;
 
     border-radius:50%;
 
@@ -344,20 +341,6 @@
     position:relative;
 
     z-index:1;
-
-}
-
-.plan-progress small{
-
-    margin-top:8px;
-
-    color:rgba(255,255,255,.85);
-
-    font-size:9px;
-
-    letter-spacing:.06em;
-
-    text-shadow:0 2px 6px rgba(0,0,0,.45);
 
 }
 

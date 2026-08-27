@@ -43,7 +43,6 @@ export function initPlanConnector() {
 
         const selectedDay = document.querySelector(".timeline-day.is-selected");
         const selectedIcon = selectedDay?.querySelector(".workout-icon");
-        const stem = selectedDay?.querySelector(".day-stem");
 
         // Con la línea temporal mostrando siempre 7 días (ver
         // fillWeekDays() en PlanTimeline.js), una semana sin ninguna
@@ -51,7 +50,7 @@ export function initPlanConnector() {
         // (selectedWorkout a null) -- sin esto, la línea/flecha se
         // quedarían clavadas en su posición por defecto (left:0) en vez
         // de no señalar a nada.
-        if (!selectedIcon || !stem) {
+        if (!selectedIcon) {
             connector.style.display = "none";
             return;
         }
@@ -66,12 +65,16 @@ export function initPlanConnector() {
         line.style.left = `${centerX}px`;
         arrow.style.left = `${centerX}px`;
 
-        // El color sale del propio tallo del día seleccionado (--stem-color
-        // en TimelineDay.css) — una sola fuente de verdad, sin mapa de
-        // colores duplicado aquí.
-        const stemColor = getComputedStyle(stem).getPropertyValue("--stem-color");
+        // El color sale del propio icono ya resuelto del día seleccionado
+        // (ver planDayColor.js/TimelineDay.css para quién decide ese
+        // color) — una sola fuente de verdad, sin mapa de colores
+        // duplicado aquí. Antes leía --stem-color del "tallo" bajo el
+        // nodo (.day-stem); el color final ya resuelto del propio icono
+        // es la misma fuente real, sin depender de un elemento aparte que
+        // solo existía para esto.
+        const iconColor = getComputedStyle(selectedIcon).color;
 
-        if (stemColor) connector.style.setProperty("--connector-color", stemColor);
+        if (iconColor) connector.style.setProperty("--connector-color", iconColor);
 
     }
 

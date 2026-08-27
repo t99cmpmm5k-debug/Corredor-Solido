@@ -611,8 +611,8 @@
 }
 
 /* Llegada desde Plan (ver openGymDay() en initGymEvents.js) -- mismo color
-   #2faeff que ya usa "strength" en TIMELINE_TYPE_COLOR/WorkoutIcon.css, se
-   quita solo pasado un momento (ver GYM_DAY_HIGHLIGHT_MS). */
+   #2faeff que ya usa "strength" en WorkoutIcon.css, se quita solo pasado
+   un momento (ver GYM_DAY_HIGHLIGHT_MS). */
 .gym-day-row.is-highlighted{
 
     border-color:#2faeff;

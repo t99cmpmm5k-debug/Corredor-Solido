@@ -3,23 +3,7 @@ import "./PlanTimeline.css";
 import { isToday, addDays, getDayAbbreviation } from "../../../utils/date.js";
 import { TimelineDay } from "./TimelineDay/TimelineDay";
 import { getGymDayForDate } from "../gymTimelineBridge.js";
-
-// Mismos colores por tipo que WorkoutIcon.css (ahí es donde vive la
-// fuente de verdad — esto es su equivalente en JS para poder construir
-// el degradado de la línea, que no puede leer clases CSS). Ids de
-// WORKOUT_TYPES (src/data/workoutTypes.js) — unificado con el vocabulario
-// de la importación de planes, ya no el propio de Plan.
-export const TIMELINE_TYPE_COLOR = {
-    recovery: "var(--color-text-muted)",
-    z2: "var(--color-success)",
-    tempo: "var(--color-primary)",
-    intervals: "#ff7a33",
-    longRun: "var(--color-warning)",
-    race: "var(--color-danger)",
-    strength: "#2faeff",
-    free: "var(--color-text-muted)",
-    generic: "var(--color-text-muted)"
-};
+import { resolveDayColor } from "../planDayColor.js";
 
 // El hueco de un día sin sesión real reutiliza el tipo "free" tal cual
 // (mismo icono/color muted que ya tenía un día libre de un plan
@@ -129,7 +113,7 @@ export function PlanTimeline(selectedWorkout, sessions, weekStartDate) {
     // columnas fijas siempre hay tramo que dibujar (nunca menos de 2).
     const lineGradient = days
         .map((day, index) => {
-            const color = TIMELINE_TYPE_COLOR[day.type] ?? TIMELINE_TYPE_COLOR.generic;
+            const color = resolveDayColor(day);
             const stop = (index / (days.length - 1)) * 100;
             return `${color} ${stop}%`;
         })

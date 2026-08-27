@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { buildMarkersByDate } from "./PlanMonthCalendar.js";
 import { getWorkoutIcon } from "../../../components/WorkoutIcon/WorkoutIcon.js";
-import { TIMELINE_TYPE_COLOR } from "./PlanTimeline.js";
+import { resolveDayColor } from "../planDayColor.js";
 
 describe("buildMarkersByDate", () => {
 
@@ -33,34 +33,55 @@ describe("buildMarkersByDate", () => {
 
     });
 
-    it("reutiliza el icono/color real de cada tipo — mismo lenguaje visual que PlanTimeline/WorkoutIcon, sin paleta nueva", () => {
+    // Sistema de color con significado fijo (fase 2 del pulido de Plan):
+    // el color ya no es 100% por tipo -- reutiliza resolveDayColor(),
+    // misma fuente de verdad que PlanTimeline, sin paleta nueva ni
+    // duplicada aquí.
+    it("reutiliza el color por ESTADO real de cada sesión -- mismo criterio que PlanTimeline, sin paleta nueva", () => {
 
         const sessions = [
-            { id: "s1", date: "2026-08-10", type: "z2" },
-            { id: "s2", date: "2026-08-11", type: "strength" }
+            { id: "s1", date: "2026-08-10", type: "z2", status: "pending" },
+            { id: "s2", date: "2026-08-11", type: "strength", status: "completed" }
         ];
 
         const markers = buildMarkersByDate(sessions);
 
         expect(markers["2026-08-10"][0]).toEqual({
             icon: getWorkoutIcon("z2"),
-            color: TIMELINE_TYPE_COLOR.z2
+            color: resolveDayColor(sessions[0])
         });
 
         expect(markers["2026-08-11"][0]).toEqual({
             icon: getWorkoutIcon("strength"),
-            color: TIMELINE_TYPE_COLOR.strength
+            color: resolveDayColor(sessions[1])
         });
+
+        expect(markers["2026-08-10"][0].color).toBe("var(--color-primary)");
+        expect(markers["2026-08-11"][0].color).toBe("var(--color-success)");
 
     });
 
-    it("un tipo desconocido cae en el marcador genérico, igual que WorkoutIcon/PlanTimeline", () => {
+    it("series (intervals) y tirada larga (longRun) mantienen su color fijo pase lo que pase con el estado", () => {
+
+        const sessions = [
+            { id: "s1", date: "2026-08-10", type: "intervals", status: "completed" },
+            { id: "s2", date: "2026-08-11", type: "longRun", status: "pending" }
+        ];
+
+        const markers = buildMarkersByDate(sessions);
+
+        expect(markers["2026-08-10"][0].color).toBe("#ff7a33");
+        expect(markers["2026-08-11"][0].color).toBe("var(--color-warning)");
+
+    });
+
+    it("un tipo desconocido cae en el marcador genérico de icono, coloreado por estado igual que el resto", () => {
 
         const markers = buildMarkersByDate([{ id: "s1", date: "2026-08-10", type: "no-existe" }]);
 
         expect(markers["2026-08-10"][0]).toEqual({
             icon: getWorkoutIcon("no-existe"),
-            color: TIMELINE_TYPE_COLOR.generic
+            color: "var(--color-primary)"
         });
 
     });

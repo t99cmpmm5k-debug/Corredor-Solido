@@ -80,6 +80,57 @@
 
 }
 
+/* ==========================================================
+   COLOR CON SIGNIFICADO FIJO (ver planDayColor.js) -- anula aquí el
+   color por TIPO que WorkoutIcon.css ya trae de fábrica (usado tal cual
+   en el resto de la app). Solo 3 claves tienen override real: series y
+   tirada larga ya salen en su color fijo por su propia clase de tipo
+   (.workout-icon.intervals/.longRun), no hace falta tocarlas aquí.
+========================================================== */
+
+.day-center.day-color-pending .workout-icon{
+    color:var(--color-primary);
+    border-color:var(--color-primary);
+}
+
+.day-center.day-color-completed .workout-icon{
+    color:var(--color-success);
+    border-color:var(--color-success);
+}
+
+.day-center.day-color-rest .workout-icon{
+    color:var(--color-text-muted);
+    border-color:var(--color-text-muted);
+}
+
+/* ==========================================================
+   PUNTO "HOY" -- señal explícita y pequeña, independiente del halo de
+   selección (WorkoutIcon.css .selected) para que un día que sea HOY Y
+   esté seleccionado a la vez (caso por defecto al entrar en Plan) no lea
+   como una sola cosa confusa: el punto dice "hoy", el halo dice
+   "seleccionado", cada uno su propia señal.
+========================================================== */
+
+.day-today-dot{
+
+    position:absolute;
+
+    top:-2px;
+    left:-2px;
+
+    width:8px;
+    height:8px;
+
+    border-radius:50%;
+
+    background:var(--color-primary);
+
+    border:2px solid var(--card-background);
+
+    box-shadow:0 0 6px var(--color-primary);
+
+}
+
 /* Tamaño compacto del círculo dentro del timeline — los 7 caben en
    390px de ancho sin scroll. WorkoutIcon expone --size para esto.
    :is(.sm,.md,.lg) sube la especificidad a (0,3,0) a propósito: empata

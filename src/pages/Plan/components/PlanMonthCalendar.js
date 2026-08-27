@@ -2,7 +2,7 @@ import { MonthCalendar, buildCalendarWeeks } from "../../../components/MonthCale
 import { getWorkoutIcon } from "../../../components/WorkoutIcon/WorkoutIcon.js";
 import { getWeekSessions } from "../../../data/workoutStore.js";
 import { parseISODate } from "../../../utils/date.js";
-import { TIMELINE_TYPE_COLOR } from "./PlanTimeline.js";
+import { resolveDayColor } from "../planDayColor.js";
 
 // Todas las sesiones de las semanas (lunes-domingo) que cubren la
 // rejilla del mes — buildCalendarWeeks() ya las devuelve completas, y
@@ -30,10 +30,10 @@ function sessionsForMonthGrid(monthDate) {
 
 }
 
-// Un marcador por sesión, agrupados por día — mismo icono/color que ya
-// usan PlanTimeline (TIMELINE_TYPE_COLOR) y WorkoutIcon en el resto de
-// Plan, nunca una paleta nueva. Exportada aparte de PlanMonthCalendar
-// para poder testear el mapeo sin pasar por el store real (IndexedDB).
+// Un marcador por sesión, agrupados por día — mismo criterio de color
+// por ESTADO que ya usa PlanTimeline (resolveDayColor), nunca una paleta
+// nueva. Exportada aparte de PlanMonthCalendar para poder testear el
+// mapeo sin pasar por el store real (IndexedDB).
 export function buildMarkersByDate(sessions) {
 
     const markersByDate = {};
@@ -44,7 +44,7 @@ export function buildMarkersByDate(sessions) {
 
         const marker = {
             icon: getWorkoutIcon(session.type),
-            color: TIMELINE_TYPE_COLOR[session.type] ?? TIMELINE_TYPE_COLOR.generic
+            color: resolveDayColor(session)
         };
 
         (markersByDate[session.date] ??= []).push(marker);
