@@ -243,13 +243,100 @@ function buildChartInsights(splits) {
 
 }
 
+// Deriva cardíaca: mínimo de splits con FC real (mitad/mitad, ~4-6 km en
+// la práctica) para no calcular esto sobre un puñado de puntos poco
+// representativo.
+const DRIFT_MIN_HR_SPLITS = 4;
+
+// Umbrales fijos y trazables (ronda de insights avanzados) -- estándar de
+// ciencia del deporte, la única fuente del calificativo: nunca se combina
+// con ritmo o temperatura para decidir la etiqueta, precisamente para que
+// siempre se pueda explicar con un solo número.
+const DRIFT_GOOD_MAX = 5;
+const DRIFT_OK_MAX = 10;
+
+function driftTier(percent) {
+
+    if (percent < DRIFT_GOOD_MAX) return { label: "Muy bueno", trend: "up" };
+    if (percent <= DRIFT_OK_MAX) return { label: "Bueno", trend: "flat" };
+    return { label: "Mejorable", trend: "down" };
+
+}
+
+// Deriva cardíaca real: ((FC media 2ª mitad − FC media 1ª mitad) / FC
+// media 1ª mitad) × 100 -- fórmula estándar, comparando splits reales ya
+// capturados por km. Solo tiene el mismo significado en un esfuerzo
+// estable (Rodaje/Z2, workout.type "easy"): en Series u otro tipo con
+// tramos de intensidad distinta a propósito, una FC más alta en la
+// segunda mitad no es "deriva", es la propia estructura del entreno --
+// null fuera de ese tipo, o sin suficiente FC real por km.
+function buildCardiacDrift(workout, splits) {
+
+    if (workout.type !== "easy") return null;
+
+    const hrSplits = splits.filter(s => s.segmentType !== "rest" && s.avgHr != null);
+    if (hrSplits.length < DRIFT_MIN_HR_SPLITS) return null;
+
+    const half = Math.floor(hrSplits.length / 2);
+    const firstHalf = hrSplits.slice(0, half);
+    const secondHalf = hrSplits.slice(hrSplits.length - half);
+
+    const average = list => list.reduce((sum, s) => sum + s.avgHr, 0) / list.length;
+
+    const firstAvg = average(firstHalf);
+    const secondAvg = average(secondHalf);
+
+    const percent = ((secondAvg - firstAvg) / firstAvg) * 100;
+
+    return { percent, ...driftTier(percent) };
+
+}
+
+function formatDrift(drift) {
+
+    const sign = drift.percent >= 0 ? "+" : "";
+    return `Deriva FC: ${sign}${drift.percent.toFixed(1).replace(".", ",")}% · ${drift.label}`;
+
+}
+
+// Frase de conclusión real (mismo patrón que el hero de Inicio: umbrales
+// de fiabilidad, nunca inventada) -- depende del mismo cálculo de deriva
+// que la etiqueta de arriba (nunca un segundo criterio de estabilidad
+// distinto), así que solo aparece donde la deriva también aparece. La
+// cláusula de calor es puro contexto factual (la temperatura real, sin
+// más), nunca una alabanza cuando la deriva es "Mejorable" -- ahí se
+// plantea como posible explicación, no como mérito.
+const HOT_TEMPERATURE_C = 27;
+
+function buildDetailConclusion(workout, drift) {
+
+    if (!drift) return null;
+
+    const clauses = [];
+
+    if (drift.label === "Muy bueno") clauses.push("FC muy estable durante todo el entreno.");
+    else if (drift.label === "Bueno") clauses.push("FC con una deriva moderada, dentro de lo esperable.");
+    else clauses.push("FC con una deriva notable en la segunda mitad del entreno.");
+
+    if (workout.temperatureC != null && workout.temperatureC >= HOT_TEMPERATURE_C) {
+
+        clauses.push(drift.label === "Mejorable"
+            ? `El calor (${workout.temperatureC}°C) puede explicar parte de la subida.`
+            : `Buena eficiencia aeróbica pese a los ${workout.temperatureC}°C.`);
+
+    }
+
+    return clauses.join(" ");
+
+}
+
 // metricMode: "both" (por defecto) / "pace" / "hr" -- controla qué serie
 // se ve, no qué se calcula (las dos siguen calculándose siempre igual,
 // solo cambia qué se pinta vía CSS, ver .pace-chart--mode-* en
 // RunningDetailView.css). Sin línea de FC real (hasHrLine=false) el modo
 // se fuerza a "pace" -- no tiene sentido ofrecer "FC sola"/"Ritmo+FC"
 // cuando no hay ninguna serie de FC por km que alternar.
-function RunningPaceChart(splits, avgPaceRef, avgHrRef, metricMode = "both") {
+function RunningPaceChart(splits, avgPaceRef, avgHrRef, metricMode = "both", workout) {
 
     // Con Recuperación de por medio, "más lento" sería siempre un tramo de
     // descanso — obvio y sin interés. El destacado de más rápido/más lento
@@ -285,6 +372,8 @@ function RunningPaceChart(splits, avgPaceRef, avgHrRef, metricMode = "both") {
     const lastIndex = splits.length - 1;
 
     const insights = buildChartInsights(splits);
+    const drift = buildCardiacDrift(workout, splits);
+    const conclusion = buildDetailConclusion(workout, drift);
 
     return `
 
@@ -335,7 +424,7 @@ function RunningPaceChart(splits, avgPaceRef, avgHrRef, metricMode = "both") {
 
                         return `
 
-                            <div class="pace-chart-column">
+                            <div class="pace-chart-column ${isPartial ? "is-partial" : ""}">
 
                                 <span class="pace-chart-value">${formatSecondsAsClock(split.paceSecPerKm)}</span>
 
@@ -380,13 +469,25 @@ function RunningPaceChart(splits, avgPaceRef, avgHrRef, metricMode = "both") {
 
             ` : ""}
 
-            ${insights.length ? `
+            ${(conclusion || drift || insights.length) ? `
 
-                <ul class="pace-chart-insights">
+                <div class="pace-chart-summary">
 
-                    ${insights.map(text => `<li>${text}</li>`).join("")}
+                    ${conclusion ? `<p class="pace-chart-conclusion">${conclusion}</p>` : ""}
 
-                </ul>
+                    ${drift ? `<p class="pace-chart-drift pace-chart-drift--${drift.trend}">${formatDrift(drift)}</p>` : ""}
+
+                    ${insights.length ? `
+
+                        <ul class="pace-chart-insights">
+
+                            ${insights.map(text => `<li>${text}</li>`).join("")}
+
+                        </ul>
+
+                    ` : ""}
+
+                </div>
 
             ` : ""}
 
@@ -618,7 +719,7 @@ export function RunningDetailView(workout, shoes = [], warningsExpanded = false,
 
             </div>
 
-            ${splits.length >= MIN_SPLITS_FOR_CHART ? RunningPaceChart(splits, avgPaceRef, avgHrRef, chartMetricMode) : ""}
+            ${splits.length >= MIN_SPLITS_FOR_CHART ? RunningPaceChart(splits, avgPaceRef, avgHrRef, chartMetricMode, workout) : ""}
 
             ${detailStatGroup("RENDIMIENTO", `
 

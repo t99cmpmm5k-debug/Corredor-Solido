@@ -15,7 +15,10 @@
 
     flex-direction:column;
 
-    gap:20px;
+    /* 20px -> 17px (~15%, ronda de insights avanzados): menos aire entre
+       bloques para que quepa más pantalla sin tanto scroll, sin llegar a
+       sentirse apretado -- cada bloque conserva su propio padding interno. */
+    gap:17px;
 
 }
 
@@ -179,7 +182,7 @@
 
     border:1px solid var(--card-border);
 
-    padding:16px 0;
+    padding:14px 0;
 
 }
 
@@ -235,7 +238,7 @@
 
     overflow:hidden;
 
-    padding:22px;
+    padding:19px;
 
     border-radius:26px;
 
@@ -263,7 +266,7 @@
 
     gap:12px;
 
-    margin-bottom:20px;
+    margin-bottom:17px;
 
 }
 
@@ -496,6 +499,17 @@
     justify-content:flex-end;
 
     gap:6px;
+
+}
+
+/* Más margen a la izquierda para el km parcial (retoque de ronda de
+   insights): antes pegaba directamente contra su vecino, con la etiqueta
+   "Parcial" (ver isPartial en RunningPaceChart()) casi rozándolo -- ahora
+   se separa un poco más, para que quede claro que es un tramo aparte, no
+   solo la última columna cualquiera. */
+.pace-chart-column.is-partial{
+
+    margin-left:10px;
 
 }
 
@@ -735,9 +749,81 @@
 
 }
 
+/* Envoltorio compartido de todo lo que va debajo del gráfico (ronda de
+   insights avanzados): conclusión automática + deriva cardíaca + los
+   insights de km más rápido/FC más alta ya existentes -- un solo borde
+   superior para las tres cosas juntas, en vez de que cada una lleve el
+   suyo. */
+.pace-chart-summary{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:8px;
+
+    margin:14px 0 0;
+
+    padding-top:12px;
+
+    border-top:1px solid color-mix(in srgb, var(--card-border) 70%, transparent);
+
+}
+
+/* Frase de conclusión real (ver buildDetailConclusion() en
+   RunningDetailView.js) -- el elemento con más peso de los tres, así que
+   va primero y en el color de texto principal. */
+.pace-chart-conclusion{
+
+    margin:0;
+
+    color:var(--text-primary);
+
+    font-size:.85rem;
+
+    font-weight:600;
+
+    line-height:1.4;
+
+}
+
+/* Deriva cardíaca + "Control del esfuerzo" (ver buildCardiacDrift() en
+   RunningDetailView.js) -- mismo color por tendencia que
+   .running-summary-insight en Running.js, para que "va bien"/"neutro"/
+   "va mal" se lean con el mismo lenguaje visual en toda la app. */
+.pace-chart-drift{
+
+    margin:0;
+
+    font-size:.82rem;
+
+    font-weight:700;
+
+}
+
+.pace-chart-drift--up{
+
+    color:var(--color-primary);
+
+}
+
+.pace-chart-drift--flat{
+
+    color:var(--text-secondary);
+
+}
+
+.pace-chart-drift--down{
+
+    color:var(--color-warning);
+
+}
+
 /* Insights reales bajo el gráfico (km más rápido / FC más alta, ver
    buildChartInsights() en RunningDetailView.js) -- solo con datos propios
-   de ESTE entreno, nunca una comparación con otros. */
+   de ESTE entreno, nunca una comparación con otros. Ya no lleva su propio
+   margen/borde superior -- ahora vive dentro de .pace-chart-summary, que
+   pone uno solo compartido para los tres. */
 .pace-chart-insights{
 
     display:flex;
@@ -746,11 +832,9 @@
 
     gap:6px;
 
-    margin:16px 0 0;
+    margin:0;
 
-    padding-top:14px;
-
-    border-top:1px solid color-mix(in srgb, var(--card-border) 70%, transparent);
+    padding:0;
 
     list-style:none;
 
@@ -767,13 +851,13 @@
 
 .detail-stat-group + .detail-stat-group{
 
-    margin-top:16px;
+    margin-top:14px;
 
 }
 
 .detail-stat-group-title{
 
-    margin:0 0 10px 4px;
+    margin:0 0 8px 4px;
 
     color:var(--text-secondary);
 
@@ -793,7 +877,7 @@
 
     grid-template-columns:1fr 1fr;
 
-    gap:12px;
+    gap:10px;
 
 }
 
@@ -805,7 +889,7 @@
 
     gap:12px;
 
-    padding:14px 16px;
+    padding:12px 14px;
 
     border-radius:var(--radius-lg);
 

@@ -456,3 +456,163 @@ describe("RunningDetailView — métricas agrupadas por categoría", () => {
     });
 
 });
+
+// splits con FC real por mitades -- helper propio de esta sección, no
+// interfiere con el `splits` por defecto de workout() de arriba.
+function hrHalvesSplits(firstHalfHr, secondHalfHr) {
+    return [...firstHalfHr, ...secondHalfHr].map((avgHr, i) => ({
+        lap: i + 1, paceSecPerKm: 300, avgHr
+    }));
+}
+
+describe("RunningDetailView — deriva cardíaca y 'Control del esfuerzo' (ronda de insights avanzados)", () => {
+
+    it("solo aplica a Rodaje (Z2, type='easy') -- otro tipo no muestra deriva ni conclusión, aunque tenga FC real de sobra", () => {
+
+        const html = RunningDetailView(workout({
+            type: "series",
+            splits: hrHalvesSplits([140, 140, 140], [148, 148, 148])
+        }));
+
+        expect(html).not.toContain("Deriva FC");
+        expect(html).not.toContain("pace-chart-conclusion");
+
+    });
+
+    it("con menos de 4 splits con FC real, no muestra deriva (mínimo de fiabilidad)", () => {
+
+        const html = RunningDetailView(workout({
+            type: "easy",
+            splits: hrHalvesSplits([140], [148, 148])
+        }));
+
+        expect(html).not.toContain("Deriva FC");
+
+    });
+
+    it("deriva <5%: 'Muy bueno', signo real y valor con coma decimal", () => {
+
+        const html = RunningDetailView(workout({
+            type: "easy",
+            splits: hrHalvesSplits([138, 140, 142], [144, 146, 148]) // 140 -> 146 = +4,3%
+        }));
+
+        expect(html).toContain("Deriva FC: +4,3% · Muy bueno");
+        expect(html).toContain("pace-chart-drift--up");
+
+    });
+
+    it("deriva exactamente en 5%: cae en 'Bueno', no en 'Muy bueno' (umbral es estrictamente <5)", () => {
+
+        const html = RunningDetailView(workout({
+            type: "easy",
+            splits: hrHalvesSplits([140, 140, 140], [147, 147, 147]) // exactamente +5%
+        }));
+
+        expect(html).toContain("Deriva FC: +5,0% · Bueno");
+        expect(html).toContain("pace-chart-drift--flat");
+
+    });
+
+    it("deriva >10%: 'Mejorable'", () => {
+
+        const html = RunningDetailView(workout({
+            type: "easy",
+            splits: hrHalvesSplits([140, 140, 140], [160, 160, 160]) // +14,3%
+        }));
+
+        expect(html).toContain("Mejorable");
+        expect(html).toContain("pace-chart-drift--down");
+
+    });
+
+    it("nunca combina ritmo o temperatura en el cálculo del umbral -- misma deriva, mismo calificativo, sea cual sea el ritmo", () => {
+
+        const withSlowPace = hrHalvesSplits([140, 140, 140], [160, 160, 160]).map(s => ({ ...s, paceSecPerKm: 500 }));
+        const html = RunningDetailView(workout({ type: "easy", splits: withSlowPace, temperatureC: 10 }));
+
+        expect(html).toContain("Deriva FC: +14,3% · Mejorable");
+
+    });
+
+});
+
+describe("RunningDetailView — conclusión automática bajo el gráfico", () => {
+
+    it("sin deriva calculable (tipo distinto de Z2), no hay conclusión", () => {
+
+        const html = RunningDetailView(workout({ type: "race", splits: hrHalvesSplits([140, 140, 140], [148, 148, 148]) }));
+
+        expect(html).not.toContain("pace-chart-conclusion");
+
+    });
+
+    it("deriva 'Muy bueno' sin temperatura real: solo la cláusula de estabilidad, sin mencionar calor", () => {
+
+        const html = RunningDetailView(workout({
+            type: "easy",
+            splits: hrHalvesSplits([138, 140, 142], [144, 146, 148]),
+            temperatureC: null
+        }));
+
+        expect(html).toContain("FC muy estable durante todo el entreno.");
+        expect(html).not.toContain("pese a");
+
+    });
+
+    it("deriva 'Muy bueno' con calor real (>=27°C): añade la cláusula de eficiencia con la temperatura real", () => {
+
+        const html = RunningDetailView(workout({
+            type: "easy",
+            splits: hrHalvesSplits([138, 140, 142], [144, 146, 148]),
+            temperatureC: 29
+        }));
+
+        expect(html).toContain("Buena eficiencia aeróbica pese a los 29°C.");
+
+    });
+
+    it("deriva 'Mejorable' con calor real: el calor se plantea como posible explicación, nunca como mérito", () => {
+
+        const html = RunningDetailView(workout({
+            type: "easy",
+            splits: hrHalvesSplits([140, 140, 140], [160, 160, 160]),
+            temperatureC: 30
+        }));
+
+        expect(html).toContain("El calor (30°C) puede explicar parte de la subida.");
+        expect(html).not.toContain("Buena eficiencia");
+
+    });
+
+    it("con temperatura normal (no calurosa), no menciona el clima", () => {
+
+        const html = RunningDetailView(workout({
+            type: "easy",
+            splits: hrHalvesSplits([138, 140, 142], [144, 146, 148]),
+            temperatureC: 15
+        }));
+
+        expect(html).not.toContain("pese a");
+        expect(html).not.toContain("puede explicar parte de la subida");
+
+    });
+
+});
+
+describe("RunningDetailView — margen del km parcial en el gráfico", () => {
+
+    it("la columna del último km parcial lleva su propia clase de margen extra", () => {
+
+        const html = RunningDetailView(workout({
+            splits: [
+                { lap: 1, paceSecPerKm: 300, distanceKm: 1 },
+                { lap: 2, paceSecPerKm: 305, distanceKm: 0.7 }
+            ]
+        }));
+
+        expect(html).toContain('class="pace-chart-column is-partial"');
+
+    });
+
+});
