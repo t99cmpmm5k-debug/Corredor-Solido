@@ -1000,7 +1000,8 @@
 
     padding-top:calc(24px + env(safe-area-inset-top));
 
-    padding-bottom:calc(110px + env(safe-area-inset-bottom));
+    /* Sin padding-bottom propio -- .running ya lo aplica una vez para
+       todos sus hijos (ver el mismo comentario en RunningDetailView.css). */
 
     display:flex;
 

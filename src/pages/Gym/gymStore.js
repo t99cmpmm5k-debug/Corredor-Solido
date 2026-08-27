@@ -1,3 +1,5 @@
+import { resetScrollToTop } from "../../utils/scrollReset.js";
+
 const store = {
 
     step: "select-day",
@@ -23,6 +25,11 @@ export function getStep() {
 export function setStep(step) {
 
     store.step = step;
+
+    // Bug real (ver runningStore.js/setWizardStep): cada paso
+    // (day-select/session/exercise-detail) es una vista nueva de arriba a
+    // abajo.
+    resetScrollToTop();
 
 }
 

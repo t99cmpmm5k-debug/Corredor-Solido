@@ -1,3 +1,5 @@
+import { resetScrollToTop } from "../../utils/scrollReset.js";
+
 const initial = () => ({
 
     step: "closed",
@@ -20,6 +22,11 @@ export function getImportStep() {
 export function setImportStep(step) {
 
     wizard.step = step;
+
+    // Mismo bug real que Running/runningStore.js: cada paso del wizard es
+    // una vista nueva -- sin esto, abrirlo estando ya desplazado en Plan
+    // dejaba su cabecera asomando bajo la barra de estado.
+    resetScrollToTop();
 
 }
 

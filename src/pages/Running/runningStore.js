@@ -1,3 +1,5 @@
+import { resetScrollToTop } from "../../utils/scrollReset.js";
+
 const initial = () => ({
 
     step: "idle",
@@ -81,6 +83,13 @@ export function getWizardStep() {
 export function setWizardStep(step) {
 
     wizard.step = step;
+
+    // Bug real: cada paso (idle/detail/review/shoe/shoes/historyTable...)
+    // es una vista nueva de arriba a abajo -- sin resetear el scroll, abrir
+    // el detalle de un entreno estando ya desplazado en el historial hacía
+    // que el detalle apareciera ya scrolleado, con su cabecera asomando
+    // bajo la barra de estado/notch en vez de arrancar arriba del todo.
+    resetScrollToTop();
 
 }
 

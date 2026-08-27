@@ -3,6 +3,7 @@
 // Un solo formulario editable de una tacada (sin pasos tipo wizard):
 // nombre, días con sus ejercicios, nota de progresión.
 import { generateId } from "../../utils/id.js";
+import { resetScrollToTop } from "../../utils/scrollReset.js";
 
 let state = null;
 
@@ -52,11 +53,20 @@ export function openBuilder(routine = null) {
             saveError: null
         };
 
+    // Bug real (ver runningStore.js/setWizardStep): abrir el constructor
+    // es una vista nueva de arriba a abajo -- sin esto, podía aparecer ya
+    // desplazado si Gym estaba scrolleado hacia abajo.
+    resetScrollToTop();
+
 }
 
 export function closeBuilder() {
 
     state = null;
+
+    // Mismo bug real que Running/runningStore.js -- volver a la pantalla
+    // normal de Gym es también una vista nueva de arriba a abajo.
+    resetScrollToTop();
 
 }
 

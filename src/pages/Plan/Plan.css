@@ -36,7 +36,16 @@
 
     text-align:center;
 
-    padding:24px;
+    /* Bug real encontrado en esta ronda: un `padding:24px` a los 4 lados
+       aquí pisaba el padding-top/padding-bottom con safe-area de
+       .plan-page (misma especificidad, esta regla va después en el
+       archivo) -- el contenido de "nunca se importó ningún plan" podía
+       quedar sin colchón real bajo la barra de navegación ni respetar el
+       notch/isla dinámica arriba. Solo se toca el ancho lateral, que sí
+       es una decisión de este estado en concreto. */
+    padding-left:24px;
+
+    padding-right:24px;
 
 }
 
@@ -128,7 +137,10 @@
 
     padding-top:calc(24px + env(safe-area-inset-top));
 
-    padding-bottom:calc(110px + env(safe-area-inset-bottom));
+    /* Sin padding-bottom propio -- .plan-page (el <section> que envuelve
+       este wizard, ver Plan.js) ya reserva calc(110px + safe-area-inset-
+       bottom) una vez; ponerlo también aquí lo doblaba, mismo bug que
+       .running-wizard/.running-detail en Running.css. */
 
     display:flex;
 

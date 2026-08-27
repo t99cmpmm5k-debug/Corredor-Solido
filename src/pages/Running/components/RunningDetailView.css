@@ -4,7 +4,12 @@
 
     padding-top:calc(24px + env(safe-area-inset-top));
 
-    padding-bottom:calc(110px + env(safe-area-inset-bottom));
+    /* Sin padding-bottom propio a propósito -- .running (el contenedor
+       que envuelve esta vista, ver Running.js) ya reserva
+       calc(110px + safe-area-inset-bottom) una vez para TODOS sus hijos;
+       ponerlo también aquí lo doblaba (~220px reales de aire al fondo),
+       inconsistente con el patrón de una sola aplicación que ya siguen
+       Carreras/Gym/Profile/Plan. */
 
     display:flex;
 

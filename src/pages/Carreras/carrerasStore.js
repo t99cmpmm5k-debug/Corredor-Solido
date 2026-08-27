@@ -1,3 +1,5 @@
+import { resetScrollToTop } from "../../utils/scrollReset.js";
+
 // "Completadas vs planificadas" es la única distinción que ya existe en
 // los datos (workouts type:"race" frente a plannedRaces) — las 3 tabs de
 // la lista son ese mismo cruce, no una categorización nueva:
@@ -86,6 +88,11 @@ export function getSelectedPlannedRaceId() {
 export function setSelectedPlannedRaceId(id) {
 
     selectedPlannedRaceId = id;
+
+    // Bug real (ver runningStore.js/setWizardStep): abrir (o cerrar) el
+    // detalle de una carrera es una vista nueva de arriba a abajo -- sin
+    // esto, podía aparecer ya desplazada si la lista estaba scrolleada.
+    resetScrollToTop();
 
 }
 

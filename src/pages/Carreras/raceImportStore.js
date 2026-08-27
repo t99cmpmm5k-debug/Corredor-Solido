@@ -1,3 +1,5 @@
+import { resetScrollToTop } from "../../utils/scrollReset.js";
+
 const initial = () => ({
 
     step: "closed",
@@ -20,6 +22,10 @@ export function getRaceImportStep() {
 export function setRaceImportStep(step) {
 
     wizard.step = step;
+
+    // Mismo bug real que Running/runningStore.js -- cada paso del wizard
+    // es una vista nueva de arriba a abajo.
+    resetScrollToTop();
 
 }
 

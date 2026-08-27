@@ -2,7 +2,13 @@
 
     padding:24px;
 
-    padding-bottom:calc(110px + env(safe-area-inset-bottom));
+    /* Antes sin padding-top propio -- el contenido arrancaba pegado al
+       borde real de arriba, bajo el notch/isla dinámica en vez de
+       respetar el safe-area como el resto de vistas de Running. Sin
+       padding-bottom propio a propósito: .running ya lo aplica una vez
+       para todos sus hijos (ver el mismo comentario en
+       RunningDetailView.css). */
+    padding-top:calc(24px + env(safe-area-inset-top));
 
     display:flex;
 
