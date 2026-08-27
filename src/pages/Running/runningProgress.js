@@ -209,3 +209,66 @@ export function buildProgressMessage(insight) {
     };
 
 }
+
+// Comparación por ENTRENO (distinta de buildTypeProgressInsight(), que
+// compara grupo reciente vs. grupo anterior en la LISTA -- esta compara
+// el entreno que se está viendo AHORA en el detalle contra sus últimos
+// `groupSize` entrenos reales del mismo tipo, anteriores a su propia
+// fecha). Reutiliza classifyHrTrend() tal cual, pasando el propio
+// entreno como "recent" (array de 1) -- misma lógica de control por FC,
+// ni un criterio nuevo. Solo compara dentro del mismo tipo (Rodaje vs.
+// Series no dice nada, son esfuerzos distintos) -- null sin fecha/ritmo
+// real del propio entreno, sin tipo, o sin al menos `groupSize` entrenos
+// reales anteriores del mismo tipo con los que comparar.
+export function buildWorkoutComparison(workout, allWorkouts, { groupSize = GROUP_SIZE } = {}) {
+
+    if (workout.avgPaceSecPerKm == null || !workout.type || !workout.date) return null;
+
+    const baseline = allWorkouts
+        .filter(w =>
+            w.id !== workout.id &&
+            w.type === workout.type &&
+            w.avgPaceSecPerKm != null &&
+            w.date != null &&
+            w.date < workout.date
+        )
+        .sort((a, b) => b.date.localeCompare(a.date))
+        .slice(0, groupSize);
+
+    if (baseline.length < groupSize) return null;
+
+    const baselinePace = average(baseline.map(w => w.avgPaceSecPerKm));
+
+    // Positivo = este entreno es más rápido que la línea base (menos
+    // segundos por km que la media de los anteriores).
+    const paceDeltaSecPerKm = Math.round(baselinePace - workout.avgPaceSecPerKm);
+
+    const hrTrend = classifyHrTrend([workout], baseline, paceDeltaSecPerKm, baselinePace);
+
+    return { type: workout.type, groupSize, paceDeltaSecPerKm, hrTrend };
+
+}
+
+// Texto real de la comparación de arriba -- mismo hrClause()/typeLabel()
+// que el resto del archivo, ninguna cláusula nueva.
+export function buildWorkoutComparisonMessage(comparison) {
+
+    const label = typeLabel(comparison.type);
+
+    if (Math.abs(comparison.paceDeltaSecPerKm) < PACE_STABLE_THRESHOLD_SEC) {
+        return `Ritmo similar a tus últimos ${comparison.groupSize} ${label}${hrClause(comparison.hrTrend)}.`;
+    }
+
+    if (comparison.paceDeltaSecPerKm > 0) {
+
+        if (comparison.hrTrend === "higher-proportional") {
+            return `Respecto a tus últimos ${comparison.groupSize} ${label}: ${comparison.paceDeltaSecPerKm} s/km más rápido, pero con la FC media también más alta — no parece una mejora real.`;
+        }
+
+        return `Respecto a tus últimos ${comparison.groupSize} ${label}: ${comparison.paceDeltaSecPerKm} s/km más rápido${hrClause(comparison.hrTrend)}.`;
+
+    }
+
+    return `Respecto a tus últimos ${comparison.groupSize} ${label}: ${Math.abs(comparison.paceDeltaSecPerKm)} s/km más lento${hrClause(comparison.hrTrend)}.`;
+
+}

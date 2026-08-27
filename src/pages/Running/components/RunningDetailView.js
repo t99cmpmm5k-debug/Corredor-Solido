@@ -3,6 +3,7 @@ import "./RunningDetailView.css";
 import { formatWeekday, formatDayMonth } from "../../../utils/date.js";
 import { formatSecondsAsClock, formatShoeName } from "../../../utils/format.js";
 import { RUNNING_WORKOUT_TYPES } from "../../../data/runningWorkoutTypes.js";
+import { buildWorkoutComparison, buildWorkoutComparisonMessage } from "../runningProgress.js";
 
 // Garmin cierra la vuelta en curso al parar el cronómetro, así que la
 // última entrada de splits suele ser un remanente corto (0.01-0.4 km) con
@@ -587,11 +588,23 @@ export function shoeSelector(workout, shoes) {
 // (ver weatherEstimate.js) y no de una medición real del reloj. minor:
 // true (retoque de cierre) da menos peso visual -- solo lo usa "Hora"
 // dentro del grupo Condiciones, frente a Cadencia/Zapatilla.
-function detailStat(icon, label, value, badge, { minor = false } = {}) {
+//
+// Sin dato real (value === "—"), especificación de cierre: por defecto la
+// tarjeta se OCULTA entera (preferido). showEmpty:true la mantiene visible
+// pero con icono/valor en gris en vez de cian (solo Training Effect: es un
+// dato nuevo que la mayoría de entrenos ya importados aún no tienen, y que
+// la 4ª tarjeta de Rendimiento aparezca/desaparezca según el entreno
+// rompería más la consistencia del grid que dejarla ahí, inerte). Zapatilla
+// no necesita ninguna de las dos: su "value" es el <select> en sí, nunca el
+// placeholder "—", así que siempre se muestra sin pedirlo explícitamente.
+function detailStat(icon, label, value, badge, { minor = false, showEmpty = false } = {}) {
+
+    const isEmpty = value === "—";
+    if (isEmpty && !showEmpty) return "";
 
     return `
 
-        <div class="detail-stat ${minor ? "detail-stat--minor" : ""}">
+        <div class="detail-stat ${minor ? "detail-stat--minor" : ""} ${isEmpty && showEmpty ? "detail-stat--empty" : ""}">
 
             <iconify-icon icon="${icon}"></iconify-icon>
 
@@ -617,7 +630,14 @@ function detailStat(icon, label, value, badge, { minor = false } = {}) {
 
 // Grupo de tarjetas con su propio título -- Rendimiento/Condiciones/
 // Equipamiento (retoque de cierre), en vez de la rejilla plana de antes.
+// Rendimiento y Equipamiento nunca quedan vacíos (Training Effect y
+// Zapatilla siempre se muestran), pero Condiciones sí puede hacerlo -- un
+// entreno sin temperatura/desnivel/hora capturados dejaría el título
+// "CONDICIONES" flotando sobre una rejilla vacía si no se oculta el grupo
+// entero cuando ninguno de sus stats sobrevive.
 function detailStatGroup(title, statsHtml) {
+
+    if (!statsHtml.replace(/\s/g, "")) return "";
 
     return `
 
@@ -678,7 +698,7 @@ function ImportWarningsBanner(warnings, expanded) {
 
 }
 
-export function RunningDetailView(workout, shoes = [], warningsExpanded = false, chartMetricMode = "both") {
+export function RunningDetailView(workout, shoes = [], warningsExpanded = false, chartMetricMode = "both", allWorkouts = []) {
 
     if (!workout) return "";
 
@@ -690,6 +710,12 @@ export function RunningDetailView(workout, shoes = [], warningsExpanded = false,
     const avgPaceRef = averagePace(workout, splits);
     const avgHrRef = averageHr(workout, splits);
     const warnings = workout.importWarnings || [];
+
+    // Comparación histórica de ESTE entreno (retoque de cierre, punto 10)
+    // -- independiente del gráfico de arriba (no necesita splits, solo el
+    // ritmo/FC medios de siempre), así que se calcula y se pinta aparte,
+    // sin depender de si RITMO POR KILÓMETRO llega a mostrarse.
+    const workoutComparison = buildWorkoutComparison(workout, allWorkouts);
 
     const temperature = workout.temperatureC != null ? `${workout.temperatureC}°C` : "—";
     const isEstimatedTemp = workout.temperatureC != null && workout.fieldMeta?.temperatureC?.estimated === true;
@@ -747,6 +773,18 @@ export function RunningDetailView(workout, shoes = [], warningsExpanded = false,
 
             ${splits.length >= MIN_SPLITS_FOR_CHART ? RunningPaceChart(splits, avgPaceRef, avgHrRef, chartMetricMode, workout) : ""}
 
+            ${workoutComparison ? `
+
+                <p class="workout-comparison">
+
+                    <iconify-icon icon="solar:chart-2-bold-duotone"></iconify-icon>
+
+                    <span>${buildWorkoutComparisonMessage(workoutComparison)}</span>
+
+                </p>
+
+            ` : ""}
+
             ${detailStatGroup("RENDIMIENTO", `
 
                 ${detailStat("solar:speedometer-bold-duotone", "Ritmo medio", avgPace)}
@@ -755,7 +793,7 @@ export function RunningDetailView(workout, shoes = [], warningsExpanded = false,
 
                 ${detailStat("solar:round-alt-arrow-up-bold-duotone", "Cadencia", workout.avgCadence != null ? `${workout.avgCadence} spm` : "—")}
 
-                ${detailStat("solar:chart-2-bold-duotone", "Training Effect", workout.trainingEffectAerobic != null ? `Aeróbica ${String(workout.trainingEffectAerobic).replace(".", ",")}` : "—")}
+                ${detailStat("solar:chart-2-bold-duotone", "Training Effect", workout.trainingEffectAerobic != null ? `Aeróbica ${String(workout.trainingEffectAerobic).replace(".", ",")}` : "—", null, { showEmpty: true })}
 
             `)}
 

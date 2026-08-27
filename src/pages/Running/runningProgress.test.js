@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildTypeProgressInsight, buildProgressMessage, buildPaceComparison, buildComparisonMessage } from "./runningProgress.js";
+import { buildTypeProgressInsight, buildProgressMessage, buildPaceComparison, buildComparisonMessage, buildWorkoutComparison, buildWorkoutComparisonMessage } from "./runningProgress.js";
 
 // pace en seg/km, hr en ppm — solo los campos que usa buildTypeProgressInsight.
 function w(date, avgPaceSecPerKm, avgHr, type = "easy") {
@@ -274,6 +274,120 @@ describe("buildComparisonMessage -- texto real de la comparación de calendario"
 
         expect(text).toContain("Cambio: +20 s/km");
         expect(text).not.toContain("Mejora");
+
+    });
+
+});
+
+// id explícito en cada entreno -- buildWorkoutComparison excluye al propio
+// entreno de su línea base por id, así que reusar w() (sin id, todos
+// "undefined") los excluiría a todos por accidente.
+function wi(id, date, avgPaceSecPerKm, avgHr, type = "easy") {
+    return { id, date, avgPaceSecPerKm, avgHr, type };
+}
+
+describe("buildWorkoutComparison -- comparación histórica de un entreno concreto (retoque de cierre, punto 10)", () => {
+
+    it("null sin ritmo, tipo o fecha propios", () => {
+
+        expect(buildWorkoutComparison({ id: "w1", type: "easy", date: "2026-08-20" }, [])).toBeNull();
+        expect(buildWorkoutComparison({ id: "w1", avgPaceSecPerKm: 300, date: "2026-08-20" }, [])).toBeNull();
+        expect(buildWorkoutComparison({ id: "w1", avgPaceSecPerKm: 300, type: "easy" }, [])).toBeNull();
+
+    });
+
+    it("null con menos de 3 entrenos anteriores reales del mismo tipo", () => {
+
+        const workout = wi("w1", "2026-08-20", 280, 140, "easy");
+        const allWorkouts = [
+            workout,
+            wi("w2", "2026-08-10", 300, 140, "easy"),
+            wi("w3", "2026-08-05", 300, 140, "easy"),
+            wi("w4", "2026-08-01", 300, 140, "series")
+        ];
+
+        expect(buildWorkoutComparison(workout, allWorkouts)).toBeNull();
+
+    });
+
+    it("ignora entrenos de otro tipo y entrenos posteriores a este mismo", () => {
+
+        const workout = wi("w1", "2026-08-20", 280, 140, "easy");
+        const allWorkouts = [
+            workout,
+            wi("w2", "2026-08-10", 300, 140, "easy"),
+            wi("w3", "2026-08-05", 300, 140, "easy"),
+            wi("w4", "2026-08-01", 300, 140, "easy"),
+            wi("w5", "2026-08-15", 999, 140, "series"),
+            wi("w6", "2026-08-25", 100, 140, "easy")
+        ];
+
+        const result = buildWorkoutComparison(workout, allWorkouts);
+
+        expect(result).toEqual({ type: "easy", groupSize: 3, paceDeltaSecPerKm: 20, hrTrend: "stable" });
+
+    });
+
+    it("toma solo los 3 entrenos previos más recientes del mismo tipo como línea base", () => {
+
+        const workout = wi("w1", "2026-08-20", 280, 140, "easy");
+        const allWorkouts = [
+            workout,
+            wi("w2", "2026-08-10", 300, 140, "easy"),
+            wi("w3", "2026-08-05", 300, 140, "easy"),
+            wi("w4", "2026-08-01", 300, 140, "easy"),
+            wi("w5", "2026-07-01", 100, 140, "easy")
+        ];
+
+        const result = buildWorkoutComparison(workout, allWorkouts);
+
+        expect(result.paceDeltaSecPerKm).toBe(20);
+
+    });
+
+});
+
+describe("buildWorkoutComparisonMessage -- texto real de la comparación histórica de un entreno", () => {
+
+    it("ritmo similar (delta por debajo del umbral de ruido)", () => {
+
+        const text = buildWorkoutComparisonMessage({ type: "easy", groupSize: 3, paceDeltaSecPerKm: 1, hrTrend: "stable" });
+
+        expect(text).toBe("Ritmo similar a tus últimos 3 Rodaje (Z2) con una FC media estable.");
+
+    });
+
+    it("más rápido con FC estable: reclama la mejora sin reservas", () => {
+
+        const text = buildWorkoutComparisonMessage({ type: "easy", groupSize: 3, paceDeltaSecPerKm: 20, hrTrend: "stable" });
+
+        expect(text).toBe("Respecto a tus últimos 3 Rodaje (Z2): 20 s/km más rápido con una FC media estable.");
+
+    });
+
+    it("más rápido pero con la FC subiendo en igual o mayor proporción: no lo llama mejora real", () => {
+
+        const text = buildWorkoutComparisonMessage({ type: "easy", groupSize: 3, paceDeltaSecPerKm: 20, hrTrend: "higher-proportional" });
+
+        expect(text).toContain("no parece una mejora real");
+        expect(text).not.toContain("mejorado");
+
+    });
+
+    it("más lento que la línea base: lo dice tal cual, sin suavizarlo", () => {
+
+        const text = buildWorkoutComparisonMessage({ type: "easy", groupSize: 3, paceDeltaSecPerKm: -20, hrTrend: "stable" });
+
+        expect(text).toBe("Respecto a tus últimos 3 Rodaje (Z2): 20 s/km más lento con una FC media estable.");
+
+    });
+
+    it("nunca compara tipos distintos -- el label sale siempre del tipo del propio entreno", () => {
+
+        const text = buildWorkoutComparisonMessage({ type: "series", groupSize: 3, paceDeltaSecPerKm: 10, hrTrend: null });
+
+        expect(text).toContain("Series");
+        expect(text).not.toContain("Rodaje");
 
     });
 

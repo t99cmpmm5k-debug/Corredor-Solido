@@ -256,12 +256,11 @@ describe("RunningDetailView — stat 'FC media' (independiente del gráfico)", (
 
     });
 
-    it("sin FC media: el stat muestra el placeholder, no la inventa", () => {
+    it("sin FC media: la tarjeta se oculta entera, no muestra un placeholder inventado", () => {
 
         const html = RunningDetailView(workout());
 
-        expect(html).toContain("FC media");
-        expect(html).not.toMatch(/\d+ ppm<\/span>\s*<span class="detail-stat-label">\s*FC media/);
+        expect(html).not.toContain("FC media");
 
     });
 
@@ -466,7 +465,7 @@ describe("RunningDetailView — métricas agrupadas por categoría", () => {
 
     it("agrupa en Rendimiento/Condiciones/Equipamiento, con sus títulos reales", () => {
 
-        const html = RunningDetailView(workout());
+        const html = RunningDetailView(workout({ temperatureC: 18 }));
 
         expect(html).toContain("RENDIMIENTO");
         expect(html).toContain("CONDICIONES");
@@ -478,7 +477,7 @@ describe("RunningDetailView — métricas agrupadas por categoría", () => {
 
         const html = RunningDetailView(workout({ time: "07:15" }));
 
-        expect(html).toMatch(/detail-stat detail-stat--minor"[\s\S]{0,400}Hora/);
+        expect(html).toMatch(/detail-stat detail-stat--minor[\s\S]{0,400}Hora/);
 
     });
 
@@ -497,6 +496,65 @@ describe("RunningDetailView — métricas agrupadas por categoría", () => {
 
         expect(html).toContain("Training Effect");
         expect(html).not.toContain("Aeróbica");
+
+    });
+
+    it("sin Training Effect capturado, la tarjeta queda en gris (detail-stat--empty), no en cian", () => {
+
+        const html = RunningDetailView(workout({ trainingEffectAerobic: null }));
+
+        expect(html).toMatch(/detail-stat\s+detail-stat--empty[\s\S]{0,400}Training Effect/);
+
+    });
+
+    it("con Training Effect real, la tarjeta NO lleva el modificador gris", () => {
+
+        const html = RunningDetailView(workout({ trainingEffectAerobic: 3.6 }));
+
+        expect(html).not.toContain("detail-stat--empty");
+
+    });
+
+    it("sin cadencia real, la tarjeta se oculta entera en vez de mostrar un placeholder", () => {
+
+        const html = RunningDetailView(workout());
+
+        expect(html).not.toContain("Cadencia");
+
+    });
+
+    it("sin desnivel/calorías reales, esas tarjetas se ocultan enteras", () => {
+
+        const html = RunningDetailView(workout());
+
+        expect(html).not.toContain("Desnivel");
+        expect(html).not.toContain("Calorías");
+
+    });
+
+    it("Zapatilla se muestra siempre, aunque el entreno no tenga ninguna asignada -- es el único campo editable de esta rejilla", () => {
+
+        const html = RunningDetailView(workout());
+
+        expect(html).toContain("Zapatilla");
+        expect(html).toContain("detail-shoe-select");
+
+    });
+
+    it("si Condiciones se queda sin ningún stat real (sin temperatura/desnivel/hora), el grupo entero desaparece -- no deja el título flotando sobre una rejilla vacía", () => {
+
+        const html = RunningDetailView(workout());
+
+        expect(html).not.toContain("CONDICIONES");
+
+    });
+
+    it("Rendimiento y Equipamiento siempre se muestran -- nunca se quedan sin ningún stat real", () => {
+
+        const html = RunningDetailView(workout());
+
+        expect(html).toContain("RENDIMIENTO");
+        expect(html).toContain("EQUIPAMIENTO");
 
     });
 
@@ -684,6 +742,35 @@ describe("RunningDetailView — margen del km parcial en el gráfico", () => {
 
         expect(html).toContain("pace-chart-best-tag");
         expect(html).toContain("Mejor");
+
+    });
+
+});
+
+describe("RunningDetailView — comparación histórica del entreno (retoque de cierre, punto 10)", () => {
+
+    it("sin al menos 3 entrenos anteriores del mismo tipo, no muestra ninguna comparación", () => {
+
+        const html = RunningDetailView(workout({ id: "w1", type: "easy" }), [], false, "both", []);
+
+        expect(html).not.toContain("workout-comparison");
+        expect(html).not.toContain("Respecto a tus últimos");
+
+    });
+
+    it("con histórico real suficiente del mismo tipo, muestra la frase comparativa", () => {
+
+        const allWorkouts = [
+            workout({ id: "w1", date: "2026-08-20", avgPaceSecPerKm: 280, avgHr: 140, type: "easy" }),
+            workout({ id: "w2", date: "2026-08-10", avgPaceSecPerKm: 300, avgHr: 140, type: "easy" }),
+            workout({ id: "w3", date: "2026-08-05", avgPaceSecPerKm: 300, avgHr: 140, type: "easy" }),
+            workout({ id: "w4", date: "2026-08-01", avgPaceSecPerKm: 300, avgHr: 140, type: "easy" })
+        ];
+
+        const html = RunningDetailView(allWorkouts[0], [], false, "both", allWorkouts);
+
+        expect(html).toContain("workout-comparison");
+        expect(html).toContain("Respecto a tus últimos 3 Rodaje (Z2): 20 s/km más rápido con una FC media estable.");
 
     });
 

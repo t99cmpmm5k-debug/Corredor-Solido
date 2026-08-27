@@ -801,8 +801,9 @@ export function Running() {
 
     } else if (step === "detail") {
 
-        const workout = getWorkouts().find(w => w.id === getDetailWorkoutId());
-        content = RunningDetailView(workout, getShoes(), getWarningsExpanded(), getChartMetricMode());
+        const workouts = getWorkouts();
+        const workout = workouts.find(w => w.id === getDetailWorkoutId());
+        content = RunningDetailView(workout, getShoes(), getWarningsExpanded(), getChartMetricMode(), workouts);
 
     } else if (step === "shoes") {
 

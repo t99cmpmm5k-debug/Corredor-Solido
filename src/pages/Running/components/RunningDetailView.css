@@ -887,6 +887,48 @@
 
 }
 
+/* Comparación de ESTE entreno contra tus últimos N reales del mismo tipo
+   (ver buildWorkoutComparison() en runningProgress.js) -- independiente
+   del gráfico (no necesita splits), su propia tarjeta ligera entre el
+   gráfico y las métricas agrupadas. */
+.workout-comparison{
+
+    display:flex;
+
+    align-items:flex-start;
+
+    gap:10px;
+
+    margin:0;
+
+    padding:14px 16px;
+
+    border-radius:var(--radius-lg);
+
+    background:color-mix(in srgb, var(--card-background) 70%, transparent);
+
+    border:1px solid var(--card-border);
+
+    color:var(--text-secondary);
+
+    font-size:.85rem;
+
+    line-height:1.4;
+
+}
+
+.workout-comparison iconify-icon{
+
+    flex-shrink:0;
+
+    margin-top:1px;
+
+    color:var(--color-primary);
+
+    font-size:18px;
+
+}
+
 /*==========================
      DATOS ADICIONALES -- agrupados por categoría (retoque de cierre):
    antes una única rejilla plana de 6 tarjetas sin ningún orden temático.
@@ -971,6 +1013,23 @@
 .detail-stat--minor .detail-stat-value{
 
     font-size:.85rem;
+
+    font-weight:700;
+
+}
+
+/* Sin dato real pero mantenida visible (showEmpty:true, hoy solo Training
+   Effect) -- icono y valor en gris, nunca en cian: un "—" no es un dato
+   activo y no debe parecer que lo es. */
+.detail-stat--empty iconify-icon{
+
+    color:var(--text-secondary);
+
+}
+
+.detail-stat--empty .detail-stat-value{
+
+    color:var(--text-secondary);
 
     font-weight:700;
 
