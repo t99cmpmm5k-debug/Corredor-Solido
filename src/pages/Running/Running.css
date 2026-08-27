@@ -19,7 +19,10 @@
 
     flex-direction:column;
 
-    gap:20px;
+    /* 20px -> 16px (retoque de cierre): menos aire entre bloques
+       (resumen/chips/insight/lista/zapatillas) sin llegar a sentirse
+       apretado -- cada bloque conserva su propio padding interno. */
+    gap:16px;
 
 }
 
@@ -180,16 +183,16 @@
     /* Se superpone sobre la parte baja de la foto del header (el colchón
        de padding-bottom:90px de .running-header, libre de texto — ver
        RunningHeader.css), igual que .master-card sobre el Hero de Inicio.
-       .running-content ya mete un gap:20px entre hermanos, así que esto
-       deja un solape neto de unos 50px (70px de este margen menos los
-       20px del gap), por debajo de esos 90px libres. */
+       .running-content mete un gap:16px entre hermanos (20px antes del
+       retoque de cierre), así que esto deja un solape neto de unos 54px
+       (70px de este margen menos ese gap), por debajo de esos 90px libres. */
     margin-top:-70px;
 
     display:flex;
 
     flex-direction:column;
 
-    gap:16px;
+    gap:14px;
 
     border-radius:var(--radius-lg);
 
@@ -197,7 +200,7 @@
 
     border:1px solid var(--card-border);
 
-    padding:18px;
+    padding:16px;
 
 }
 
@@ -326,7 +329,7 @@
 
     border-top:1px solid color-mix(in srgb, var(--card-border) 70%, transparent);
 
-    padding-top:16px;
+    padding-top:14px;
 
 }
 
@@ -344,7 +347,7 @@
 
     margin:0;
 
-    padding-top:14px;
+    padding-top:12px;
 
     border-top:1px solid color-mix(in srgb, var(--card-border) 70%, transparent);
 
@@ -544,7 +547,7 @@
 
     flex-direction:column;
 
-    gap:12px;
+    gap:10px;
 
 }
 
@@ -554,9 +557,9 @@
 
     flex-direction:column;
 
-    gap:12px;
+    gap:10px;
 
-    padding:16px 18px;
+    padding:14px 16px;
 
     border-radius:var(--radius-lg);
 
@@ -1090,9 +1093,9 @@
 
     flex-direction:column;
 
-    gap:12px;
+    gap:10px;
 
-    padding:16px;
+    padding:14px 16px;
 
     border-radius:var(--radius-lg);
 

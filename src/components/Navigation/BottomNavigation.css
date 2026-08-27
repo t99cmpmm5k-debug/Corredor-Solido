@@ -151,8 +151,10 @@
 
     border:1px solid color-mix(in srgb, var(--navigation-active) 32%, transparent);
 
+    /* Glow algo más discreto (retoque de cierre) -- una sombra más limpia,
+       sin cambiar el resto de la píldora (que ya funciona bien). */
     box-shadow:
-        0 0 14px color-mix(in srgb, var(--navigation-active) 22%, transparent),
+        0 0 10px color-mix(in srgb, var(--navigation-active) 16%, transparent),
         inset 0 1px 0 rgba(255,255,255,.05);
 
 }
@@ -161,6 +163,6 @@
 
     transform:translateY(-2px);
 
-    filter:drop-shadow(0 0 10px color-mix(in srgb, var(--navigation-active) 45%, transparent));
+    filter:drop-shadow(0 0 6px color-mix(in srgb, var(--navigation-active) 30%, transparent));
 
 }
