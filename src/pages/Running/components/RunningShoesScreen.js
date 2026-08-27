@@ -47,7 +47,7 @@ function ShoeBar(shoe, km) {
 
             </div>
 
-            <p class="shoe-bar-label">${formatKm(km)} / ${formatKm(shoe.lifetimeKm)}</p>
+            <p class="shoe-bar-label">${formatKm(km)} / ${formatKm(shoe.lifetimeKm)} · ${Math.round(bar.percent)}% usado</p>
 
         </div>
 
@@ -99,10 +99,15 @@ function ShoeEditForm(shoe, pendingPhoto) {
 
             </label>
 
+            <!-- El "900" del placeholder es solo un número de referencia
+                 genérico (razonable para amortiguación máxima) -- nunca se
+                 calcula ni se sugiere distinto según marca/modelo, y nunca
+                 se guarda como valor real sin que el usuario lo escriba y
+                 confirme con "Guardar". -->
             <input
                 type="number"
                 data-shoe-field="lifetimeKm"
-                placeholder="Límite de vida útil en km (opcional)"
+                placeholder="Vida útil estimada en km (ej. 900, opcional)"
                 value="${shoe.lifetimeKm ?? ""}"
                 min="0"
                 step="1"
@@ -227,7 +232,7 @@ function AddShoeForm(pendingPhoto) {
             <input
                 type="number"
                 data-shoe-field="lifetimeKm"
-                placeholder="Límite de vida útil en km (opcional)"
+                placeholder="Vida útil estimada en km (ej. 900, opcional)"
                 min="0"
                 step="1"
             >

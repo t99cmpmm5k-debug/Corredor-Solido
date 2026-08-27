@@ -1196,6 +1196,9 @@
 
 }
 
+/* 2 líneas reales en vez de cortar con "…" (retoque de cierre) -- un
+   nombre real de marca+modelo largo ("Asics Gel-Nimbus 28") se leía
+   partido a media palabra en un solo renglón de 88px. */
 .shoe-mileage-name{
 
     flex-shrink:0;
@@ -1208,11 +1211,12 @@
 
     font-weight:600;
 
+    line-height:1.25;
+
+    display:-webkit-box;
+    -webkit-box-orient:vertical;
+    -webkit-line-clamp:2;
     overflow:hidden;
-
-    text-overflow:ellipsis;
-
-    white-space:nowrap;
 
 }
 

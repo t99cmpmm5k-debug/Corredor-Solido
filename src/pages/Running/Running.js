@@ -347,11 +347,15 @@ function RunningHistoryTable(filtered, shoes, typeFilter, sortColumn, sortDirect
 
 // Fila compacta de solo lectura — reutiliza ShoePhoto/shoeBarPercent de
 // RunningShoesScreen.js para no duplicar ni la foto ni el umbral de aviso
-// de vida útil. Gestionar (añadir/retirar/foto) sigue siendo exclusivo de
-// esa pantalla completa; aquí solo se enseña el kilometraje de un vistazo.
+// de vida útil. Gestionar (añadir/retirar/foto/vida útil) sigue siendo
+// exclusivo de esa pantalla completa; aquí solo se enseña el kilometraje
+// de un vistazo -- el % solo se añade si de verdad hay vida útil
+// configurada (bar != null), nunca inventado, mismo criterio que el resto
+// de la app.
 function ShoeMileageRow(shoe, km) {
 
     const bar = shoeBarPercent(shoe, km);
+    const kmText = bar ? `${formatKm(km)} · ${Math.round(bar.percent)}%` : formatKm(km);
 
     return `
 
@@ -367,7 +371,7 @@ function ShoeMileageRow(shoe, km) {
 
             </div>
 
-            <span class="shoe-mileage-km">${formatKm(km)}</span>
+            <span class="shoe-mileage-km">${kmText}</span>
 
             <iconify-icon icon="solar:alt-arrow-right-bold-duotone" class="history-table-chevron"></iconify-icon>
 
@@ -681,11 +685,17 @@ function RunningIdleView() {
 
                     <div class="running-history-header">
 
+                        <!-- Renombrado (retoque de cierre): "Ver tabla completa" no
+                             decía qué la hacía distinta de la lista de tarjetas de
+                             abajo. RunningFullTableView() SÍ aporta algo real y
+                             propio -- columnas ordenables (sort-history-table) y
+                             un layout más cómodo en horizontal -- así que se
+                             mantiene, solo con un nombre que refleje eso. -->
                         <button class="running-history-expand" data-action="open-history-table">
 
                             <iconify-icon icon="solar:full-screen-bold-duotone"></iconify-icon>
 
-                            Ver tabla completa
+                            Ver tabla ordenable
 
                         </button>
 
