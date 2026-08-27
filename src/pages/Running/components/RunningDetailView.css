@@ -249,10 +249,11 @@
 
     border:1px solid color-mix(in srgb, var(--color-primary) 50%, transparent);
 
-    box-shadow:
-        0 8px 20px rgba(0,0,0,.18),
-        0 0 8px color-mix(in srgb, var(--color-glow) 30%, transparent),
-        0 0 30px color-mix(in srgb, var(--color-glow) 18%, transparent);
+    /* Sin glow ambiental (retoque de cierre, punto 12): el brillo se
+       reserva para el filtro/nav seleccionado, el CTA principal y el dato
+       excepcional (is-fastest, más abajo) -- esta tarjeta es permanente,
+       no una excepción, así que solo lleva sombra de profundidad plana. */
+    box-shadow:0 8px 20px rgba(0,0,0,.18);
 
 }
 
@@ -1032,6 +1033,16 @@
     color:var(--text-secondary);
 
     font-weight:700;
+
+}
+
+/* Fila entera en vez de media (retoque de cierre, punto 13) -- solo
+   Zapatilla: un <select> nativo no puede envolver su valor en dos líneas,
+   así que darle todo el ancho es lo que evita el corte feo tipo
+   "Asics Nimb...". */
+.detail-stat--wide{
+
+    grid-column:1 / -1;
 
 }
 

@@ -236,8 +236,6 @@
 
     font-size:20px;
 
-    box-shadow:0 0 16px color-mix(in srgb, var(--color-glow) 40%, transparent);
-
 }
 
 .running-summary-header-text{

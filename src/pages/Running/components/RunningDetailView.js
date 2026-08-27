@@ -597,14 +597,19 @@ export function shoeSelector(workout, shoes) {
 // rompería más la consistencia del grid que dejarla ahí, inerte). Zapatilla
 // no necesita ninguna de las dos: su "value" es el <select> en sí, nunca el
 // placeholder "—", así que siempre se muestra sin pedirlo explícitamente.
-function detailStat(icon, label, value, badge, { minor = false, showEmpty = false } = {}) {
+// wide:true (retoque de cierre, punto 13) ocupa la fila entera en vez de
+// media -- un <select> nativo no puede envolver su valor en dos líneas
+// como un <span> normal, así que la única forma real de evitar el corte
+// feo ("Asics Nimb...") es darle más ancho horizontal. Solo la usa
+// Zapatilla: es la única tarjeta con un valor de longitud impredecible.
+function detailStat(icon, label, value, badge, { minor = false, showEmpty = false, wide = false } = {}) {
 
     const isEmpty = value === "—";
     if (isEmpty && !showEmpty) return "";
 
     return `
 
-        <div class="detail-stat ${minor ? "detail-stat--minor" : ""} ${isEmpty && showEmpty ? "detail-stat--empty" : ""}">
+        <div class="detail-stat ${minor ? "detail-stat--minor" : ""} ${isEmpty && showEmpty ? "detail-stat--empty" : ""} ${wide ? "detail-stat--wide" : ""}">
 
             <iconify-icon icon="${icon}"></iconify-icon>
 
@@ -814,7 +819,7 @@ export function RunningDetailView(workout, shoes = [], warningsExpanded = false,
 
             ${detailStatGroup("EQUIPAMIENTO", `
 
-                ${detailStat("solar:running-round-bold-duotone", "Zapatilla", shoeSelector(workout, shoes))}
+                ${detailStat("solar:running-round-bold-duotone", "Zapatilla", shoeSelector(workout, shoes), null, { wide: true })}
 
                 ${detailStat("solar:fire-bold-duotone", "Calorías", workout.calories != null ? `${workout.calories} kcal` : "—")}
 

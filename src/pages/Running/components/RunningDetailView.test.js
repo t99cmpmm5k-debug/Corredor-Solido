@@ -541,6 +541,14 @@ describe("RunningDetailView — métricas agrupadas por categoría", () => {
 
     });
 
+    it("Zapatilla ocupa la fila entera (detail-stat--wide) -- un <select> nativo no puede cortar su valor en dos líneas", () => {
+
+        const html = RunningDetailView(workout());
+
+        expect(html).toMatch(/detail-stat[^"]*detail-stat--wide[\s\S]{0,600}Zapatilla/);
+
+    });
+
     it("si Condiciones se queda sin ningún stat real (sin temperatura/desnivel/hora), el grupo entero desaparece -- no deja el título flotando sobre una rejilla vacía", () => {
 
         const html = RunningDetailView(workout());
