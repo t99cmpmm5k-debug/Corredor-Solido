@@ -416,7 +416,34 @@ describe("RunningDetailView — insights reales bajo el gráfico", () => {
 
         expect(html).toContain("pace-chart-insights");
         expect(html).toContain("Km más rápido: km 2");
-        expect(html).toContain("FC más alta: km 2");
+        expect(html).toContain("FC máxima por km: 155 ppm (km 2)");
+
+    });
+
+    it("con empate real en la FC máxima, lista todos los km donde ocurrió en vez de nombrar solo uno", () => {
+
+        const html = RunningDetailView(workout({
+            splits: [
+                { lap: 1, paceSecPerKm: 310, avgHr: 140 },
+                { lap: 2, paceSecPerKm: 290, avgHr: 155 },
+                { lap: 3, paceSecPerKm: 300, avgHr: 155 }
+            ]
+        }));
+
+        expect(html).toContain("FC máxima por km: 155 ppm (km 2, 3)");
+
+    });
+
+    it("sin ninguna variación real de FC entre splits, no muestra 'FC máxima por km' -- nombrar un máximo sin variación no distingue nada", () => {
+
+        const html = RunningDetailView(workout({
+            splits: [
+                { lap: 1, paceSecPerKm: 310, avgHr: 150 },
+                { lap: 2, paceSecPerKm: 290, avgHr: 150 }
+            ]
+        }));
+
+        expect(html).not.toContain("FC máxima por km");
 
     });
 
@@ -515,8 +542,8 @@ describe("RunningDetailView — deriva cardíaca y 'Control del esfuerzo' (ronda
             splits: hrHalvesSplits([138, 140, 142], [144, 146, 148]) // 140 -> 146 = +4,3%
         }));
 
-        expect(html).toContain("Deriva FC: +4,3% · Muy bueno");
-        expect(html).toContain("pace-chart-drift--up");
+        expect(html).toContain('<span class="pace-chart-drift-value">+4,3%</span>');
+        expect(html).toContain('<span class="pace-chart-drift-label pace-chart-drift-label--up">Muy bueno</span>');
 
     });
 
@@ -527,8 +554,8 @@ describe("RunningDetailView — deriva cardíaca y 'Control del esfuerzo' (ronda
             splits: hrHalvesSplits([140, 140, 140], [147, 147, 147]) // exactamente +5%
         }));
 
-        expect(html).toContain("Deriva FC: +5,0% · Bueno");
-        expect(html).toContain("pace-chart-drift--flat");
+        expect(html).toContain('<span class="pace-chart-drift-value">+5,0%</span>');
+        expect(html).toContain('<span class="pace-chart-drift-label pace-chart-drift-label--flat">Bueno</span>');
 
     });
 
@@ -539,8 +566,7 @@ describe("RunningDetailView — deriva cardíaca y 'Control del esfuerzo' (ronda
             splits: hrHalvesSplits([140, 140, 140], [160, 160, 160]) // +14,3%
         }));
 
-        expect(html).toContain("Mejorable");
-        expect(html).toContain("pace-chart-drift--down");
+        expect(html).toContain('<span class="pace-chart-drift-label pace-chart-drift-label--down">Mejorable</span>');
 
     });
 
@@ -549,7 +575,20 @@ describe("RunningDetailView — deriva cardíaca y 'Control del esfuerzo' (ronda
         const withSlowPace = hrHalvesSplits([140, 140, 140], [160, 160, 160]).map(s => ({ ...s, paceSecPerKm: 500 }));
         const html = RunningDetailView(workout({ type: "easy", splits: withSlowPace, temperatureC: 10 }));
 
-        expect(html).toContain("Deriva FC: +14,3% · Mejorable");
+        expect(html).toContain('<span class="pace-chart-drift-value">+14,3%</span>');
+        expect(html).toContain('<span class="pace-chart-drift-label pace-chart-drift-label--down">Mejorable</span>');
+
+    });
+
+    it("el valor de la deriva siempre en cian (pace-chart-drift-value), la clasificación coloreada aparte por umbral -- nunca todo el mismo color", () => {
+
+        const html = RunningDetailView(workout({
+            type: "easy",
+            splits: hrHalvesSplits([138, 140, 142], [144, 146, 148])
+        }));
+
+        expect(html).toContain("pace-chart-drift-value");
+        expect(html).not.toContain("pace-chart-drift--up"); // clase antigua (todo el <p> coloreado), retirada
 
     });
 
@@ -630,6 +669,21 @@ describe("RunningDetailView — margen del km parcial en el gráfico", () => {
         }));
 
         expect(html).toContain('class="pace-chart-column is-partial"');
+
+    });
+
+    it("el km más rápido lleva la etiqueta 'Mejor' además del color -- no depende solo del color", () => {
+
+        const html = RunningDetailView(workout({
+            splits: [
+                { lap: 1, paceSecPerKm: 320, distanceKm: 1 },
+                { lap: 2, paceSecPerKm: 280, distanceKm: 1 },
+                { lap: 3, paceSecPerKm: 300, distanceKm: 1 }
+            ]
+        }));
+
+        expect(html).toContain("pace-chart-best-tag");
+        expect(html).toContain("Mejor");
 
     });
 

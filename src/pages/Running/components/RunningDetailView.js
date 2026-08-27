@@ -211,10 +211,11 @@ function RunningHrOverlay(splits, avgHrRef, avgPaceRef) {
 
 }
 
-// Km más rápido / FC más alta (retoque de cierre) -- solo si de verdad hay
-// variación real entre splits (mismo criterio que hasVariation/is-fastest
-// de más abajo): con todos los km al mismo ritmo o la misma FC, señalar
-// uno como "el más rápido"/"el más alto" sería ruido, no un dato útil.
+// Km más rápido / FC máxima por km (retoque de cierre) -- solo si de
+// verdad hay variación real entre splits (mismo criterio que
+// hasVariation/is-fastest de más abajo): con todos los km al mismo ritmo
+// o la misma FC, señalar uno como "el más rápido"/"el más alto" sería
+// ruido, no un dato útil.
 function buildChartInsights(splits) {
 
     const insights = [];
@@ -229,13 +230,23 @@ function buildChartInsights(splits) {
 
     }
 
+    // "FC máxima por km" (antes "FC más alta: km X (Y ppm)") -- ese
+    // fraseo nombraba un único km aunque hubiera empate real entre varios
+    // (reduce() se queda con el primero que encuentra, dando a entender
+    // que solo ese km llegó a esa FC). El valor va primero (es el dato
+    // real de verdad, un único número siempre correcto); los km donde
+    // ocurrió se listan aparte -- puede ser más de uno si hay empate real
+    // (nunca puede ser TODOS: eso exigiría que min===max, y entonces esta
+    // rama ni se ejecuta, ver la condición de variación real de arriba).
     const hrSplits = splits.filter(s => s.avgHr != null);
     const hrs = hrSplits.map(s => s.avgHr);
 
     if (hrs.length >= 2 && Math.min(...hrs) !== Math.max(...hrs)) {
 
-        const highest = hrSplits.reduce((a, b) => a.avgHr >= b.avgHr ? a : b);
-        insights.push(`FC más alta: km ${highest.lap} (${Math.round(highest.avgHr)} ppm)`);
+        const maxHr = Math.max(...hrs);
+        const lapsAtMax = hrSplits.filter(s => s.avgHr === maxHr).map(s => s.lap);
+
+        insights.push(`FC máxima por km: ${Math.round(maxHr)} ppm (km ${lapsAtMax.join(", ")})`);
 
     }
 
@@ -292,10 +303,17 @@ function buildCardiacDrift(workout, splits) {
 
 }
 
+// Jerarquía de color real (especificación de cierre de colores): el
+// VALOR de la deriva siempre en cian (es un dato, no un juicio), la
+// CLASIFICACIÓN coloreada según el umbral objetivo de driftTier() --
+// nunca al revés, y nunca un tercer color inventado fuera de la paleta
+// cian/verde/naranja/gris ya definida para toda la pantalla.
 function formatDrift(drift) {
 
     const sign = drift.percent >= 0 ? "+" : "";
-    return `Deriva FC: ${sign}${drift.percent.toFixed(1).replace(".", ",")}% · ${drift.label}`;
+    const value = `${sign}${drift.percent.toFixed(1).replace(".", ",")}%`;
+
+    return `Deriva FC: <span class="pace-chart-drift-value">${value}</span> · <span class="pace-chart-drift-label pace-chart-drift-label--${drift.trend}">${drift.label}</span>`;
 
 }
 
@@ -435,6 +453,8 @@ function RunningPaceChart(splits, avgPaceRef, avgHrRef, metricMode = "both", wor
 
                                 <span class="pace-chart-lap">${split.lap}</span>
 
+                                ${isFastest ? `<span class="pace-chart-best-tag">Mejor</span>` : ""}
+
                                 ${isPartial ? `<span class="pace-chart-partial-tag">Parcial</span>` : ""}
 
                             </div>
@@ -475,7 +495,7 @@ function RunningPaceChart(splits, avgPaceRef, avgHrRef, metricMode = "both", wor
 
                     ${conclusion ? `<p class="pace-chart-conclusion">${conclusion}</p>` : ""}
 
-                    ${drift ? `<p class="pace-chart-drift pace-chart-drift--${drift.trend}">${formatDrift(drift)}</p>` : ""}
+                    ${drift ? `<p class="pace-chart-drift">${formatDrift(drift)}</p>` : ""}
 
                     ${insights.length ? `
 

@@ -318,11 +318,14 @@
 
 }
 
+/* Algo menos saturado que el chip de ritmo (especificación de cierre:
+   "para que no compita demasiado") -- el ritmo es el dato principal de
+   la pantalla, la FC lo acompaña. */
 .pace-chart-avg-badge--hr{
 
-    background:color-mix(in srgb, var(--color-danger) 14%, transparent);
+    background:color-mix(in srgb, var(--color-danger) 9%, transparent);
 
-    color:var(--color-danger);
+    color:color-mix(in srgb, var(--color-danger) 80%, var(--text-secondary) 20%);
 
 }
 
@@ -562,6 +565,19 @@
 
 }
 
+/* El km parcial SIEMPRE es naranja (especificación de cierre) -- antes
+   solo lo era si además era la vuelta más lenta (is-slowest), una señal
+   distinta sin relación con ser parcial. Declarada después de
+   is-fastest/is-slowest para ganar el empate en el caso raro de que el
+   propio tramo corto también sea, por casualidad, el más rápido -- lo
+   incompleto del dato manda sobre lo llamativo del ritmo. */
+.pace-chart-column.is-partial .pace-chart-bar{
+
+    background:var(--color-warning);
+    box-shadow:none;
+
+}
+
 .pace-chart-lap{
 
     color:var(--color-text-muted);
@@ -572,10 +588,27 @@
 
 }
 
-/* Marca el último km cuando de verdad es un tramo corto real (<1km, ver
-   isPartial en RunningPaceChart()) -- antes solo se distinguía (a veces)
-   por casualidad si además era la vuelta más lenta (.is-slowest, ámbar),
-   una señal distinta que no tiene nada que ver con ser parcial. */
+/* "Mejor"/"Parcial" (especificación de cierre: "no depender solo del
+   color para explicar mejor/parcial") -- el color de la barra ya lo
+   sugiere, pero el texto lo deja inequívoco incluso para quien no
+   distinga bien verde/naranja. Mismo tratamiento visual que la barra que
+   etiquetan (verde/naranja), mayúsculas vía text-transform. */
+.pace-chart-best-tag{
+
+    color:var(--color-success);
+
+    font-size:.58rem;
+
+    font-weight:700;
+
+    text-transform:uppercase;
+
+    letter-spacing:.02em;
+
+    white-space:nowrap;
+
+}
+
 .pace-chart-partial-tag{
 
     color:var(--color-warning);
@@ -788,12 +821,16 @@
 }
 
 /* Deriva cardíaca + "Control del esfuerzo" (ver buildCardiacDrift() en
-   RunningDetailView.js) -- mismo color por tendencia que
-   .running-summary-insight en Running.js, para que "va bien"/"neutro"/
-   "va mal" se lean con el mismo lenguaje visual en toda la app. */
+   RunningDetailView.js). Jerarquía de color de cierre: el VALOR de la
+   deriva siempre en cian (es un dato, no un juicio de valor) -- solo la
+   CLASIFICACIÓN cambia de color según el umbral real (driftTier()).
+   "Deriva FC:" y el " · " del medio se quedan en el gris secundario de
+   base, sin protagonismo propio. */
 .pace-chart-drift{
 
     margin:0;
+
+    color:var(--text-secondary);
 
     font-size:.82rem;
 
@@ -801,19 +838,25 @@
 
 }
 
-.pace-chart-drift--up{
+.pace-chart-drift-value{
 
     color:var(--color-primary);
 
 }
 
-.pace-chart-drift--flat{
+.pace-chart-drift-label--up{
+
+    color:var(--color-success);
+
+}
+
+.pace-chart-drift-label--flat{
 
     color:var(--text-secondary);
 
 }
 
-.pace-chart-drift--down{
+.pace-chart-drift-label--down{
 
     color:var(--color-warning);
 
