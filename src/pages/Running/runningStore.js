@@ -74,6 +74,25 @@ export function toggleSort(column) {
 
 }
 
+// Id del entreno cuyo menú "···" está abierto en la lista (ver
+// RunningHistoryItem en Running.js) -- mismo patrón que sessionMenuOpenId
+// en Plan/planStore.js: solo puede haber uno abierto a la vez, aparte de
+// `wizard` porque no debe cerrarse solo por interactuar con el resto de la
+// pantalla (resetWizard() no debe afectar a esto).
+let historyMenuOpenId = null;
+
+export function getHistoryMenuOpenId() {
+
+    return historyMenuOpenId;
+
+}
+
+export function setHistoryMenuOpenId(id) {
+
+    historyMenuOpenId = id;
+
+}
+
 export function getWizardStep() {
 
     return wizard.step;

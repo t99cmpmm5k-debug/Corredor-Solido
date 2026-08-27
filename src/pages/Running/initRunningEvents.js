@@ -33,7 +33,9 @@ import {
     setEditingShoeId,
     getNewShoePhoto,
     setNewShoePhoto,
-    toggleSort
+    toggleSort,
+    getHistoryMenuOpenId,
+    setHistoryMenuOpenId
 } from "./runningStore.js";
 
 const DETAIL_HISTORY_STATE = { runningDetail: true };
@@ -138,6 +140,21 @@ window.addEventListener("popstate", () => {
         setWizardStep("idle");
         rerender();
     }
+
+});
+
+// Cierra el menú "···" de una fila del historial al tocar fuera de él
+// (mismo patrón que el equivalente de Plan/initPlanEvents.js) --
+// registrado una sola vez a nivel de módulo, no dentro de
+// initRunningEvents (que se vuelve a llamar en cada render y apilaría un
+// listener nuevo cada vez sin desengancharse).
+document.addEventListener("click", event => {
+
+    if (!getHistoryMenuOpenId()) return;
+    if (event.target.closest(".history-menu")) return;
+
+    setHistoryMenuOpenId(null);
+    rerender();
 
 });
 
@@ -419,6 +436,7 @@ export function initRunningEvents() {
 
         button.addEventListener("click", () => {
             setTypeFilter(button.dataset.type || null);
+            setHistoryMenuOpenId(null);
             rerender();
         });
 
@@ -585,9 +603,30 @@ export function initRunningEvents() {
             // más abajo) — sin esto, borrar también abriría el detalle.
             event.stopPropagation();
 
+            setHistoryMenuOpenId(null);
+
             if (!window.confirm("¿Borrar este entrenamiento? No se puede deshacer.")) return;
 
             deleteWorkout(button.dataset.workoutId);
+            rerender();
+
+        });
+
+    });
+
+    // Sin stopPropagation, el listener de "cerrar al tocar fuera"
+    // (registrado una sola vez a nivel de módulo, ver más arriba) se
+    // dispararía en el mismo click que abre el menú y lo cerraría en el
+    // acto -- mismo motivo que event.stopPropagation() más abajo también
+    // evita que la fila entera abra el detalle al tocar el botón "···".
+    document.querySelectorAll('[data-action="toggle-history-menu"]').forEach(button => {
+
+        button.addEventListener("click", event => {
+
+            event.stopPropagation();
+
+            const id = button.dataset.workoutId;
+            setHistoryMenuOpenId(getHistoryMenuOpenId() === id ? null : id);
             rerender();
 
         });

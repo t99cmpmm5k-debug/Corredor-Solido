@@ -6,6 +6,7 @@ import { formatDayMonth } from "../../utils/date.js";
 import { formatSecondsAsClock, formatShoeName } from "../../utils/format.js";
 import { buildTypeProgressInsight, buildProgressMessage } from "./runningProgress.js";
 import { buildTypeSummary } from "./runningSummary.js";
+import { buildListInsight } from "./runningListInsight.js";
 
 import { BottomNavigation } from "../../components/Navigation/BottomNavigation.js";
 
@@ -25,7 +26,8 @@ import {
     getEditingShoeId,
     getNewShoePhoto,
     getSortColumn,
-    getSortDirection
+    getSortDirection,
+    getHistoryMenuOpenId
 } from "./runningStore.js";
 
 import { RunningUploadStep } from "./components/RunningUploadStep.js";
@@ -48,6 +50,24 @@ function formatDistance(distanceKm) {
 
 }
 
+// A diferencia de typeLabel() (más abajo, usada para el filtro -- ahí un
+// tipo vacío significa "Todos"), aquí un workout.type real sin resolver
+// simplemente no pinta ninguna etiqueta -- nunca "Todos" en una tarjeta de
+// un entreno concreto.
+function workoutTypeBadge(type) {
+
+    if (!type) return null;
+    return RUNNING_WORKOUT_TYPES.find(t => t.id === type)?.label ?? null;
+
+}
+
+// Reorganizada (retoque de jerarquía): línea 1 fecha+tipo+menú, línea 2
+// distancia grande+tiempo (antes ambas cosas compartían la línea 1,
+// pequeñas), línea 3 ritmo·FC·temperatura (sin cambios), línea 4 zapatilla
+// (sin cambios). La papelera ya no vive suelta -- menú "···" con Eliminar,
+// mismo patrón que Plan/Gimnasio (data-session-id reutiliza el mismo
+// nombre de atributo que esos menús, aunque aquí sea un workoutId, para
+// que el mismo tipo de listener sirva sin inventar un atributo nuevo).
 function RunningHistoryItem(workout, shoes) {
 
     const distance = formatDistance(workout.distanceKm);
@@ -55,6 +75,8 @@ function RunningHistoryItem(workout, shoes) {
     const pace = workout.avgPaceSecPerKm != null ? `${formatSecondsAsClock(workout.avgPaceSecPerKm)}/km` : "—";
     const hr = workout.avgHr != null ? `${workout.avgHr} ppm` : "—";
     const temperature = workout.temperatureC != null ? `${workout.temperatureC}°C` : "—";
+    const typeBadge = workoutTypeBadge(workout.type);
+    const isMenuOpen = getHistoryMenuOpenId() === workout.id;
 
     return `
 
@@ -66,17 +88,47 @@ function RunningHistoryItem(workout, shoes) {
 
                     <span class="history-date">${formatDayMonth(workout.date)}</span>
 
-                    <span class="history-headline">${distance} · ${duration}</span>
+                    ${typeBadge ? `<span class="history-type-badge">${typeBadge}</span>` : ""}
 
                 </div>
 
-                <button class="history-delete" data-action="delete-workout" data-workout-id="${workout.id}">
+                <div class="history-menu">
 
-                    <iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon>
+                    <button
+                        class="history-menu-toggle"
+                        data-action="toggle-history-menu"
+                        data-workout-id="${workout.id}"
+                        aria-label="Más opciones"
+                    >
 
-                </button>
+                        <iconify-icon icon="solar:menu-dots-bold-duotone"></iconify-icon>
+
+                    </button>
+
+                    ${isMenuOpen ? `
+
+                        <div class="history-menu-popover">
+
+                            <button class="history-menu-danger" data-action="delete-workout" data-workout-id="${workout.id}">
+                                <iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon>
+                                Eliminar
+                            </button>
+
+                        </div>
+
+                    ` : ""}
+
+                </div>
 
             </header>
+
+            <div class="history-headline">
+
+                <span class="history-distance">${distance}</span>
+
+                <span class="history-duration">${duration}</span>
+
+            </div>
 
             <div class="history-metrics">
 
@@ -370,9 +422,21 @@ function RunningShoeMileageSummary(shoes) {
 
 }
 
-function RunningTypeFilters(activeType) {
+// Solo entran los tipos con al menos un entreno real -- antes se pintaban
+// los 5 tipos del catálogo (RUNNING_WORKOUT_TYPES) sin condición, así que
+// alguien que solo ha importado rodajes/series veía también "Tirada
+// larga"/"Carrera" sin ningún entreno detrás. "Todos" no depende de esto,
+// siempre está.
+function usedTypes(workouts) {
 
-    const chips = [{ id: "", label: "Todos" }, ...RUNNING_WORKOUT_TYPES];
+    const present = new Set(workouts.map(w => w.type));
+    return RUNNING_WORKOUT_TYPES.filter(t => present.has(t.id));
+
+}
+
+function RunningTypeFilters(activeType, workouts) {
+
+    const chips = [{ id: "", label: "Todos" }, ...usedTypes(workouts)];
 
     return `
 
@@ -492,6 +556,26 @@ function RunningTypeSummary(typeFilter, summary, insight) {
 
 }
 
+// Tarjeta de insight rotatorio sobre la lista (ver runningListInsight.js)
+// -- "" si ninguna variante tiene datos reales, nunca un texto de relleno.
+function RunningListInsightCard(insight) {
+
+    if (!insight) return "";
+
+    return `
+
+        <div class="running-list-insight">
+
+            <iconify-icon icon="${insight.icon}"></iconify-icon>
+
+            <p>${insight.text}</p>
+
+        </div>
+
+    `;
+
+}
+
 function RunningIdleView() {
 
     const workouts = getWorkouts();
@@ -506,6 +590,11 @@ function RunningIdleView() {
     // cuál hablar, así que la tarjeta no se muestra.
     const progressInsight = typeFilter ? buildTypeProgressInsight(workouts, { type: typeFilter }) : null;
     const typeSummary = buildTypeSummary(filtered);
+
+    // Insight rotatorio sobre la lista (ver runningListInsight.js) --
+    // sobre el conjunto YA filtrado (mismo que se ve debajo), salvo el %
+    // de zapatilla, que siempre mira el total real de todos los entrenos.
+    const listInsight = filtered.length ? buildListInsight({ filteredWorkouts: filtered, allWorkouts: workouts, shoes }) : null;
 
     return `
 
@@ -551,7 +640,7 @@ function RunningIdleView() {
 
                 ${RunningTypeSummary(typeFilter, typeSummary, progressInsight)}
 
-                ${RunningTypeFilters(typeFilter)}
+                ${RunningTypeFilters(typeFilter, workouts)}
 
                 ${filtered.length === 0 ? `
 
@@ -564,6 +653,8 @@ function RunningIdleView() {
                     </div>
 
                 ` : `
+
+                    ${RunningListInsightCard(listInsight)}
 
                     <div class="running-history-header">
 
@@ -629,7 +720,7 @@ function RunningFullTableView() {
 
             </header>
 
-            ${RunningTypeFilters(typeFilter)}
+            ${RunningTypeFilters(typeFilter, workouts)}
 
             ${filtered.length === 0 ? `
 
