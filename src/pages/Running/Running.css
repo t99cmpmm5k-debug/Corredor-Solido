@@ -229,29 +229,80 @@
 
     flex-direction:column;
 
-    gap:2px;
+    gap:4px;
+
+    min-width:0;
 
 }
 
-.running-summary-header-label{
-
-    color:var(--text-secondary);
-
-    font-size:.72rem;
-
-    text-transform:uppercase;
-
-    letter-spacing:.04em;
-
-}
-
-.running-summary-header-value{
+.running-summary-header-title{
 
     color:var(--color-primary);
 
     font-weight:800;
 
     font-size:1.05rem;
+
+}
+
+/* Segunda línea de insight real (ver buildProgressMessage() en
+   runningProgress.js) -- antes vivía en su propia tarjeta suelta debajo
+   de los chips (.progress-card, retirada), ahora es parte de la misma
+   tarjeta de resumen. Sin trend "up"/"down" propio (ese matiz de color
+   ya lo lleva --progress-value más abajo, mismo criterio que el texto
+   plano de al lado no necesita colorearse entero solo porque el dato
+   central sí es notable). */
+.running-summary-insight{
+
+    display:flex;
+
+    align-items:flex-start;
+
+    gap:6px;
+
+    margin:0;
+
+    color:var(--text-secondary);
+
+    font-size:.8rem;
+
+    line-height:1.4;
+
+}
+
+.running-summary-insight iconify-icon{
+
+    flex-shrink:0;
+
+    margin-top:1px;
+
+    font-size:15px;
+
+}
+
+.running-summary-insight--up iconify-icon{
+
+    color:var(--color-primary);
+
+}
+
+.running-summary-insight--down iconify-icon{
+
+    color:var(--color-danger);
+
+}
+
+.running-summary-insight--flat iconify-icon{
+
+    color:var(--text-secondary);
+
+}
+
+.running-summary-insight .progress-value{
+
+    color:var(--color-primary);
+
+    font-weight:800;
 
 }
 

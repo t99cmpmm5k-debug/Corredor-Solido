@@ -4,7 +4,7 @@ import { getWorkouts, getShoes, getPossibleDataLoss, getShoeTotalKm } from "../.
 import { RUNNING_WORKOUT_TYPES } from "../../data/runningWorkoutTypes.js";
 import { formatDayMonth } from "../../utils/date.js";
 import { formatSecondsAsClock, formatShoeName } from "../../utils/format.js";
-import { buildTypeProgressInsight } from "./runningProgress.js";
+import { buildTypeProgressInsight, buildProgressMessage } from "./runningProgress.js";
 import { buildTypeSummary } from "./runningSummary.js";
 
 import { BottomNavigation } from "../../components/Navigation/BottomNavigation.js";
@@ -32,7 +32,6 @@ import { RunningUploadStep } from "./components/RunningUploadStep.js";
 import { RunningReviewStep } from "./components/RunningReviewStep.js";
 import { RunningShoeStep } from "./components/RunningShoeStep.js";
 import { RunningDetailView } from "./components/RunningDetailView.js";
-import { RunningProgressCard } from "./components/RunningProgressCard.js";
 import { RunningShoesScreen, ShoePhoto, shoeBarPercent, formatKm } from "./components/RunningShoesScreen.js";
 import { RunningHeader } from "./components/RunningHeader.js";
 
@@ -401,16 +400,31 @@ function RunningTypeFilters(activeType) {
 
 }
 
+// "Resumen · Todos" / "Tu resumen · Rodaje (Z2)" -- más natural que la
+// vieja etiqueta fija "FILTRO ACTIVO" + valor aparte (esa mecánica de
+// filtro no es el vocabulario que le importa a quien corre).
+function summaryTitle(typeFilter) {
+
+    return typeFilter ? `Tu resumen · ${typeLabel(typeFilter)}` : "Resumen · Todos";
+
+}
+
 // Resumen del filtro activo (o de todo, con "Todos") — "" si no hay ni un
 // entreno en el conjunto filtrado, para no mostrar un resumen a guiones al
-// lado del estado vacío.
-function RunningTypeSummary(typeFilter, summary) {
+// lado del estado vacío. `insight` (buildTypeProgressInsight(), null con
+// "Todos" o sin histórico suficiente) aporta la segunda línea de contexto
+// real -- antes era una tarjeta separada debajo de los chips
+// (RunningProgressCard.js, retirada), ahora vive aquí mismo, dentro de la
+// propia tarjeta de resumen.
+function RunningTypeSummary(typeFilter, summary, insight) {
 
     if (!summary) return "";
 
     const pace = summary.avgPaceSecPerKm != null ? `${formatSecondsAsClock(summary.avgPaceSecPerKm)}/km` : "—";
     const hr = summary.avgHr != null ? `${summary.avgHr} ppm` : "—";
     const bestPace = summary.bestPaceSecPerKm != null ? `${formatSecondsAsClock(summary.bestPaceSecPerKm)}/km` : "—";
+
+    const message = insight ? buildProgressMessage(insight) : null;
 
     return `
 
@@ -426,9 +440,19 @@ function RunningTypeSummary(typeFilter, summary) {
 
                 <div class="running-summary-header-text">
 
-                    <span class="running-summary-header-label">Filtro activo</span>
+                    <span class="running-summary-header-title">${summaryTitle(typeFilter)}</span>
 
-                    <span class="running-summary-header-value">${typeLabel(typeFilter)}</span>
+                    ${message ? `
+
+                        <p class="running-summary-insight running-summary-insight--${message.trend}">
+
+                            <iconify-icon icon="${message.icon}"></iconify-icon>
+
+                            <span>${message.html}</span>
+
+                        </p>
+
+                    ` : ""}
 
                 </div>
 
@@ -525,11 +549,9 @@ function RunningIdleView() {
 
             `) : `
 
-                ${RunningTypeSummary(typeFilter, typeSummary)}
+                ${RunningTypeSummary(typeFilter, typeSummary, progressInsight)}
 
                 ${RunningTypeFilters(typeFilter)}
-
-                ${RunningProgressCard(progressInsight)}
 
                 ${filtered.length === 0 ? `
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildTypeProgressInsight } from "./runningProgress.js";
+import { buildTypeProgressInsight, buildProgressMessage } from "./runningProgress.js";
 
 // pace en seg/km, hr en ppm — solo los campos que usa buildTypeProgressInsight.
 function w(date, avgPaceSecPerKm, avgHr, type = "easy") {
@@ -167,6 +167,49 @@ describe("buildTypeProgressInsight", () => {
 
         const result = buildTypeProgressInsight(workouts, { type: "easy" });
         expect(result.status).toBe("improved");
+
+    });
+
+});
+
+describe("buildProgressMessage -- segunda línea de insight de RunningTypeSummary (ver Running.js)", () => {
+
+    it("insufficient-data: pide más entrenos, sin ninguna cifra inventada", () => {
+
+        const message = buildProgressMessage({ status: "insufficient-data", type: "easy", groupSize: 3 });
+
+        expect(message.trend).toBe("flat");
+        expect(message.html).toContain("Necesitas más entrenos");
+        expect(message.html).not.toContain("s/km");
+
+    });
+
+    it("improved con FC estable: cifra real de mejora + cláusula de FC", () => {
+
+        const message = buildProgressMessage({ status: "improved", type: "easy", groupSize: 3, paceDeltaSecPerKm: 20, hrTrend: "stable" });
+
+        expect(message.trend).toBe("up");
+        expect(message.html).toContain("20 s/km");
+        expect(message.html).toContain("FC media estable");
+
+    });
+
+    it("improved pero con FC subiendo en proporción igual o mayor: no reclama mejora real (trend flat)", () => {
+
+        const message = buildProgressMessage({ status: "improved", type: "easy", groupSize: 3, paceDeltaSecPerKm: 32, hrTrend: "higher-proportional" });
+
+        expect(message.trend).toBe("flat");
+        expect(message.html).toContain("no parece una mejora real");
+
+    });
+
+    it("worse: usa el valor absoluto del delta (nunca un negativo feo en el texto)", () => {
+
+        const message = buildProgressMessage({ status: "worse", type: "easy", groupSize: 3, paceDeltaSecPerKm: -20, hrTrend: null });
+
+        expect(message.trend).toBe("down");
+        expect(message.html).toContain("20 s/km");
+        expect(message.html).not.toContain("-20");
 
     });
 

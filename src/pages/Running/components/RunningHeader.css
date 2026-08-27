@@ -4,11 +4,16 @@
 
     overflow:hidden;
 
-    /* Grande y a los 3 bordes reales de la pantalla, igual que el Hero de
-       Inicio — antes era una tarjeta compacta con esquinas redondeadas y
-       margen lateral propio. min-height (no height fija) para que quepa
-       el contenido en pantallas muy estrechas sin recortarlo. */
-    min-height:340px;
+    /* A los 3 bordes reales de la pantalla, igual que el Hero de Inicio —
+       antes era una tarjeta compacta con esquinas redondeadas y margen
+       lateral propio. min-height (no height fija) para que quepa el
+       contenido en pantallas muy estrechas sin recortarlo. Reducido de
+       340px (retoque de cierre): con el título/subtítulo anclados abajo
+       (justify-content:flex-end) y el mismo padding-bottom/colchón de
+       siempre para el solape con .running-summary (ver margin-top
+       negativo en Running.css), bajar el suelo de altura solo recorta
+       foto vacía por encima del texto, no rompe ese solape. */
+    min-height:250px;
 
     display:flex;
 
@@ -195,7 +200,7 @@
 
     color:#FFFFFF;
 
-    font-size:1.6rem;
+    font-size:1.3rem;
 
     font-weight:800;
 
@@ -205,11 +210,14 @@
 
 }
 
+/* Menos protagonismo (retoque de cierre): más pequeño y más tenue que
+   antes -- el título y el resumen de debajo (RunningTypeSummary) ya
+   dicen lo importante, esto es solo un acompañamiento. */
 .running-subtitle{
 
-    color:rgba(255,255,255,.85);
+    color:rgba(255,255,255,.6);
 
-    font-size:.85rem;
+    font-size:.75rem;
 
     text-shadow:0 2px 6px rgba(0,0,0,.45);
 
@@ -225,15 +233,18 @@
 
 }
 
+/* Secundario y compacto (retoque de cierre) -- ya no es un botón grande
+   del hero, sigue siendo la única forma de importar así que se mantiene
+   como una píldora sólida pequeña, no un simple texto. */
 .running-import-button{
 
     display:inline-flex;
 
     align-items:center;
 
-    gap:8px;
+    gap:6px;
 
-    padding:10px 18px;
+    padding:7px 14px;
 
     border:none;
 
@@ -245,10 +256,16 @@
 
     font-weight:700;
 
-    font-size:.9rem;
+    font-size:.78rem;
 
     cursor:pointer;
 
-    box-shadow:0 8px 20px rgba(0,0,0,.25);
+    box-shadow:0 6px 16px rgba(0,0,0,.25);
+
+}
+
+.running-import-button iconify-icon{
+
+    font-size:15px;
 
 }
