@@ -109,17 +109,30 @@
 
 }
 
+/* Retoque de cierre: con "HOY · " delante, el letter-spacing/tamaño de
+   antes rompía "AGO" a una línea aparte en columnas estrechas (badge
+   96px + menú al lado dejan poco ancho real). white-space:nowrap fuerza
+   una sola línea; si el texto no cupiera de verdad en algún caso extremo,
+   mejor un recorte con "…" que una segunda línea suelta. */
 .workout-day{
+
+    display:block;
+
+    overflow:hidden;
 
     color:var(--color-primary);
 
-    font-size:.8rem;
+    font-size:.72rem;
 
     font-weight:700;
 
-    letter-spacing:.08em;
+    letter-spacing:.04em;
 
     text-transform:uppercase;
+
+    white-space:nowrap;
+
+    text-overflow:ellipsis;
 
 }
 
@@ -545,22 +558,33 @@
 
 }
 
-/* Acción secundaria (mover, cancelar) — mismo tamaño que el botón
-   principal pero sin el degradado, para no competir con "VER
-   ENTRENAMIENTO REGISTRADO" como si fuera la acción por defecto de la
-   tarjeta. */
+/* Acción secundaria (mover, cancelar) -- retoque de cierre: antes tenía
+   el mismo alto/peso tipográfico que el botón principal, así que
+   "MOVER SESIÓN" competía con "Ver sesión completa" (una simple fila de
+   texto) en vez de quedar claramente por debajo. Mantiene el borde (sigue
+   leyéndose como botón, con su área de toque) pero más bajo, más fino y
+   sin mayúsculas gritando -- ahora sí es la acción menos protagonista de
+   las tres de la tarjeta. */
 .workout-button--ghost{
+
+    height:44px;
 
     background:transparent;
 
-    border:1px solid color-mix(in srgb, var(--color-primary) 45%, transparent);
+    border:1px solid color-mix(in srgb, var(--color-primary) 30%, transparent);
 
     color:var(--color-primary);
+
+    font-size:.82rem;
+
+    font-weight:700;
+
+    letter-spacing:normal;
 
 }
 
 .workout-button--ghost:hover{
 
-    background:color-mix(in srgb, var(--color-primary) 10%, transparent);
+    background:color-mix(in srgb, var(--color-primary) 8%, transparent);
 
 }

@@ -4,17 +4,16 @@ import { formatDayNumber } from "../../../../utils/date.js";
 import { resolveDayColorKey } from "../../planDayColor.js";
 import { WORKOUT_TYPES } from "../../../../data/workoutTypes.js";
 
-// Cápsula bajo el día seleccionado (fase 3 del pulido de Plan): antes
-// mostraba session.title/subtitle tal cual, casi siempre null para una
-// sesión real (solo lo rellena una importación con datos explícitos) --
-// "MAR 25 / 8 km · Rodaje (Z2)", siempre con datos reales: el día+fecha
-// (mismos campos que ya pinta .timeline-top arriba, repetidos aquí para
-// que la cápsula se lea sola sin tener que mirar arriba), el km real si
-// lo hay (nunca "0 km"), y el título real de la sesión si lo trae la
-// importación -- o si no, la etiqueta genérica de su tipo
-// (WORKOUT_TYPES, la misma que ya usa el resto de la app) en vez de
-// dejarlo en blanco. Un día de gimnasio sigue mostrando el nombre real
-// de su rutina (session.subtitle, puesto por attachGymInfo() en
+// Cápsula bajo el día seleccionado (retoques de cierre del pulido de
+// Plan): ya NO repite día+fecha -- eso vive justo arriba en
+// .timeline-top (y otra vez en la cabecera de la tarjeta de sesión), así
+// que aquí solo va el contenido real de la sesión, para que quepa en 1-2
+// líneas cortas en vez de partirse palabra a palabra ("JUE / 27 / 4 x /
+// 1000 / m", el bug reportado). El km real si lo hay (nunca "0 km"), el
+// título real de la sesión si lo trae la importación -- o si no, la
+// etiqueta genérica de su tipo (WORKOUT_TYPES, la misma que ya usa el
+// resto de la app). Un día de gimnasio sigue mostrando el nombre real de
+// su rutina (session.subtitle, puesto por attachGymInfo() en
 // PlanTimeline.js) sin tocar.
 function buildCapsuleText(session) {
 
@@ -25,7 +24,7 @@ function buildCapsuleText(session) {
     if (session.volume > 0) parts.push(`${session.volume} km`);
     parts.push(session.title || WORKOUT_TYPES[session.type]?.label || "Sesión");
 
-    return `${session.day} ${formatDayNumber(session.date)} / ${parts.join(" · ")}`;
+    return parts.join(" · ");
 
 }
 

@@ -65,6 +65,43 @@ describe("PlanWorkoutCard -- tarjeta compacta (fase 4 del pulido de Plan)", () =
 
     });
 
+    it("con un título real, el resumen NO lo repite (ya está en el <h2> de arriba) -- retoque de cierre", () => {
+
+        const html = PlanWorkoutCard(workout({ type: "intervals", title: "4 x 1000m" }));
+
+        const occurrences = html.split("4 x 1000m").length - 1;
+        expect(occurrences).toBe(1);
+        expect(html).toContain("Series");
+
+    });
+
+    it("con ritmo objetivo real, el resumen lo muestra como dato nuevo en vez de repetir el título", () => {
+
+        const html = PlanWorkoutCard(workout({ type: "intervals", title: "4 x 1000m", targetPaceSecPerKm: 265 }));
+
+        expect(html).toContain("Ritmo objetivo 4:25/km");
+
+    });
+
+    it("sin ritmo objetivo pero con zona de FC real, usa la zona de FC en su lugar", () => {
+
+        const html = PlanWorkoutCard(workout({ type: "intervals", title: "4 x 1000m", targetHrZone: "Z4" }));
+
+        expect(html).toContain("Zona de FC Z4");
+        expect(html).not.toContain("Ritmo objetivo");
+
+    });
+
+    it("sin ritmo objetivo ni zona de FC, no inventa ningún rango -- el resumen se queda solo con el tipo", () => {
+
+        const html = PlanWorkoutCard(workout({ type: "intervals", title: "4 x 1000m" }));
+
+        expect(html).toContain("workout-summary-line");
+        expect(html).not.toContain("Ritmo objetivo");
+        expect(html).not.toContain("Zona de FC");
+
+    });
+
     it("sin papelera suelta: el menú \"···\" sustituye al icono de borrar de siempre", () => {
 
         const html = PlanWorkoutCard(workout());

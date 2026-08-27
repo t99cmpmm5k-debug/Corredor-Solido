@@ -60,18 +60,29 @@ function buildDetails(workout) {
 
 }
 
-// Resumen compacto bajo el título (fase 4 del pulido de Plan) -- mismos
-// campos reales que buildDetails(), nunca un dato inventado (ni un rango
-// de minutos, ni un "terreno" que no existe como campo): distancia real
-// si la hay, el título real de la sesión o si no la etiqueta genérica de
-// su tipo (mismo criterio que la cápsula del timeline, ver
-// TimelineDay.js), y la duración real si la hay.
+// Resumen compacto bajo el título (retoque de cierre: la versión de la
+// fase anterior repetía el título real dos veces seguidas -- una vez en
+// el <h2> de arriba, otra vez aquí mismo vía `workout.title || label`, p.
+// ej. "4 x 1000m" / "4 x 1000m". Aquí ya NO se repite el título -- la
+// etiqueta del tipo (WORKOUT_TYPES) va sola, y el segundo dato es
+// siempre información NUEVA real: ritmo objetivo si existe, si no zona
+// de FC si existe -- nunca un rango inventado (mismos campos reales que
+// buildDetails() más abajo, nunca uno inventado). Sin ninguno de los dos,
+// no añade nada ahí en vez de forzar un dato que no existe.
 function buildSummaryLine(workout) {
 
     const bits = [];
 
     if (workout.distanceKm != null) bits.push(`${workout.distanceKm} km`);
-    bits.push(workout.title || WORKOUT_TYPES[workout.type]?.label || "Sesión");
+
+    bits.push(WORKOUT_TYPES[workout.type]?.label || "Sesión");
+
+    if (workout.targetPaceSecPerKm != null) {
+        bits.push(`Ritmo objetivo ${formatSecondsAsClock(workout.targetPaceSecPerKm)}/km`);
+    } else if (workout.targetHrZone != null) {
+        bits.push(`Zona de FC ${workout.targetHrZone}`);
+    }
+
     if (workout.durationSec != null) bits.push(formatSecondsAsClock(workout.durationSec));
 
     return bits.join(" · ");

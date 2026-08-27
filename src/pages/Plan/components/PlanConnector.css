@@ -8,14 +8,17 @@
 
     position:relative;
 
-    height:32px;
+    height:16px;
 
-    margin-top:4px;
+    margin-top:2px;
 
     pointer-events:none;
 
 }
 
+/* Retoque de cierre: era demasiado protagonista para ser solo un puente
+   visual (más corta, sin el glow doble de antes -- un único halo, tenue,
+   basta para leerse como luz sin gritar). */
 .plan-connector-line{
 
     position:absolute;
@@ -32,11 +35,11 @@
 
     border-radius:999px;
 
+    opacity:.6;
+
     background:var(--connector-color, var(--color-primary));
 
-    box-shadow:
-        0 0 6px color-mix(in srgb, var(--connector-color, var(--color-primary)) 70%, transparent),
-        0 0 20px color-mix(in srgb, var(--connector-color, var(--color-primary)) 35%, transparent);
+    box-shadow:0 0 5px color-mix(in srgb, var(--connector-color, var(--color-primary)) 45%, transparent);
 
     transition:left .3s ease;
 

@@ -25,12 +25,13 @@ describe("TimelineDay -- cápsula del día seleccionado (fase 3 del pulido de Pl
 
     });
 
-    it("seleccionado con km reales, muestra día+fecha / km · tipo", () => {
+    it("seleccionado con km reales, muestra km · tipo -- sin repetir día+fecha (ya está en la cabecera de arriba)", () => {
 
         const html = TimelineDay(session({ volume: 8 }), { isToday: false, isSelected: true, isCompleted: false });
 
         expect(html).toContain("timeline-capsule");
-        expect(html).toContain("MAR 25 / 8 km · Rodaje (Z2)");
+        expect(html).toContain("8 km · Rodaje (Z2)");
+        expect(html).not.toContain("MAR 25");
 
     });
 
@@ -38,7 +39,7 @@ describe("TimelineDay -- cápsula del día seleccionado (fase 3 del pulido de Pl
 
         const html = TimelineDay(session({ type: "strength", volume: 0 }), { isToday: false, isSelected: true, isCompleted: false });
 
-        expect(html).toContain("MAR 25 / Fuerza");
+        expect(html).toContain("Fuerza");
         expect(html).not.toContain("0 km");
 
     });
@@ -47,7 +48,7 @@ describe("TimelineDay -- cápsula del día seleccionado (fase 3 del pulido de Pl
 
         const html = TimelineDay(session({ title: "Fartlek 6x3min", volume: 10 }), { isToday: false, isSelected: true, isCompleted: false });
 
-        expect(html).toContain("MAR 25 / 10 km · Fartlek 6x3min");
+        expect(html).toContain("10 km · Fartlek 6x3min");
 
     });
 
@@ -55,17 +56,17 @@ describe("TimelineDay -- cápsula del día seleccionado (fase 3 del pulido de Pl
 
         const html = TimelineDay(session({ type: "free", title: "Descanso", volume: 0 }), { isToday: false, isSelected: true, isCompleted: false, isRest: true });
 
-        expect(html).toContain("MAR 25 / Descanso");
+        expect(html).toContain("Descanso");
 
     });
 
-    it("un día de gimnasio sigue mostrando el nombre real de su rutina, no la fórmula día/km/tipo", () => {
+    it("un día de gimnasio sigue mostrando el nombre real de su rutina, no la fórmula km/tipo", () => {
 
         const html = TimelineDay(session({ type: "strength", subtitle: "Pierna Funcional" }), { isToday: false, isSelected: true, isCompleted: false });
 
         expect(html).toContain("timeline-capsule");
         expect(html).toContain("Pierna Funcional");
-        expect(html).not.toContain("MAR 25 /");
+        expect(html).not.toContain("Fuerza");
 
     });
 
