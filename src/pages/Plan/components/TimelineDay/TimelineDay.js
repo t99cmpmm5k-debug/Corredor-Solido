@@ -2,31 +2,6 @@ import "./TimelineDay.css";
 import { WorkoutIcon } from "../../../../components/WorkoutIcon/WorkoutIcon";
 import { formatDayNumber } from "../../../../utils/date.js";
 import { resolveDayColorKey } from "../../planDayColor.js";
-import { WORKOUT_TYPES } from "../../../../data/workoutTypes.js";
-
-// Cápsula bajo el día seleccionado (retoques de cierre del pulido de
-// Plan): ya NO repite día+fecha -- eso vive justo arriba en
-// .timeline-top (y otra vez en la cabecera de la tarjeta de sesión), así
-// que aquí solo va el contenido real de la sesión, para que quepa en 1-2
-// líneas cortas en vez de partirse palabra a palabra ("JUE / 27 / 4 x /
-// 1000 / m", el bug reportado). El km real si lo hay (nunca "0 km"), el
-// título real de la sesión si lo trae la importación -- o si no, la
-// etiqueta genérica de su tipo (WORKOUT_TYPES, la misma que ya usa el
-// resto de la app). Un día de gimnasio sigue mostrando el nombre real de
-// su rutina (session.subtitle, puesto por attachGymInfo() en
-// PlanTimeline.js) sin tocar.
-function buildCapsuleText(session) {
-
-    if (session.subtitle) return session.subtitle;
-
-    const parts = [];
-
-    if (session.volume > 0) parts.push(`${session.volume} km`);
-    parts.push(session.title || WORKOUT_TYPES[session.type]?.label || "Sesión");
-
-    return parts.join(" · ");
-
-}
 
 // isToday: fecha real de hoy -- lift+brillo (ya existía) MÁS un punto
 // pequeño (.day-today-dot) sobre el icono, señal explícita aparte del
@@ -99,18 +74,6 @@ export function TimelineDay(session, { isToday, isSelected, isCompleted, isRest 
                 ` : ""}
 
             </div>
-
-            ${isSelected ? `
-                <div class="timeline-bottom">
-
-                    <span class="timeline-capsule">
-
-                        ${buildCapsuleText(session)}
-
-                    </span>
-
-                </div>
-            ` : ""}
 
         </div>
 

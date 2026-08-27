@@ -1,6 +1,10 @@
 /* Mismo lenguaje visual que MasterCard en la Home (cristal + borde en
-   --color-primary + doble halo con --color-glow + franja de luz
-   superior), a la intensidad "principal" en vez de la "acompaña". */
+   --color-primary + halo con --color-glow + franja de luz superior).
+   Glow reducido (retoque final de cierre): el borde/halo azul de la
+   tarjeta competía con el naranja del nodo de sesión seleccionada en el
+   timeline -- ese naranja es el que de verdad debe llamar la atención,
+   así que aquí se queda más discreto (borde y halo menos brillantes,
+   nunca del todo apagados). */
 .plan-workout-card{
 
     position:relative;
@@ -18,13 +22,13 @@
     backdrop-filter:blur(26px);
     -webkit-backdrop-filter:blur(26px);
 
-    border:1px solid color-mix(in srgb, var(--color-primary) 85%, transparent);
+    border:1px solid color-mix(in srgb, var(--color-primary) 55%, transparent);
 
     box-shadow:
         0 10px 25px rgba(0,0,0,.20),
         0 30px 60px rgba(0,0,0,.35),
-        0 0 7px color-mix(in srgb, var(--color-glow) 55%, transparent),
-        0 0 36px color-mix(in srgb, var(--color-glow) 55%, transparent);
+        0 0 6px color-mix(in srgb, var(--color-glow) 25%, transparent),
+        0 0 24px color-mix(in srgb, var(--color-glow) 20%, transparent);
 
 }
 
@@ -567,7 +571,7 @@
    las tres de la tarjeta. */
 .workout-button--ghost{
 
-    height:44px;
+    height:36px;
 
     background:transparent;
 

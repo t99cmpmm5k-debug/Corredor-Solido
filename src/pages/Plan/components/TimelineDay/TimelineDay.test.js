@@ -15,58 +15,21 @@ function session(overrides = {}) {
     };
 }
 
-describe("TimelineDay -- cápsula del día seleccionado (fase 3 del pulido de Plan)", () => {
+describe("TimelineDay -- nodo del día (retoques finales de cierre del pulido de Plan)", () => {
 
-    it("sin selección, no pinta ninguna cápsula", () => {
+    // La cápsula bajo el día seleccionado se quitó del todo (retoque
+    // final de cierre): el texto real ("4 x 1000m" y similares) seguía
+    // cortándose en columnas estrechas, y era puramente redundante --
+    // el día/fecha ya está en .timeline-top justo arriba, y el detalle
+    // real de la sesión ya está inmediatamente debajo en PlanWorkoutCard.
+    it("nunca pinta ninguna cápsula bajo el nodo, esté seleccionado o no", () => {
 
-        const html = TimelineDay(session(), { isToday: false, isSelected: false, isCompleted: false });
+        const notSelected = TimelineDay(session(), { isToday: false, isSelected: false, isCompleted: false });
+        const selected = TimelineDay(session({ volume: 8 }), { isToday: false, isSelected: true, isCompleted: false });
 
-        expect(html).not.toContain("timeline-capsule");
-
-    });
-
-    it("seleccionado con km reales, muestra km · tipo -- sin repetir día+fecha (ya está en la cabecera de arriba)", () => {
-
-        const html = TimelineDay(session({ volume: 8 }), { isToday: false, isSelected: true, isCompleted: false });
-
-        expect(html).toContain("timeline-capsule");
-        expect(html).toContain("8 km · Rodaje (Z2)");
-        expect(html).not.toContain("MAR 25");
-
-    });
-
-    it("sin km real (0/null), omite esa parte -- nunca '0 km'", () => {
-
-        const html = TimelineDay(session({ type: "strength", volume: 0 }), { isToday: false, isSelected: true, isCompleted: false });
-
-        expect(html).toContain("Fuerza");
-        expect(html).not.toContain("0 km");
-
-    });
-
-    it("con un título real (p. ej. de una importación), lo usa en vez de la etiqueta genérica del tipo", () => {
-
-        const html = TimelineDay(session({ title: "Fartlek 6x3min", volume: 10 }), { isToday: false, isSelected: true, isCompleted: false });
-
-        expect(html).toContain("10 km · Fartlek 6x3min");
-
-    });
-
-    it("un día de descanso seleccionado muestra su título real ('Descanso')", () => {
-
-        const html = TimelineDay(session({ type: "free", title: "Descanso", volume: 0 }), { isToday: false, isSelected: true, isCompleted: false, isRest: true });
-
-        expect(html).toContain("Descanso");
-
-    });
-
-    it("un día de gimnasio sigue mostrando el nombre real de su rutina, no la fórmula km/tipo", () => {
-
-        const html = TimelineDay(session({ type: "strength", subtitle: "Pierna Funcional" }), { isToday: false, isSelected: true, isCompleted: false });
-
-        expect(html).toContain("timeline-capsule");
-        expect(html).toContain("Pierna Funcional");
-        expect(html).not.toContain("Fuerza");
+        expect(notSelected).not.toContain("timeline-capsule");
+        expect(selected).not.toContain("timeline-capsule");
+        expect(selected).not.toContain("timeline-bottom");
 
     });
 

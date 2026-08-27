@@ -234,63 +234,6 @@
 }
 
 /*========================
-        CÁPSULA (solo seleccionado)
-   Sustituye al tallo decorativo + title/subtitle sueltos (ver
-   buildCapsuleText() en TimelineDay.js) -- una sola pequeña píldora con
-   datos reales ("MAR 25 / 8 km · Rodaje (Z2)"), centrada bajo el nodo.
-   Puede ser más ancha que su propia columna (los 7 días reparten
-   flex:1, pero solo el seleccionado pinta algo aquí abajo) -- vive
-   dentro de .plan-header, que tiene overflow:hidden, así que solo se
-   recorta si de verdad se sale de la cabecera entera, no de su columna.
-========================*/
-
-.timeline-bottom{
-
-    margin-top:8px;
-
-    display:flex;
-
-    justify-content:center;
-
-}
-
-/* Tope de 2 líneas -- red de seguridad para un título real muy largo
-   importado de un PDF ("6x800m R:2min trote" y similares): nunca más de
-   2 líneas cortas, nunca partido palabra a palabra por quedarse sin
-   ancho (el bug de cierre que motivó quitar el día+fecha de aquí, ver
-   buildCapsuleText() en TimelineDay.js). */
-.timeline-capsule{
-
-    max-width:190px;
-
-    padding:4px 10px;
-
-    border-radius:14px;
-
-    background:color-mix(in srgb, var(--color-background) 55%, transparent);
-
-    backdrop-filter:blur(6px);
-
-    color:#FFFFFF;
-
-    font-size:10px;
-
-    font-weight:700;
-
-    line-height:1.3;
-
-    text-align:center;
-
-    text-shadow:0 2px 6px rgba(0,0,0,.45);
-
-    display:-webkit-box;
-    -webkit-box-orient:vertical;
-    -webkit-line-clamp:2;
-    overflow:hidden;
-
-}
-
-/*========================
           HOY
    (más grande y con más brillo — independiente de si además
    está seleccionado)
