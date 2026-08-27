@@ -118,6 +118,53 @@ export function setMovingSessionId(id) {
 
 }
 
+// Id de la sesión que se está duplicando a otro día — mismo patrón que
+// movingSessionId, comparte el selector de día (PlanMoveDayPicker) en
+// modo "duplicate" en vez de "move" (ver Plan.js/initPlanEvents.js).
+export function getDuplicatingSessionId() {
+
+    return getState().duplicatingSessionId;
+
+}
+
+export function setDuplicatingSessionId(id) {
+
+    setState("duplicatingSessionId", id);
+
+}
+
+// Id de la sesión cuyo menú "···" está abierto ahora mismo (fase 4 del
+// pulido de Plan) — solo puede haber una tarjeta de sesión a la vez, así
+// que un simple id (no un Set) basta; null cuando no hay ningún menú
+// abierto.
+export function getSessionMenuOpenId() {
+
+    return getState().sessionMenuOpenId ?? null;
+
+}
+
+export function setSessionMenuOpenId(id) {
+
+    setState("sessionMenuOpenId", id);
+
+}
+
+// Id de la sesión cuya descripción larga está expandida ("Ver sesión
+// completa", fase 4 del pulido de Plan) — null = todas colapsadas (el
+// estado por defecto). Aparte de selectedWorkout porque cambiar de día
+// no debería heredar "expandida" del día anterior.
+export function getExpandedSessionId() {
+
+    return getState().expandedSessionId ?? null;
+
+}
+
+export function setExpandedSessionId(id) {
+
+    setState("expandedSessionId", id);
+
+}
+
 // Vuelve a la semana actual y olvida cualquier sesión seleccionada de
 // otra semana — se llama solo al entrar en Plan desde la barra de
 // navegación (ver BottomNavigation.js), nunca en cada render de Plan(),
@@ -128,11 +175,15 @@ export function resetPlanView() {
     setState("viewedWeekStart", currentWeekStart());
     setState("selectedWorkout", null);
     setState("movingSessionId", null);
+    setState("duplicatingSessionId", null);
+    setState("sessionMenuOpenId", null);
+    setState("expandedSessionId", null);
     setState("planViewMode", "week");
     setState("viewedMonth", null);
     setState("creatingSessionDate", null);
     setState("newSessionType", null);
     setState("newSessionNotes", null);
+    setState("editingSessionId", null);
 
 }
 
@@ -157,12 +208,35 @@ export function startCreateSession(date) {
     setState("creatingSessionDate", date);
     setState("newSessionType", DEFAULT_NEW_SESSION_TYPE);
     setState("newSessionNotes", "");
+    setState("editingSessionId", null);
+
+}
+
+// Id de la sesión real que se está editando -- null cuando el formulario
+// está en modo "crear" (o cerrado). Comparte panel y campos con
+// startCreateSession() (mismo PlanCreateSessionPanel, ver Plan.js) --
+// solo cambia que aquí la fecha/tipo/notas de partida son los REALES de
+// la sesión existente, y guardar actualiza en vez de crear (ver
+// updatePlannedSession() en workoutStore.js).
+export function getEditingSessionId() {
+
+    return getState().editingSessionId ?? null;
+
+}
+
+export function startEditSession(session) {
+
+    setState("creatingSessionDate", session.date);
+    setState("newSessionType", session.type);
+    setState("newSessionNotes", session.description ?? "");
+    setState("editingSessionId", session.id);
 
 }
 
 export function cancelCreateSession() {
 
     setState("creatingSessionDate", null);
+    setState("editingSessionId", null);
 
 }
 

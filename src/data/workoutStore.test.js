@@ -154,3 +154,105 @@ describe("addPlannedSession — creación manual de una sesión (ver Plan → to
     });
 
 });
+
+describe("updatePlannedSession — editar una sesión real (menú \"···\" de PlanWorkoutCard)", () => {
+
+    beforeEach(() => {
+
+        resetFakeIndexedDB();
+        vi.resetModules();
+
+    });
+
+    it("actualiza tipo y descripción, sin tocar el resto de campos reales", async () => {
+
+        const { hydrate, addPlannedSession, updatePlannedSession, getSessionById } = await import("./workoutStore.js");
+        await hydrate();
+
+        const session = addPlannedSession({ date: "2026-08-27", type: "z2", description: "Rodaje suave" });
+
+        const updated = updatePlannedSession(session.id, { type: "intervals", description: "Series 6x400" });
+
+        expect(updated).toMatchObject({ type: "intervals", description: "Series 6x400", date: "2026-08-27" });
+        expect(getSessionById(session.id)).toMatchObject({ type: "intervals", description: "Series 6x400" });
+
+    });
+
+    it("una descripción vacía se guarda como null, igual que al crear", async () => {
+
+        const { hydrate, addPlannedSession, updatePlannedSession } = await import("./workoutStore.js");
+        await hydrate();
+
+        const session = addPlannedSession({ date: "2026-08-27", type: "z2", description: "Algo" });
+        const updated = updatePlannedSession(session.id, { type: "z2", description: null });
+
+        expect(updated.description).toBeNull();
+
+    });
+
+    it("un id que no existe no rompe nada, devuelve null", async () => {
+
+        const { hydrate, updatePlannedSession } = await import("./workoutStore.js");
+        await hydrate();
+
+        expect(updatePlannedSession("no-existe", { type: "z2", description: null })).toBeNull();
+
+    });
+
+});
+
+describe("duplicatePlannedSession — clonar una sesión real a otro día (menú \"···\" de PlanWorkoutCard)", () => {
+
+    beforeEach(() => {
+
+        resetFakeIndexedDB();
+        vi.resetModules();
+
+    });
+
+    it("clona todos los campos reales (no solo tipo/notas) a un id y fecha propios", async () => {
+
+        const { hydrate, addPlannedSession, duplicatePlannedSession, getSessionsForDate } = await import("./workoutStore.js");
+        await hydrate();
+
+        const session = addPlannedSession({ date: "2026-08-24", type: "longRun", description: "Tirada larga" });
+
+        const duplicate = duplicatePlannedSession(session.id, "2026-08-29");
+
+        expect(duplicate.id).not.toBe(session.id);
+        expect(duplicate.date).toBe("2026-08-29");
+        expect(duplicate.type).toBe("longRun");
+        expect(duplicate.description).toBe("Tirada larga");
+
+        // La original sigue existiendo en su día de siempre -- duplicar no
+        // la mueve ni la borra.
+        expect(getSessionsForDate("2026-08-24")).toHaveLength(1);
+        expect(getSessionsForDate("2026-08-29")).toHaveLength(1);
+
+    });
+
+    it("dos duplicados al mismo día reciben slots distintos, sin pisarse entre sí ni con una sesión ya real ese día", async () => {
+
+        const { hydrate, addPlannedSession, duplicatePlannedSession, getSessionsForDate } = await import("./workoutStore.js");
+        await hydrate();
+
+        const session = addPlannedSession({ date: "2026-08-24", type: "z2" });
+        addPlannedSession({ date: "2026-08-29", type: "recovery" }); // ya hay algo ese día
+
+        const duplicate = duplicatePlannedSession(session.id, "2026-08-29");
+
+        expect(duplicate.slot).toBe(1);
+        expect(getSessionsForDate("2026-08-29")).toHaveLength(2);
+
+    });
+
+    it("un id que no existe no rompe nada, devuelve null", async () => {
+
+        const { hydrate, duplicatePlannedSession } = await import("./workoutStore.js");
+        await hydrate();
+
+        expect(duplicatePlannedSession("no-existe", "2026-08-29")).toBeNull();
+
+    });
+
+});

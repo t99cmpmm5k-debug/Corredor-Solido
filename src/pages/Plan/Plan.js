@@ -11,7 +11,7 @@ import { PlanImportWizard } from "./components/PlanImportWizard.js";
 import { PlanMonthCalendar } from "./components/PlanMonthCalendar.js";
 import { PlanCreateSessionPanel } from "./components/PlanCreateSessionPanel.js";
 
-import { getSelectedWorkout, getViewedWeekStart, getMovingSessionId, getPlanViewMode, getViewedMonth, getCreatingSessionDate, getNewSessionType, getNewSessionNotes } from "./planStore";
+import { getSelectedWorkout, getViewedWeekStart, getMovingSessionId, getDuplicatingSessionId, getPlanViewMode, getViewedMonth, getCreatingSessionDate, getEditingSessionId, getNewSessionType, getNewSessionNotes } from "./planStore";
 import { getImportStep } from "./planImportStore.js";
 import { getWeekSessions, getSessionById, getPlannedSessions } from "../../data/workoutStore.js";
 import { BottomNavigation } from "../../components/Navigation/BottomNavigation.js";
@@ -117,34 +117,48 @@ export function Plan() {
     const movingSessionId = getMovingSessionId();
     const movingSession = movingSessionId ? getSessionById(movingSessionId) : null;
 
+    // Mismo patrón que movingSession -- duplicar comparte panel de
+    // instrucciones y selector de día con mover (PlanMovePanel/
+    // PlanMoveDayPicker en modo "duplicate", ver esos componentes), fase
+    // 4 del pulido de Plan.
+    const duplicatingSessionId = getDuplicatingSessionId();
+    const duplicatingSession = duplicatingSessionId ? getSessionById(duplicatingSessionId) : null;
+
     // PlanEmptyState solo cubre "nunca se ha importado ningún plan" (cero
     // plannedSessions en toda la app) — una semana concreta sin sesiones
     // ya no manda aquí, la línea temporal pinta sus 7 días igual, con
     // "Descanso" en los que no tengan sesión (ver fillWeekDays() en
     // PlanTimeline.js). Solo en vista semanal: la vista mensual nunca debe
     // quedar bloqueada por esto (puede tener sesiones en otras semanas del
-    // mismo mes, ver PlanMonthCalendar). Si hay un movimiento en curso, se
-    // deja ver el selector de día igualmente (defensivo: en la práctica no
-    // puede haber una sesión que mover si nunca se importó ninguna).
-    if (viewMode === "week" && getPlannedSessions().length === 0 && !movingSession) {
+    // mismo mes, ver PlanMonthCalendar). Si hay un movimiento o duplicado
+    // en curso, se deja ver el selector de día igualmente (defensivo: en
+    // la práctica no puede haber una sesión que mover/duplicar si nunca
+    // se importó ninguna).
+    if (viewMode === "week" && getPlannedSessions().length === 0 && !movingSession && !duplicatingSession) {
         return PlanEmptyState(viewedWeekStart);
     }
 
     const selectedWorkout = getSelectedWorkout();
 
     // Qué tarjeta ocupa el hueco de detalle bajo el calendario/línea
-    // temporal -- las tres son mutuamente excluyentes (ver planStore.js),
-    // creando una sesión manda sobre moviendo una y sobre la seleccionada.
+    // temporal -- mutuamente excluyentes (ver planStore.js), creando una
+    // sesión manda sobre moviendo/duplicando una y sobre la seleccionada.
     // Compartido entre semanal y mensual para que "tocar un día vacío"
     // abra el mismo formulario venga de donde venga (ver requisito en
     // initPlanEvents.js: selectCalendarDay() / listener de ".timeline-day").
+    // "Editar sesión" (menú "···") reutiliza este mismo formulario de
+    // creación -- getEditingSessionId() solo cambia sus textos, ver
+    // PlanCreateSessionPanel.js.
     const creatingSessionDate = getCreatingSessionDate();
+    const editingSessionId = getEditingSessionId();
 
     const detailCardHtml = creatingSessionDate
-        ? PlanCreateSessionPanel(creatingSessionDate, getNewSessionType(), getNewSessionNotes())
+        ? PlanCreateSessionPanel(creatingSessionDate, getNewSessionType(), getNewSessionNotes(), !!editingSessionId)
         : movingSession
-            ? PlanMovePanel(movingSession)
-            : PlanWorkoutCard(selectedWorkout);
+            ? PlanMovePanel(movingSession, "move")
+            : duplicatingSession
+                ? PlanMovePanel(duplicatingSession, "duplicate")
+                : PlanWorkoutCard(selectedWorkout);
 
     if (viewMode === "month") {
 
@@ -173,8 +187,10 @@ export function Plan() {
     }
 
     const timelineHtml = movingSession
-        ? PlanMoveDayPicker(viewedWeekStart, sessions, movingSession)
-        : PlanTimeline(selectedWorkout, sessions, viewedWeekStart);
+        ? PlanMoveDayPicker(viewedWeekStart, sessions, movingSession, "move")
+        : duplicatingSession
+            ? PlanMoveDayPicker(viewedWeekStart, sessions, duplicatingSession, "duplicate")
+            : PlanTimeline(selectedWorkout, sessions, viewedWeekStart);
 
     return `
 

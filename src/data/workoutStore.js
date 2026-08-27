@@ -581,6 +581,50 @@ export function addPlannedSession({ date, type, description = null }) {
 
 }
 
+// Edita una sesión real ya existente (menú "···" de PlanWorkoutCard,
+// fase 4 del pulido de Plan) -- mismos dos únicos campos que el
+// formulario de creación manual permite tocar (tipo y notas); el resto
+// de campos reales (distanceKm/durationSec/targetPaceSecPerKm/
+// targetHrZone) se quedan tal cual, nunca se borran por editar solo el
+// tipo o la descripción.
+export function updatePlannedSession(id, { type, description }) {
+
+    const session = plannedSessions.find(ps => ps.id === id);
+    if (!session) return null;
+
+    const updated = { ...session, type, description };
+    upsertInto(plannedSessions, STORES.plannedSessions, updated);
+
+    return updated;
+
+}
+
+// Duplica una sesión real a otro día (menú "···" de PlanWorkoutCard,
+// fase 4 del pulido de Plan) -- clona TODOS los campos reales (no solo
+// tipo/notas, a diferencia de editar), con id/fecha/slot propios.
+// Reutiliza sharedSessionFields(), el mismo conjunto de campos que ya
+// usa importPlannedSessions() más abajo.
+export function duplicatePlannedSession(id, newDate) {
+
+    const session = plannedSessions.find(ps => ps.id === id);
+    if (!session) return null;
+
+    const slot = plannedSessions.filter(ps => ps.date === newDate).length;
+
+    const duplicate = {
+        id: generateId(),
+        date: newDate,
+        slot,
+        weekStartDate: getWeekStartDate(newDate),
+        ...sharedSessionFields(session)
+    };
+
+    upsertInto(plannedSessions, STORES.plannedSessions, duplicate);
+
+    return duplicate;
+
+}
+
 // Borra una carrera planificada (calendario de Carreras) — no toca ningún
 // workout real, son dos stores distintos igual que deletePlannedSession()
 // frente a workouts.

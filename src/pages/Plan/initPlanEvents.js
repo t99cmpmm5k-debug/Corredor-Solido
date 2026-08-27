@@ -1,8 +1,8 @@
-import { setSelectedWorkout, getViewedWeekStart, setViewedWeekStart, getMovingSessionId, setMovingSessionId, getPlanViewMode, setPlanViewMode, shiftViewedMonth, getCreatingSessionDate, startCreateSession, cancelCreateSession, getNewSessionType, setNewSessionType, getNewSessionNotes, setNewSessionNotes } from "./planStore";
+import { setSelectedWorkout, getViewedWeekStart, setViewedWeekStart, getMovingSessionId, setMovingSessionId, getDuplicatingSessionId, setDuplicatingSessionId, getSessionMenuOpenId, setSessionMenuOpenId, getExpandedSessionId, setExpandedSessionId, getPlanViewMode, setPlanViewMode, shiftViewedMonth, getCreatingSessionDate, getEditingSessionId, startCreateSession, startEditSession, cancelCreateSession, getNewSessionType, setNewSessionType, getNewSessionNotes, setNewSessionNotes } from "./planStore";
 import { rerender, navigate } from "../../core/router";
 
 import { importPlan } from "../../importers/plan/index.js";
-import { importPlannedSessions, addPlannedSession, getWeekSessions, getSessionById, getSessionsForDate, movePlannedSession, deletePlannedSession, deletePlannedSessionsByBatch } from "../../data/workoutStore.js";
+import { importPlannedSessions, addPlannedSession, updatePlannedSession, duplicatePlannedSession, getWeekSessions, getSessionById, getSessionsForDate, movePlannedSession, deletePlannedSession, deletePlannedSessionsByBatch } from "../../data/workoutStore.js";
 import { addDays } from "../../utils/date.js";
 import { PLAN_SESSION_REVIEW_FIELDS, parseSessionFieldValue } from "./components/PlanImportReviewStep.js";
 import { Running } from "../Running/Running.js";
@@ -60,6 +60,23 @@ window.addEventListener("popstate", () => {
         setImportStep("closed");
         rerender();
     }
+
+});
+
+// Cierra el menú "···" de PlanWorkoutCard al tocar fuera de él (patrón
+// estándar de menú desplegable, fase 4 del pulido de Plan) -- registrado
+// una sola vez a nivel de módulo, igual que el popstate de arriba, en vez
+// de en initPlanEvents() (que se vuelve a llamar en cada render y
+// apilaría un listener nuevo cada vez sin desengancharse). Se limita a
+// comprobar el estado en cada click del documento entero en vez de
+// añadir/quitar el listener según haya o no un menú abierto.
+document.addEventListener("click", event => {
+
+    if (!getSessionMenuOpenId()) return;
+    if (event.target.closest(".workout-menu")) return;
+
+    setSessionMenuOpenId(null);
+    rerender();
 
 });
 
@@ -239,6 +256,8 @@ function changeViewedMonth(deltaMonths) {
 // entrada, mismo destino de guardado, solo cambia desde dónde se tocó.
 function selectCalendarDay(date) {
 
+    setSessionMenuOpenId(null);
+
     const sessions = getSessionsForDate(date).sort((a, b) => (a.slot ?? 0) - (b.slot ?? 0));
     const first = sessions[0];
 
@@ -254,29 +273,100 @@ function selectCalendarDay(date) {
 }
 
 // Guarda la sesión manual y deja el formulario cerrado, con la sesión
-// recién creada como seleccionada (mismo "qué se ve después" que tocar
-// cualquier otro día ya ocupado) -- así el usuario ve de inmediato que se
-// guardó, en vez de volver a un "Descanso" o a lo que hubiera antes.
+// recién creada/editada como seleccionada (mismo "qué se ve después" que
+// tocar cualquier otro día ya ocupado) -- así el usuario ve de inmediato
+// que se guardó, en vez de volver a un "Descanso" o a lo que hubiera
+// antes. Con getEditingSessionId() actualiza la sesión real existente
+// (updatePlannedSession()) en vez de crear una nueva -- mismo formulario,
+// mismos dos campos (tipo/notas), ver startEditSession() en
+// planStore.js/PlanCreateSessionPanel.js.
 function saveManualSession() {
 
     const date = getCreatingSessionDate();
     if (!date) return;
 
-    const session = addPlannedSession({
-        date,
-        type: getNewSessionType(),
-        description: getNewSessionNotes().trim() || null
-    });
+    const editingId = getEditingSessionId();
+
+    const session = editingId
+        ? updatePlannedSession(editingId, {
+            type: getNewSessionType(),
+            description: getNewSessionNotes().trim() || null
+        })
+        : addPlannedSession({
+            date,
+            type: getNewSessionType(),
+            description: getNewSessionNotes().trim() || null
+        });
 
     cancelCreateSession();
-    setSelectedWorkout(getSessionById(session.id));
+    setSelectedWorkout(session ? getSessionById(session.id) : null);
 
+    rerender();
+
+}
+
+function editSession(sessionId) {
+
+    const session = getSessionById(sessionId);
+    if (!session) return;
+
+    setSessionMenuOpenId(null);
+    startEditSession(session);
+
+    rerender();
+
+}
+
+function startDuplicateSession(sessionId) {
+
+    setSessionMenuOpenId(null);
+    setDuplicatingSessionId(sessionId);
+
+    rerender();
+
+}
+
+function cancelDuplicateSession() {
+
+    setDuplicatingSessionId(null);
+    rerender();
+
+}
+
+// Igual que moveSessionTo() pero clonando en vez de reasignar la fecha
+// -- la sesión ORIGINAL sigue existiendo en su día de siempre. La recién
+// duplicada pasa a ser la seleccionada, mismo criterio que crear/mover.
+function duplicateSessionTo(date) {
+
+    const sessionId = getDuplicatingSessionId();
+    if (!sessionId) return;
+
+    const duplicated = duplicatePlannedSession(sessionId, date);
+
+    setDuplicatingSessionId(null);
+    setSelectedWorkout(duplicated ? getSessionById(duplicated.id) : null);
+
+    rerender();
+
+}
+
+function toggleSessionMenu(sessionId) {
+
+    setSessionMenuOpenId(getSessionMenuOpenId() === sessionId ? null : sessionId);
+    rerender();
+
+}
+
+function toggleDescriptionExpanded(sessionId) {
+
+    setExpandedSessionId(getExpandedSessionId() === sessionId ? null : sessionId);
     rerender();
 
 }
 
 function startMoveSession(sessionId) {
 
+    setSessionMenuOpenId(null);
     setMovingSessionId(sessionId);
     rerender();
 
@@ -412,7 +502,12 @@ function performPlanImport() {
 // razonable (hoy, o la primera de la semana) en el siguiente render.
 function deleteSession(id) {
 
-    if (!window.confirm("¿Borrar esta sesión del plan? No se puede deshacer.")) return;
+    setSessionMenuOpenId(null);
+
+    if (!window.confirm("¿Borrar esta sesión del plan? No se puede deshacer.")) {
+        rerender();
+        return;
+    }
 
     deletePlannedSession(id);
     setSelectedWorkout(null);
@@ -455,6 +550,8 @@ export function initPlanEvents() {
     document.querySelectorAll(".plan-page .timeline-day").forEach(day => {
 
         day.addEventListener("click", () => {
+
+            setSessionMenuOpenId(null);
 
             const workout = getSessionById(day.dataset.sessionId);
 
@@ -584,6 +681,57 @@ export function initPlanEvents() {
 
         day.addEventListener("click", () => {
             moveSessionTo(day.dataset.date);
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="start-duplicate-session"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+            startDuplicateSession(button.dataset.sessionId);
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="cancel-duplicate-session"]').forEach(button => {
+
+        button.addEventListener("click", cancelDuplicateSession);
+
+    });
+
+    document.querySelectorAll('[data-action="duplicate-session-to"]').forEach(day => {
+
+        day.addEventListener("click", () => {
+            duplicateSessionTo(day.dataset.date);
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="edit-planned-session"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+            editSession(button.dataset.sessionId);
+        });
+
+    });
+
+    // Sin stopPropagation, el listener de "cerrar al tocar fuera"
+    // (registrado una sola vez a nivel de módulo, ver más abajo) se
+    // dispararía en el mismo click que abre el menú y lo cerraría en el
+    // acto.
+    document.querySelectorAll('[data-action="toggle-workout-menu"]').forEach(button => {
+
+        button.addEventListener("click", event => {
+            event.stopPropagation();
+            toggleSessionMenu(button.dataset.sessionId);
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="toggle-workout-description"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+            toggleDescriptionExpanded(button.dataset.sessionId);
         });
 
     });

@@ -4,6 +4,8 @@ import { isToday, formatDayMonth } from "../../../utils/date.js";
 import { formatSecondsAsClock } from "../../../utils/format.js";
 import { WorkoutIcon } from "../../../components/WorkoutIcon/WorkoutIcon.js";
 import { getWorkoutForSession } from "../../../data/workoutStore.js";
+import { getExpandedSessionId, getSessionMenuOpenId } from "../planStore.js";
+import { WORKOUT_TYPES } from "../../../data/workoutTypes.js";
 
 // Icono por lo que dice la etiqueta, no por posición — cada tipo de
 // sesión trae las suyas (planData.js) y antes se pintaban con un array
@@ -58,6 +60,43 @@ function buildDetails(workout) {
 
 }
 
+// Resumen compacto bajo el título (fase 4 del pulido de Plan) -- mismos
+// campos reales que buildDetails(), nunca un dato inventado (ni un rango
+// de minutos, ni un "terreno" que no existe como campo): distancia real
+// si la hay, el título real de la sesión o si no la etiqueta genérica de
+// su tipo (mismo criterio que la cápsula del timeline, ver
+// TimelineDay.js), y la duración real si la hay.
+function buildSummaryLine(workout) {
+
+    const bits = [];
+
+    if (workout.distanceKm != null) bits.push(`${workout.distanceKm} km`);
+    bits.push(workout.title || WORKOUT_TYPES[workout.type]?.label || "Sesión");
+    if (workout.durationSec != null) bits.push(formatSecondsAsClock(workout.durationSec));
+
+    return bits.join(" · ");
+
+}
+
+const DESCRIPTION_PREVIEW_LENGTH = 90;
+
+// Primera línea de la descripción real, recortada si hace falta -- nunca
+// el párrafo entero. isTruncated decide si de verdad hace falta un
+// control de "ver más" (una descripción corta de una sola línea no
+// necesita ese botón, ya se ve entera).
+function buildDescriptionPreview(description) {
+
+    const trimmed = description.trim();
+    const firstLine = trimmed.split("\n")[0].trim();
+
+    const preview = firstLine.length > DESCRIPTION_PREVIEW_LENGTH
+        ? `${firstLine.slice(0, DESCRIPTION_PREVIEW_LENGTH).trim()}…`
+        : firstLine;
+
+    return { preview, isTruncated: preview !== trimmed };
+
+}
+
 export function PlanWorkoutCard(workout) {
 
     if (!workout) {
@@ -81,6 +120,13 @@ export function PlanWorkoutCard(workout) {
     // tarjeta ya enseña todo lo que hay (título/descripción/tipo).
     const linkedWorkout = getWorkoutForSession(workout.id);
 
+    const isMenuOpen = getSessionMenuOpenId() === workout.id;
+    const isExpanded = getExpandedSessionId() === workout.id;
+
+    const { preview, isTruncated } = workout.description
+        ? buildDescriptionPreview(workout.description)
+        : { preview: null, isTruncated: false };
+
     return `
 
         <section class="plan-workout-card">
@@ -103,6 +149,12 @@ export function PlanWorkoutCard(workout) {
 
                     </h2>
 
+                    <p class="workout-summary-line">
+
+                        ${buildSummaryLine(workout)}
+
+                    </p>
+
                 </div>
 
                 <div class="workout-badge">
@@ -111,25 +163,71 @@ export function PlanWorkoutCard(workout) {
 
                 </div>
 
-                <button
-                    class="workout-delete"
-                    data-action="delete-planned-session"
-                    data-session-id="${workout.id}"
-                >
+                <div class="workout-menu">
 
-                    <iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon>
+                    <button
+                        class="workout-menu-toggle"
+                        data-action="toggle-workout-menu"
+                        data-session-id="${workout.id}"
+                        aria-label="Más opciones"
+                    >
 
-                </button>
+                        <iconify-icon icon="solar:menu-dots-bold-duotone"></iconify-icon>
+
+                    </button>
+
+                    ${isMenuOpen ? `
+
+                        <div class="workout-menu-popover">
+
+                            <button data-action="edit-planned-session" data-session-id="${workout.id}">
+                                <iconify-icon icon="solar:pen-bold-duotone"></iconify-icon>
+                                Editar sesión
+                            </button>
+
+                            <button data-action="start-duplicate-session" data-session-id="${workout.id}">
+                                <iconify-icon icon="solar:copy-bold-duotone"></iconify-icon>
+                                Duplicar
+                            </button>
+
+                            <button class="workout-menu-danger" data-action="delete-planned-session" data-session-id="${workout.id}">
+                                <iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon>
+                                Eliminar
+                            </button>
+
+                        </div>
+
+                    ` : ""}
+
+                </div>
 
             </div>
 
             ${workout.description ? `
 
-                <p class="workout-description">
+                <div class="workout-description-block">
 
-                    ${workout.description}
+                    <p class="workout-description ${isExpanded ? "workout-description--expanded" : ""}">
 
-                </p>
+                        ${isExpanded ? workout.description : preview}
+
+                    </p>
+
+                    ${isTruncated ? `
+
+                        <button
+                            class="workout-expand-toggle"
+                            data-action="toggle-workout-description"
+                            data-session-id="${workout.id}"
+                        >
+
+                            ${isExpanded ? "Ver menos ↑" : "Ver sesión completa →"}
+
+                        </button>
+
+                    ` : ""}
+
+                </div>
 
             ` : ""}
 
@@ -139,19 +237,9 @@ export function PlanWorkoutCard(workout) {
 
                     ${details.map((detail)=>`
 
-                        <div class="workout-item">
+                        <div class="workout-item" aria-label="${detail[0]}">
 
-                            <div class="item-label">
-
-                                <iconify-icon class="item-icon" icon="${getDetailIcon(detail[0])}"></iconify-icon>
-
-                                <span>
-
-                                    ${detail[0]}
-
-                                </span>
-
-                            </div>
+                            <iconify-icon class="item-icon" icon="${getDetailIcon(detail[0])}"></iconify-icon>
 
                             <strong>
 
@@ -175,7 +263,7 @@ export function PlanWorkoutCard(workout) {
                     data-workout-id="${linkedWorkout.id}"
                 >
 
-                    VER DETALLES DE LA SESIÓN
+                    VER ENTRENAMIENTO REGISTRADO
 
                 </button>
 

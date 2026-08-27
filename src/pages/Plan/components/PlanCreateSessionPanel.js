@@ -16,7 +16,15 @@ const TYPE_OPTIONS = Object.values(WORKOUT_TYPES);
 // viene fija del día que se tocó -- este flujo simple no la deja editar,
 // a diferencia del wizard de importación (que sí permite fecha por
 // sesión).
-export function PlanCreateSessionPanel(date, type, notes) {
+//
+// Mismo panel para "Editar sesión" (menú "···" de una sesión real, fase
+// 4 del pulido de Plan) -- isEditing solo cambia el texto de cabecera y
+// del botón de guardar; los campos (tipo/notas) y su guardado ya vienen
+// precargados con los valores reales de la sesión desde
+// startEditSession() en planStore.js, saveManualSession() en
+// initPlanEvents.js decide actualizar en vez de crear mirando
+// getEditingSessionId().
+export function PlanCreateSessionPanel(date, type, notes, isEditing = false) {
 
     return `
 
@@ -24,7 +32,7 @@ export function PlanCreateSessionPanel(date, type, notes) {
 
             <p class="plan-create-session-date">
 
-                Nueva sesión · ${formatDayMonth(date)}
+                ${isEditing ? "Editar sesión" : "Nueva sesión"} · ${formatDayMonth(date)}
 
             </p>
 
@@ -69,7 +77,7 @@ export function PlanCreateSessionPanel(date, type, notes) {
 
                 <button class="workout-button" data-action="save-manual-session">
 
-                    GUARDAR SESIÓN
+                    ${isEditing ? "GUARDAR CAMBIOS" : "GUARDAR SESIÓN"}
 
                 </button>
 
