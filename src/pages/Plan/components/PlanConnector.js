@@ -7,6 +7,10 @@ import "./PlanConnector.css";
 // posición real en vez de repetir el cálculo de paddings del timeline
 // (los 7 nodos se reparten con flex:1, su centro no cae en fracciones
 // simples de i/(n-1)).
+//
+// Sin flecha (fase 3 del pulido de Plan): ya se entiende que la tarjeta
+// de abajo pertenece al día seleccionado sin necesidad de un puntero
+// explícito -- la línea sola basta de puente visual.
 export function PlanConnector() {
 
     return `
@@ -14,8 +18,6 @@ export function PlanConnector() {
         <div class="plan-connector">
 
             <div class="plan-connector-line"></div>
-
-            <div class="plan-connector-arrow"></div>
 
         </div>
 
@@ -34,10 +36,9 @@ export function initPlanConnector() {
 
     const connector = document.querySelector(".plan-connector");
     const line = connector?.querySelector(".plan-connector-line");
-    const arrow = connector?.querySelector(".plan-connector-arrow");
     const timeline = document.querySelector(".plan-timeline");
 
-    if (!connector || !line || !arrow || !timeline) return;
+    if (!connector || !line || !timeline) return;
 
     function reposition() {
 
@@ -63,7 +64,6 @@ export function initPlanConnector() {
         const centerX = iconRect.left + iconRect.width / 2 - connectorRect.left;
 
         line.style.left = `${centerX}px`;
-        arrow.style.left = `${centerX}px`;
 
         // El color sale del propio icono ya resuelto del día seleccionado
         // (ver planDayColor.js/TimelineDay.css para quién decide ese

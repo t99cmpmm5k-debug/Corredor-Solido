@@ -149,75 +149,6 @@
 }
 
 /*========================
-        TALLO
-   Trazo corto bajo cada nodo, en el color de su tipo — mismo doble
-   halo que WorkoutIcon.css (cerrado + amplio), da el aspecto de "mapa"
-   del subtítulo. Termina en un punto salvo en el seleccionado, donde
-   sigue hacia .timeline-bottom (mismo color, misma columna, se lee
-   como una sola pieza que continúa bajando).
-========================*/
-
-.day-stem.recovery{ --stem-color:var(--color-text-muted); }
-.day-stem.z2{ --stem-color:var(--color-success); }
-.day-stem.tempo{ --stem-color:var(--color-primary); }
-.day-stem.intervals{ --stem-color:#ff7a33; }
-.day-stem.longRun{ --stem-color:var(--color-warning); }
-.day-stem.race{ --stem-color:var(--color-danger); }
-.day-stem.strength{ --stem-color:#2faeff; }
-.day-stem.free{ --stem-color:var(--color-text-muted); }
-.day-stem.generic{ --stem-color:var(--color-text-muted); }
-
-.day-stem{
-
-    width:2px;
-
-    height:10px;
-
-    margin:0 auto;
-
-    border-radius:999px;
-
-    position:relative;
-
-    background:var(--stem-color);
-
-    box-shadow:
-        0 0 6px color-mix(in srgb, var(--stem-color) 70%, transparent),
-        0 0 16px color-mix(in srgb, var(--stem-color) 35%, transparent);
-
-}
-
-.day-stem::after{
-
-    content:"";
-
-    position:absolute;
-
-    left:50%;
-
-    bottom:-2px;
-
-    transform:translateX(-50%);
-
-    width:5px;
-
-    height:5px;
-
-    border-radius:50%;
-
-    background:var(--stem-color);
-
-    box-shadow:0 0 6px var(--stem-color);
-
-}
-
-.day-stem.is-selected::after{
-
-    display:none;
-
-}
-
-/*========================
       CHECK COMPLETADO
 ========================*/
 
@@ -261,7 +192,7 @@
    el de running (running manda al tocar, ver initPlanEvents.js), esto es
    solo la señal de que también hay gimnasio ese día. Arriba-derecha para
    no pisar el check de completado (abajo-derecha). Mismo color #2faeff
-   que ya usa "strength" en TIMELINE_TYPE_COLOR/WorkoutIcon.css.
+   que ya usa "strength" en WorkoutIcon.css.
 ========================*/
 
 .day-gym-badge{
@@ -303,52 +234,49 @@
 }
 
 /*========================
-        TEXTO (solo seleccionado)
+        CÁPSULA (solo seleccionado)
+   Sustituye al tallo decorativo + title/subtitle sueltos (ver
+   buildCapsuleText() en TimelineDay.js) -- una sola pequeña píldora con
+   datos reales ("MAR 25 / 8 km · Rodaje (Z2)"), centrada bajo el nodo.
+   Puede ser más ancha que su propia columna (los 7 días reparten
+   flex:1, pero solo el seleccionado pinta algo aquí abajo) -- vive
+   dentro de .plan-header, que tiene overflow:hidden, así que solo se
+   recorta si de verdad se sale de la cabecera entera, no de su columna.
 ========================*/
 
 .timeline-bottom{
 
-    margin-top:6px;
+    margin-top:8px;
 
     display:flex;
 
-    flex-direction:column;
-
-    align-items:center;
-
-    gap:1px;
-
-    max-width:64px;
+    justify-content:center;
 
 }
 
-.timeline-title{
+.timeline-capsule{
 
-    color:var(--text-primary);
+    max-width:170px;
+
+    padding:4px 10px;
+
+    border-radius:999px;
+
+    background:color-mix(in srgb, var(--color-background) 55%, transparent);
+
+    backdrop-filter:blur(6px);
+
+    color:#FFFFFF;
 
     font-size:10px;
 
     font-weight:700;
 
-    line-height:1.2;
+    line-height:1.25;
 
     text-align:center;
 
-    white-space:nowrap;
-
-}
-
-.timeline-subtitle{
-
-    color:var(--text-secondary);
-
-    font-size:9px;
-
-    line-height:1;
-
-    text-align:center;
-
-    white-space:nowrap;
+    text-shadow:0 2px 6px rgba(0,0,0,.45);
 
 }
 

@@ -2,6 +2,32 @@ import "./TimelineDay.css";
 import { WorkoutIcon } from "../../../../components/WorkoutIcon/WorkoutIcon";
 import { formatDayNumber } from "../../../../utils/date.js";
 import { resolveDayColorKey } from "../../planDayColor.js";
+import { WORKOUT_TYPES } from "../../../../data/workoutTypes.js";
+
+// Cápsula bajo el día seleccionado (fase 3 del pulido de Plan): antes
+// mostraba session.title/subtitle tal cual, casi siempre null para una
+// sesión real (solo lo rellena una importación con datos explícitos) --
+// "MAR 25 / 8 km · Rodaje (Z2)", siempre con datos reales: el día+fecha
+// (mismos campos que ya pinta .timeline-top arriba, repetidos aquí para
+// que la cápsula se lea sola sin tener que mirar arriba), el km real si
+// lo hay (nunca "0 km"), y el título real de la sesión si lo trae la
+// importación -- o si no, la etiqueta genérica de su tipo
+// (WORKOUT_TYPES, la misma que ya usa el resto de la app) en vez de
+// dejarlo en blanco. Un día de gimnasio sigue mostrando el nombre real
+// de su rutina (session.subtitle, puesto por attachGymInfo() en
+// PlanTimeline.js) sin tocar.
+function buildCapsuleText(session) {
+
+    if (session.subtitle) return session.subtitle;
+
+    const parts = [];
+
+    if (session.volume > 0) parts.push(`${session.volume} km`);
+    parts.push(session.title || WORKOUT_TYPES[session.type]?.label || "Sesión");
+
+    return `${session.day} ${formatDayNumber(session.date)} / ${parts.join(" · ")}`;
+
+}
 
 // isToday: fecha real de hoy -- lift+brillo (ya existía) MÁS un punto
 // pequeño (.day-today-dot) sobre el icono, señal explícita aparte del
@@ -75,26 +101,14 @@ export function TimelineDay(session, { isToday, isSelected, isCompleted, isRest 
 
             </div>
 
-            <div class="day-stem ${session.type ?? "generic"} ${isSelected ? "is-selected" : ""}"></div>
-
             ${isSelected ? `
                 <div class="timeline-bottom">
 
-                    ${session.title ? `
-                        <span class="timeline-title">
+                    <span class="timeline-capsule">
 
-                            ${session.title}
+                        ${buildCapsuleText(session)}
 
-                        </span>
-                    ` : ""}
-
-                    ${session.subtitle ? `
-                        <span class="timeline-subtitle">
-
-                            ${session.subtitle}
-
-                        </span>
-                    ` : ""}
+                    </span>
 
                 </div>
             ` : ""}

@@ -1,6 +1,9 @@
 /* Posicionado por initPlanConnector.js (left en px, medido en runtime).
    El color de --connector-color también lo pone ese script, leído del
-   --stem-color real del día seleccionado. */
+   color ya resuelto del icono del día seleccionado (ver planDayColor.js).
+   Sin flecha (fase 3 del pulido de Plan) -- ya se entiende que la
+   tarjeta de abajo pertenece al día seleccionado, la línea sola basta de
+   puente visual. */
 .plan-connector{
 
     position:relative;
@@ -19,7 +22,7 @@
 
     top:0;
 
-    bottom:8px;
+    bottom:0;
 
     left:0;
 
@@ -34,32 +37,6 @@
     box-shadow:
         0 0 6px color-mix(in srgb, var(--connector-color, var(--color-primary)) 70%, transparent),
         0 0 20px color-mix(in srgb, var(--connector-color, var(--color-primary)) 35%, transparent);
-
-    transition:left .3s ease;
-
-}
-
-.plan-connector-arrow{
-
-    position:absolute;
-
-    bottom:0;
-
-    left:0;
-
-    transform:translateX(-50%);
-
-    width:0;
-
-    height:0;
-
-    border-left:5px solid transparent;
-
-    border-right:5px solid transparent;
-
-    border-top:7px solid var(--connector-color, var(--color-primary));
-
-    filter:drop-shadow(0 0 6px var(--connector-color, var(--color-primary)));
 
     transition:left .3s ease;
 
