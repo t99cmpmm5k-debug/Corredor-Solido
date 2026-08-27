@@ -729,6 +729,8 @@ export function RunningDetailView(workout, shoes = [], warningsExpanded = false,
 
                 ${detailStat("solar:round-alt-arrow-up-bold-duotone", "Cadencia", workout.avgCadence != null ? `${workout.avgCadence} spm` : "—")}
 
+                ${detailStat("solar:chart-2-bold-duotone", "Training Effect", workout.trainingEffectAerobic != null ? `Aeróbica ${String(workout.trainingEffectAerobic).replace(".", ",")}` : "—")}
+
             `)}
 
             ${detailStatGroup("CONDICIONES", `

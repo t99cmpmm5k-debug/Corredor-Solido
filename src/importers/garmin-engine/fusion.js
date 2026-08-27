@@ -4,7 +4,11 @@ const KEYS = [
     "source", "screen_type", "title", "location", "activity", "date", "time",
     "distance_km", "avg_heart_rate_bpm", "max_heart_rate_bpm",
     "avg_pace_min_km", "total_time", "calories_kcal", "cadence_spm",
-    "max_cadence_spm", "temperature_c", "elevation_gain_m"
+    "max_cadence_spm", "temperature_c", "elevation_gain_m",
+    // Training Effect (bloque real dentro de la pantalla Estadísticas, ver
+    // parser-statistics.js) -- solo Garmin lo trae, TCX/Amazfit se queda en
+    // null como el resto de campos exclusivos de Garmin.
+    "training_effect_aerobic", "training_effect_anaerobic", "exercise_load"
 ];
 
 function paceToSeconds(pace) {

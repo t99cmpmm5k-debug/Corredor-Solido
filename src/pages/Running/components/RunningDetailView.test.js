@@ -455,6 +455,24 @@ describe("RunningDetailView — métricas agrupadas por categoría", () => {
 
     });
 
+    it("con Training Effect real, muestra el valor aeróbico real dentro de Rendimiento", () => {
+
+        const html = RunningDetailView(workout({ trainingEffectAerobic: 3.6 }));
+
+        expect(html).toContain("Training Effect");
+        expect(html).toContain("Aeróbica 3,6");
+
+    });
+
+    it("sin Training Effect capturado, muestra el placeholder -- nunca lo inventa", () => {
+
+        const html = RunningDetailView(workout({ trainingEffectAerobic: null }));
+
+        expect(html).toContain("Training Effect");
+        expect(html).not.toContain("Aeróbica");
+
+    });
+
 });
 
 // splits con FC real por mitades -- helper propio de esta sección, no

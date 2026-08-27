@@ -110,7 +110,10 @@ const RAW_FIELD_BY_NEUTRAL_KEY = {
     avgCadence: "cadence_spm",
     maxCadence: "max_cadence_spm",
     temperatureC: "temperature_c",
-    elevationGainM: "elevation_gain_m"
+    elevationGainM: "elevation_gain_m",
+    trainingEffectAerobic: "training_effect_aerobic",
+    trainingEffectAnaerobic: "training_effect_anaerobic",
+    exerciseLoad: "exercise_load"
 
 };
 
@@ -223,6 +226,13 @@ export function parseGarminWorkout(merged) {
         maxCadence: parseNumber(data.max_cadence_spm),
         temperatureC: parseNumber(data.temperature_c),
         elevationGainM: parseNumber(data.elevation_gain_m),
+
+        // Training Effect (bloque real dentro de Estadísticas, ver
+        // parser-statistics.js) -- solo llega si el usuario capturó esa
+        // pantalla; nunca se inventa para un entreno que no la trajo.
+        trainingEffectAerobic: parseNumber(data.training_effect_aerobic),
+        trainingEffectAnaerobic: parseNumber(data.training_effect_anaerobic),
+        exerciseLoad: parseNumber(data.exercise_load),
 
         splits,
 
