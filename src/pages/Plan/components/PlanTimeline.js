@@ -71,8 +71,29 @@ function attachGymInfo(dayCell, date) {
         gymCompleted,
         gymDayId: gymDay.id,
         gymRoutineId: routine.id,
-        gymSessionId: finishedSession?.id ?? null
+        gymSessionId: finishedSession?.id ?? null,
+        // La lista real de ejercicios de este día -- el timeline no la
+        // necesitaba hasta ahora, pero la tarjeta de detalle inline de
+        // gimnasio en Plan sí (ver PlanGymDayCard.js/buildGymOnlyDay() más
+        // abajo), y ya está aquí mismo en gymDay sin tener que volver a
+        // consultar el puente.
+        exercises: gymDay.exercises
     };
+
+}
+
+// Mismo objeto sintético que ya construye attachGymInfo() para el hueco
+// "solo gimnasio" del timeline -- reexpuesto para que initPlanEvents.js lo
+// guarde tal cual en selectedWorkout al tocar el día (tarjeta de detalle
+// inline de gimnasio en Plan, ver PlanGymDayCard.js) sin reconstruir el
+// mismo mapeo id/title/subtitle en un segundo sitio. null si esa fecha no
+// tiene de verdad ningún día de gimnasio programado -- no debería llamarse
+// en ese caso, initPlanEvents.js solo lo hace cuando el propio día ya
+// renderizado trae data-gym-day-id.
+export function buildGymOnlyDay(date) {
+
+    const result = attachGymInfo(restDayPlaceholder(date), date);
+    return result.gymOnly ? result : null;
 
 }
 

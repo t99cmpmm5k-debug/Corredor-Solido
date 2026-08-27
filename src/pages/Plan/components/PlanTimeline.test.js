@@ -12,7 +12,7 @@ vi.mock("../../../data/gymSessionStore.js", () => ({
     getGymSessions: () => gymSessions
 }));
 
-const { fillWeekDays, PlanTimeline } = await import("./PlanTimeline.js");
+const { fillWeekDays, PlanTimeline, buildGymOnlyDay } = await import("./PlanTimeline.js");
 const { resolveDayColor } = await import("../planDayColor.js");
 
 const MONDAY = "2026-08-17"; // lunes
@@ -185,6 +185,17 @@ describe("fillWeekDays + gimnasio (Gimnasio↔Plan, ver gymTimelineBridge.js) --
 
     });
 
+    it("un día solo de gimnasio trae la lista real de ejercicios (para la tarjeta de detalle inline, ver PlanGymDayCard.js)", () => {
+
+        const exercises = [{ id: "e1", name: "Sentadilla" }, { id: "e2", name: "Peso muerto" }];
+        gymRoutines = [{ id: "r1", name: "Pierna Funcional", days: [{ id: "d1", weekday: "viernes", title: "Pierna Funcional", exercises }] }];
+
+        const days = fillWeekDays(MONDAY, []);
+
+        expect(days[4].exercises).toEqual(exercises);
+
+    });
+
     it("un día con running Y gimnasio conserva la sesión real y solo añade hasGym, sin ocultarla", () => {
 
         gymRoutines = [{ id: "r1", name: "Torso Completo", days: [{ id: "d1", weekday: "jueves", title: "Torso Completo", exercises: [] }] }];
@@ -212,6 +223,37 @@ describe("fillWeekDays + gimnasio (Gimnasio↔Plan, ver gymTimelineBridge.js) --
             expect(d.isRest).toBe(true);
             expect(d.gymOnly).toBeUndefined();
         });
+
+    });
+
+});
+
+describe("buildGymOnlyDay -- mismo objeto sintético que fillWeekDays(), reexpuesto para initPlanEvents.js (ver selectGymOnlyDay())", () => {
+
+    afterEach(() => {
+        gymRoutines = [];
+        gymSessions = [];
+    });
+
+    it("con una rutina real programada esa fecha, devuelve el objeto gymOnly completo", () => {
+
+        gymRoutines = [{ id: "r1", name: "Fuerza Base", days: [{ id: "d1", weekday: "martes", title: "Pierna Funcional", exercises: [{ id: "e1", name: "Sentadilla" }] }] }];
+
+        const result = buildGymOnlyDay("2026-08-18"); // martes
+
+        expect(result).not.toBeNull();
+        expect(result.gymOnly).toBe(true);
+        expect(result.title).toBe("Pierna Funcional");
+        expect(result.gymDayId).toBe("d1");
+        expect(result.exercises).toEqual([{ id: "e1", name: "Sentadilla" }]);
+
+    });
+
+    it("sin ninguna rutina programada esa fecha, devuelve null", () => {
+
+        const result = buildGymOnlyDay("2026-08-18");
+
+        expect(result).toBeNull();
 
     });
 

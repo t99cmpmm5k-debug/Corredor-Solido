@@ -8,7 +8,9 @@ import { PLAN_SESSION_REVIEW_FIELDS, parseSessionFieldValue } from "./components
 import { Running } from "../Running/Running.js";
 import { openDetail as openRunningDetail } from "../Running/initRunningEvents.js";
 import { Gym } from "../Gym/Gym.js";
-import { openGymDay } from "../Gym/initGymEvents.js";
+import { openDaySession, openRoutineBuilder } from "../Gym/initGymEvents.js";
+import { getRoutineById, deleteRoutine } from "../../data/gymRoutineStore.js";
+import { buildGymOnlyDay } from "./components/PlanTimeline.js";
 
 import {
     getImportStep,
@@ -263,16 +265,67 @@ function viewSessionWorkout(workoutId) {
 
 }
 
-// Mismo patrón que viewSessionWorkout(), pero hacia Gimnasio -- solo se usa
-// cuando el día tocado NO tiene running real (ver ".timeline-day" más
-// abajo: con running y gimnasio a la vez, running manda y esto ni se
-// llama). openGymDay() resalta y lleva a la vista esa fila, no arranca la
-// sesión por sí solo -- eso sigue siendo una acción explícita del usuario
-// dentro de Gimnasio.
-function viewGymDay(dayId, completed) {
+// Selecciona el día "solo gimnasio" tocado en el timeline -- ya NO navega
+// a Gimnasio (eso era lo que se pedía cambiar): guarda el objeto sintético
+// de buildGymOnlyDay() (PlanTimeline.js) en el mismo selectedWorkout que ya
+// usa running, y PlanGymDayCard.js pinta su detalle inline, exactamente
+// igual que ya ocurre al tocar un día con running real. Solo se usa cuando
+// el día tocado NO tiene running real (ver ".timeline-day" más abajo: con
+// running y gimnasio a la vez, running manda y esto ni se llama).
+function selectGymOnlyDay(date) {
+
+    const gymDay = buildGymOnlyDay(date);
+    if (!gymDay) return;
+
+    setSelectedWorkout(gymDay);
+    rerender();
+
+}
+
+// "Empezar rutina"/"Ver resumen" de PlanGymDayCard.js -- ahí sí hace falta
+// saltar a Gimnasio de verdad (arrancar/retomar una sesión es la vista
+// interactiva completa de Gimnasio, no algo que tenga sentido duplicar
+// inline en Plan). openDaySession() ya retoma la sesión de hoy si existe
+// (terminada o no) -- mismo botón para las dos etiquetas, igual que ya
+// hace GymTodayCard.js en Inicio (ver initSessionCardEvents.js).
+function startGymDayFromPlan(dayId) {
 
     navigate(Gym);
-    openGymDay(dayId, { completed });
+    openDaySession(dayId);
+
+}
+
+// "Editar rutina" del menú "···" de PlanGymDayCard.js -- mismo flujo que
+// editar desde la propia lista de Gimnasio (openRoutineBuilder(), ya
+// exportada de initGymEvents.js), solo que hace falta navegar primero
+// porque el constructor de rutinas solo se pinta dentro de Gym().
+function editGymRoutineFromPlan(routineId) {
+
+    const routine = getRoutineById(routineId);
+    if (!routine) return;
+
+    setSessionMenuOpenId(null);
+    navigate(Gym);
+    openRoutineBuilder(routine);
+
+}
+
+// "Eliminar rutina" del menú "···" de PlanGymDayCard.js -- mismo dato real
+// (deleteRoutine(), ya existente en gymRoutineStore.js) y mismo texto de
+// confirmación que deleteRoutineWithConfirm() en initGymEvents.js, pero
+// sin navegar (borrar no necesita salir de Plan) y limpiando
+// selectedWorkout después -- mismo criterio que deleteSession() más abajo:
+// no hay otra forma de llegar a este botón que viendo ya esta rutina.
+function deleteGymRoutineFromPlan(routineId) {
+
+    setSessionMenuOpenId(null);
+
+    if (!window.confirm("¿Borrar esta rutina? No se puede deshacer.")) return;
+
+    deleteRoutine(routineId);
+    setSelectedWorkout(null);
+
+    rerender();
 
 }
 
@@ -636,10 +689,11 @@ export function initPlanEvents() {
             }
 
             // Sin sesión real de running: si el hueco es en realidad un día
-            // de gimnasio (ver attachGymInfo() en PlanTimeline.js), salta a
-            // Gimnasio.
+            // de gimnasio (ver attachGymInfo() en PlanTimeline.js), se
+            // selecciona inline -- ya NO salta a Gimnasio, ver
+            // selectGymOnlyDay() más arriba.
             if (day.dataset.gymDayId) {
-                viewGymDay(day.dataset.gymDayId, day.dataset.gymCompleted === "true");
+                selectGymOnlyDay(day.dataset.date);
                 return;
             }
 
@@ -827,6 +881,34 @@ export function initPlanEvents() {
 
         button.addEventListener("click", () => {
             editSession(button.dataset.sessionId);
+        });
+
+    });
+
+    /*==========================
+        TARJETA DE GIMNASIO INLINE (PlanGymDayCard.js)
+    ==========================*/
+
+    document.querySelectorAll('[data-action="plan-start-gym-day"], [data-action="plan-view-completed-gym-session"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+            startGymDayFromPlan(button.dataset.dayId);
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="plan-edit-gym-routine"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+            editGymRoutineFromPlan(button.dataset.routineId);
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="plan-delete-gym-routine"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+            deleteGymRoutineFromPlan(button.dataset.routineId);
         });
 
     });

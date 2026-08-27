@@ -57,8 +57,12 @@ const GYM_EXERCISE_DETAIL_HISTORY_STATE = { gymExerciseDetail: true };
 
 // Igual que openPlanImport() en initPlanEvents.js — su propia entrada de
 // historial para que el gesto de atrás del móvil cierre el constructor en
-// vez de salir de la app.
-function openRoutineBuilder(routine = null) {
+// vez de salir de la app. Exportada: la reutiliza también "Editar rutina"
+// desde la tarjeta de detalle de gimnasio en Plan (ver
+// initPlanEvents.js/PlanGymDayCard.js) -- mismo flujo exacto que editar
+// una rutina desde la propia lista de Gimnasio, sin duplicar el
+// pushState/rerender.
+export function openRoutineBuilder(routine = null) {
 
     openBuilder(routine);
     history.pushState(GYM_BUILDER_HISTORY_STATE, "");

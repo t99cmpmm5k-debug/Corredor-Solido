@@ -5,6 +5,7 @@ import { PlanTimeline } from "./components/PlanTimeline";
 import "./components/PlanTimeline.css";
 import { PlanConnector } from "./components/PlanConnector";
 import { PlanWorkoutCard } from "./components/PlanWorkoutCard";
+import { PlanGymDayCard } from "./components/PlanGymDayCard.js";
 import { PlanMoveDayPicker } from "./components/PlanMoveDayPicker.js";
 import { PlanMovePanel } from "./components/PlanMovePanel.js";
 import { PlanImportWizard } from "./components/PlanImportWizard.js";
@@ -159,7 +160,13 @@ export function Plan() {
             ? PlanMovePanel(movingSession, "move")
             : duplicatingSession
                 ? PlanMovePanel(duplicatingSession, "duplicate")
-                : PlanWorkoutCard(selectedWorkout);
+                // Un día "solo gimnasio" (sin running, ver attachGymInfo()
+                // en PlanTimeline.js) guarda su objeto sintético en el mismo
+                // selectedWorkout -- gymOnly decide qué tarjeta pintar aquí,
+                // sin añadir un cuarto estado paralelo al ya existente.
+                : selectedWorkout?.gymOnly
+                    ? PlanGymDayCard(selectedWorkout)
+                    : PlanWorkoutCard(selectedWorkout);
 
     // Capa flotante por encima de toda la pantalla (fase 5 del pulido de
     // Plan) -- independiente de qué ocupe el hueco de detalle, así que se
