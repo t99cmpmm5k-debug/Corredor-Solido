@@ -502,7 +502,11 @@ function RunningPaceChart(splits, avgPaceRef, avgHrRef, metricMode = "both", wor
 // en la primera opción real, para no fingir una clasificación que nunca
 // se hizo. En cuanto se elige uno, updateWorkoutType() lo persiste sin
 // pasar por el wizard de importación (ver initRunningEvents.js).
-function typeSelector(workout) {
+// Exportada (especificación de cierre): el menú "···" de cada tarjeta de
+// la lista (RunningHistoryItem, Running.js) reutiliza este mismo select
+// para "Cambiar tipo" -- mismo data-action="set-workout-type" que ya
+// maneja initRunningEvents.js, cero wiring nuevo.
+export function typeSelector(workout) {
 
     return `
 
@@ -530,7 +534,9 @@ function typeSelector(workout) {
 // reasignar una carrera a una zapatilla que ya no se usa), salvo que sea
 // la que este entreno ya tiene asignada — si no, cambiar de pantalla tras
 // retirarla haría "desaparecer" en silencio la que de verdad se usó.
-function shoeSelector(workout, shoes) {
+// Exportada por el mismo motivo que typeSelector() -- "Cambiar zapatilla"
+// en el menú "···" de la lista reutiliza este select tal cual.
+export function shoeSelector(workout, shoes) {
 
     const options = shoes.filter(shoe => shoe.status !== "retired" || shoe.id === workout.shoeId);
 

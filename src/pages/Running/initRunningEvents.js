@@ -636,6 +636,20 @@ export function initRunningEvents() {
 
     });
 
+    // "Cambiar tipo"/"Cambiar zapatilla" del menú "···" (mismo select real
+    // que la ficha de detalle, ver typeSelector()/shoeSelector() exportadas
+    // de RunningDetailView.js) -- mismo motivo que delete-workout/
+    // toggle-history-menu de arriba: sin stopPropagation, tocar el select
+    // (o su <label>) burbujea hasta la tarjeta entera y abre el detalle a
+    // la vez que se despliega el desplegable nativo.
+    document.querySelectorAll(".history-menu-select-row").forEach(row => {
+
+        row.addEventListener("click", event => {
+            event.stopPropagation();
+        });
+
+    });
+
     document.querySelectorAll('[data-action="open-detail"]').forEach(article => {
 
         article.addEventListener("click", () => {

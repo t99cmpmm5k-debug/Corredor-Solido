@@ -35,7 +35,7 @@ import {
 import { RunningUploadStep } from "./components/RunningUploadStep.js";
 import { RunningReviewStep } from "./components/RunningReviewStep.js";
 import { RunningShoeStep } from "./components/RunningShoeStep.js";
-import { RunningDetailView } from "./components/RunningDetailView.js";
+import { RunningDetailView, typeSelector, shoeSelector } from "./components/RunningDetailView.js";
 import { RunningShoesScreen, ShoePhoto, shoeBarPercent, formatKm } from "./components/RunningShoesScreen.js";
 import { RunningHeader } from "./components/RunningHeader.js";
 
@@ -111,6 +111,16 @@ function RunningHistoryItem(workout, shoes) {
 
                         <div class="history-menu-popover">
 
+                            <label class="history-menu-select-row">
+                                <iconify-icon icon="solar:widget-5-bold-duotone"></iconify-icon>
+                                ${typeSelector(workout)}
+                            </label>
+
+                            <label class="history-menu-select-row">
+                                <iconify-icon icon="solar:running-round-bold-duotone"></iconify-icon>
+                                ${shoeSelector(workout, shoes)}
+                            </label>
+
                             <button class="history-menu-danger" data-action="delete-workout" data-workout-id="${workout.id}">
                                 <iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon>
                                 Eliminar
@@ -174,35 +184,34 @@ function RunningHistoryItem(workout, shoes) {
 
 }
 
-// Vista de tabla para landscape (ver RunningHistoryTable) — misma fila,
-// mismos datos y mismo criterio de "—"/"Sin zapatilla" que RunningHistoryItem,
-// y sin botón de borrar (el mockup tampoco lo lleva ahí — borrar sigue
-// disponible desde el detalle).
-function RunningHistoryRow(workout, shoes) {
+// Vista de tabla simplificada (especificación de cierre: la de antes
+// tenía demasiadas columnas para móvil) -- solo los 4 datos que responden
+// a "¿cómo fue este entreno de un vistazo?" (Fecha/Km/Ritmo/FC). Duración,
+// temperatura y zapatilla siguen existiendo, pero solo en la ficha
+// individual (RunningDetailView.js) -- no se pierden, se reubican. Sin
+// botón de borrar (el mockup tampoco lo lleva ahí — borrar sigue
+// disponible desde el detalle). También lleva su propia versión compacta
+// de una fila (ver .history-table-row-compact-text en Running.css) para
+// cuando 4 columnas + chevron siguen sin caber bien en un móvil estrecho
+// -- mismo dato, mismo dato real, solo cambia el layout vía CSS, nunca
+// duplicando el marcado en el DOM.
+function RunningHistoryRow(workout) {
 
     const distance = formatDistance(workout.distanceKm);
-    const duration = workout.durationSec != null ? formatSecondsAsClock(workout.durationSec) : "—";
     const pace = workout.avgPaceSecPerKm != null ? `${formatSecondsAsClock(workout.avgPaceSecPerKm)}/km` : "—";
     const hr = workout.avgHr != null ? `${workout.avgHr} ppm` : "—";
-    const temperature = workout.temperatureC != null ? `${workout.temperatureC}°C` : "—";
 
     return `
 
         <div class="history-table-row" data-action="open-detail" data-workout-id="${workout.id}">
 
-            <span class="history-table-cell">${formatDayMonth(workout.date)}</span>
+            <span class="history-table-cell history-table-cell--date">${formatDayMonth(workout.date)}</span>
 
-            <span class="history-table-cell">${distance}</span>
-
-            <span class="history-table-cell">${duration}</span>
+            <span class="history-table-cell history-table-cell--km">${distance}</span>
 
             <span class="history-table-cell history-table-cell--pace">${pace}</span>
 
-            <span class="history-table-cell">${hr}</span>
-
-            <span class="history-table-cell">${temperature}</span>
-
-            <span class="history-table-cell history-table-cell--shoe">${shoeLabel(workout.shoeId, shoes)}</span>
+            <span class="history-table-cell history-table-cell--hr">${hr}</span>
 
             <iconify-icon icon="solar:alt-arrow-right-bold-duotone" class="history-table-chevron"></iconify-icon>
 
@@ -212,24 +221,22 @@ function RunningHistoryRow(workout, shoes) {
 
 }
 
-// Getter de valor por columna, para ordenar (ver sortWorkoutsByColumn) —
-// "shoe" no es un campo directo del workout, así que necesita `shoes`
-// para resolver la etiqueta igual que shoeLabel() en el resto de la vista.
+// Getter de valor por columna, para ordenar (ver sortWorkoutsByColumn) --
+// solo las 4 columnas reales de la tabla simplificada (duración/
+// temperatura/zapatilla ya no son columnas de esta tabla, ver
+// RunningHistoryRow()).
 const SORT_VALUE_GETTERS = {
     date: workout => workout.date,
     distanceKm: workout => workout.distanceKm,
-    durationSec: workout => workout.durationSec,
     avgPaceSecPerKm: workout => workout.avgPaceSecPerKm,
-    avgHr: workout => workout.avgHr,
-    temperatureC: workout => workout.temperatureC,
-    shoe: (workout, shoes) => shoeLabel(workout.shoeId, shoes)
+    avgHr: workout => workout.avgHr
 };
 
 // null siempre al final, sea cual sea la dirección — un entreno sin FC
 // media no debe "ganar" a los demás solo por ordenar ascendente ni
 // "perder" siempre por ordenar descendente. Por eso el signo de la
 // dirección solo se aplica a la comparación entre dos valores reales.
-function sortWorkoutsByColumn(workouts, shoes, column, direction) {
+function sortWorkoutsByColumn(workouts, column, direction) {
 
     const getValue = SORT_VALUE_GETTERS[column];
     if (!getValue) return workouts;
@@ -238,8 +245,8 @@ function sortWorkoutsByColumn(workouts, shoes, column, direction) {
 
     return [...workouts].sort((a, b) => {
 
-        const av = getValue(a, shoes);
-        const bv = getValue(b, shoes);
+        const av = getValue(a);
+        const bv = getValue(b);
 
         if (av == null && bv == null) return 0;
         if (av == null) return 1;
@@ -251,14 +258,14 @@ function sortWorkoutsByColumn(workouts, shoes, column, direction) {
 
 }
 
-// Cabecera de columna tocable — mismo <button data-action> + indicador
-// visible en las columnas inactivas (no solo en la activa) que en el
-// nombre de ejercicio de Gym: una flechita solo en la columna activa era
-// fácil de pasar por alto y parecía que la tabla no era ordenable.
+// Cabecera de columna tocable (especificación de cierre: antes TODAS las
+// columnas mostraban un indicador "↕" a la vez, aunque tenue -- ahora solo
+// la columna activa lleva flecha; el resto queda neutro, sin ningún icono,
+// para no competir visualmente con la que de verdad importa).
 function SortableHeaderCell(label, column, activeColumn, direction) {
 
     const isActive = column === activeColumn;
-    const icon = isActive ? (direction === "asc" ? "↑" : "↓") : "↕";
+    const icon = isActive ? (direction === "asc" ? "↑" : "↓") : "";
 
     return `
 
@@ -266,7 +273,7 @@ function SortableHeaderCell(label, column, activeColumn, direction) {
 
             ${label}
 
-            <span class="history-table-sort-icon">${icon}</span>
+            ${icon ? `<span class="history-table-sort-icon">${icon}</span>` : ""}
 
         </button>
 
@@ -305,7 +312,7 @@ function tableTitle(typeFilter) {
 // Vista por defecto de la lista (ver Running.css) — .running-history
 // (tarjetas) solo se ve por debajo de los 340px de ancho, como red de
 // seguridad para pantallas muy estrechas.
-function RunningHistoryTable(filtered, shoes, typeFilter, sortColumn, sortDirection) {
+function RunningHistoryTable(filtered, typeFilter, sortColumn, sortDirection) {
 
     return `
 
@@ -321,21 +328,15 @@ function RunningHistoryTable(filtered, shoes, typeFilter, sortColumn, sortDirect
 
                     ${SortableHeaderCell("KM", "distanceKm", sortColumn, sortDirection)}
 
-                    ${SortableHeaderCell("DURACIÓN", "durationSec", sortColumn, sortDirection)}
-
                     ${SortableHeaderCell("RITMO", "avgPaceSecPerKm", sortColumn, sortDirection)}
 
-                    ${SortableHeaderCell("FC MEDIA", "avgHr", sortColumn, sortDirection)}
-
-                    ${SortableHeaderCell("TEMP.", "temperatureC", sortColumn, sortDirection)}
-
-                    ${SortableHeaderCell("ZAPATILLA", "shoe", sortColumn, sortDirection)}
+                    ${SortableHeaderCell("FC", "avgHr", sortColumn, sortDirection)}
 
                     <span class="history-table-chevron-spacer"></span>
 
                 </div>
 
-                ${filtered.map(workout => RunningHistoryRow(workout, shoes)).join("")}
+                ${filtered.map(workout => RunningHistoryRow(workout)).join("")}
 
             </div>
 
@@ -470,15 +471,6 @@ function RunningTypeFilters(activeType, workouts) {
 
 }
 
-// "Resumen · Todos" / "Tu resumen · Rodaje (Z2)" -- más natural que la
-// vieja etiqueta fija "FILTRO ACTIVO" + valor aparte (esa mecánica de
-// filtro no es el vocabulario que le importa a quien corre).
-function summaryTitle(typeFilter) {
-
-    return typeFilter ? `Tu resumen · ${typeLabel(typeFilter)}` : "Resumen · Todos";
-
-}
-
 // Resumen del filtro activo (o de todo, con "Todos") — "" si no hay ni un
 // entreno en el conjunto filtrado, para no mostrar un resumen a guiones al
 // lado del estado vacío. `insight` (buildTypeProgressInsight(), null con
@@ -513,7 +505,9 @@ function RunningTypeSummary(typeFilter, summary, insight, comparison) {
 
                 <div class="running-summary-header-text">
 
-                    <span class="running-summary-header-title">${summaryTitle(typeFilter)}</span>
+                    <span class="running-summary-header-label">TU RESUMEN</span>
+
+                    <span class="running-summary-header-title">${typeLabel(typeFilter)}</span>
 
                     ${message ? `
 
@@ -729,12 +723,11 @@ function RunningIdleView() {
 function RunningFullTableView() {
 
     const workouts = getWorkouts();
-    const shoes = getShoes();
     const typeFilter = getTypeFilter();
     const sortColumn = getSortColumn();
     const sortDirection = getSortDirection();
 
-    const sorted = sortWorkoutsByColumn(workouts, shoes, sortColumn, sortDirection);
+    const sorted = sortWorkoutsByColumn(workouts, sortColumn, sortDirection);
     const filtered = typeFilter ? sorted.filter(w => w.type === typeFilter) : sorted;
 
     return `
@@ -765,7 +758,7 @@ function RunningFullTableView() {
 
                 </div>
 
-            ` : RunningHistoryTable(filtered, shoes, typeFilter, sortColumn, sortDirection)}
+            ` : RunningHistoryTable(filtered, typeFilter, sortColumn, sortDirection)}
 
         </section>
 

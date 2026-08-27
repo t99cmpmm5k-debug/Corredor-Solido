@@ -7,13 +7,14 @@
     /* A los 3 bordes reales de la pantalla, igual que el Hero de Inicio —
        antes era una tarjeta compacta con esquinas redondeadas y margen
        lateral propio. min-height (no height fija) para que quepa el
-       contenido en pantallas muy estrechas sin recortarlo. Reducido de
-       340px (retoque de cierre): con el título/subtítulo anclados abajo
-       (justify-content:flex-end) y el mismo padding-bottom/colchón de
-       siempre para el solape con .running-summary (ver margin-top
-       negativo en Running.css), bajar el suelo de altura solo recorta
-       foto vacía por encima del texto, no rompe ese solape. */
-    min-height:250px;
+       contenido en pantallas muy estrechas sin recortarlo. 340px -> 250px
+       en un retoque anterior, ahora 220px (especificación de cierre: el
+       contenido útil debe aparecer antes) -- con el título/subtítulo
+       anclados abajo (justify-content:flex-end) y el mismo padding-bottom/
+       colchón de siempre para el solape con .running-summary (ver
+       margin-top negativo en Running.css), bajar el suelo de altura solo
+       recorta foto vacía por encima del texto, no rompe ese solape. */
+    min-height:220px;
 
     display:flex;
 
@@ -242,9 +243,9 @@
 
     align-items:center;
 
-    gap:6px;
+    gap:5px;
 
-    padding:7px 14px;
+    padding:6px 12px;
 
     border:none;
 
@@ -256,7 +257,7 @@
 
     font-weight:700;
 
-    font-size:.78rem;
+    font-size:.74rem;
 
     cursor:pointer;
 

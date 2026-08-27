@@ -246,9 +246,26 @@
 
     flex-direction:column;
 
-    gap:4px;
+    gap:2px;
 
     min-width:0;
+
+}
+
+/* Etiqueta fija "TU RESUMEN" (especificación de cierre) -- ya no cambia
+   con el filtro, solo el valor de debajo (.running-summary-header-title)
+   lo hace. */
+.running-summary-header-label{
+
+    color:var(--text-secondary);
+
+    font-size:.68rem;
+
+    font-weight:700;
+
+    text-transform:uppercase;
+
+    letter-spacing:.06em;
 
 }
 
@@ -721,7 +738,7 @@
 
     flex-direction:column;
 
-    min-width:150px;
+    min-width:190px;
 
     padding:6px;
 
@@ -776,6 +793,62 @@
     font-size:16px;
 
     color:var(--color-primary);
+
+    flex-shrink:0;
+
+}
+
+/* "Cambiar tipo"/"Cambiar zapatilla" (especificación de cierre): mismo
+   <select> real que ya usa la ficha de detalle (typeSelector()/
+   shoeSelector(), exportadas de RunningDetailView.js) -- mismo
+   data-action que ya maneja initRunningEvents.js, sin wiring nuevo. Se
+   viste como una fila más del menú (icono + valor actual, sin chrome de
+   <select> nativo) en vez de una etiqueta "Cambiar tipo:" aparte -- mismo
+   criterio que .detail-shoe-select en el detalle: el valor ya seleccionado
+   deja claro qué se puede tocar para cambiar. */
+.history-menu-select-row{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+
+    padding:10px 12px;
+
+    border-radius:9px;
+
+    cursor:pointer;
+
+}
+
+.history-menu-select-row:hover{
+
+    background:color-mix(in srgb, var(--color-primary) 10%, transparent);
+
+}
+
+.history-menu-select-row select{
+
+    flex:1;
+
+    min-width:0;
+
+    border:none;
+
+    background:none;
+
+    padding:0;
+
+    color:var(--text-primary);
+
+    font-size:.88rem;
+
+    font-weight:600;
+
+    font-family:inherit;
+
+    cursor:pointer;
 
 }
 
@@ -889,9 +962,11 @@
 }
 
 /* =========================
-   TABLA DE ENTRENOS — vista por defecto ahora (ver media query al
-   final de este archivo: .running-history, las tarjetas, solo vuelve
-   por debajo de 340px de ancho, como red de seguridad).
+   TABLA DE ENTRENOS -- vive solo en su propia pantalla
+   (RunningFullTableView), simplificada a 4 columnas reales (Fecha/Km/
+   Ritmo/FC, especificación de cierre) -- duración/temperatura/zapatilla
+   ya no están aquí, siguen existiendo tal cual en la ficha individual del
+   entreno.
 ========================= */
 
 .running-history-table{
@@ -938,7 +1013,7 @@
 
     display:grid;
 
-    grid-template-columns:64px 64px 66px 68px 76px 56px 1fr 18px;
+    grid-template-columns:60px 62px 76px 60px 18px;
 
     align-items:center;
 
@@ -949,6 +1024,12 @@
     border-bottom:1px solid color-mix(in srgb, var(--card-border) 70%, transparent);
 
     cursor:pointer;
+
+    /* Dígitos con el mismo ancho fijo (especificación de cierre: "alinear
+       muy bien los números") -- sin esto, un "1" más estrecho que un "8"
+       hace que las columnas numéricas no queden en línea recta entre
+       filas. */
+    font-variant-numeric:tabular-nums;
 
 }
 
@@ -981,10 +1062,11 @@
 }
 
 /* Cabecera tocable (ver SortableHeaderCell en Running.js) — reset de
-   <button> para que se vea igual que la <span> que sustituye, con un
-   indicador de orden siempre visible (↕ tenue si la columna no es la
-   activa, ↑/↓ en color si lo es) para que no haga falta descubrir por
-   accidente que la tabla se puede ordenar. */
+   <button> para que se vea igual que la <span> que sustituye. Solo la
+   columna activa lleva flecha (↑/↓) y color; el resto queda neutro, sin
+   ningún icono de por medio (especificación de cierre: antes las 7
+   cabeceras mostraban "↕" a la vez, compitiendo con la que de verdad
+   importaba). */
 .history-table-cell--sortable{
 
     display:inline-flex;
@@ -1051,6 +1133,22 @@
 
 }
 
+/* Km/Ritmo/FC son datos numéricos -- alineados a la derecha, para que se
+   lean en columna recta como una tabla técnica real (especificación de
+   cierre). Fecha se queda a la izquierda, no es un número que comparar
+   entre filas. */
+.history-table-cell--km,
+.history-table-cell--pace,
+.history-table-cell--hr{
+
+    text-align:right;
+
+}
+
+/* Ritmo es el dato principal de la fila -- el único en cian
+   (especificación de cierre de colores: "cian = ritmo, elemento
+   interactivo"). Fecha/Km se quedan en el blanco por defecto de
+   .history-table-cell de arriba. */
 .history-table-cell--pace{
 
     color:var(--color-primary);
@@ -1059,11 +1157,12 @@
 
 }
 
-.history-table-cell--shoe{
+/* FC: blanco/gris claro, un escalón por debajo de fecha/km -- nunca cian
+   (ese color es solo para ritmo) ni coral (el coral es la línea del
+   gráfico de FC en el detalle, no esta tabla). */
+.history-table-cell--hr{
 
     color:var(--text-secondary);
-
-    font-weight:500;
 
 }
 
@@ -1080,6 +1179,66 @@
     color:var(--color-text-muted);
 
     font-size:16px;
+
+}
+
+/* Fila compacta de un vistazo en pantallas estrechas (especificación de
+   cierre: "si 4 columnas + chevron siguen apretadas, pasar
+   automáticamente a una fila compacta -- 25 AGO · 8,01 km · 5:49/km ·
+   151 ppm ›"). Mismo marcado, mismos <span class="history-table-cell">
+   de siempre -- nunca se duplica la fila en el DOM, solo cambia cómo se
+   distribuyen sus celdas: de grid en columnas fijas a un flujo que
+   envuelve, con un separador real " · " insertado por CSS entre celdas
+   consecutivas (no en la cabecera, que ya tiene su propio layout con
+   flechas de orden). El propio orden/filtro no cambia -- es la misma
+   tabla ya ordenada, solo otro layout de la misma fila. */
+@media (max-width: 380px){
+
+    .history-table-row:not(.history-table-header){
+
+        display:flex;
+
+        flex-wrap:wrap;
+
+        align-items:baseline;
+
+        row-gap:2px;
+
+    }
+
+    .history-table-row:not(.history-table-header) .history-table-cell{
+
+        flex:0 0 auto;
+
+        overflow:visible;
+
+        text-align:left;
+
+    }
+
+    .history-table-row:not(.history-table-header) .history-table-cell--date{
+
+        text-transform:uppercase;
+
+    }
+
+    .history-table-row:not(.history-table-header) .history-table-cell:not(.history-table-cell--date)::before{
+
+        content:"· ";
+
+        margin-right:.3em;
+
+        color:var(--text-secondary);
+
+        font-weight:400;
+
+    }
+
+    .history-table-row:not(.history-table-header) .history-table-chevron{
+
+        margin-left:auto;
+
+    }
 
 }
 
