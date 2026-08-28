@@ -242,6 +242,49 @@
 }
 
 /* =========================
+   TARJETA DESTACADA (Objetivo principal) + LISTA PLANA DE "PRÓXIMAS"
+   (pulido: reorganización por indicador activo) -- solo esta tab, las
+   demás siguen agrupadas por mes más abajo.
+========================= */
+
+.carreras-featured-race{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:8px;
+
+}
+
+.carreras-featured-label{
+
+    color:var(--color-warning);
+
+    font-size:.72rem;
+
+    font-weight:800;
+
+    letter-spacing:.06em;
+
+}
+
+/* Selector compuesto (no solo .carreras-flat-list) a propósito: el
+   marcado lleva las dos clases juntas ("carreras-list carreras-flat-
+   list", ver CarrerasFlatList() en Carreras.js) y esta regla vive ANTES
+   que .carreras-list en la hoja -- sin la especificidad extra, el
+   gap:20px de .carreras-list (definido más abajo) ganaría por orden de
+   aparición al tener la misma especificidad. */
+.carreras-list.carreras-flat-list{
+
+    /* Mismo gap que .carreras-month-cards -- una sola "columna" de
+       tarjetas, sin el gap mayor que .carreras-list usa entre grupos de
+       mes (aquí no hay grupos). */
+    gap:10px;
+
+}
+
+/* =========================
    LISTA AGRUPADA POR MES
 ========================= */
 

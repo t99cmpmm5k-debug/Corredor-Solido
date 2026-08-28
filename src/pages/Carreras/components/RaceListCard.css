@@ -32,6 +32,94 @@
 
 }
 
+/* Objetivo principal -- la única carrera que puede tenerlo (ver
+   setPlannedRaceGoal() en workoutStore.js), así que el resaltado visual
+   es genuinamente excepcional, no ambiental (mismo criterio que el
+   pulido de cierre de Running, ver Running.css). --color-glow en vez de
+   un color fijo: se integra con el tema de franja horaria en vez de
+   competir con él, igual que el resto de brillos "seleccionado" de la
+   app. Sólido, no discontinuo, aunque sea planificada -- el objetivo se
+   distingue por el borde de color, no hace falta duplicar la señal. */
+.race-card.is-goal{
+
+    border-style:solid;
+
+    border-color:color-mix(in srgb, var(--color-glow) 55%, transparent);
+
+    background:color-mix(in srgb, var(--color-glow) 7%, color-mix(in srgb, var(--card-background) 70%, transparent));
+
+    box-shadow:0 0 18px color-mix(in srgb, var(--color-glow) 22%, transparent);
+
+}
+
+/* =========================
+   BADGES DE ESTADO REAL (Objetivo / Inscrito / En tu plan)
+========================= */
+
+.race-card-badges{
+
+    display:flex;
+
+    flex-wrap:wrap;
+
+    gap:5px;
+
+    margin:1px 0;
+
+}
+
+.race-card-badge{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:3px;
+
+    padding:2px 8px;
+
+    border-radius:999px;
+
+    font-size:.66rem;
+
+    font-weight:700;
+
+    text-transform:uppercase;
+
+    letter-spacing:.02em;
+
+}
+
+.race-card-badge iconify-icon{
+
+    font-size:11px;
+
+}
+
+.race-card-badge--goal{
+
+    background:color-mix(in srgb, var(--color-warning) 16%, transparent);
+
+    color:var(--color-warning);
+
+}
+
+.race-card-badge--registered{
+
+    background:color-mix(in srgb, var(--color-success) 16%, transparent);
+
+    color:var(--color-success);
+
+}
+
+.race-card-badge--in-plan{
+
+    background:color-mix(in srgb, var(--color-primary) 16%, transparent);
+
+    color:var(--color-primary);
+
+}
+
 .race-card-image{
 
     flex-shrink:0;

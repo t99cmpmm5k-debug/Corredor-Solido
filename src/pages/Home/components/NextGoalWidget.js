@@ -101,7 +101,13 @@ function buildSubtitle(race, days) {
 // sería inventar un dato que no tenemos.
 export function NextGoalWidget(referenceDate = new Date()) {
 
-    const race = getUpcomingPlannedRaces()[0];
+    // La marcada como "Objetivo principal" (pulido: conexión Carreras↔
+    // Plan) gana a la más próxima por fecha simple, si hay alguna
+    // marcada y sigue siendo próxima -- getUpcomingPlannedRaces() ya
+    // viene ordenada por fecha, así que sin ninguna marcada esto es
+    // exactamente el comportamiento de siempre ([0], la primera).
+    const upcoming = getUpcomingPlannedRaces();
+    const race = upcoming.find(r => r.isGoal) ?? upcoming[0];
 
     if (!race) return "";
 

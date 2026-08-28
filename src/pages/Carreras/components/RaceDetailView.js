@@ -10,6 +10,58 @@ function capitalize(text) {
 
 }
 
+// Los 3 controles reales del detalle (pulido: "objetivo/inscrito/en mi
+// plan") -- guardan al primer toque (ver initCarrerasEvents.js), no hay
+// paso de "guardar" aparte. isGoal/isRegistered son banderas propias de
+// la carrera; "En mi plan" refleja linkedPlanSessionId (conexión real con
+// una plannedSession de Plan, no solo un flag visual) -- el texto del
+// botón no cambia con el estado, solo su estilo activo/inactivo (is-active),
+// mismo criterio que .carreras-filter-pill.
+function RaceDetailActions(race) {
+
+    return `
+
+        <div class="race-detail-actions">
+
+            <button
+                class="race-detail-action race-detail-action--goal ${race.isGoal ? "is-active" : ""}"
+                data-action="toggle-race-goal"
+                data-id="${race.id}"
+            >
+
+                <iconify-icon icon="solar:cup-star-bold-duotone"></iconify-icon>
+                Objetivo principal
+
+            </button>
+
+            <button
+                class="race-detail-action race-detail-action--registered ${race.isRegistered ? "is-active" : ""}"
+                data-action="toggle-race-registered"
+                data-id="${race.id}"
+            >
+
+                <iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon>
+                Inscrito
+
+            </button>
+
+            <button
+                class="race-detail-action race-detail-action--in-plan ${race.linkedPlanSessionId ? "is-active" : ""}"
+                data-action="toggle-race-in-plan"
+                data-id="${race.id}"
+            >
+
+                <iconify-icon icon="solar:calendar-mark-bold-duotone"></iconify-icon>
+                En mi plan
+
+            </button>
+
+        </div>
+
+    `;
+
+}
+
 function DetailRow(label, value) {
 
     return `
@@ -83,6 +135,8 @@ export function RaceDetailView(race) {
                     </div>
 
                 ` : ""}
+
+                ${RaceDetailActions(race)}
 
                 <section class="race-detail-table">
 

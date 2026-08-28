@@ -23,6 +23,53 @@ function DateBadge(iso) {
 
 }
 
+// Fila de badges de estado real -- Objetivo (isGoal), Inscrito de verdad
+// (isRegistered, distinto de "Inscripción abierta/cerrada" de RaceMeta,
+// que es el estado del EVENTO, no del usuario) y En tu plan
+// (linkedPlanSessionId, conexión real con una plannedSession de Plan, ver
+// linkPlannedRaceToPlan() en workoutStore.js). Cada badge se omite si su
+// indicador no está activo -- nunca los 3 a la fuerza.
+function RaceBadges(entry) {
+
+    if (!entry.isGoal && !entry.isRegistered && !entry.linkedPlanSessionId) return "";
+
+    return `
+
+        <div class="race-card-badges">
+
+            ${entry.isGoal ? `
+
+                <span class="race-card-badge race-card-badge--goal">
+                    <iconify-icon icon="solar:cup-star-bold-duotone"></iconify-icon>
+                    Objetivo
+                </span>
+
+            ` : ""}
+
+            ${entry.isRegistered ? `
+
+                <span class="race-card-badge race-card-badge--registered">
+                    <iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon>
+                    Inscrito
+                </span>
+
+            ` : ""}
+
+            ${entry.linkedPlanSessionId ? `
+
+                <span class="race-card-badge race-card-badge--in-plan">
+                    <iconify-icon icon="solar:calendar-mark-bold-duotone"></iconify-icon>
+                    En tu plan
+                </span>
+
+            ` : ""}
+
+        </div>
+
+    `;
+
+}
+
 // Línea de meta con datos derivables de lo que ya trae la carrera --
 // "Faltan X días" solo tiene sentido para una planificada con fecha aún
 // por llegar (una pasada mostraría un número negativo, una completada ya
@@ -114,7 +161,7 @@ export function RaceListCard(entry) {
     return `
 
         <article
-            class="race-card ${isPlanned ? "is-planned" : "is-completed"}"
+            class="race-card ${isPlanned ? "is-planned" : "is-completed"} ${entry.isGoal ? "is-goal" : ""}"
             data-action="open-race-entry"
             data-kind="${entry.kind}"
             data-id="${entry.id}"
@@ -127,6 +174,8 @@ export function RaceListCard(entry) {
             <div class="race-card-body">
 
                 <span class="race-card-name">${entry.name}</span>
+
+                ${RaceBadges(entry)}
 
                 ${entry.location ? `
 

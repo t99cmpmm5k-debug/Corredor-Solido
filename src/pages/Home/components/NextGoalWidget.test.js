@@ -164,6 +164,34 @@ describe("NextGoalWidget", () => {
     // anchura es el caso más apretado; aquí solo se confirma que el
     // marcado sigue siendo el <span> de siempre (el ajuste de ancho/
     // elipsis vive en CSS, ver NextGoalWidget.css).
+    it("con una carrera marcada isGoal, la prioriza por encima de la más próxima por fecha simple", () => {
+
+        vi.mocked(getUpcomingPlannedRaces).mockReturnValue([
+            { id: "r1", name: "10K Murcia (más próxima)", date: "2026-09-22" },
+            { id: "r2", name: "Maratón Objetivo", date: "2026-10-15", isGoal: true }
+        ]);
+
+        const html = NextGoalWidget(REFERENCE);
+
+        expect(html).toContain("Maratón Objetivo");
+        expect(html).not.toContain("10K Murcia (más próxima)");
+
+    });
+
+    it("sin ninguna carrera marcada isGoal, mantiene el comportamiento actual (la más próxima por fecha)", () => {
+
+        vi.mocked(getUpcomingPlannedRaces).mockReturnValue([
+            { id: "r1", name: "10K Murcia", date: "2026-09-22" },
+            { id: "r2", name: "Media Maratón Águilas", date: "2026-10-01" }
+        ]);
+
+        const html = NextGoalWidget(REFERENCE);
+
+        expect(html).toContain("10K Murcia");
+        expect(html).not.toContain("Media Maratón Águilas");
+
+    });
+
     it("un nombre de carrera largo real sigue en el mismo <span> (el recorte a 2 líneas/elipsis es cosa del CSS)", () => {
 
         vi.mocked(getUpcomingPlannedRaces).mockReturnValue([

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildRaceEntries, categorizeRaceEntries, filterRaceEntriesByQuery, filterRaceEntriesByRegion, filterRaceEntriesByType, groupEntriesByMonth } from "./raceEntries.js";
+import { buildRaceEntries, categorizeRaceEntries, filterRaceEntriesByQuery, filterRaceEntriesByRegion, filterRaceEntriesByType, groupEntriesByMonth, splitFeaturedRace, sortByIndicatorPriority } from "./raceEntries.js";
 
 function futureIso(daysFromNow) {
     const d = new Date();
@@ -72,6 +72,37 @@ describe("buildRaceEntries", () => {
         ]);
 
         expect(entries[0].region).toBeNull();
+
+    });
+
+    it("una carrera completada siempre tiene isGoal/isRegistered en false y linkedPlanSessionId en null — no son campos que un workout real pueda tener", () => {
+
+        const entries = buildRaceEntries(
+            [{ id: "w1", type: "race", date: "2026-08-01", title: "10K Local" }],
+            []
+        );
+
+        expect(entries[0]).toMatchObject({ isGoal: false, isRegistered: false, linkedPlanSessionId: null });
+
+    });
+
+    it("una carrera planificada sin isGoal/isRegistered/linkedPlanSessionId (dato de antes de esta ronda) usa false/false/null, no undefined", () => {
+
+        const entries = buildRaceEntries([], [
+            { id: "p1", date: "2026-09-01", type: "RU", name: "Carrera vieja" }
+        ]);
+
+        expect(entries[0]).toMatchObject({ isGoal: false, isRegistered: false, linkedPlanSessionId: null });
+
+    });
+
+    it("una carrera planificada con isGoal/isRegistered/linkedPlanSessionId ya guardados los conserva tal cual", () => {
+
+        const entries = buildRaceEntries([], [
+            { id: "p1", date: "2026-09-01", type: "RU", name: "Carrera X", isGoal: true, isRegistered: true, linkedPlanSessionId: "s1" }
+        ]);
+
+        expect(entries[0]).toMatchObject({ isGoal: true, isRegistered: true, linkedPlanSessionId: "s1" });
 
     });
 
@@ -201,6 +232,85 @@ describe("filterRaceEntriesByType", () => {
         const result = filterRaceEntriesByType(filterRaceEntriesByRegion(withRegion, "Murcia"), "TRS");
 
         expect(result.map(e => e.id)).toEqual(["r2"]);
+
+    });
+
+});
+
+describe("splitFeaturedRace", () => {
+
+    it("sin ninguna marcada como isGoal, featured es null y rest es la lista tal cual", () => {
+
+        const entries = buildRaceEntries([], [
+            { id: "p1", date: "2026-08-22", type: "RU", name: "A" },
+            { id: "p2", date: "2026-08-28", type: "RU", name: "B" }
+        ]);
+
+        const { featured, rest } = splitFeaturedRace(entries);
+
+        expect(featured).toBeNull();
+        expect(rest).toEqual(entries);
+
+    });
+
+    it("saca la marcada como isGoal a featured, y la quita de rest", () => {
+
+        const entries = buildRaceEntries([], [
+            { id: "p1", date: "2026-08-22", type: "RU", name: "A" },
+            { id: "p2", date: "2026-08-28", type: "RU", name: "B", isGoal: true },
+            { id: "p3", date: "2026-09-01", type: "RU", name: "C" }
+        ]);
+
+        const { featured, rest } = splitFeaturedRace(entries);
+
+        expect(featured.id).toBe("p2");
+        expect(rest.map(e => e.id)).toEqual(["p1", "p3"]);
+
+    });
+
+});
+
+describe("sortByIndicatorPriority", () => {
+
+    it("las que tienen isRegistered o linkedPlanSessionId van antes que las que no tienen ninguno", () => {
+
+        const entries = buildRaceEntries([], [
+            { id: "p1", date: "2026-08-22", type: "RU", name: "Sin indicador" },
+            { id: "p2", date: "2026-08-28", type: "RU", name: "Inscrito", isRegistered: true },
+            { id: "p3", date: "2026-09-01", type: "RU", name: "En plan", linkedPlanSessionId: "s1" }
+        ]);
+
+        const sorted = sortByIndicatorPriority(entries);
+
+        expect(sorted.map(e => e.id)).toEqual(["p2", "p3", "p1"]);
+
+    });
+
+    it("dentro de cada grupo (con/sin indicador) conserva el orden de entrada", () => {
+
+        const entries = buildRaceEntries([], [
+            { id: "p1", date: "2026-10-01", type: "RU", name: "Sin indicador, más tarde" },
+            { id: "p2", date: "2026-08-01", type: "RU", name: "Sin indicador, más pronto" },
+            { id: "p3", date: "2026-09-01", type: "RU", name: "Con indicador", isRegistered: true }
+        ]);
+
+        const sorted = sortByIndicatorPriority(entries);
+
+        expect(sorted.map(e => e.id)).toEqual(["p3", "p1", "p2"]);
+
+    });
+
+    it("no muta el array de entrada", () => {
+
+        const entries = buildRaceEntries([], [
+            { id: "p1", date: "2026-08-22", type: "RU", name: "A" },
+            { id: "p2", date: "2026-08-28", type: "RU", name: "B", isRegistered: true }
+        ]);
+
+        const original = [...entries];
+        sortByIndicatorPriority(entries);
+
+        expect(entries).toEqual(original);
 
     });
 

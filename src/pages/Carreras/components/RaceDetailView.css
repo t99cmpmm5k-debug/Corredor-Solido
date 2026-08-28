@@ -236,6 +236,96 @@
 
 }
 
+/* =========================
+   CONTROLES REALES (Objetivo / Inscrito / En mi plan) -- pulsan y
+   guardan al momento, mismo lenguaje visual que .carreras-filter-pill
+   (borde suelto inactivo, relleno de color activo), uno por indicador.
+========================= */
+
+.race-detail-actions{
+
+    display:flex;
+
+    gap:8px;
+
+    flex-wrap:wrap;
+
+}
+
+.race-detail-action{
+
+    flex:1;
+
+    min-width:0;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    gap:6px;
+
+    padding:10px 10px;
+
+    border-radius:var(--radius-md);
+
+    border:1px solid var(--card-border);
+
+    background:color-mix(in srgb, var(--card-background) 60%, transparent);
+
+    color:var(--text-secondary);
+
+    font-size:.78rem;
+
+    font-weight:700;
+
+    text-align:center;
+
+    cursor:pointer;
+
+    transition:.2s;
+
+}
+
+.race-detail-action iconify-icon{
+
+    flex-shrink:0;
+
+    font-size:16px;
+
+}
+
+.race-detail-action--goal.is-active{
+
+    border-color:color-mix(in srgb, var(--color-warning) 55%, transparent);
+
+    background:color-mix(in srgb, var(--color-warning) 16%, transparent);
+
+    color:var(--color-warning);
+
+}
+
+.race-detail-action--registered.is-active{
+
+    border-color:color-mix(in srgb, var(--color-success) 55%, transparent);
+
+    background:color-mix(in srgb, var(--color-success) 16%, transparent);
+
+    color:var(--color-success);
+
+}
+
+.race-detail-action--in-plan.is-active{
+
+    border-color:color-mix(in srgb, var(--color-primary) 55%, transparent);
+
+    background:color-mix(in srgb, var(--color-primary) 16%, transparent);
+
+    color:var(--color-primary);
+
+}
+
 .race-detail-table{
 
     display:flex;

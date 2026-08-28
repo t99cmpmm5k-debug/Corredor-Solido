@@ -10,7 +10,7 @@ import { getActiveTab, setActiveTab, getSearchQuery, getSelectedRegion, getSelec
 import { getRaceImportStep } from "./raceImportStore.js";
 import { formatMonthLabel } from "../../components/MonthCalendar/MonthCalendar.js";
 import { formatDisciplineType } from "./raceFormat.js";
-import { buildRaceEntries, categorizeRaceEntries, filterRaceEntriesByQuery, filterRaceEntriesByRegion, filterRaceEntriesByType, groupEntriesByMonth } from "./raceEntries.js";
+import { buildRaceEntries, categorizeRaceEntries, filterRaceEntriesByQuery, filterRaceEntriesByRegion, filterRaceEntriesByType, groupEntriesByMonth, splitFeaturedRace, sortByIndicatorPriority } from "./raceEntries.js";
 
 const TAB_LABELS = {
     proximas: "Próximas",
@@ -191,6 +191,47 @@ function CarrerasEmptyState(activeTab, hasFilter) {
 
 }
 
+// Tarjeta destacada del objetivo (pulido: "Objetivo principal") -- misma
+// RaceListCard() de siempre (ya sabe pintarse distinta cuando isGoal es
+// true, ver RaceListCard.css), solo que aquí vive suelta, con su propia
+// etiqueta encima, en vez de dentro de un grupo por mes.
+function CarrerasFeaturedRace(entry) {
+
+    return `
+
+        <div class="carreras-featured-race">
+
+            <p class="carreras-featured-label">TU OBJETIVO</p>
+
+            ${RaceListCard(entry)}
+
+        </div>
+
+    `;
+
+}
+
+// Lista plana de "Próximas" (pulido: reorganización por indicador
+// activo, ver sortByIndicatorPriority() en raceEntries.js) -- a
+// diferencia de CarrerasList() más abajo, SIN agrupar por mes: mezclar
+// prioridad de indicador con separadores de mes no tiene una lectura
+// clara (¿qué mes va primero si el criterio ya no es la fecha?), así que
+// esta tab cambia de aspecto respecto a Mis carreras/Resultados a
+// propósito.
+function CarrerasFlatList(entries) {
+
+    return `
+
+        <div class="carreras-list carreras-flat-list">
+
+            ${entries.map(RaceListCard).join("")}
+
+        </div>
+
+    `;
+
+}
+
 function CarrerasList(entries) {
 
     const groups = groupEntriesByMonth(entries);
@@ -282,6 +323,30 @@ export function Carreras() {
     const visibleEntries = filterRaceEntriesByQuery(filtered, query);
     const hasActiveFilter = query.trim().length > 0 || selectedRegion !== "all" || selectedType !== "all";
 
+    // "Próximas" cambia de forma (tarjeta destacada + lista plana por
+    // indicador, ver CarrerasFeaturedRace/CarrerasFlatList) -- las otras 2
+    // tabs siguen con el agrupado por mes de siempre (CarrerasList). La
+    // destacada sale del propio visibleEntries (ya filtrado/buscado): si
+    // el objetivo no encaja con el filtro activo, no aparece "fuera" de
+    // la lista que se está mirando -- misma regla que el resto de la tab.
+    let listSection;
+
+    if (visibleEntries.length === 0) {
+        listSection = CarrerasEmptyState(activeTab, hasActiveFilter);
+    } else if (activeTab === "proximas") {
+
+        const { featured, rest } = splitFeaturedRace(visibleEntries);
+        const sortedRest = sortByIndicatorPriority(rest);
+
+        listSection = `
+            ${featured ? CarrerasFeaturedRace(featured) : ""}
+            ${sortedRest.length > 0 ? CarrerasFlatList(sortedRest) : ""}
+        `;
+
+    } else {
+        listSection = CarrerasList(visibleEntries);
+    }
+
     return `
 
         <div class="carreras">
@@ -300,7 +365,7 @@ export function Carreras() {
 
                 ${CarrerasFilterChips(selectedRegion, selectedType)}
 
-                ${visibleEntries.length === 0 ? CarrerasEmptyState(activeTab, hasActiveFilter) : CarrerasList(visibleEntries)}
+                ${listSection}
 
             </div>
 

@@ -87,6 +87,170 @@ describe("importPlannedRaces - dedupe por fecha+nombre conserva region al reimpo
 
 });
 
+describe("setPlannedRaceGoal — \"Objetivo principal\" (detalle de Carreras)", () => {
+
+    beforeEach(() => {
+
+        resetFakeIndexedDB();
+        vi.resetModules();
+
+    });
+
+    it("marca isGoal:true en la carrera indicada", async () => {
+
+        const { hydrate, importPlannedRaces, setPlannedRaceGoal, getPlannedRaces } = await import("./workoutStore.js");
+        await hydrate();
+
+        await importPlannedRaces([{ date: "2026-09-01", type: "RU", name: "Carrera A" }]);
+        const race = getPlannedRaces().find(r => r.name === "Carrera A");
+
+        setPlannedRaceGoal(race.id, true);
+
+        expect(getPlannedRaces().find(r => r.id === race.id).isGoal).toBe(true);
+
+    });
+
+    it("marcar una nueva desmarca automáticamente cualquier otra que lo tuviera — solo una a la vez", async () => {
+
+        const { hydrate, importPlannedRaces, setPlannedRaceGoal, getPlannedRaces } = await import("./workoutStore.js");
+        await hydrate();
+
+        await importPlannedRaces([
+            { date: "2026-09-01", type: "RU", name: "Carrera A" },
+            { date: "2026-09-08", type: "RU", name: "Carrera B" }
+        ]);
+
+        const raceA = getPlannedRaces().find(r => r.name === "Carrera A");
+        const raceB = getPlannedRaces().find(r => r.name === "Carrera B");
+
+        setPlannedRaceGoal(raceA.id, true);
+        expect(getPlannedRaces().find(r => r.id === raceA.id).isGoal).toBe(true);
+
+        setPlannedRaceGoal(raceB.id, true);
+
+        expect(getPlannedRaces().find(r => r.id === raceB.id).isGoal).toBe(true);
+        expect(getPlannedRaces().find(r => r.id === raceA.id).isGoal).toBe(false);
+
+    });
+
+    it("desmarcar la actual no promueve ninguna otra — puede quedar sin ninguna marcada", async () => {
+
+        const { hydrate, importPlannedRaces, setPlannedRaceGoal, getPlannedRaces } = await import("./workoutStore.js");
+        await hydrate();
+
+        await importPlannedRaces([{ date: "2026-09-01", type: "RU", name: "Carrera A" }]);
+        const race = getPlannedRaces().find(r => r.name === "Carrera A");
+
+        setPlannedRaceGoal(race.id, true);
+        setPlannedRaceGoal(race.id, false);
+
+        expect(getPlannedRaces().find(r => r.id === race.id).isGoal).toBe(false);
+        expect(getPlannedRaces().some(r => r.isGoal)).toBe(false);
+
+    });
+
+});
+
+describe("linkPlannedRaceToPlan / unlinkPlannedRaceFromPlan — conexión real \"En mi plan\" (Carreras↔Plan)", () => {
+
+    beforeEach(() => {
+
+        resetFakeIndexedDB();
+        vi.resetModules();
+
+    });
+
+    it("crea una plannedSession real en la fecha de la carrera, tipo race, con su nombre como descripción", async () => {
+
+        const { hydrate, importPlannedRaces, linkPlannedRaceToPlan, getPlannedRaces, getSessionsForDate } = await import("./workoutStore.js");
+        await hydrate();
+
+        await importPlannedRaces([{ date: "2026-09-15", type: "RU", name: "Media Maratón Águilas" }]);
+        const race = getPlannedRaces().find(r => r.name === "Media Maratón Águilas");
+
+        const session = linkPlannedRaceToPlan(race.id);
+
+        expect(session).toMatchObject({ date: "2026-09-15", type: "race", description: "Media Maratón Águilas" });
+        expect(getSessionsForDate("2026-09-15").map(s => s.id)).toContain(session.id);
+        expect(getPlannedRaces().find(r => r.id === race.id).linkedPlanSessionId).toBe(session.id);
+
+    });
+
+    it("desmarcar borra la sesión real y limpia linkedPlanSessionId", async () => {
+
+        const { hydrate, importPlannedRaces, linkPlannedRaceToPlan, unlinkPlannedRaceFromPlan, getPlannedRaces, getSessionsForDate } = await import("./workoutStore.js");
+        await hydrate();
+
+        await importPlannedRaces([{ date: "2026-09-15", type: "RU", name: "Carrera X" }]);
+        const race = getPlannedRaces().find(r => r.name === "Carrera X");
+
+        const session = linkPlannedRaceToPlan(race.id);
+        unlinkPlannedRaceFromPlan(race.id);
+
+        expect(getSessionsForDate("2026-09-15").some(s => s.id === session.id)).toBe(false);
+        expect(getPlannedRaces().find(r => r.id === race.id).linkedPlanSessionId).toBeNull();
+
+    });
+
+    // El caso de más riesgo de todo el cambio (ver instrucciones): borrar
+    // la sesión directamente desde Plan (deletePlannedSession, SIN pasar
+    // por unlinkPlannedRaceFromPlan) no debe dejar la carrera con una
+    // referencia rota -- mismo tipo de bug que ya tuvimos con
+    // Gimnasio↔Plan.
+    it("borrar la sesión directamente desde Plan (deletePlannedSession) limpia linkedPlanSessionId en la carrera, sin referencia rota", async () => {
+
+        const { hydrate, importPlannedRaces, linkPlannedRaceToPlan, deletePlannedSession, getPlannedRaces } = await import("./workoutStore.js");
+        await hydrate();
+
+        await importPlannedRaces([{ date: "2026-09-15", type: "RU", name: "Carrera Y" }]);
+        const race = getPlannedRaces().find(r => r.name === "Carrera Y");
+
+        const session = linkPlannedRaceToPlan(race.id);
+
+        // Borrado directo desde Plan, no vía unlinkPlannedRaceFromPlan.
+        deletePlannedSession(session.id);
+
+        expect(getPlannedRaces().find(r => r.id === race.id).linkedPlanSessionId).toBeNull();
+
+    });
+
+    it("borrar una sesión que no está enlazada a ninguna carrera no rompe nada", async () => {
+
+        const { hydrate, addPlannedSession, deletePlannedSession, getSessionsForDate } = await import("./workoutStore.js");
+        await hydrate();
+
+        const session = addPlannedSession({ date: "2026-09-20", type: "z2" });
+
+        expect(() => deletePlannedSession(session.id)).not.toThrow();
+        expect(getSessionsForDate("2026-09-20")).toHaveLength(0);
+
+    });
+
+    it("reimportar el mismo calendario (dedupe por fecha+nombre) conserva isGoal/isRegistered/linkedPlanSessionId ya guardados", async () => {
+
+        const { hydrate, importPlannedRaces, setPlannedRaceGoal, setPlannedRaceRegistered, linkPlannedRaceToPlan, getPlannedRaces } = await import("./workoutStore.js");
+        await hydrate();
+
+        await importPlannedRaces([{ date: "2026-09-15", type: "RU", name: "Carrera Reimportada", region: "Murcia" }]);
+        const race = getPlannedRaces().find(r => r.name === "Carrera Reimportada");
+
+        setPlannedRaceGoal(race.id, true);
+        setPlannedRaceRegistered(race.id, true);
+        const session = linkPlannedRaceToPlan(race.id);
+
+        // Reimportar el "mismo archivo" -- misma fecha+nombre, dedupe por
+        // esa clave, el archivo entrante nunca trae estos 3 campos.
+        await importPlannedRaces([{ date: "2026-09-15", type: "RU", name: "Carrera Reimportada", region: "Murcia" }]);
+
+        const reimported = getPlannedRaces().find(r => r.id === race.id);
+        expect(reimported.isGoal).toBe(true);
+        expect(reimported.isRegistered).toBe(true);
+        expect(reimported.linkedPlanSessionId).toBe(session.id);
+
+    });
+
+});
+
 describe("addPlannedSession — creación manual de una sesión (ver Plan → tocar un día vacío)", () => {
 
     beforeEach(() => {

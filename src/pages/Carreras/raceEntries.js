@@ -26,7 +26,14 @@ export function buildRaceEntries(workouts, plannedRaces) {
             distanceKm: w.distanceKm ?? null,
             registrationDeadline: null,
             url: null,
-            region: null
+            region: null,
+            // Una carrera ya corrida (workout real) no tiene estos 3
+            // campos -- viven solo en plannedRaces (ver workoutStore.js).
+            // Falso/null explícito, no undefined, para que RaceListCard.js
+            // no tenga que distinguir "no aplica" de "no marcado".
+            isGoal: false,
+            isRegistered: false,
+            linkedPlanSessionId: null
         }));
 
     const planned = plannedRaces.map(r => ({
@@ -39,7 +46,10 @@ export function buildRaceEntries(workouts, plannedRaces) {
         distanceKm: null,
         registrationDeadline: r.registrationDeadline ?? null,
         url: r.url ?? null,
-        region: r.region ?? null
+        region: r.region ?? null,
+        isGoal: r.isGoal ?? false,
+        isRegistered: r.isRegistered ?? false,
+        linkedPlanSessionId: r.linkedPlanSessionId ?? null
     }));
 
     return [...completed, ...planned];
@@ -109,6 +119,45 @@ export function filterRaceEntriesByType(entries, type) {
     if (!type || type === "all") return entries;
 
     return entries.filter(e => e.disciplineType === type);
+
+}
+
+// Saca la carrera marcada como "Objetivo principal" (isGoal) del resto de
+// la lista, para pintarla en su propia tarjeta destacada por encima del
+// listado normal de "Próximas" (ver Carreras.js) -- como mucho una
+// (setPlannedRaceGoal() en workoutStore.js ya impone esa exclusividad),
+// así que basta con el primer match. { featured: null, rest: entries } si
+// ninguna está marcada, sin tocar el array de entrada.
+export function splitFeaturedRace(entries) {
+
+    const featured = entries.find(e => e.isGoal) ?? null;
+    if (!featured) return { featured: null, rest: entries };
+
+    return { featured, rest: entries.filter(e => e.id !== featured.id) };
+
+}
+
+// Reordena "Próximas" (una vez sacada la destacada, ver splitFeaturedRace)
+// priorizando las que tengan algún indicador real activo -- inscrito de
+// verdad (isRegistered) o ya añadida a Plan (linkedPlanSessionId) -- por
+// encima de las que no tienen ninguno. Dentro de cada uno de los dos
+// grupos, se conserva el orden cronológico de entrada (misma fecha
+// ascendente que ya trae categorizeRaceEntries para "proximas") -- un
+// sort estable, no un criterio de fecha nuevo.
+export function sortByIndicatorPriority(entries) {
+
+    return entries
+        .map((entry, index) => ({ entry, index }))
+        .sort((a, b) => {
+
+            const aHasIndicator = a.entry.isRegistered || a.entry.linkedPlanSessionId ? 1 : 0;
+            const bHasIndicator = b.entry.isRegistered || b.entry.linkedPlanSessionId ? 1 : 0;
+
+            if (aHasIndicator !== bHasIndicator) return bHasIndicator - aHasIndicator;
+            return a.index - b.index;
+
+        })
+        .map(({ entry }) => entry);
 
 }
 

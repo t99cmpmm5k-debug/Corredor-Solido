@@ -320,6 +320,22 @@ export function deletePlannedSession(id) {
     plannedSessions.splice(index, 1);
     remove(STORES.plannedSessions, id).catch(() => {});
 
+    // Cualquier carrera planificada que apuntara a esta sesión ("En mi
+    // plan", ver linkPlannedRaceToPlan()) se queda con una referencia
+    // rota si no se limpia aquí -- este es el ÚNICO punto por el que una
+    // plannedSession desaparece de verdad (borrado directo desde Plan,
+    // deshacer una importación, o desmarcar "En mi plan" desde Carreras,
+    // que también pasa por aquí vía unlinkPlannedRaceFromPlan()), así que
+    // es el sitio correcto para esta limpieza en vez de duplicarla en
+    // cada llamador -- mismo tipo de bug de "referencia rota" que ya
+    // tuvimos con Gimnasio↔Plan.
+    const linkedRace = plannedRaces.find(r => r.linkedPlanSessionId === id);
+
+    if (linkedRace) {
+        linkedRace.linkedPlanSessionId = null;
+        put(STORES.plannedRaces, linkedRace).catch(() => {});
+    }
+
 }
 
 // Deshacer una importación entera de una sentada — borra todas las
@@ -650,6 +666,89 @@ export function deletePlannedRacesByBatch(batchId) {
 
 }
 
+// "Objetivo principal" (detalle de una carrera planificada, Carreras) —
+// solo una carrera puede tener isGoal:true a la vez: marcar una nueva
+// desmarca automáticamente cualquier otra que lo tuviera. Desmarcar la
+// actual (isGoal:false) no promueve ninguna otra -- puede quedar sin
+// ninguna carrera marcada como objetivo, eso es un estado válido.
+export function setPlannedRaceGoal(raceId, isGoal) {
+
+    const race = plannedRaces.find(r => r.id === raceId);
+    if (!race) return null;
+
+    if (isGoal) {
+
+        plannedRaces.forEach(other => {
+
+            if (other.id !== raceId && other.isGoal) {
+                other.isGoal = false;
+                put(STORES.plannedRaces, other).catch(() => {});
+            }
+
+        });
+
+    }
+
+    race.isGoal = isGoal;
+    put(STORES.plannedRaces, race).catch(() => {});
+
+    return race;
+
+}
+
+// "Inscrito" (detalle de una carrera planificada, Carreras) — estado REAL
+// de que el usuario se ha inscrito de verdad, distinto de
+// registrationDeadline (que es solo la fecha límite del EVENTO, dato del
+// calendario importado, no una confirmación del usuario).
+export function setPlannedRaceRegistered(raceId, isRegistered) {
+
+    const race = plannedRaces.find(r => r.id === raceId);
+    if (!race) return null;
+
+    race.isRegistered = isRegistered;
+    put(STORES.plannedRaces, race).catch(() => {});
+
+    return race;
+
+}
+
+// "Añadir a mi plan" (detalle de una carrera planificada, Carreras) —
+// conexión REAL con Plan: crea una plannedSession de verdad (mismo store
+// que la creación manual de Plan, ver addPlannedSession()) en la fecha de
+// la carrera, tipo "race" (WORKOUT_TYPES.race, "Carrera") con el nombre
+// de la carrera como descripción. No comprueba conflicto de día ocupado
+// aquí a propósito -- esa decisión (avisar y dejar elegir reemplazar o
+// cancelar) es cosa de la capa de eventos (ver toggleRaceInPlan() en
+// initCarrerasEvents.js), no de esta función de datos: para cuando esto
+// se llama, cualquier sesión que hubiera que reemplazar ya se borró o el
+// usuario ya decidió seguir igualmente.
+export function linkPlannedRaceToPlan(raceId) {
+
+    const race = plannedRaces.find(r => r.id === raceId);
+    if (!race) return null;
+
+    const session = addPlannedSession({ date: race.date, type: "race", description: race.name });
+
+    race.linkedPlanSessionId = session.id;
+    put(STORES.plannedRaces, race).catch(() => {});
+
+    return session;
+
+}
+
+// Desmarcar "Añadir a mi plan" -- borra la sesión real de plannedSessions
+// (deletePlannedSession() ya limpia linkedPlanSessionId de esta misma
+// carrera como parte de su propia limpieza genérica, ver el comentario
+// ahí -- no hace falta repetirlo aquí).
+export function unlinkPlannedRaceFromPlan(raceId) {
+
+    const race = plannedRaces.find(r => r.id === raceId);
+    if (!race || !race.linkedPlanSessionId) return;
+
+    deletePlannedSession(race.linkedPlanSessionId);
+
+}
+
 // Importación de un calendario de carreras (ver src/importers/races/) —
 // dedupe por fecha+nombre: reimportar el mismo archivo actualiza las
 // carreras ya guardadas en vez de duplicarlas, igual que
@@ -682,6 +781,18 @@ export function importPlannedRaces(races) {
             registrationDeadline: race.registrationDeadline,
             url: race.url,
             region: race.region ?? existing?.region ?? null,
+            // isGoal/isRegistered/linkedPlanSessionId nunca vienen del
+            // archivo importado (no son parte de ese esquema) -- sin este
+            // `existing?.field`, reimportar el mismo calendario (dedupe
+            // por fecha+nombre, mismo id) pisaría a null/false lo que el
+            // usuario ya hubiera marcado a mano, exactamente el mismo bug
+            // que "region" ya tuvo aquí (ver comentario de esa migración
+            // en db.js) -- y en el caso de linkedPlanSessionId además
+            // dejaría la sesión ya creada en Plan huérfana, sin nada que
+            // apunte a ella.
+            isGoal: existing?.isGoal ?? false,
+            isRegistered: existing?.isRegistered ?? false,
+            linkedPlanSessionId: existing?.linkedPlanSessionId ?? null,
             importBatchId: batchId
         };
 

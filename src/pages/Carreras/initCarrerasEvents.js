@@ -15,7 +15,18 @@ import {
 } from "./carrerasStore.js";
 
 import { importRaces } from "../../importers/races/index.js";
-import { getPlannedRaces, importPlannedRaces, deletePlannedRacesByBatch, deletePlannedRace } from "../../data/workoutStore.js";
+import {
+    getPlannedRaces,
+    importPlannedRaces,
+    deletePlannedRacesByBatch,
+    deletePlannedRace,
+    getSessionsForDate,
+    deletePlannedSession,
+    setPlannedRaceGoal,
+    setPlannedRaceRegistered,
+    linkPlannedRaceToPlan,
+    unlinkPlannedRaceFromPlan
+} from "../../data/workoutStore.js";
 import { RACE_REVIEW_FIELDS, parseRaceFieldValue } from "./components/RaceImportReviewStep.js";
 
 import {
@@ -145,6 +156,70 @@ async function shareRace(raceId) {
 function openRaceUrl(url) {
 
     window.open(url, "_blank", "noopener,noreferrer");
+
+}
+
+// "Objetivo principal" -- toggle simple, la exclusividad (solo una
+// carrera con isGoal:true) ya la impone setPlannedRaceGoal() en
+// workoutStore.js, aquí solo se decide el nuevo valor a partir del
+// estado actual de ESTA carrera.
+function toggleRaceGoal(raceId) {
+
+    const race = getPlannedRaces().find(r => r.id === raceId);
+    if (!race) return;
+
+    setPlannedRaceGoal(raceId, !race.isGoal);
+    rerender();
+
+}
+
+// "Inscrito" -- estado real del usuario, independiente de
+// registrationDeadline (fecha límite del EVENTO, no una confirmación).
+function toggleRaceRegistered(raceId) {
+
+    const race = getPlannedRaces().find(r => r.id === raceId);
+    if (!race) return;
+
+    setPlannedRaceRegistered(raceId, !race.isRegistered);
+    rerender();
+
+}
+
+// "En mi plan" -- conexión real con Plan (linkPlannedRaceToPlan()/
+// unlinkPlannedRaceFromPlan() en workoutStore.js), no solo un flag
+// visual. Desmarcar borra la sesión real que se había creado. Marcar,
+// si el día de la carrera ya tiene otra(s) sesión(es) planificada(s),
+// avisa del conflicto en vez de sobrescribir en silencio -- el usuario
+// decide reemplazar (se borran esas sesiones antes de crear la de la
+// carrera) o cancelar la acción entera (no se toca nada).
+function toggleRaceInPlan(raceId) {
+
+    const race = getPlannedRaces().find(r => r.id === raceId);
+    if (!race) return;
+
+    if (race.linkedPlanSessionId) {
+        unlinkPlannedRaceFromPlan(raceId);
+        rerender();
+        return;
+    }
+
+    const conflicting = getSessionsForDate(race.date);
+
+    if (conflicting.length > 0) {
+
+        const plural = conflicting.length > 1;
+        const ok = window.confirm(
+            `Ese día ya tienes ${plural ? conflicting.length + " sesiones planificadas" : "una sesión planificada"} en tu plan.\n\n¿Reemplazar${plural ? "las" : "la"} por esta carrera?`
+        );
+
+        if (!ok) return;
+
+        conflicting.forEach(session => deletePlannedSession(session.id));
+
+    }
+
+    linkPlannedRaceToPlan(raceId);
+    rerender();
 
 }
 
@@ -367,6 +442,24 @@ export function initCarrerasEvents() {
     document.querySelectorAll('[data-action="open-race-url"]').forEach(button => {
 
         button.addEventListener("click", () => openRaceUrl(button.dataset.url));
+
+    });
+
+    document.querySelectorAll('[data-action="toggle-race-goal"]').forEach(button => {
+
+        button.addEventListener("click", () => toggleRaceGoal(button.dataset.id));
+
+    });
+
+    document.querySelectorAll('[data-action="toggle-race-registered"]').forEach(button => {
+
+        button.addEventListener("click", () => toggleRaceRegistered(button.dataset.id));
+
+    });
+
+    document.querySelectorAll('[data-action="toggle-race-in-plan"]').forEach(button => {
+
+        button.addEventListener("click", () => toggleRaceInPlan(button.dataset.id));
 
     });
 
