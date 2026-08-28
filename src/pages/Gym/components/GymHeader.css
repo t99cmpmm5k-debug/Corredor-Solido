@@ -1,0 +1,274 @@
+.gym-header{
+
+    position:relative;
+
+    overflow:hidden;
+
+    /* A los 3 bordes reales de la pantalla, mismo mecanismo que
+       RunningHeader.css/CarrerasHero.css -- min-height (no height fija)
+       para que quepa el contenido en pantallas estrechas sin recortarlo.
+       Mismo valor final que Running/Carreras (220px). */
+    min-height:220px;
+
+    display:flex;
+
+    flex-direction:column;
+
+    justify-content:flex-end;
+
+    /* padding-bottom grande a propósito: deja un colchón de foto/degradado
+       libre de texto para que el contenido de abajo (.gym-content) pueda
+       superponerse sin tapar el título -- mismo papel que el
+       padding-bottom:90px de RunningHeader.css. */
+    padding:24px 20px 90px;
+
+    padding-top:calc(24px + env(safe-area-inset-top));
+
+    /* Cancela el padding que .gym-content le mete desde fuera (24px +
+       safe-area arriba, 24px a los lados) para que la foto llegue a los 3
+       bordes reales de la pantalla. */
+    margin:calc(-1 * (24px + env(safe-area-inset-top))) -24px 0;
+
+    isolation:isolate;
+
+    background:var(--color-background);
+
+}
+
+/* ==========================
+   IMAGEN
+========================== */
+
+.gym-background-image{
+
+    position:absolute;
+
+    inset:0;
+
+    width:100%;
+
+    height:100%;
+
+    object-fit:cover;
+
+    /* Las 4 fotos son verticales (retrato, atleta de espaldas) -- centrar
+       el recorte un poco por encima del centro mantiene torso/hombros
+       visibles en la franja horizontal recortada, en vez de cortar por la
+       cintura. */
+    object-position:center 30%;
+
+    z-index:0;
+
+}
+
+/* ==========================
+   OVERLAY
+========================== */
+
+.gym-header-overlay{
+
+    position:absolute;
+
+    inset:0;
+
+    background:
+
+        /* Velo fijo (no depende del tema), mismo motivo que
+           .plan-overlay/.running-overlay: sin esto, una foto clara deja el
+           título casi ilegible. */
+        linear-gradient(
+            180deg,
+            rgba(0,0,0,.55) 0px,
+            rgba(0,0,0,.38) 160px,
+            rgba(0,0,0,.15) 260px,
+            transparent 320px
+        ),
+
+        linear-gradient(
+            180deg,
+            var(--hero-overlay-top) 0%,
+            var(--hero-overlay-middle) 40%,
+            var(--hero-overlay-bottom) 100%
+        );
+
+    z-index:1;
+
+}
+
+/* ==========================
+   GLOW
+========================== */
+
+.gym-header-glow{
+
+    position:absolute;
+
+    inset:0;
+
+    background:
+
+        radial-gradient(
+
+            circle at 50% 48%,
+
+            color-mix(in srgb, var(--color-glow) 34%, transparent),
+
+            color-mix(in srgb, var(--color-glow) 10%, transparent) 20%,
+
+            transparent 42%
+
+        );
+
+    z-index:2;
+
+}
+
+/* ==========================
+   BOTTOM FADE
+========================== */
+
+.gym-header-bottom-fade{
+
+    position:absolute;
+
+    left:0;
+    right:0;
+    bottom:0;
+
+    height:55%;
+
+    pointer-events:none;
+
+    background:
+        linear-gradient(
+            180deg,
+            transparent 0%,
+            color-mix(in srgb, var(--color-background) 40%, transparent) 45%,
+            color-mix(in srgb, var(--color-background) 80%, transparent) 75%,
+            var(--color-background) 100%
+        );
+
+    z-index:2;
+
+}
+
+/* ==========================
+   CONTENIDO
+========================== */
+
+.gym-header-content{
+
+    position:relative;
+
+    z-index:3;
+
+}
+
+.gym-header-row{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:flex-end;
+
+    gap:12px;
+
+}
+
+.gym-header-title{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:8px;
+
+}
+
+/* Texto sobre la foto: blanco fijo + text-shadow, mismo criterio que el
+   resto de heroes por foto (Plan/Running/Carreras) -- no puede depender de
+   --text-primary porque varía por tema y algunas fotos lo dejan casi
+   ilegible. Sin el estilo "segunda línea en color" del Hero de Inicio
+   (.hero-title span) a propósito: ese lenguaje visual es la firma del
+   saludo dinámico de Inicio, aquí el texto es fijo y no debe leerse como
+   el mismo componente. */
+.gym-header h1{
+
+    margin:0;
+
+    color:#FFFFFF;
+
+    font-size:1.9rem;
+
+    line-height:1.05;
+
+    font-weight:900;
+
+    letter-spacing:-.02em;
+
+    text-shadow:
+        0 4px 12px rgba(0,0,0,.45),
+        0 12px 32px rgba(0,0,0,.55);
+
+}
+
+.gym-header-subtitle{
+
+    margin-top:2px;
+
+    color:rgba(255,255,255,.75);
+
+    font-size:.82rem;
+
+    text-shadow:0 2px 6px rgba(0,0,0,.45);
+
+}
+
+/* ==========================
+   BOTÓN + (sustituye a "Nueva rutina" del hero, mismo patrón que
+   .plan-add-button en PlanHeader.css)
+========================== */
+
+.gym-add-button{
+
+    flex-shrink:0;
+
+    width:42px;
+
+    height:42px;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    border-radius:50%;
+
+    border:1px solid color-mix(in srgb, var(--card-border) 14%, transparent);
+
+    background:color-mix(in srgb, var(--card-background) 55%, transparent);
+
+    backdrop-filter:blur(18px);
+    -webkit-backdrop-filter:blur(18px);
+
+    color:var(--color-primary);
+
+    font-size:22px;
+
+    line-height:1;
+
+    cursor:pointer;
+
+    transition:.25s;
+
+}
+
+.gym-add-button:hover{
+
+    transform:scale(1.05);
+
+    border-color:var(--color-primary);
+
+}

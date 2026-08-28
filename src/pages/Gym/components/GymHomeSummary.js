@@ -1,5 +1,23 @@
 import "./GymHomeSummary.css";
 import { formatDayNumber, formatDayMonth, getDayAbbreviation } from "../../../utils/date.js";
+import { getAverageDurationForDay } from "../../../data/gymSessionStore.js";
+
+// Nº de ejercicios real + duración media real de sesiones YA terminadas de
+// este día concreto (getAverageDurationForDay(), nunca inventada) -- mismo
+// criterio que compactSummary() en GymTodayCard.js (Inicio) y
+// buildSummaryLine() en PlanGymDayCard.js (Plan): un día que nunca se ha
+// hecho todavía no tiene duración que mostrar, y no se inventa una.
+function todaySummaryLine(day) {
+
+    const count = day.exercises.length;
+    const parts = [`${count} ejercicio${count === 1 ? "" : "s"}`];
+
+    const avgDurationSec = getAverageDurationForDay(day.id);
+    if (avgDurationSec != null) parts.push(`~${Math.round(avgDurationSec / 60)} min`);
+
+    return parts.join(" · ");
+
+}
 
 function todayCard(day) {
 
@@ -29,7 +47,7 @@ function todayCard(day) {
 
             <h2>${day.title}</h2>
 
-            <span class="gym-today-count">${day.exercises.length} ejercicios</span>
+            <span class="gym-today-count">${todaySummaryLine(day)}</span>
 
             <button class="gym-today-button" data-action="select-day" data-day-id="${day.id}">
 

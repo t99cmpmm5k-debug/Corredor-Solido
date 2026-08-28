@@ -25,7 +25,9 @@ import {
     resetExerciseDetail,
     toggleWeekSummaryExpanded,
     getHighlightedDayId,
-    setHighlightedDayId
+    setHighlightedDayId,
+    getRoutineMenuOpenId,
+    setRoutineMenuOpenId
 } from "./gymStore.js";
 
 import {
@@ -130,6 +132,20 @@ window.addEventListener("popstate", () => {
         setStep("session");
         rerender();
     }
+
+});
+
+// Cierra el menú "···" de una rutina al tocar fuera de él -- mismo patrón
+// que el equivalente de Carreras/Running, registrado una sola vez a nivel
+// de módulo (initGymEvents se vuelve a llamar en cada render y apilaría un
+// listener nuevo cada vez sin desengancharse).
+document.addEventListener("click", event => {
+
+    if (!getRoutineMenuOpenId()) return;
+    if (event.target.closest(".gym-routine-menu")) return;
+
+    setRoutineMenuOpenId(null);
+    rerender();
 
 });
 
@@ -582,7 +598,14 @@ export function initGymEvents() {
 
     document.querySelectorAll('[data-action="edit-gym-routine"]').forEach(button => {
 
-        button.addEventListener("click", () => {
+        button.addEventListener("click", event => {
+
+            // Vive dentro del menú "···" (ver RoutineMenu() en Gym.js) --
+            // sin esto, y sin cerrar el menú antes de abrir el constructor,
+            // volver de editar (isBuilderOpen() a false) reabriría el menú
+            // solo porque su id seguía guardado en el store.
+            event.stopPropagation();
+            setRoutineMenuOpenId(null);
 
             const routine = getRoutineById(button.dataset.routineId);
             if (routine) openRoutineBuilder(routine);
@@ -593,8 +616,31 @@ export function initGymEvents() {
 
     document.querySelectorAll('[data-action="delete-gym-routine"]').forEach(button => {
 
-        button.addEventListener("click", () => {
+        button.addEventListener("click", event => {
+
+            event.stopPropagation();
+            setRoutineMenuOpenId(null);
+
             deleteRoutineWithConfirm(button.dataset.routineId);
+
+        });
+
+    });
+
+    // Mismo motivo que toggle-history-menu en Running/toggle-race-card-menu
+    // en Carreras: stopPropagation evita que el listener de "cerrar al
+    // tocar fuera" (registrado a nivel de módulo, ver más abajo) se
+    // dispare en el mismo click y cierre el menú justo al abrirlo.
+    document.querySelectorAll('[data-action="toggle-routine-menu"]').forEach(button => {
+
+        button.addEventListener("click", event => {
+
+            event.stopPropagation();
+
+            const id = button.dataset.routineId;
+            setRoutineMenuOpenId(getRoutineMenuOpenId() === id ? null : id);
+            rerender();
+
         });
 
     });

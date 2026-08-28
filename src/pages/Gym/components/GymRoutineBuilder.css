@@ -540,14 +540,18 @@
 
 }
 
-.gym-routine-card-actions{
+/* Menú "···" (Editar/Eliminar), mismo lenguaje visual que
+   .race-card-menu* en Carreras (RaceListCard.css) -- no compartido entre
+   páginas (ver CLAUDE.md "known duplication"), se repite aquí con sus
+   propias clases. */
+.gym-routine-menu{
 
-    display:flex;
-    gap:6px;
+    position:relative;
+    flex-shrink:0;
 
 }
 
-.gym-routine-action{
+.gym-routine-menu-toggle{
 
     width:34px;
     height:34px;
@@ -555,24 +559,87 @@
     align-items:center;
     justify-content:center;
     border-radius:50%;
-    border:1px solid var(--card-border);
+    border:none;
     background:transparent;
-    color:var(--text-secondary);
+    color:var(--color-text-muted);
+    cursor:pointer;
+    transition:.2s;
+
+}
+
+.gym-routine-menu-toggle:hover{
+
+    background:color-mix(in srgb, var(--card-border) 40%, transparent);
+    color:var(--text-primary);
+
+}
+
+.gym-routine-menu-toggle iconify-icon{
+
+    font-size:18px;
+
+}
+
+.gym-routine-menu-popover{
+
+    position:absolute;
+    top:calc(100% + 4px);
+    right:0;
+    z-index:5;
+
+    display:flex;
+    flex-direction:column;
+    min-width:150px;
+    padding:6px;
+
+    border-radius:14px;
+    background:color-mix(in srgb, var(--card-background) 96%, transparent);
+    backdrop-filter:blur(20px);
+    -webkit-backdrop-filter:blur(20px);
+    border:1px solid var(--card-border);
+    box-shadow:0 10px 30px rgba(0,0,0,.35);
+
+}
+
+.gym-routine-menu-popover button{
+
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:10px 12px;
+    border:none;
+    border-radius:9px;
+    background:none;
+    color:var(--text-primary);
+    font-size:.88rem;
+    font-weight:600;
+    text-align:left;
     cursor:pointer;
 
 }
 
-.gym-routine-action:hover{
+.gym-routine-menu-popover button:hover{
 
-    border-color:var(--color-primary);
-    color:var(--color-primary);
+    background:color-mix(in srgb, var(--card-border) 40%, transparent);
 
 }
 
-.gym-routine-action.is-danger:hover{
+.gym-routine-menu-popover iconify-icon{
 
-    border-color:var(--color-danger);
+    font-size:16px;
+    flex-shrink:0;
+
+}
+
+.gym-routine-menu-popover .gym-routine-menu-danger{
+
     color:var(--color-danger);
+
+}
+
+.gym-routine-menu-popover .gym-routine-menu-danger:hover{
+
+    background:color-mix(in srgb, var(--color-danger) 12%, transparent);
 
 }
 

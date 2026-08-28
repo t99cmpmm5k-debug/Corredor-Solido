@@ -3,11 +3,12 @@ import "./Gym.css";
 import { BottomNavigation } from "../../components/Navigation/BottomNavigation.js";
 import { getRoutines, getGymDay } from "../../data/gymRoutineStore.js";
 import { getSessionById, getGymSessions, getExerciseSessionHistory } from "../../data/gymSessionStore.js";
-import { getStep, getActiveSessionId, getDetailExerciseId, getDetailTab, getDetailExpandedSessionId, getWeekSummaryExpanded, getHighlightedDayId } from "./gymStore.js";
+import { getStep, getActiveSessionId, getDetailExerciseId, getDetailTab, getDetailExpandedSessionId, getWeekSummaryExpanded, getHighlightedDayId, getRoutineMenuOpenId } from "./gymStore.js";
 import { GymSessionView } from "./components/GymSessionView.js";
 import { GymExerciseDetailView } from "./components/GymExerciseDetailView.js";
 import { GymRoutineBuilder } from "./components/GymRoutineBuilder.js";
 import { GymHomeSummary } from "./components/GymHomeSummary.js";
+import { GymHeader } from "./components/GymHeader.js";
 import { isBuilderOpen } from "./gymRoutineBuilderStore.js";
 import { hasWeeklySchedule, getTodayGymDay, getUpcomingGymDays, getWeekProgress, getWeekSessions } from "./gymSchedule.js";
 import { formatISODate } from "../../utils/date.js";
@@ -30,6 +31,54 @@ function DayRow(day) {
 
 }
 
+// Menú "···" (Editar/Eliminar) en vez de los iconos de lápiz y papelera
+// sueltos que llevaba antes -- mismo patrón que .race-card-menu en
+// Carreras y .workout-menu en PlanGymDayCard.js (esta última ya lo usa
+// para la MISMA rutina cuando se ve desde Plan; esta tarjeta, la lista
+// real de Gimnasio, es la que se había quedado atrás).
+function RoutineMenu(routine) {
+
+    const isMenuOpen = getRoutineMenuOpenId() === routine.id;
+
+    return `
+
+        <div class="gym-routine-menu">
+
+            <button
+                class="gym-routine-menu-toggle"
+                data-action="toggle-routine-menu"
+                data-routine-id="${routine.id}"
+                aria-label="Más opciones"
+            >
+
+                <iconify-icon icon="solar:menu-dots-bold-duotone"></iconify-icon>
+
+            </button>
+
+            ${isMenuOpen ? `
+
+                <div class="gym-routine-menu-popover">
+
+                    <button data-action="edit-gym-routine" data-routine-id="${routine.id}">
+                        <iconify-icon icon="solar:pen-bold-duotone"></iconify-icon>
+                        Editar
+                    </button>
+
+                    <button class="gym-routine-menu-danger" data-action="delete-gym-routine" data-routine-id="${routine.id}">
+                        <iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon>
+                        Eliminar
+                    </button>
+
+                </div>
+
+            ` : ""}
+
+        </div>
+
+    `;
+
+}
+
 function RoutineCard(routine) {
 
     return `
@@ -40,17 +89,7 @@ function RoutineCard(routine) {
 
                 <h2>${routine.name}</h2>
 
-                <div class="gym-routine-card-actions">
-
-                    <button class="gym-routine-action" data-action="edit-gym-routine" data-routine-id="${routine.id}">
-                        <iconify-icon icon="solar:pen-bold-duotone"></iconify-icon>
-                    </button>
-
-                    <button class="gym-routine-action is-danger" data-action="delete-gym-routine" data-routine-id="${routine.id}">
-                        <iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon>
-                    </button>
-
-                </div>
+                ${RoutineMenu(routine)}
 
             </div>
 
@@ -123,19 +162,7 @@ function GymDaySelect() {
 
         <div class="gym-content">
 
-            <header class="gym-header">
-
-                <h1>Gimnasio</h1>
-
-                <button class="gym-import-button" data-action="open-routine-builder">
-
-                    <iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon>
-
-                    Nueva rutina
-
-                </button>
-
-            </header>
+            ${GymHeader()}
 
             ${GymHomeSummarySection(allDays)}
 

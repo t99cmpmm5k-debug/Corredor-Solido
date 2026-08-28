@@ -12,7 +12,9 @@ const store = {
 
     weekSummaryExpanded: false,
 
-    highlightedDayId: null
+    highlightedDayId: null,
+
+    routineMenuOpenId: null
 
 };
 
@@ -137,6 +139,24 @@ export function getHighlightedDayId() {
 export function setHighlightedDayId(id) {
 
     store.highlightedDayId = id;
+
+}
+
+/*==========================
+   MENÚ "···" DE UNA RUTINA GUARDADA (Editar/Eliminar)
+   Mismo patrón que raceCardMenuOpenId en carrerasStore.js: solo puede
+   haber uno abierto a la vez.
+==========================*/
+
+export function getRoutineMenuOpenId() {
+
+    return store.routineMenuOpenId;
+
+}
+
+export function setRoutineMenuOpenId(id) {
+
+    store.routineMenuOpenId = id;
 
 }
 
