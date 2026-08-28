@@ -53,6 +53,12 @@
 
     flex-shrink:0;
 
+    display:flex;
+
+    align-items:center;
+
+    gap:6px;
+
     padding:9px 16px;
 
     border-radius:999px;
@@ -80,6 +86,26 @@
     background:var(--color-primary);
 
     color:var(--button-text);
+
+}
+
+/* Contador menos protagonista (pulido de cierre) -- antes era "Próximas
+   (143)" con el número al mismo tamaño/peso que la etiqueta, competía por
+   atención con el propio nombre de la tab. currentColor en vez de un
+   color fijo: hereda el color del tab (--text-secondary en reposo,
+   --button-text activo) automáticamente, sin variantes .is-active
+   propias. */
+.carreras-tab-count{
+
+    padding:1px 7px;
+
+    border-radius:999px;
+
+    background:color-mix(in srgb, currentColor 18%, transparent);
+
+    font-size:.7rem;
+
+    font-weight:700;
 
 }
 

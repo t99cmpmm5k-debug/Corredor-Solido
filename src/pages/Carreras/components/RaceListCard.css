@@ -6,9 +6,14 @@
 
     align-items:center;
 
-    gap:12px;
+    /* 12px -> 9px (pulido de cierre): un poco más de ancho para
+       .race-card-location, junto con el menú "···" y el chevron más
+       compactos más abajo -- ver comentario ahí. */
+    gap:9px;
 
-    padding:12px;
+    /* 12px -> 10px lateral (pulido de cierre, mismo motivo que el gap de
+       arriba): un poco más de ancho para .race-card-location. */
+    padding:10px 10px;
 
     border-radius:var(--radius-lg);
 
@@ -49,6 +54,28 @@
     background:color-mix(in srgb, var(--color-glow) 7%, color-mix(in srgb, var(--card-background) 70%, transparent));
 
     box-shadow:0 0 18px color-mix(in srgb, var(--color-glow) 22%, transparent);
+
+}
+
+/* La carrera es HOY -- señal más urgente que "Objetivo" (que es una
+   preferencia estable, esto es una cuenta atrás que llega a cero), así
+   que va DESPUÉS en la hoja para ganar el empate de especificidad cuando
+   las dos clases coinciden en la misma tarjeta. Mismo lenguaje que
+   .is-goal (borde sólido + glow con --color-glow, integrado con el tema
+   de franja horaria) pero un punto más intenso -- borde más grueso y
+   glow más extendido -- para que "hoy" se note incluso sin comparar las
+   dos tarjetas una al lado de la otra. */
+.race-card.is-today{
+
+    border-style:solid;
+
+    border-width:1.5px;
+
+    border-color:color-mix(in srgb, var(--color-glow) 75%, transparent);
+
+    background:color-mix(in srgb, var(--color-glow) 10%, color-mix(in srgb, var(--card-background) 70%, transparent));
+
+    box-shadow:0 0 24px color-mix(in srgb, var(--color-glow) 32%, transparent);
 
 }
 
@@ -93,6 +120,20 @@
 .race-card-badge iconify-icon{
 
     font-size:11px;
+
+}
+
+/* Mismo --color-glow que el borde de .race-card.is-today -- la pastilla
+   y el borde iluminado se leen como la misma señal, no dos colores
+   compitiendo. Único badge con borde propio (los otros 3 no lo llevan):
+   refuerzo extra porque es el más urgente de los cuatro. */
+.race-card-badge--today{
+
+    background:color-mix(in srgb, var(--color-glow) 20%, transparent);
+
+    color:var(--color-glow);
+
+    border:1px solid color-mix(in srgb, var(--color-glow) 45%, transparent);
 
 }
 
@@ -148,6 +189,9 @@
 
 }
 
+/* 46px -> 42px (pulido de cierre, mismo motivo que el resto de recortes
+   de esta hoja): solo pinta día+mes, no necesita tanto aire para seguir
+   leyéndose bien a este tamaño de fuente. */
 .race-card-date-badge{
 
     flex-shrink:0;
@@ -160,9 +204,9 @@
 
     justify-content:center;
 
-    width:46px;
+    width:42px;
 
-    height:46px;
+    height:42px;
 
     border-radius:var(--radius-sm);
 
@@ -208,6 +252,11 @@
 
 }
 
+/* 2 líneas antes de truncar (pulido de cierre) -- antes cortaba con
+   nowrap+ellipsis a la primera línea, demasiado pronto para nombres
+   largos ("Carrera Popu...", "XXVII Carrer...") habiendo espacio
+   vertical de sobra en la tarjeta. line-height explícito porque
+   -webkit-line-clamp mide la altura del recorte en líneas de ese alto. */
 .race-card-name{
 
     color:var(--text-primary);
@@ -216,11 +265,15 @@
 
     font-size:.94rem;
 
+    line-height:1.25;
+
+    display:-webkit-box;
+
+    -webkit-line-clamp:2;
+
+    -webkit-box-orient:vertical;
+
     overflow:hidden;
-
-    text-overflow:ellipsis;
-
-    white-space:nowrap;
 
 }
 
@@ -278,46 +331,93 @@
 
 }
 
-/* "Faltan X días" / estado de inscripción del evento (pulido de cierre)
-   -- texto llano, no otra fila de pills (ya hay dos líneas de badges
-   encima, una tercera con el mismo lenguaje visual sería ruido). */
-.race-card-meta{
+/* Inscripción abierta/cerrada + "Faltan X días" (pulido de cierre) --
+   antes vivían en la misma línea de texto separadas por " · ", como si
+   fueran el mismo tipo de dato; son dos niveles visuales distintos
+   (estado binario del organizador vs. cuenta atrás), así que la
+   inscripción se pinta como pill de color y los días como texto llano al
+   lado -- claramente diferenciados sin dejar de compartir fila cuando
+   caben los dos. */
+.race-card-status-row{
+
+    display:flex;
+
+    flex-wrap:wrap;
+
+    align-items:center;
+
+    gap:6px;
 
     margin-top:2px;
 
-    color:var(--text-secondary);
+}
 
-    font-size:.72rem;
+.race-card-registration{
 
-    font-weight:600;
+    display:flex;
 
-    overflow:hidden;
+    align-items:center;
 
-    text-overflow:ellipsis;
+    gap:3px;
 
-    white-space:nowrap;
+    padding:2px 8px;
+
+    border-radius:999px;
+
+    font-size:.68rem;
+
+    font-weight:700;
 
 }
 
-.race-card-meta .is-open{
+.race-card-registration iconify-icon{
+
+    font-size:11px;
+
+}
+
+.race-card-registration.is-open{
+
+    background:color-mix(in srgb, var(--color-success) 16%, transparent);
 
     color:var(--color-success);
 
 }
 
-.race-card-meta .is-closed{
+.race-card-registration.is-closed{
+
+    background:color-mix(in srgb, var(--card-border) 40%, transparent);
 
     color:var(--text-secondary);
 
 }
 
+/* Cian/gris a propósito, no verde -- el verde de arriba ya está reservado
+   para "inscripción abierta" (un estado positivo del organizador), esto
+   es solo una cuenta atrás neutra. --color-primary de este tema ya es un
+   azul-cian, así que basta con mezclarlo en vez de inventar un token
+   nuevo. */
+.race-card-days{
+
+    color:color-mix(in srgb, var(--color-primary) 80%, var(--text-secondary));
+
+    font-size:.72rem;
+
+    font-weight:700;
+
+}
+
+/* 18px -> 15px (pulido de cierre, junto con .race-card-menu-toggle más
+   abajo): sitios como "La Línea de la Co..." se cortaban por falta de
+   ancho en .race-card-location -- reducir estos dos elementos de cola le
+   deja unos px extra sin tocar el resto de la tarjeta. */
 .race-card-chevron{
 
     flex-shrink:0;
 
     color:var(--text-secondary);
 
-    font-size:18px;
+    font-size:15px;
 
 }
 
@@ -335,11 +435,13 @@
 
 }
 
+/* 36px -> 32px (pulido de cierre): ver comentario en .race-card-chevron
+   -- mismo motivo, un poco más de ancho para .race-card-location. */
 .race-card-menu-toggle{
 
-    width:36px;
+    width:32px;
 
-    height:36px;
+    height:32px;
 
     display:flex;
 
@@ -371,7 +473,7 @@
 
 .race-card-menu-toggle iconify-icon{
 
-    font-size:18px;
+    font-size:16px;
 
 }
 

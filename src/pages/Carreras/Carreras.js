@@ -41,7 +41,9 @@ function CarrerasTabs(activeTab, counts) {
                     data-tab="${tab}"
                 >
 
-                    ${TAB_LABELS[tab]}${counts[tab] ? ` (${counts[tab]})` : ""}
+                    ${TAB_LABELS[tab]}
+
+                    ${counts[tab] ? `<span class="carreras-tab-count">${counts[tab]}</span>` : ""}
 
                 </button>
 

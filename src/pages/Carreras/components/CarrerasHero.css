@@ -80,9 +80,13 @@
 
 }
 
-/* Mismo cascarón que .race-detail-hero-button (RaceDetailView.css) --
-   círculo flotante con blur, no comparten hoja de estilos (ver CLAUDE.md
-   "known duplication") así que se repite aquí en vez de importarse. */
+/* Pastilla con texto (pulido de cierre), no el círculo de solo icono que
+   sí comparten .race-detail-hero-button (RaceDetailView.css) y demás
+   botones flotantes -- ver comentario en CarrerasHero.js sobre por qué
+   este necesitaba distinguirse del resto: es la única acción de la
+   cabecera y el icono solo se leía como "crear", no "importar". Mismo
+   fondo/blur que el círculo original, solo cambia el ancho auto y el
+   padding lateral para que quepa el texto. */
 .carreras-hero-import-button{
 
     position:absolute;
@@ -90,14 +94,14 @@
     top:calc(16px + env(safe-area-inset-top));
     right:16px;
 
-    width:44px;
-    height:44px;
+    height:36px;
 
     display:flex;
     align-items:center;
-    justify-content:center;
+    gap:6px;
+    padding:0 14px 0 12px;
 
-    border-radius:50%;
+    border-radius:999px;
 
     border:1px solid rgba(255,255,255,.18);
 
@@ -107,6 +111,9 @@
     -webkit-backdrop-filter:blur(18px);
 
     color:#fff;
+
+    font-size:.78rem;
+    font-weight:700;
 
     cursor:pointer;
 
@@ -124,7 +131,7 @@
 
 .carreras-hero-import-button iconify-icon{
 
-    font-size:22px;
+    font-size:17px;
 
 }
 

@@ -23,19 +23,29 @@ function DateBadge(iso) {
 
 }
 
-// Fila de badges de estado real -- Objetivo (isGoal), Inscrito de verdad
-// (isRegistered, distinto de "Inscripción abierta/cerrada" de RaceMeta,
-// que es el estado del EVENTO, no del usuario) y En tu plan
-// (linkedPlanSessionId, conexión real con una plannedSession de Plan, ver
-// linkPlannedRaceToPlan() en workoutStore.js). Cada badge se omite si su
-// indicador no está activo -- nunca los 3 a la fuerza.
-function RaceBadges(entry) {
+// Fila de badges de estado real -- HOY (isToday, calculado en
+// RaceListCard()), Objetivo (isGoal), Inscrito de verdad (isRegistered,
+// distinto de "Inscripción abierta/cerrada" de RaceMeta, que es el estado
+// del EVENTO, no del usuario) y En tu plan (linkedPlanSessionId, conexión
+// real con una plannedSession de Plan, ver linkPlannedRaceToPlan() en
+// workoutStore.js). Cada badge se omite si su indicador no está activo --
+// nunca los 4 a la fuerza. HOY primero: es el más urgente de los cuatro.
+function RaceBadges(entry, isToday) {
 
-    if (!entry.isGoal && !entry.isRegistered && !entry.linkedPlanSessionId) return "";
+    if (!isToday && !entry.isGoal && !entry.isRegistered && !entry.linkedPlanSessionId) return "";
 
     return `
 
         <div class="race-card-badges">
+
+            ${isToday ? `
+
+                <span class="race-card-badge race-card-badge--today">
+                    <iconify-icon icon="solar:flag-bold-duotone"></iconify-icon>
+                    Hoy
+                </span>
+
+            ` : ""}
 
             ${entry.isGoal ? `
 
@@ -70,30 +80,42 @@ function RaceBadges(entry) {
 
 }
 
-// Línea de meta con datos derivables de lo que ya trae la carrera --
-// "Faltan X días" solo tiene sentido para una planificada con fecha aún
-// por llegar (una pasada mostraría un número negativo, una completada ya
-// se corrió), inscripción abierta/cerrada solo si hay
-// registrationDeadline real (nunca se inventa un estado sin dato, ver
-// CLAUDE.md). Cualquiera de los dos puede faltar sin que falte el otro.
+// Fila de meta con datos derivables de lo que ya trae la carrera --
+// inscripción abierta/cerrada (estado del EVENTO, solo si hay
+// registrationDeadline real, nunca se inventa un estado sin dato, ver
+// CLAUDE.md) y "Faltan X días" (solo para una planificada con fecha aún
+// por llegar -- una pasada mostraría un número negativo, una completada ya
+// se corrió) son dos datos de naturaleza distinta -- inscripción es un
+// estado binario del organizador, días-restantes es una cuenta atrás --
+// así que se pintan como dos niveles visuales separados (pill verde vs.
+// texto llano) en vez de mezclados en una sola línea con " · ". Días=0 no
+// se repite aquí -- ya lo cubre el badge "Hoy" de RaceBadges(), una
+// segunda mención sería ruido redundante. Cualquiera de los dos puede
+// faltar sin que falte el otro.
 function RaceMeta(entry) {
 
-    const parts = [];
-    let registrationOpen = null;
+    let registrationBadge = "";
 
     if (entry.registrationDeadline) {
-        registrationOpen = isRegistrationOpen(entry.registrationDeadline);
-        parts.push(`<span class="${registrationOpen ? "is-open" : "is-closed"}">${registrationOpen ? "Inscripción abierta" : "Inscripción cerrada"}</span>`);
+        const registrationOpen = isRegistrationOpen(entry.registrationDeadline);
+        registrationBadge = `
+            <span class="race-card-registration ${registrationOpen ? "is-open" : "is-closed"}">
+                <iconify-icon icon="${registrationOpen ? "solar:lock-keyhole-unlocked-bold-duotone" : "solar:lock-keyhole-bold-duotone"}"></iconify-icon>
+                ${registrationOpen ? "Inscripción abierta" : "Inscripción cerrada"}
+            </span>
+        `;
     }
+
+    let daysLabel = "";
 
     if (entry.kind === "planned") {
         const days = daysUntilRace(entry.date);
-        if (days >= 0) parts.push(formatDaysUntilRace(days));
+        if (days > 0) daysLabel = `<span class="race-card-days">${formatDaysUntilRace(days)}</span>`;
     }
 
-    if (parts.length === 0) return "";
+    if (!registrationBadge && !daysLabel) return "";
 
-    return `<span class="race-card-meta">${parts.join(" · ")}</span>`;
+    return `<div class="race-card-status-row">${registrationBadge}${daysLabel}</div>`;
 
 }
 
@@ -156,12 +178,13 @@ export function RaceListCard(entry) {
 
     const image = getRaceImage({ type: entry.disciplineType, name: entry.name, date: entry.date });
     const isPlanned = entry.kind === "planned";
+    const isToday = isPlanned && daysUntilRace(entry.date) === 0;
     const disciplineLabel = formatDisciplineType(entry.disciplineType);
 
     return `
 
         <article
-            class="race-card ${isPlanned ? "is-planned" : "is-completed"} ${entry.isGoal ? "is-goal" : ""}"
+            class="race-card ${isPlanned ? "is-planned" : "is-completed"} ${entry.isGoal ? "is-goal" : ""} ${isToday ? "is-today" : ""}"
             data-action="open-race-entry"
             data-kind="${entry.kind}"
             data-id="${entry.id}"
@@ -175,7 +198,7 @@ export function RaceListCard(entry) {
 
                 <span class="race-card-name">${entry.name}</span>
 
-                ${RaceBadges(entry)}
+                ${RaceBadges(entry, isToday)}
 
                 ${entry.location ? `
 

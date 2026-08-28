@@ -24,18 +24,28 @@ export function CarrerasHero(totalCount) {
 
             <!-- "Importar carreras" ya no es un botón ancho en el flujo
                  normal (pulido de cierre: era demasiado protagonista para
-                 una acción secundaria) -- mismo cascarón visual que
-                 .race-detail-hero-button (RaceDetailView.css), solo que
-                 aquí vive en el hero de la lista en vez del de detalle. -->
+                 una acción secundaria) -- pero tampoco un círculo de solo
+                 icono como .race-detail-hero-button (RaceDetailView.css):
+                 con el icono de calendario a secas se leía como "añadir
+                 una carrera" (crear manualmente, algo que esta pantalla
+                 ni siquiera ofrece todavía) en vez de "importar un
+                 archivo" (lo único que hace). Pastilla con texto corto en
+                 vez de tooltip -- un tooltip no se ve en móvil sin pulsar
+                 y soltar, esto se lee de un vistazo. -->
             <button class="carreras-hero-import-button" data-action="open-race-import" aria-label="Importar carreras">
-                <iconify-icon icon="solar:calendar-add-bold-duotone"></iconify-icon>
+                <iconify-icon icon="solar:file-download-bold-duotone"></iconify-icon>
+                Importar
             </button>
 
             <div class="carreras-hero-content">
 
                 <h1>CALENDARIO DE CARRERAS</h1>
 
-                <p>${totalCount} ${totalCount === 1 ? "carrera" : "carreras"} en tu calendario</p>
+                <!-- "en tu calendario" sugería que el usuario había añadido
+                     él mismo estas 151 carreras -- son el calendario
+                     sembrado/importado disponible, no algo que compiló a
+                     mano. -->
+                <p>${totalCount} ${totalCount === 1 ? "carrera disponible" : "carreras disponibles"}</p>
 
             </div>
 
