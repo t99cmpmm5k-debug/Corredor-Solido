@@ -10,7 +10,7 @@ const IMAGES_BY_TYPE = {
 
 // djb2 — barata, determinista y con buena distribución para strings
 // cortos como "nombre+fecha" de una carrera. No necesita ser
-// criptográfica, solo repartir de forma estable entre las 4 fotos.
+// criptográfica, solo repartir de forma estable entre las fotos del pool.
 export function djb2Hash(text) {
 
     let hash = 5381;
@@ -25,8 +25,8 @@ export function djb2Hash(text) {
 
 // Misma carrera (mismo nombre+fecha) siempre devuelve la misma foto, en
 // cualquier render o sesión — el hash es puro, no hay estado ni azar de
-// por medio. Solo los types con pool propio (RU, TRS) pasan por el
-// reparto de sus 4 siluetas; cualquier otro type (o sin type) cae
+// por medio. Solo los types con pool propio (RU, TRS, 8 siluetas cada
+// uno) pasan por ese reparto; cualquier otro type (o sin type) cae
 // siempre al degradado, sin gastar una foto pensada para otra disciplina.
 export function getRaceImage(race) {
 

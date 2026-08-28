@@ -44,15 +44,16 @@
 
     background-size:cover;
 
-    /* Las 4 fotos de silueta son verticales 3:4 pensadas para verse
-       enteras — recortadas a este cuadrado tan pequeño, centrar el
-       recorte deja la silueta (arriba) fuera y solo se ve suelo/cielo.
-       Subir el punto de referencia prioriza esa mitad superior. */
+    /* Las fotos de silueta (8 por type, ver src/assets/races/index.js)
+       son verticales 3:4 pensadas para verse enteras — recortadas a este
+       cuadrado tan pequeño, centrar el recorte deja la silueta (arriba)
+       fuera y solo se ve suelo/cielo. Subir el punto de referencia
+       prioriza esa mitad superior. */
     background-position:center 28%;
 
     background-color:color-mix(in srgb, var(--card-background) 40%, transparent);
 
-    /* Solo aquí, no en el hero grande — a este tamaño tan reducido las 4
+    /* Solo aquí, no en el hero grande — a este tamaño tan reducido las
        fotos se leen todas casi iguales (apagadas); un empujón de
        brillo/contraste ayuda a distinguirlas de un vistazo en la lista. */
     filter:brightness(1.15) contrast(1.05);

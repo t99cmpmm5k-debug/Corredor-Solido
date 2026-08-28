@@ -15,7 +15,7 @@ describe("getRaceImage", () => {
 
     });
 
-    it("devuelve una de las 4 imágenes de asfalto para type RU", () => {
+    it("devuelve una de las 8 imágenes de asfalto para type RU", () => {
 
         const race = { type: "RU", name: "Carrera Popular de Ojós", date: "2026-08-22" };
 
@@ -36,7 +36,7 @@ describe("getRaceImage", () => {
 
     });
 
-    it("devuelve una de las 4 imágenes de trail para type TRS", () => {
+    it("devuelve una de las 8 imágenes de trail para type TRS", () => {
 
         const race = { type: "TRS", name: "Trail de prueba", date: "2026-08-22" };
 
