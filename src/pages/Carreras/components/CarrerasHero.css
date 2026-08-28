@@ -4,12 +4,15 @@
 
     overflow:hidden;
 
-    /* Grande y a los 3 bordes reales de la pantalla, igual que
-       .running-header (RunningHeader.css) — antes era una tarjeta
-       compacta con esquinas redondeadas y margen lateral propio.
-       min-height (no height fija) para que quepa el contenido en
-       pantallas muy estrechas sin recortarlo. */
-    min-height:340px;
+    /* A los 3 bordes reales de la pantalla, igual que .running-header
+       (RunningHeader.css) — antes era una tarjeta compacta con esquinas
+       redondeadas y margen lateral propio. min-height (no height fija)
+       para que quepa el contenido en pantallas muy estrechas sin
+       recortarlo. 340px -> 220px (pulido de cierre: las carreras deben
+       aparecer antes) — mismo valor final que ya usa RunningHeader.css,
+       con el padding-bottom sin tocar para no romper el solape de
+       .carreras-tabs (ver margin-top negativo en Carreras.css). */
+    min-height:220px;
 
     display:flex;
 
@@ -74,6 +77,54 @@
     mix-blend-mode:overlay;
 
     z-index:1;
+
+}
+
+/* Mismo cascarón que .race-detail-hero-button (RaceDetailView.css) --
+   círculo flotante con blur, no comparten hoja de estilos (ver CLAUDE.md
+   "known duplication") así que se repite aquí en vez de importarse. */
+.carreras-hero-import-button{
+
+    position:absolute;
+
+    top:calc(16px + env(safe-area-inset-top));
+    right:16px;
+
+    width:44px;
+    height:44px;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    border-radius:50%;
+
+    border:1px solid rgba(255,255,255,.18);
+
+    background:rgba(10,16,28,.55);
+
+    backdrop-filter:blur(18px);
+    -webkit-backdrop-filter:blur(18px);
+
+    color:#fff;
+
+    cursor:pointer;
+
+    transition:.25s;
+
+    z-index:2;
+
+}
+
+.carreras-hero-import-button:hover{
+
+    transform:scale(1.05);
+
+}
+
+.carreras-hero-import-button iconify-icon{
+
+    font-size:22px;
 
 }
 

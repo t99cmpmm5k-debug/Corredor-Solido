@@ -79,6 +79,33 @@ export function setSelectedType(type) {
 
 }
 
+// El chip "Todas" de la fila única de filtros (pulido de cierre) tiene que
+// resetear región Y type a la vez -- los setters individuales de arriba
+// solo tocan el suyo.
+export function resetRaceFilters() {
+
+    selectedRegion = "all";
+    selectedType = "all";
+
+}
+
+// Menú "···" de una tarjeta de la lista (RaceListCard.js) -- mismo patrón
+// que historyMenuOpenId en Running/runningStore.js: solo puede haber uno
+// abierto a la vez.
+let raceCardMenuOpenId = null;
+
+export function getRaceCardMenuOpenId() {
+
+    return raceCardMenuOpenId;
+
+}
+
+export function setRaceCardMenuOpenId(id) {
+
+    raceCardMenuOpenId = id;
+
+}
+
 export function getSelectedPlannedRaceId() {
 
     return selectedPlannedRaceId;
@@ -106,5 +133,6 @@ export function resetCarrerasView() {
     selectedRegion = "all";
     selectedType = "all";
     selectedPlannedRaceId = null;
+    raceCardMenuOpenId = null;
 
 }

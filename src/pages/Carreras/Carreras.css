@@ -242,48 +242,6 @@
 }
 
 /* =========================
-   BOTÓN IMPORTAR
-========================= */
-
-.carreras-import-button{
-
-    display:flex;
-
-    align-items:center;
-
-    justify-content:center;
-
-    gap:8px;
-
-    width:100%;
-
-    height:48px;
-
-    border-radius:var(--radius-md);
-
-    border:1px solid color-mix(in srgb, var(--color-primary) 40%, transparent);
-
-    background:color-mix(in srgb, var(--card-background) 60%, transparent);
-
-    color:var(--text-primary);
-
-    font-size:.9rem;
-
-    font-weight:700;
-
-    cursor:pointer;
-
-}
-
-.carreras-import-button iconify-icon{
-
-    font-size:18px;
-
-    color:var(--color-primary);
-
-}
-
-/* =========================
    LISTA AGRUPADA POR MES
 ========================= */
 

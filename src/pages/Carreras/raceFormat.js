@@ -83,3 +83,42 @@ export function formatUrlHost(url) {
     }
 
 }
+
+// Días de hoy a la fecha de la carrera (redondeado a días completos, en
+// hora LOCAL) — negativo si ya pasó. La propia tarjeta decide si tiene
+// sentido pintarlo (una carrera pasada no muestra "faltan -N días").
+export function daysUntilRace(iso) {
+
+    const date = parseISODate(iso);
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    return Math.round((date - today) / (24 * 60 * 60 * 1000));
+
+}
+
+export function formatDaysUntilRace(days) {
+
+    if (days === 0) return "Es hoy";
+    if (days === 1) return "Falta 1 día";
+    return `Faltan ${days} días`;
+
+}
+
+// Estado de inscripción del EVENTO (abierta/cerrada según
+// registrationDeadline), no el estado de inscripción del usuario — ese
+// dato no existe todavía (ver CLAUDE.md, ronda futura). Mismo parseo de
+// fecha+hora opcional que isDeadlineUrgent().
+export function isRegistrationOpen(deadlineIso) {
+
+    const [datePart, timePart] = deadlineIso.split("T");
+    const date = parseISODate(datePart);
+
+    if (timePart) {
+        const [hours, minutes] = timePart.split(":").map(Number);
+        date.setHours(hours, minutes, 0, 0);
+    }
+
+    return date.getTime() >= Date.now();
+
+}

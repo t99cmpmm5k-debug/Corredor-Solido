@@ -15,7 +15,10 @@ import { buildRaceEntries, categorizeRaceEntries, filterRaceEntriesByQuery, filt
 const TAB_LABELS = {
     proximas: "Próximas",
     misCarreras: "Mis carreras",
-    pasadas: "Pasadas"
+    // "Pasadas" -> "Resultados" (pulido de cierre) -- solo el nombre, la
+    // tab sigue siendo la misma categoría de siempre (planificada con
+    // fecha ya vencida, ver categorizeRaceEntries() en raceEntries.js).
+    pasadas: "Resultados"
 };
 
 const TAB_EMPTY_HINTS = {
@@ -69,10 +72,10 @@ function CarrerasSearchRow(query) {
 
             </label>
 
-            <!-- Región y type ya tienen su propia fila de píldoras (ver
-                 CarrerasRegionFilter/CarrerasTypeFilter) — este botón sigue
-                 reservado para la subcategoría más fina dentro del asfalto
-                 (Popular/Media Maratón/Maratón), todavía sin resolver. -->
+            <!-- Región y type ya tienen su propia fila de chips (ver
+                 CarrerasFilterChips) — este botón sigue reservado para la
+                 subcategoría más fina dentro del asfalto (Popular/Media
+                 Maratón/Maratón), todavía sin resolver. -->
             <button class="carreras-filters-button" type="button">
 
                 <iconify-icon icon="solar:tuning-2-bold-duotone"></iconify-icon>
@@ -92,17 +95,33 @@ const REGION_LABELS = {
     "Andalucía": "Andalucía"
 };
 
-// Fila de píldoras aparte del botón "Filtros" (ese sigue reservado para la
-// subcategoría más fina dentro del asfalto — Popular/Media Maratón/
-// Maratón — que todavía queda pendiente) — se combina con la tab activa,
-// la búsqueda y el filtro de type, no las sustituye.
-function CarrerasRegionFilter(selectedRegion) {
+// Fila única de chips (pulido de cierre: antes región y type vivían en
+// dos filas de píldoras separadas) — "Todas" resetea LOS DOS filtros a la
+// vez (data-action="reset-race-filters", distinto de select-race-region/
+// select-race-type porque tiene que tocar ambos), Murcia/Andalucía y
+// Asfalto/Trail siguen siendo dos filtros independientes que se combinan
+// entre sí (ver filterRaceEntriesByType/ByRegion en raceEntries.js), solo
+// que ahora comparten una única fila visual en vez de una jerarquía.
+// El botón "Filtros" (subcategoría fina dentro del asfalto, todavía sin
+// resolver) se queda tal cual en CarrerasSearchRow, sin tocar.
+function CarrerasFilterChips(selectedRegion, selectedType) {
+
+    const isAllActive = selectedRegion === "all" && selectedType === "all";
 
     return `
 
         <div class="carreras-filter-row">
 
-            ${RACE_REGIONS.map(region => `
+            <button
+                class="carreras-filter-pill ${isAllActive ? "is-active" : ""}"
+                data-action="reset-race-filters"
+            >
+
+                Todas
+
+            </button>
+
+            ${RACE_REGIONS.filter(region => region !== "all").map(region => `
 
                 <button
                     class="carreras-filter-pill ${region === selectedRegion ? "is-active" : ""}"
@@ -116,24 +135,7 @@ function CarrerasRegionFilter(selectedRegion) {
 
             `).join("")}
 
-        </div>
-
-    `;
-
-}
-
-// Mismo patrón visual y de comportamiento que CarrerasRegionFilter — dos
-// filtros independientes que se combinan entre sí (ver filterRaceEntries
-// ByType/ByRegion en raceEntries.js), no una jerarquía uno-dentro-del-otro.
-// "Todas" reutiliza la etiqueta genérica; RU/TRS salen de
-// formatDisciplineType() para no mantener un segundo mapa de nombres.
-function CarrerasTypeFilter(selectedType) {
-
-    return `
-
-        <div class="carreras-filter-row">
-
-            ${RACE_TYPES.map(type => `
+            ${RACE_TYPES.filter(type => type !== "all").map(type => `
 
                 <button
                     class="carreras-filter-pill ${type === selectedType ? "is-active" : ""}"
@@ -141,7 +143,7 @@ function CarrerasTypeFilter(selectedType) {
                     data-type="${type}"
                 >
 
-                    ${type === "all" ? "Todas" : formatDisciplineType(type)}
+                    ${formatDisciplineType(type)}
 
                 </button>
 
@@ -296,17 +298,7 @@ export function Carreras() {
 
                 ${CarrerasSearchRow(query)}
 
-                ${CarrerasRegionFilter(selectedRegion)}
-
-                ${CarrerasTypeFilter(selectedType)}
-
-                <button class="carreras-import-button" data-action="open-race-import">
-
-                    <iconify-icon icon="solar:calendar-add-bold-duotone"></iconify-icon>
-
-                    Importar carreras
-
-                </button>
+                ${CarrerasFilterChips(selectedRegion, selectedType)}
 
                 ${visibleEntries.length === 0 ? CarrerasEmptyState(activeTab, hasActiveFilter) : CarrerasList(visibleEntries)}
 

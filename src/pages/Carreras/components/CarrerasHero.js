@@ -22,6 +22,15 @@ export function CarrerasHero(totalCount) {
 
             <div class="carreras-hero-overlay"></div>
 
+            <!-- "Importar carreras" ya no es un botón ancho en el flujo
+                 normal (pulido de cierre: era demasiado protagonista para
+                 una acción secundaria) -- mismo cascarón visual que
+                 .race-detail-hero-button (RaceDetailView.css), solo que
+                 aquí vive en el hero de la lista en vez del de detalle. -->
+            <button class="carreras-hero-import-button" data-action="open-race-import" aria-label="Importar carreras">
+                <iconify-icon icon="solar:calendar-add-bold-duotone"></iconify-icon>
+            </button>
+
             <div class="carreras-hero-content">
 
                 <h1>CALENDARIO DE CARRERAS</h1>

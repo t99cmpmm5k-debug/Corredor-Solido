@@ -7,8 +7,11 @@ import {
     setSearchQuery,
     setSelectedRegion,
     setSelectedType,
+    resetRaceFilters,
     getSelectedPlannedRaceId,
-    setSelectedPlannedRaceId
+    setSelectedPlannedRaceId,
+    getRaceCardMenuOpenId,
+    setRaceCardMenuOpenId
 } from "./carrerasStore.js";
 
 import { importRaces } from "../../importers/races/index.js";
@@ -48,6 +51,13 @@ function selectRegion(region) {
 function selectType(type) {
 
     setSelectedType(type);
+    rerender();
+
+}
+
+function resetFilters() {
+
+    resetRaceFilters();
     rerender();
 
 }
@@ -94,6 +104,7 @@ function deletePlannedRaceEntry(id) {
     if (!window.confirm("¿Borrar esta carrera planificada? No se puede deshacer.")) return;
 
     deletePlannedRace(id);
+    setRaceCardMenuOpenId(null);
 
     if (getSelectedPlannedRaceId() === id) {
         closeRaceDetail();
@@ -179,6 +190,20 @@ window.addEventListener("popstate", () => {
         setSelectedPlannedRaceId(null);
         rerender();
     }
+
+});
+
+// Cierra el menú "···" de una tarjeta al tocar fuera de él -- mismo
+// patrón que el equivalente de Running/initRunningEvents.js, registrado
+// una sola vez a nivel de módulo (initCarrerasEvents se vuelve a llamar
+// en cada render y apilaría un listener nuevo cada vez sin desengancharse).
+document.addEventListener("click", event => {
+
+    if (!getRaceCardMenuOpenId()) return;
+    if (event.target.closest(".race-card-menu")) return;
+
+    setRaceCardMenuOpenId(null);
+    rerender();
 
 });
 
@@ -271,6 +296,12 @@ export function initCarrerasEvents() {
 
     });
 
+    document.querySelectorAll('[data-action="reset-race-filters"]').forEach(button => {
+
+        button.addEventListener("click", resetFilters);
+
+    });
+
     const searchInput = document.querySelector("#carreras-search-input");
 
     if (searchInput) {
@@ -299,6 +330,23 @@ export function initCarrerasEvents() {
             event.stopPropagation();
 
             deletePlannedRaceEntry(button.dataset.id);
+
+        });
+
+    });
+
+    // Menú "···" de la tarjeta (pulido de cierre: sustituye a la papelera
+    // siempre visible) -- mismo motivo de stopPropagation que arriba: sin
+    // él, abrir el menú también abriría el detalle de la tarjeta entera.
+    document.querySelectorAll('[data-action="toggle-race-card-menu"]').forEach(button => {
+
+        button.addEventListener("click", event => {
+
+            event.stopPropagation();
+
+            const id = button.dataset.id;
+            setRaceCardMenuOpenId(getRaceCardMenuOpenId() === id ? null : id);
+            rerender();
 
         });
 

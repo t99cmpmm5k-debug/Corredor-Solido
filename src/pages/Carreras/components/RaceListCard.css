@@ -189,6 +189,39 @@
 
 }
 
+/* "Faltan X días" / estado de inscripción del evento (pulido de cierre)
+   -- texto llano, no otra fila de pills (ya hay dos líneas de badges
+   encima, una tercera con el mismo lenguaje visual sería ruido). */
+.race-card-meta{
+
+    margin-top:2px;
+
+    color:var(--text-secondary);
+
+    font-size:.72rem;
+
+    font-weight:600;
+
+    overflow:hidden;
+
+    text-overflow:ellipsis;
+
+    white-space:nowrap;
+
+}
+
+.race-card-meta .is-open{
+
+    color:var(--color-success);
+
+}
+
+.race-card-meta .is-closed{
+
+    color:var(--text-secondary);
+
+}
+
 .race-card-chevron{
 
     flex-shrink:0;
@@ -199,11 +232,21 @@
 
 }
 
-/* Solo en carreras planificadas — una ya corrida no se borra desde aquí
-   (eso sigue siendo cosa de Running, ver history-delete en Running.css). */
-.race-card-delete{
+/* Menú "···" (pulido de cierre): sustituye a la papelera siempre visible
+   de antes -- mismo motivo/patrón que Running/Plan, mismas clases que
+   .history-menu* en Running.css (no compartidas, ver CLAUDE.md "known
+   duplication"). Solo en carreras planificadas, una ya corrida no se
+   borra desde aquí (eso sigue siendo cosa de Running, ver
+   history-delete en Running.css). */
+.race-card-menu{
+
+    position:relative;
 
     flex-shrink:0;
+
+}
+
+.race-card-menu-toggle{
 
     width:36px;
 
@@ -221,7 +264,7 @@
 
     background:transparent;
 
-    color:var(--color-danger);
+    color:var(--color-text-muted);
 
     cursor:pointer;
 
@@ -229,14 +272,89 @@
 
 }
 
-.race-card-delete:hover{
+.race-card-menu-toggle:hover{
 
-    background:color-mix(in srgb, var(--color-danger) 14%, transparent);
+    background:color-mix(in srgb, var(--card-border) 40%, transparent);
+
+    color:var(--text-primary);
 
 }
 
-.race-card-delete iconify-icon{
+.race-card-menu-toggle iconify-icon{
 
     font-size:18px;
+
+}
+
+.race-card-menu-popover{
+
+    position:absolute;
+
+    top:calc(100% + 4px);
+
+    right:0;
+
+    z-index:5;
+
+    display:flex;
+
+    flex-direction:column;
+
+    min-width:160px;
+
+    padding:6px;
+
+    border-radius:14px;
+
+    background:color-mix(in srgb, var(--card-background) 96%, transparent);
+
+    backdrop-filter:blur(20px);
+    -webkit-backdrop-filter:blur(20px);
+
+    border:1px solid var(--card-border);
+
+    box-shadow:0 10px 30px rgba(0,0,0,.35);
+
+}
+
+.race-card-menu-danger{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+
+    padding:10px 12px;
+
+    border:none;
+
+    border-radius:9px;
+
+    background:none;
+
+    color:var(--color-danger);
+
+    font-size:.88rem;
+
+    font-weight:600;
+
+    text-align:left;
+
+    cursor:pointer;
+
+}
+
+.race-card-menu-danger:hover{
+
+    background:color-mix(in srgb, var(--color-danger) 12%, transparent);
+
+}
+
+.race-card-menu-danger iconify-icon{
+
+    font-size:16px;
+
+    flex-shrink:0;
 
 }

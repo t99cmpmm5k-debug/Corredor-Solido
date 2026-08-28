@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { formatDeadline, isDeadlineUrgent, formatUrlHost, formatDistance, formatDisciplineType } from "./raceFormat.js";
+import { formatDeadline, isDeadlineUrgent, formatUrlHost, formatDistance, formatDisciplineType, daysUntilRace, formatDaysUntilRace, isRegistrationOpen } from "./raceFormat.js";
+import { formatISODate } from "../../utils/date.js";
 
 describe("formatDeadline", () => {
 
@@ -98,6 +99,85 @@ describe("formatDisciplineType", () => {
 
         expect(formatDisciplineType(null)).toBeNull();
         expect(formatDisciplineType(undefined)).toBeNull();
+
+    });
+
+});
+
+describe("daysUntilRace", () => {
+
+    it("0 para hoy", () => {
+
+        expect(daysUntilRace(formatISODate(new Date()))).toBe(0);
+
+    });
+
+    it("positivo para una fecha futura", () => {
+
+        const future = new Date();
+        future.setDate(future.getDate() + 12);
+
+        expect(daysUntilRace(formatISODate(future))).toBe(12);
+
+    });
+
+    it("negativo para una fecha ya pasada", () => {
+
+        const past = new Date();
+        past.setDate(past.getDate() - 5);
+
+        expect(daysUntilRace(formatISODate(past))).toBe(-5);
+
+    });
+
+});
+
+describe("formatDaysUntilRace", () => {
+
+    it("caso especial para hoy", () => {
+
+        expect(formatDaysUntilRace(0)).toBe("Es hoy");
+
+    });
+
+    it("singular para 1 día", () => {
+
+        expect(formatDaysUntilRace(1)).toBe("Falta 1 día");
+
+    });
+
+    it("plural para el resto", () => {
+
+        expect(formatDaysUntilRace(12)).toBe("Faltan 12 días");
+
+    });
+
+});
+
+describe("isRegistrationOpen", () => {
+
+    it("cerrada si la fecha límite ya pasó", () => {
+
+        expect(isRegistrationOpen("2020-01-01T00:00:00")).toBe(false);
+
+    });
+
+    it("abierta si la fecha límite es futura", () => {
+
+        const future = new Date();
+        future.setDate(future.getDate() + 10);
+        const iso = formatISODate(future) + "T00:00:00";
+
+        expect(isRegistrationOpen(iso)).toBe(true);
+
+    });
+
+    it("respeta la hora cuando la fecha límite es hoy mismo", () => {
+
+        const past = new Date(Date.now() - 60 * 60 * 1000);
+        const iso = `${formatISODate(past)}T${String(past.getHours()).padStart(2, "0")}:${String(past.getMinutes()).padStart(2, "0")}:00`;
+
+        expect(isRegistrationOpen(iso)).toBe(false);
 
     });
 
