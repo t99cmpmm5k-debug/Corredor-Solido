@@ -14,7 +14,13 @@ const store = {
 
     highlightedDayId: null,
 
-    routineMenuOpenId: null
+    routineMenuOpenId: null,
+
+    editingCell: null,
+
+    exerciseCompletionOverlay: null,
+
+    restCriticalNotified: false
 
 };
 
@@ -161,6 +167,60 @@ export function setRoutineMenuOpenId(id) {
 }
 
 /*==========================
+   CELDA EN EDICIÓN (tabla de series, Fase 2)
+   Solo una celda (peso o reps de una serie concreta) puede estar en modo
+   "stepper" a la vez -- tocar otra celda simplemente cambia cuál, no hace
+   falta un listener de "cerrar al tocar fuera" como en los menús "···".
+==========================*/
+
+export function getEditingCell() {
+
+    return store.editingCell;
+
+}
+
+export function setEditingCell(cell) {
+
+    store.editingCell = cell;
+
+}
+
+export function clearEditingCell() {
+
+    store.editingCell = null;
+
+}
+
+export function isEditingCell(exerciseId, setIndex, field) {
+
+    const cell = store.editingCell;
+    return !!cell && cell.exerciseId === exerciseId && cell.setIndex === setIndex && cell.field === field;
+
+}
+
+/*==========================
+   TARJETA "EJERCICIO COMPLETADO" (Fase 2)
+==========================*/
+
+export function getExerciseCompletionOverlay() {
+
+    return store.exerciseCompletionOverlay;
+
+}
+
+export function setExerciseCompletionOverlay(data) {
+
+    store.exerciseCompletionOverlay = data;
+
+}
+
+export function clearExerciseCompletionOverlay() {
+
+    store.exerciseCompletionOverlay = null;
+
+}
+
+/*==========================
    TEMPORIZADOR DE DESCANSO
    (90s fijos, autoarranca al marcar una serie como hecha — decisión de
    producto confirmada con el usuario, sin dato real de "tiempo ideal" de
@@ -203,12 +263,14 @@ export function startRestTimer() {
 
     restDurationSec = REST_DEFAULT_SEC;
     restEndAt = Date.now() + restDurationSec * 1000;
+    store.restCriticalNotified = false;
 
 }
 
 export function stopRestTimer() {
 
     restEndAt = null;
+    store.restCriticalNotified = false;
 
 }
 
@@ -218,5 +280,23 @@ export function adjustRestTimer(deltaSec) {
 
     restEndAt += deltaSec * 1000;
     restDurationSec = Math.max(REST_STEP_SEC, restDurationSec + deltaSec);
+
+}
+
+// Evita vibrar en cada segundo mientras quedan <=10s -- una sola vez por
+// entrada en la zona crítica (ver tickRestTimerDisplay en initGymEvents.js).
+// Si +15s saca el descanso de la zona crítica y luego vuelve a entrar, debe
+// poder volver a avisar -- por eso se resetea también al salir (isRestCritical
+// en initGymEvents.js llama a setRestCriticalNotified(false) al superar
+// el umbral).
+export function isRestCriticalNotified() {
+
+    return store.restCriticalNotified;
+
+}
+
+export function setRestCriticalNotified(value) {
+
+    store.restCriticalNotified = value;
 
 }

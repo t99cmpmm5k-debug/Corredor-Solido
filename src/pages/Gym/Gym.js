@@ -5,6 +5,7 @@ import { getRoutines, getGymDay } from "../../data/gymRoutineStore.js";
 import { getSessionById, getGymSessions, getExerciseSessionHistory } from "../../data/gymSessionStore.js";
 import { getStep, getActiveSessionId, getDetailExerciseId, getDetailTab, getDetailExpandedSessionId, getWeekSummaryExpanded, getHighlightedDayId, getRoutineMenuOpenId } from "./gymStore.js";
 import { GymSessionView } from "./components/GymSessionView.js";
+import { GymSessionSummaryView } from "./components/GymSessionSummaryView.js";
 import { GymExerciseDetailView } from "./components/GymExerciseDetailView.js";
 import { GymRoutineBuilder } from "./components/GymRoutineBuilder.js";
 import { GymHomeSummary } from "./components/GymHomeSummary.js";
@@ -227,13 +228,23 @@ export function Gym() {
     }
 
     const step = getStep();
-    const session = step === "session" ? getSessionById(getActiveSessionId()) : null;
+    const session = step === "session" || step === "session-summary" ? getSessionById(getActiveSessionId()) : null;
+
+    function StepContent() {
+
+        if (step === "exercise-detail") return ExerciseDetailSection();
+        if (step === "session-summary" && session) return GymSessionSummaryView(session);
+        if (session) return GymSessionView(session);
+
+        return GymDaySelect();
+
+    }
 
     return `
 
         <div class="gym-page">
 
-            ${step === "exercise-detail" ? ExerciseDetailSection() : session ? GymSessionView(session) : GymDaySelect()}
+            ${StepContent()}
 
             ${BottomNavigation()}
 

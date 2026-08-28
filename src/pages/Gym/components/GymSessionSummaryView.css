@@ -1,0 +1,196 @@
+.gym-summary{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:16px;
+
+    padding:20px 16px calc(24px + env(safe-area-inset-bottom));
+
+}
+
+.gym-summary-hero{
+
+    display:flex;
+
+    flex-direction:column;
+
+    align-items:center;
+
+    gap:10px;
+
+    padding:28px 20px;
+
+    border-radius:var(--radius-xl);
+
+    background:linear-gradient(180deg, color-mix(in srgb, var(--color-success) 16%, var(--card-background)), var(--card-background));
+
+    border:1px solid color-mix(in srgb, var(--color-success) 30%, var(--card-border));
+
+    text-align:center;
+
+}
+
+.gym-summary-hero iconify-icon{
+
+    font-size:44px;
+
+    color:var(--color-success);
+
+}
+
+.gym-summary-hero h2{
+
+    color:var(--text-primary);
+
+    font-size:1.15rem;
+
+    font-weight:800;
+
+    letter-spacing:.02em;
+
+}
+
+.gym-summary-stats{
+
+    display:flex;
+
+    width:100%;
+
+    margin-top:8px;
+
+    gap:8px;
+
+}
+
+.gym-summary-stat{
+
+    flex:1;
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:2px;
+
+    padding:12px 6px;
+
+    border-radius:var(--radius-md);
+
+    background:color-mix(in srgb, var(--card-background) 70%, transparent);
+
+    border:1px solid var(--card-border);
+
+}
+
+.gym-summary-stat-value{
+
+    color:var(--text-primary);
+
+    font-size:1.15rem;
+
+    font-weight:800;
+
+    font-variant-numeric:tabular-nums;
+
+}
+
+.gym-summary-stat-label{
+
+    color:var(--color-text-muted);
+
+    font-size:.7rem;
+
+    font-weight:700;
+
+    letter-spacing:.03em;
+
+    text-transform:uppercase;
+
+}
+
+.gym-summary-exercises{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:2px;
+
+    padding:6px 4px;
+
+    border-radius:var(--radius-lg);
+
+    background:color-mix(in srgb, var(--card-background) 70%, transparent);
+
+    border:1px solid var(--card-border);
+
+}
+
+.gym-summary-exercise-row{
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:space-between;
+
+    gap:12px;
+
+    padding:12px 10px;
+
+    border-top:1px solid color-mix(in srgb, var(--card-border) 60%, transparent);
+
+}
+
+.gym-summary-exercise-row:first-child{
+
+    border-top:none;
+
+}
+
+.gym-summary-exercise-name{
+
+    color:var(--text-primary);
+
+    font-size:.92rem;
+
+    font-weight:700;
+
+}
+
+.gym-summary-exercise-delta{
+
+    flex-shrink:0;
+
+    font-size:.88rem;
+
+    font-weight:800;
+
+    font-variant-numeric:tabular-nums;
+
+}
+
+.gym-summary-exercise-delta.is-up{
+
+    color:var(--color-success);
+
+}
+
+.gym-summary-exercise-delta.is-down{
+
+    color:var(--color-warning);
+
+}
+
+.gym-summary-exercise-delta.is-equal,
+.gym-summary-exercise-delta.is-muted{
+
+    color:var(--color-text-muted);
+
+    font-size:.8rem;
+
+    font-weight:600;
+
+}

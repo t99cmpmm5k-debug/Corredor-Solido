@@ -1,6 +1,6 @@
 import { rerender } from "../../core/router.js";
-import { startSession, updateSet, updateExerciseNotes, finishSession, getSessionById, deleteSession, hydrate } from "../../data/gymSessionStore.js";
-import { getRoutineById, createRoutine, updateRoutine, deleteRoutine } from "../../data/gymRoutineStore.js";
+import { startSession, updateSet, updateExerciseNotes, finishSession, getSessionById, deleteSession, hydrate, getPreviousExerciseSummary } from "../../data/gymSessionStore.js";
+import { getRoutineById, createRoutine, updateRoutine, deleteRoutine, getGymDay } from "../../data/gymRoutineStore.js";
 import { addCustomExercise } from "../../data/customExerciseStore.js";
 import { getAllExercises } from "./exerciseSearch.js";
 
@@ -27,7 +27,14 @@ import {
     getHighlightedDayId,
     setHighlightedDayId,
     getRoutineMenuOpenId,
-    setRoutineMenuOpenId
+    setRoutineMenuOpenId,
+    getEditingCell,
+    setEditingCell,
+    clearEditingCell,
+    setExerciseCompletionOverlay,
+    clearExerciseCompletionOverlay,
+    isRestCriticalNotified,
+    setRestCriticalNotified
 } from "./gymStore.js";
 
 import {
@@ -278,6 +285,89 @@ function adjustReps(exerciseId, setIndex, delta) {
 
 }
 
+function modeOfReps(values) {
+
+    const counts = new Map();
+    let best = values[0];
+    let bestCount = 0;
+
+    for (const value of values) {
+
+        const count = (counts.get(value) || 0) + 1;
+        counts.set(value, count);
+
+        if (count > bestCount) {
+            bestCount = count;
+            best = value;
+        }
+
+    }
+
+    return best;
+
+}
+
+// Datos de la tarjeta "ejercicio completado" (Fase 2.5) -- solo para
+// ejercicios con peso (weightUnit), mismo criterio que el resto de
+// historial de gimnasio: sin peso no hay progresión que comparar. null si
+// no hay ninguna serie con peso+reps marcada (no debería pasar si se llama
+// justo tras completar la última serie, pero por si el ejercicio no tiene
+// weightUnit).
+function buildExerciseCompletionSummary(session, definition, sessionExercise) {
+
+    if (!definition.weightUnit) return null;
+
+    const doneSets = sessionExercise.sets.filter(set => set.done && set.weight != null && set.reps != null);
+    if (!doneSets.length) return null;
+
+    const todayWeight = Math.max(...doneSets.map(set => set.weight));
+    const todayReps = modeOfReps(doneSets.map(set => set.reps));
+
+    const excludeSessionId = session.finishedAt ? null : session.id;
+    const previous = getPreviousExerciseSummary(definition.id, { excludeSessionId });
+
+    return {
+        exerciseId: definition.id,
+        title: definition.name,
+        weightUnit: definition.weightUnit,
+        today: { weight: todayWeight, reps: todayReps },
+        previous: previous ? { weight: previous.weight, reps: previous.reps } : null,
+        delta: previous ? Math.round((todayWeight - previous.weight) * 10) / 10 : null
+    };
+
+}
+
+const EXERCISE_COMPLETE_AUTO_ADVANCE_MS = 2200;
+let exerciseCompleteAdvanceTimer = null;
+
+function clearExerciseCompleteAdvanceTimer() {
+
+    if (exerciseCompleteAdvanceTimer) {
+        clearTimeout(exerciseCompleteAdvanceTimer);
+        exerciseCompleteAdvanceTimer = null;
+    }
+
+}
+
+// Cierra la tarjeta y avanza al siguiente ejercicio -- llamada tanto por el
+// avance automático como por tocar la propia tarjeta para saltarlo antes.
+// En el último ejercicio no hay a dónde avanzar: simplemente se cierra.
+function advanceAfterExerciseComplete() {
+
+    clearExerciseCompletionOverlay();
+
+    const session = getSessionById(getActiveSessionId());
+
+    if (session) {
+        const lastIndex = session.exercises.length - 1;
+        setCurrentExerciseIndex(Math.min(lastIndex, getCurrentExerciseIndex() + 1));
+    }
+
+    stopRestTimer();
+    rerender();
+
+}
+
 function toggleDone(exerciseId, setIndex) {
 
     const set = currentSet(exerciseId, setIndex);
@@ -286,33 +376,98 @@ function toggleDone(exerciseId, setIndex) {
     const nextDone = !set.done;
 
     updateSet(getActiveSessionId(), exerciseId, setIndex, { done: nextDone });
+    clearEditingCell();
 
     // Autoarranca el descanso solo al completar una serie, no al
     // desmarcarla — decisión de producto confirmada con el usuario (ver
     // gymStore.js).
-    if (nextDone) startRestTimer();
+    if (nextDone) {
+
+        startRestTimer();
+
+        const session = getSessionById(getActiveSessionId());
+        const sessionExercise = session?.exercises.find(e => e.exerciseId === exerciseId);
+
+        if (session && sessionExercise && sessionExercise.sets.every(s => s.done)) {
+
+            const day = getGymDay(session.dayId);
+            const definition = day?.exercises.find(e => e.id === exerciseId);
+            const summary = definition ? buildExerciseCompletionSummary(session, definition, sessionExercise) : null;
+
+            if (summary) {
+
+                setExerciseCompletionOverlay(summary);
+
+                clearExerciseCompleteAdvanceTimer();
+                exerciseCompleteAdvanceTimer = setTimeout(() => {
+                    exerciseCompleteAdvanceTimer = null;
+                    advanceAfterExerciseComplete();
+                }, EXERCISE_COMPLETE_AUTO_ADVANCE_MS);
+
+            }
+
+        }
+
+    }
 
     rerender();
+
+}
+
+const REST_CRITICAL_SEC = 10;
+const REST_READY_DISPLAY_MS = 900;
+
+// true mientras se muestra "LISTO" a la espera de que el widget desaparezca
+// -- evita que un tick de por medio (el intervalo sigue corriendo cada
+// segundo) reinicie la cuenta atrás mostrando otra vez el mm:ss.
+let restFinishing = false;
+
+function vibrate(pattern) {
+
+    if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
+        navigator.vibrate(pattern);
+    }
 
 }
 
 // Actualiza el conteo del descanso directamente sobre el DOM ya pintado,
 // sin pasar por rerender() — así no se repinta la página entera (y no se
 // pierde el foco de las notas, por ejemplo) solo porque pasa un segundo.
-// Cuando el descanso llega a cero, ahí sí hace falta un rerender() para
-// que el widget desaparezca (ver isRestRunning() en gymStore.js).
+// Últimos 10s (Fase 2.4): cambio de intensidad visual + vibración corta,
+// una sola vez al entrar en la zona crítica (ver isRestCriticalNotified()/
+// gymStore.js). Al llegar a 0: "LISTO" + vibración distinta, visible un
+// momento antes de que el widget desaparezca (ahí sí hace falta un
+// rerender(), ver isRestRunning() en gymStore.js).
 function tickRestTimerDisplay() {
+
+    if (restFinishing) return;
 
     const remainingEl = document.querySelector("#gym-rest-remaining");
     const fillEl = document.querySelector("#gym-rest-fill");
-    if (!remainingEl || !fillEl) return;
+    const timerEl = document.querySelector(".gym-rest-timer");
+    if (!remainingEl || !fillEl || !timerEl) return;
 
     const remaining = getRestRemainingSec();
 
     if (remaining <= 0) {
-        stopRestTimer();
-        rerender();
+
+        restFinishing = true;
+
+        remainingEl.textContent = "LISTO";
+        fillEl.style.width = "100%";
+        timerEl.classList.remove("is-critical");
+        timerEl.classList.add("is-ready");
+
+        vibrate([120, 60, 120]);
+
+        setTimeout(() => {
+            restFinishing = false;
+            stopRestTimer();
+            rerender();
+        }, REST_READY_DISPLAY_MS);
+
         return;
+
     }
 
     const duration = getRestDurationSec();
@@ -321,6 +476,22 @@ function tickRestTimerDisplay() {
 
     remainingEl.textContent = `${mm}:${ss}`;
     fillEl.style.width = `${Math.round((remaining / duration) * 100)}%`;
+
+    if (remaining <= REST_CRITICAL_SEC) {
+
+        timerEl.classList.add("is-critical");
+
+        if (!isRestCriticalNotified()) {
+            setRestCriticalNotified(true);
+            vibrate(80);
+        }
+
+    } else {
+
+        timerEl.classList.remove("is-critical");
+        setRestCriticalNotified(false);
+
+    }
 
 }
 
@@ -416,6 +587,9 @@ export function initGymEvents() {
             // no pierde nada, solo saca de la pantalla de sesión.
             setActiveSessionId(null);
             stopRestTimer();
+            clearEditingCell();
+            clearExerciseCompleteAdvanceTimer();
+            clearExerciseCompletionOverlay();
             setStep("select-day");
             rerender();
 
@@ -423,6 +597,11 @@ export function initGymEvents() {
 
     });
 
+    // "Finalizar entrenamiento" (Fase 2.7): guarda de verdad (finishSession
+    // calcula la duración real ahí mismo, con el reloj todavía fresco) y
+    // pasa a la pantalla de resumen -- la sesión activa se queda puesta
+    // (GymSessionSummaryView la necesita, ver Gym.js) hasta que se confirme
+    // con "Guardar entrenamiento" (ver save-session-summary más abajo).
     document.querySelectorAll('[data-action="finish-session"]').forEach(button => {
 
         button.addEventListener("click", () => {
@@ -430,8 +609,22 @@ export function initGymEvents() {
             const id = getActiveSessionId();
             if (id) finishSession(id);
 
-            setActiveSessionId(null);
             stopRestTimer();
+            clearEditingCell();
+            clearExerciseCompleteAdvanceTimer();
+            clearExerciseCompletionOverlay();
+            setStep("session-summary");
+            rerender();
+
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="save-session-summary"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+
+            setActiveSessionId(null);
             setStep("select-day");
             rerender();
 
@@ -445,6 +638,43 @@ export function initGymEvents() {
     wireStepper("dec-reps", (exerciseId, setIndex) => adjustReps(exerciseId, setIndex, -REPS_STEP));
     wireStepper("toggle-done", toggleDone);
 
+    // Tocar el valor de Kg/Reps de una serie abre su stepper +/- en el
+    // sitio (Fase 2.1) -- solo una celda a la vez en toda la pantalla, ver
+    // isEditingCell()/gymStore.js. Tocar la MISMA celda otra vez la cierra
+    // sin necesidad de un botón "hecho" aparte.
+    document.querySelectorAll('[data-action="edit-set-cell"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+
+            const cell = { exerciseId: button.dataset.exerciseId, setIndex: Number(button.dataset.setIndex), field: button.dataset.field };
+            const current = getEditingCell();
+
+            const isSameCell = current
+                && current.exerciseId === cell.exerciseId
+                && current.setIndex === cell.setIndex
+                && current.field === cell.field;
+
+            setEditingCell(isSameCell ? null : cell);
+            rerender();
+
+        });
+
+    });
+
+    // Tocar la tarjeta "ejercicio completado" (o esperar el avance
+    // automático programado en toggleDone()) la cierra y pasa al siguiente
+    // ejercicio.
+    document.querySelectorAll('[data-action="dismiss-exercise-complete"]').forEach(overlay => {
+
+        overlay.addEventListener("click", () => {
+
+            clearExerciseCompleteAdvanceTimer();
+            advanceAfterExerciseComplete();
+
+        });
+
+    });
+
     document.querySelectorAll('[data-action="prev-exercise"]').forEach(button => {
 
         button.addEventListener("click", () => {
@@ -455,6 +685,7 @@ export function initGymEvents() {
             // seguir contando bajo un ejercicio distinto confundiría más
             // de lo que ayuda.
             stopRestTimer();
+            clearEditingCell();
             rerender();
 
         });
@@ -471,6 +702,7 @@ export function initGymEvents() {
             const lastIndex = session.exercises.length - 1;
             setCurrentExerciseIndex(Math.min(lastIndex, getCurrentExerciseIndex() + 1));
             stopRestTimer();
+            clearEditingCell();
             rerender();
 
         });

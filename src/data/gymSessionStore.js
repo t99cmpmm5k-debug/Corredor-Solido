@@ -245,6 +245,85 @@ export function getLastLoggedSetWeight(exerciseId, setIndex) {
 
 }
 
+// Serie completa (peso Y reps) de ESA MISMA serie (por índice) la última
+// vez que se hizo -- misma búsqueda que getLastLoggedSetWeight() de arriba,
+// pero devolviendo también las reps: hace falta para la columna "Anterior"
+// de la tabla de series (Fase 2), que compara serie a serie, no solo el
+// peso.
+//
+// excludeSessionId con el mismo motivo que en getExerciseHistory: a
+// diferencia de getLastLoggedSetWeight() (solo se llama al CREAR una
+// sesión nueva, antes de que exista en `sessions`, así que nunca puede
+// autorreferenciarse), esta función se llama en cada render de una sesión
+// YA en curso -- sin excluirla, marcar la serie 1 como hecha con 65kg hacía
+// que su propia fila mostrara "Anterior: 65×6" un instante después,
+// comparándose consigo misma en vez de con la sesión real anterior.
+export function getLastLoggedSet(exerciseId, setIndex, { excludeSessionId = null } = {}) {
+
+    const sorted = [...sessions].sort((a, b) => b.date.localeCompare(a.date));
+
+    for (const session of sorted) {
+
+        if (session.id === excludeSessionId) continue;
+
+        const exercise = session.exercises.find(e => e.exerciseId === exerciseId);
+        if (!exercise) continue;
+
+        const set = exercise.sets[setIndex];
+        if (set && set.done && set.weight != null) return { weight: set.weight, reps: set.reps };
+
+    }
+
+    return null;
+
+}
+
+// Valor más repetido de una lista de reps -- para resumir una sesión con
+// alguna serie irregular ("4×6" aunque una serie se cortase en 5) sin
+// inventar un promedio que nadie hizo de verdad. Empate: gana el primero
+// que aparece.
+function modeOfReps(values) {
+
+    const counts = new Map();
+    let best = values[0];
+    let bestCount = 0;
+
+    for (const value of values) {
+
+        const count = (counts.get(value) || 0) + 1;
+        counts.set(value, count);
+
+        if (count > bestCount) {
+            bestCount = count;
+            best = value;
+        }
+
+    }
+
+    return best;
+
+}
+
+// Resumen de la sesión anterior REAL de un ejercicio (no solo el mejor
+// peso, ver getExerciseHistory) -- para "Anterior: 4×6 @ 60kg" en la
+// cabecera de la tarjeta de ejercicio y en la tarjeta de "ejercicio
+// completado" (Fase 2). null si no hay ninguna sesión pasada con datos.
+export function getPreviousExerciseSummary(exerciseId, { excludeSessionId = null } = {}) {
+
+    const history = getExerciseSessionHistory(exerciseId, { excludeSessionId });
+    if (!history.length) return null;
+
+    const last = history[history.length - 1];
+
+    return {
+        date: last.date,
+        setsCount: last.sets.length,
+        reps: modeOfReps(last.sets.map(s => s.reps)),
+        weight: last.bestWeight
+    };
+
+}
+
 // Serie temporal real para el mini-gráfico de progreso: una sesión (con
 // al menos una serie marcada como hecha) aporta un punto, con el peso
 // máximo entre sus series hechas ("mejor serie" de esa sesión) — no la

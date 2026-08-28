@@ -276,6 +276,120 @@ describe("gymSessionStore — duración real de la sesión (primer paso del entr
 
 });
 
+describe("getPreviousExerciseSummary / getLastLoggedSet -- comparación con la sesión anterior real (Fase 2)", () => {
+
+    beforeEach(async () => {
+        resetFakeIndexedDB();
+        vi.resetModules();
+    });
+
+    async function setupRoutine() {
+
+        const { hydrate: hydrateRoutines, createRoutine } = await import("./gymRoutineStore.js");
+        await hydrateRoutines();
+
+        return createRoutine({
+            name: "Torso",
+            days: [{
+                id: "d1",
+                title: "Día 1",
+                exercises: [{ id: "e1", name: "Press banca", sets: 2, targetReps: "8", targetWeight: 40, weightUnit: "kg" }]
+            }],
+            progressionNote: ""
+        });
+
+    }
+
+    it("sin ninguna sesión anterior, no hay resumen que dar", async () => {
+
+        await setupRoutine();
+
+        const gymSessionStore = await import("./gymSessionStore.js");
+        await gymSessionStore.hydrate();
+
+        expect(gymSessionStore.getPreviousExerciseSummary("e1")).toBeNull();
+        expect(gymSessionStore.getLastLoggedSet("e1", 0)).toBeNull();
+
+    });
+
+    it("con una sesión anterior con series regulares, resume series×reps @ peso más pesado", async () => {
+
+        const routine = await setupRoutine();
+
+        const gymSessionStore = await import("./gymSessionStore.js");
+        await gymSessionStore.hydrate();
+
+        const session = gymSessionStore.startSession(routine.days[0].id);
+
+        gymSessionStore.updateSet(session.id, "e1", 0, { weight: 60, reps: 6, done: true });
+        gymSessionStore.updateSet(session.id, "e1", 1, { weight: 60, reps: 6, done: true });
+
+        const summary = gymSessionStore.getPreviousExerciseSummary("e1", { excludeSessionId: "otra-sesion-distinta" });
+
+        expect(summary).toEqual({ date: session.date, setsCount: 2, reps: 6, weight: 60 });
+
+    });
+
+    it("excludeSessionId excluye la sesión en curso -- no cuenta como su propio historial", async () => {
+
+        const routine = await setupRoutine();
+
+        const gymSessionStore = await import("./gymSessionStore.js");
+        await gymSessionStore.hydrate();
+
+        const session = gymSessionStore.startSession(routine.days[0].id);
+        gymSessionStore.updateSet(session.id, "e1", 0, { weight: 60, reps: 6, done: true });
+
+        expect(gymSessionStore.getPreviousExerciseSummary("e1", { excludeSessionId: session.id })).toBeNull();
+
+    });
+
+    it("getLastLoggedSet compara serie a serie (pirámide) -- cada índice trae su propio peso/reps anterior", async () => {
+
+        const routine = await setupRoutine();
+
+        const gymSessionStore = await import("./gymSessionStore.js");
+        await gymSessionStore.hydrate();
+
+        const session = gymSessionStore.startSession(routine.days[0].id);
+        gymSessionStore.updateSet(session.id, "e1", 0, { weight: 60, reps: 8, done: true });
+        gymSessionStore.updateSet(session.id, "e1", 1, { weight: 65, reps: 5, done: true });
+
+        expect(gymSessionStore.getLastLoggedSet("e1", 0)).toEqual({ weight: 60, reps: 8 });
+        expect(gymSessionStore.getLastLoggedSet("e1", 1)).toEqual({ weight: 65, reps: 5 });
+
+    });
+
+    it("excludeSessionId evita que la sesión en curso se compare consigo misma (columna 'Anterior' de la tabla, Fase 2.1)", async () => {
+
+        const routine = await setupRoutine();
+
+        const gymSessionStore = await import("./gymSessionStore.js");
+        await gymSessionStore.hydrate();
+
+        // Sesión de ayer, ya terminada: 60kg.
+        const yesterday = gymSessionStore.startSession(routine.days[0].id);
+        gymSessionStore.updateSet(yesterday.id, "e1", 0, { weight: 60, reps: 6, done: true });
+        gymSessionStore.finishSession(yesterday.id);
+        yesterday.date = "2026-01-01"; // fuerza que quede estrictamente en el pasado
+
+        // Sesión de hoy: startSession() ya no encuentra una sesión de hoy
+        // (la de ayer se movió de fecha), así que crea una nueva.
+        const today = gymSessionStore.startSession(routine.days[0].id);
+        expect(today.id).not.toBe(yesterday.id);
+
+        // Marca la MISMA serie con un peso distinto -- sin excludeSessionId,
+        // se encontraría a sí misma primero (fecha más reciente) en vez de
+        // la sesión de ayer.
+        gymSessionStore.updateSet(today.id, "e1", 0, { weight: 65, reps: 6, done: true });
+
+        expect(gymSessionStore.getLastLoggedSet("e1", 0, { excludeSessionId: today.id })).toEqual({ weight: 60, reps: 6 });
+        expect(gymSessionStore.getLastLoggedSet("e1", 0)).toEqual({ weight: 65, reps: 6 });
+
+    });
+
+});
+
 describe("getAverageDurationForDay -- duración real para un día aún no empezado hoy (GymTodayCard.js)", () => {
 
     beforeEach(() => {

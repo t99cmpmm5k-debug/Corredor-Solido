@@ -298,39 +298,74 @@
 
 }
 
+/* "+2,5kg vs última sesión" -- verde, mejora de progreso real (ver
+   jerarquía de color de Fase 2.3). Solo aparece cuando el peso de hoy ya
+   ha superado al de la sesión anterior, ver PreviousSessionBadge() en
+   GymExerciseHistoryChart.js. */
+.gym-exercise-badge-delta{
+
+    display:block;
+
+    margin-top:4px;
+
+    color:var(--color-success);
+
+    font-size:.72rem;
+
+    font-weight:700;
+
+}
+
 /*==========================
-   CABECERA DE COLUMNAS
-   (mismo grid que .gym-set-row, para que Peso/Reps queden alineados
-   con sus steppers de abajo)
+   TABLA DE SERIES (Fase 2.1)
+   Serie | Anterior | Kg | Reps | ✓ -- grid compartido entre cabecera y
+   filas para que todo quede alineado. .gym-set-table--no-weight quita la
+   columna Kg para ejercicios sin peso (ver definition.weightUnit).
 ==========================*/
 
-.gym-set-columns{
+.gym-set-table{
 
     display:flex;
+
+    flex-direction:column;
+
+}
+
+.gym-set-table-row{
+
+    display:grid;
+
+    grid-template-columns:20px 1fr 1fr 1fr 40px;
 
     align-items:center;
 
-    gap:10px;
-
-}
-
-.gym-set-columns-labels{
-
-    flex:1;
-
-    min-width:0;
-
-    display:flex;
-
     gap:8px;
 
+    padding:10px 0;
+
+    border-top:1px solid color-mix(in srgb, var(--card-border) 70%, transparent);
+
 }
 
-.gym-set-columns-labels span{
+.gym-set-table--no-weight .gym-set-table-row{
 
-    flex:1;
+    grid-template-columns:20px 1fr 1fr 40px;
 
-    min-width:0;
+}
+
+.gym-set-table-row:first-child{
+
+    border-top:none;
+
+}
+
+.gym-set-table-row--header{
+
+    padding-bottom:6px;
+
+}
+
+.gym-set-col-label{
 
     text-align:center;
 
@@ -346,53 +381,37 @@
 
 }
 
-.gym-set-columns-done{
+/* "Anterior" -- gris azulado, dato secundario/de referencia (ver jerarquía
+   de color de Fase 2.3), nunca el foco de la fila. */
+.gym-set-col-prev{
 
-    flex-shrink:0;
+    text-align:center;
 
-    width:44px;
+    color:var(--color-text-muted);
 
-}
+    font-size:.78rem;
 
-/*==========================
-        FILA DE SERIE
-==========================*/
+    font-weight:600;
 
-.gym-set-row{
-
-    display:flex;
-
-    flex-direction:column;
-
-    gap:8px;
-
-    padding:8px 0;
-
-    border-top:1px solid color-mix(in srgb, var(--card-border) 70%, transparent);
+    font-variant-numeric:tabular-nums;
 
 }
 
-.gym-set-row:first-child{
+.gym-set-table-row--header .gym-set-col-prev{
 
-    border-top:none;
+    color:var(--text-secondary);
 
-}
+    font-size:.68rem;
 
-.gym-set-row-main{
+    font-weight:700;
 
-    display:flex;
+    letter-spacing:.03em;
 
-    align-items:center;
-
-    gap:8px;
+    text-transform:uppercase;
 
 }
 
 .gym-set-label{
-
-    flex-shrink:0;
-
-    width:20px;
 
     text-align:center;
 
@@ -404,37 +423,52 @@
 
 }
 
-.gym-set-steppers{
+/* Celda Kg/Reps en reposo -- dato principal, blanco (ver jerarquía de
+   color). Tocarla la convierte en stepper (.is-editing más abajo). */
+.gym-set-cell{
 
-    flex:1;
+    width:100%;
 
-    min-width:0;
+    padding:8px 4px;
 
-    display:flex;
+    border:none;
 
-    flex-wrap:wrap;
+    border-radius:var(--radius-sm);
 
-    gap:6px 8px;
+    background:color-mix(in srgb, var(--card-background) 90%, transparent);
+
+    color:var(--text-primary);
+
+    text-align:center;
+
+    font-size:.98rem;
+
+    font-weight:800;
+
+    font-variant-numeric:tabular-nums;
+
+    cursor:pointer;
 
 }
 
-/* Cada stepper (peso o reps) — botones grandes de 44px a cada lado del
-   valor, pensado para tocar sin mirar mucho ni acertar a la primera.
-   Sin min-width:0 aquí (a diferencia de casi todo lo demás en flex) — a
-   propósito: es justo ese min-width:0 el que dejaba que el valor se
-   encogiera hasta desaparecer y el número acabara solapado con los
-   botones cuando llevaba decimal ("40.5" en vez de "40"). Sin él, un
-   stepper nunca se encoge por debajo de lo que su propio contenido
-   necesita — y si aun así los dos steppers no caben en la misma línea
-   (raro: solo pasa si el peso llega a 3 cifras con decimal, tipo
-   "142.5", en una pantalla muy estrecha), flex-wrap en
-   .gym-set-steppers hace que Reps baje a una segunda línea en vez de
-   solaparse con nada. */
+.gym-set-cell:active{
+
+    background:color-mix(in srgb, var(--color-primary) 14%, transparent);
+
+}
+
+/* Celda en modo edición -- cian (controles activos, ver jerarquía de
+   color). Mismo stepper +/- de siempre, ahora solo visible para la celda
+   concreta que se acaba de tocar (ver isEditingCell()/gymStore.js). */
+.gym-set-cell.is-editing{
+
+    padding:0;
+
+    background:none;
+
+}
+
 .gym-stepper{
-
-    flex:1;
-
-    min-width:min-content;
 
     display:flex;
 
@@ -442,15 +476,15 @@
 
     justify-content:space-between;
 
-    gap:3px;
+    gap:2px;
 
     padding:2px;
 
     border-radius:999px;
 
-    background:color-mix(in srgb, var(--card-background) 90%, transparent);
+    background:color-mix(in srgb, var(--color-primary) 10%, var(--card-background));
 
-    border:1px solid color-mix(in srgb, var(--card-border) 70%, transparent);
+    border:1px solid color-mix(in srgb, var(--color-primary) 35%, var(--card-border));
 
 }
 
@@ -458,19 +492,19 @@
 
     flex-shrink:0;
 
-    width:38px;
+    width:32px;
 
-    height:38px;
+    height:32px;
 
     border:none;
 
     border-radius:50%;
 
-    background:color-mix(in srgb, var(--color-primary) 14%, transparent);
+    background:color-mix(in srgb, var(--color-primary) 16%, transparent);
 
     color:var(--color-primary);
 
-    font-size:1.3rem;
+    font-size:1.15rem;
 
     font-weight:800;
 
@@ -482,7 +516,7 @@
 
 .gym-stepper-btn:active{
 
-    background:color-mix(in srgb, var(--color-primary) 28%, transparent);
+    background:color-mix(in srgb, var(--color-primary) 30%, transparent);
 
 }
 
@@ -494,9 +528,9 @@
 
     text-align:center;
 
-    color:var(--text-primary);
+    color:var(--color-primary);
 
-    font-size:1rem;
+    font-size:.95rem;
 
     font-weight:800;
 
@@ -553,9 +587,243 @@
 
 }
 
-.gym-set-row.is-done{
+.gym-set-table-row.is-done{
 
     opacity:.85;
+
+}
+
+/*==========================
+   BARRA DE PROGRESO DE LA SESIÓN (Fase 2.6)
+==========================*/
+
+.gym-session-progress{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:6px;
+
+}
+
+.gym-session-progress-top{
+
+    display:flex;
+
+    align-items:baseline;
+
+    justify-content:space-between;
+
+}
+
+.gym-session-progress-title{
+
+    color:var(--text-primary);
+
+    font-size:.92rem;
+
+    font-weight:800;
+
+}
+
+.gym-session-progress-track{
+
+    height:6px;
+
+    border-radius:999px;
+
+    background:color-mix(in srgb, var(--card-border) 60%, transparent);
+
+    overflow:hidden;
+
+}
+
+.gym-session-progress-fill{
+
+    height:100%;
+
+    border-radius:999px;
+
+    background:linear-gradient(90deg, var(--color-primary), var(--color-secondary));
+
+    transition:width .3s ease;
+
+}
+
+.gym-session-progress-sets{
+
+    align-self:flex-end;
+
+    color:var(--color-text-muted);
+
+    font-size:.72rem;
+
+    font-weight:700;
+
+}
+
+/*==========================
+   TARJETA "EJERCICIO COMPLETADO" (Fase 2.5)
+==========================*/
+
+.gym-complete-overlay{
+
+    position:fixed;
+
+    inset:0;
+
+    z-index:220;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    padding:24px;
+
+    background:rgba(4,8,14,.6);
+
+    backdrop-filter:blur(4px);
+    -webkit-backdrop-filter:blur(4px);
+
+    cursor:pointer;
+
+    animation:gym-complete-fade-in .2s ease;
+
+}
+
+@keyframes gym-complete-fade-in{
+
+    from{ opacity:0; }
+    to{ opacity:1; }
+
+}
+
+.gym-complete-card{
+
+    width:100%;
+
+    max-width:340px;
+
+    display:flex;
+
+    flex-direction:column;
+
+    align-items:center;
+
+    gap:8px;
+
+    padding:28px 24px;
+
+    border-radius:var(--radius-xl);
+
+    background:color-mix(in srgb, var(--card-background) 96%, transparent);
+
+    border:1px solid color-mix(in srgb, var(--color-success) 35%, var(--card-border));
+
+    box-shadow:0 10px 40px rgba(0,0,0,.4);
+
+    text-align:center;
+
+    animation:gym-complete-rise .25s ease;
+
+}
+
+@media (prefers-reduced-motion:reduce){
+
+    .gym-complete-overlay,
+    .gym-complete-card{
+
+        animation:none;
+
+    }
+
+}
+
+@keyframes gym-complete-rise{
+
+    from{ transform:scale(.9); opacity:0; }
+    to{ transform:scale(1); opacity:1; }
+
+}
+
+.gym-complete-card iconify-icon{
+
+    font-size:40px;
+
+    color:var(--color-success);
+
+}
+
+.gym-complete-card h3{
+
+    color:var(--text-primary);
+
+    font-size:1.05rem;
+
+    font-weight:800;
+
+    letter-spacing:.02em;
+
+}
+
+.gym-complete-today{
+
+    color:var(--text-primary);
+
+    font-size:1rem;
+
+    font-weight:700;
+
+}
+
+.gym-complete-prev{
+
+    color:var(--color-text-muted);
+
+    font-size:.85rem;
+
+    font-weight:600;
+
+}
+
+.gym-complete-delta{
+
+    margin-top:4px;
+
+    padding:4px 12px;
+
+    border-radius:999px;
+
+    font-size:.85rem;
+
+    font-weight:800;
+
+}
+
+.gym-complete-delta.is-up{
+
+    background:color-mix(in srgb, var(--color-success) 16%, transparent);
+
+    color:var(--color-success);
+
+}
+
+.gym-complete-delta.is-down{
+
+    background:color-mix(in srgb, var(--color-warning) 16%, transparent);
+
+    color:var(--color-warning);
+
+}
+
+.gym-complete-delta.is-equal{
+
+    background:color-mix(in srgb, var(--color-text-muted) 16%, transparent);
+
+    color:var(--color-text-muted);
 
 }
 
@@ -572,6 +840,77 @@
     background:color-mix(in srgb, var(--color-primary) 10%, var(--card-background));
 
     border:1px solid color-mix(in srgb, var(--color-primary) 30%, var(--card-border));
+
+    transition:background .25s, border-color .25s;
+
+}
+
+/* Últimos 10s (Fase 2.4): naranja -- advertencia/urgencia, no fallo
+   técnico, pero mismo color de la jerarquía por ser lo más cercano
+   ("atención, se acaba") -- con un pulso sutil para que se note sin
+   mirar de cerca. */
+.gym-rest-timer.is-critical{
+
+    background:color-mix(in srgb, var(--color-warning) 16%, var(--card-background));
+
+    border-color:color-mix(in srgb, var(--color-warning) 45%, var(--card-border));
+
+    animation:gym-rest-critical-pulse 1s ease-in-out infinite;
+
+}
+
+@keyframes gym-rest-critical-pulse{
+
+    0%, 100%{ transform:scale(1); }
+    50%{ transform:scale(1.015); }
+
+}
+
+.gym-rest-timer.is-critical .gym-rest-timer-label,
+.gym-rest-timer.is-critical .gym-rest-timer-value{
+
+    color:var(--color-warning);
+
+}
+
+.gym-rest-timer.is-critical .gym-rest-timer-fill{
+
+    background:var(--color-warning);
+
+}
+
+/* "LISTO" al llegar a 0 -- verde, breve, antes de que el widget
+   desaparezca (ver tickRestTimerDisplay en initGymEvents.js). */
+.gym-rest-timer.is-ready{
+
+    background:color-mix(in srgb, var(--color-success) 18%, var(--card-background));
+
+    border-color:color-mix(in srgb, var(--color-success) 50%, var(--card-border));
+
+    animation:none;
+
+}
+
+.gym-rest-timer.is-ready .gym-rest-timer-label,
+.gym-rest-timer.is-ready .gym-rest-timer-value{
+
+    color:var(--color-success);
+
+}
+
+.gym-rest-timer.is-ready .gym-rest-timer-fill{
+
+    background:var(--color-success);
+
+}
+
+@media (prefers-reduced-motion:reduce){
+
+    .gym-rest-timer.is-critical{
+
+        animation:none;
+
+    }
 
 }
 
