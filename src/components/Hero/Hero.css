@@ -5,7 +5,12 @@
 .hero{
     position:relative;
     width:100%;
-    height:490px;
+
+    /* 490 + 48 de colchón (ver bloque @media abajo para el motivo real,
+       mismo cálculo, breakpoint móvil) -- consistencia entre ambos, no un
+       problema real en desktop pero evita mantener dos criterios. */
+    height:538px;
+
     overflow:hidden;
 }
 
@@ -395,7 +400,21 @@ text-shadow:
 
     .hero{
 
-        height:470px;
+        /* 470 + 48px de colchón -- bug real (no solo visual): con
+           env(safe-area-inset-top) de un iPhone con notch/Dynamic Island
+           corriendo como PWA instalada (~47-59px, ver hero-content más
+           abajo) SUMADO a un mensaje del coach que ocupa 2 líneas (varios
+           tipos de sesión: Z2, Tempo, Tirada larga, Descanso -- no solo
+           "Tirada larga", ver heroData.js), el texto podía acabar detrás
+           de la tarjeta superpuesta (.master-card, margin-top:-42px) o
+           incluso recortado por el propio overflow:hidden de este
+           contenedor antes de eso. 470px solo tenía margen para un
+           iPhone sin notch + mensaje de 1 línea. 48px cubre el peor caso
+           real medido (mensaje de 2 líneas + Dynamic Island) con ~23px de
+           aire de sobra -- verificado con Playwright forzando
+           padding-top con cada inset real y los 9 tipos de sesión, no a
+           ojo. */
+        height:518px;
 
     }
 
