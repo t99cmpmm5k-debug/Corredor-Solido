@@ -21,6 +21,7 @@ export function GymHeader() {
 
             <img
                 class="gym-background-image"
+                data-theme-id="${theme.id}"
                 src="${GYM_IMAGES[theme.id]}"
                 alt=""
             >

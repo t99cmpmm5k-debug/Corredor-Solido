@@ -149,7 +149,8 @@ function GymHomeSummarySection(days) {
     return GymHomeSummary({
         todayDay: getTodayGymDay(days, today),
         upcoming: getUpcomingGymDays(days, today),
-        weekProgress: { ...getWeekProgress(days, getGymSessions(), today), expanded, sessions }
+        weekProgress: { ...getWeekProgress(days, getGymSessions(), today), expanded, sessions },
+        todayISO: today
     });
 
 }

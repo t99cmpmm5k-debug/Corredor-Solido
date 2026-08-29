@@ -113,11 +113,40 @@ function completedThisWeek(days, sessions, todayISO) {
 
 }
 
+// Ejercicios/series REALES de la semana (solo series marcadas como hechas,
+// mismo criterio que sessionSetsProgress() en GymSessionView.js) -- no el
+// volumen planificado de la rutina, lo que de verdad se hizo en las
+// sesiones ya terminadas de completedThisWeek(). `session.exercises` puede
+// faltar en fixtures/datos antiguos sin ese campo -- `?? []` en vez de
+// asumirlo siempre presente.
+function weekTotals(finishedSessions) {
+
+    let exercises = 0;
+    let sets = 0;
+
+    finishedSessions.forEach(session => {
+
+        (session.exercises ?? []).forEach(exercise => {
+
+            exercises += 1;
+            sets += (exercise.sets ?? []).filter(set => set.done).length;
+
+        });
+
+    });
+
+    return { exercises, sets };
+
+}
+
 export function getWeekProgress(days, sessions, todayISO) {
 
+    const finished = completedThisWeek(days, sessions, todayISO);
+
     return {
-        completed: completedThisWeek(days, sessions, todayISO).length,
-        total: scheduledDays(days).length
+        completed: finished.length,
+        total: scheduledDays(days).length,
+        ...weekTotals(finished)
     };
 
 }

@@ -275,6 +275,26 @@
 
 }
 
+.gym-week-summary-stats{
+
+    margin-top:2px;
+
+    color:var(--color-text-muted);
+
+    font-size:.78rem;
+
+}
+
+.gym-week-summary-message{
+
+    margin-top:10px;
+
+    color:var(--text-secondary);
+
+    font-size:.8rem;
+
+}
+
 .gym-week-progress-track{
 
     margin-top:12px;

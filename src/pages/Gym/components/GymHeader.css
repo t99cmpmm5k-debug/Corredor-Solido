@@ -4,11 +4,17 @@
 
     overflow:hidden;
 
-    /* A los 3 bordes reales de la pantalla, mismo mecanismo que
-       RunningHeader.css/CarrerasHero.css -- min-height (no height fija)
-       para que quepa el contenido en pantallas estrechas sin recortarlo.
-       Mismo valor final que Running/Carreras (220px). */
-    min-height:220px;
+    /* Subido de 220 a 340px (cierre de Gimnasio, Fase 3, 2026-08-29): con
+       220px + justify-content:flex-end, el título/botón "+" quedaban a
+       solo ~68px del borde superior real -- demasiado cerca de la isla
+       dinámica/notch (~59px de env(safe-area-inset-top) en los modelos
+       con Dynamic Island, corriendo como PWA instalada). El contenido
+       sigue anclado abajo (mismo padding-bottom:90px), así que crecer
+       min-height solo añade más foto/degradado arriba del texto -- lo
+       aleja de la isla sin tocar layout ni tipografía. Verificado con
+       Playwright forzando cada inset real, ver GymHeader.js/comentario de
+       object-position más abajo. */
+    min-height:340px;
 
     display:flex;
 
@@ -22,11 +28,16 @@
        padding-bottom:90px de RunningHeader.css. */
     padding:24px 20px 90px;
 
-    padding-top:calc(24px + env(safe-area-inset-top));
+    /* 24 -> 28px (mismo motivo que min-height arriba): un colchón real de
+       texto propio, no solo el hueco que ya dejaba justify-content:flex-end
+       -- por si el contenido llegase a crecer (rutina con nombre largo). */
+    padding-top:calc(28px + env(safe-area-inset-top));
 
     /* Cancela el padding que .gym-content le mete desde fuera (24px +
        safe-area arriba, 24px a los lados) para que la foto llegue a los 3
-       bordes reales de la pantalla. */
+       bordes reales de la pantalla -- sigue atada al padding-top de
+       .gym-content (Gym.css), no al de aquí arriba, son dos valores
+       independientes que antes coincidían en 24px por casualidad. */
     margin:calc(-1 * (24px + env(safe-area-inset-top))) -24px 0;
 
     isolation:isolate;
@@ -54,10 +65,39 @@
     /* Las 4 fotos son verticales (retrato, atleta de espaldas) -- centrar
        el recorte un poco por encima del centro mantiene torso/hombros
        visibles en la franja horizontal recortada, en vez de cortar por la
-       cintura. */
+       cintura. Valor por defecto (night, y rain/winter que no tienen foto
+       propia -- ver assets/gym/index.js): con 30% la cabeza ya cae por
+       debajo de la isla dinámica en esa foto en concreto. */
     object-position:center 30%;
 
     z-index:0;
+
+}
+
+/* Punto focal por foto (cierre de Gimnasio, Fase 3, 2026-08-29): con
+   min-height:340px + el mismo 30% de arriba, la cabeza del atleta quedaba
+   detrás de la isla dinámica/notch en morning/day/evening -- cada foto
+   encuadra al atleta a una altura distinta dentro del propio retrato, así
+   que un único porcentaje no vale para las 4. Verificado con Playwright,
+   superponiendo el hueco real de la isla (~11-59px, 126px de ancho,
+   centrada) sobre capturas con varios valores de object-position hasta
+   que la cabeza quedaba clara. night no se toca -- ya estaba bien con el
+   30% de por defecto. */
+.gym-background-image[data-theme-id="sunrise"]{
+
+    object-position:center 10%;
+
+}
+
+.gym-background-image[data-theme-id="day"]{
+
+    object-position:center 10%;
+
+}
+
+.gym-background-image[data-theme-id="sunset"]{
+
+    object-position:center 0%;
 
 }
 

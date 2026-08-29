@@ -117,15 +117,30 @@ describe("getWeekProgress / getWeekSessions", () => {
         const days = [day("d-viernes", "viernes", "Torso")];
 
         const sessions = [
-            { id: "s1", dayId: "d-viernes", date: "2026-08-28", finishedAt: "2026-08-28T20:00:00.000Z" },
+            {
+                id: "s1", dayId: "d-viernes", date: "2026-08-28", finishedAt: "2026-08-28T20:00:00.000Z",
+                exercises: [
+                    { exerciseId: "e1", sets: [{ done: true }, { done: true }, { done: false }] },
+                    { exerciseId: "e2", sets: [{ done: true }] }
+                ]
+            },
             { id: "s2", dayId: "d-viernes", date: "2026-08-28", finishedAt: null }, // sin terminar, no cuenta
             { id: "s3", dayId: "otro-dia-no-programado", date: "2026-08-27", finishedAt: "2026-08-27T20:00:00.000Z" }
         ];
 
         const progress = getWeekProgress(days, sessions, TODAY);
-        expect(progress).toEqual({ completed: 1, total: 1 });
+        expect(progress).toEqual({ completed: 1, total: 1, exercises: 2, sets: 3 });
 
         expect(getWeekSessions(days, sessions, TODAY).map(s => s.id)).toEqual(["s1"]);
+
+    });
+
+    it("ejercicios/series en 0 sin ninguna sesión terminada esta semana (nunca inventa un total)", () => {
+
+        const days = [day("d-viernes", "viernes", "Torso")];
+
+        const progress = getWeekProgress(days, [], TODAY);
+        expect(progress).toEqual({ completed: 0, total: 1, exercises: 0, sets: 0 });
 
     });
 

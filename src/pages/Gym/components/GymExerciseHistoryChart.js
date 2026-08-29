@@ -1,13 +1,18 @@
 import { getExerciseHistory, getPreviousExerciseSummary } from "../../../data/gymSessionStore.js";
+import { formatKm } from "../../../utils/format.js";
 
 // Sin línea con un único punto — no dice nada sobre progreso, solo
 // mostraría el badge de texto (mismo umbral que MIN_SPLITS_FOR_CHART en
 // RunningDetailView.js).
 const MIN_POINTS_FOR_LINE = 2;
 
+// formatKm() ya hace "un decimal como mucho, sin ceros de sobra, coma
+// decimal" -- mismo criterio que aplica a distancias, aplicado aquí a
+// peso (antes mostraba el número crudo: "62.5 kg" con punto en vez de
+// "62,5 kg").
 function formatWeight(weight, weightUnit) {
 
-    return `${weight} ${weightUnit === "kg/mano" ? "kg/mano" : "kg"}`;
+    return `${formatKm(weight)} ${weightUnit === "kg/mano" ? "kg/mano" : "kg"}`;
 
 }
 
@@ -22,19 +27,34 @@ function formatSignedWeight(delta) {
 
 }
 
+// "Anterior: 62,5 kg × 6" cuando solo hay 1 serie real que comparar (el
+// caso habitual, donde el viejo "1×6 @ 62,5 kg" no aportaba nada con ese
+// "1×" inicial) -- "Anterior: 4 × 6 @ 60 kg" cuando de verdad hay más de
+// una serie hecha y el total sí dice algo (pirámides, sesiones con varias
+// series completadas). Fase 3 de cierre de Gimnasio (2026-08-29): mismo
+// dato, redacción más natural.
+function previousSessionText(previous, weightUnit) {
+
+    const weightText = formatWeight(previous.weight, weightUnit);
+
+    if (previous.setsCount <= 1) return `Anterior: ${weightText} × ${previous.reps}`;
+
+    return `Anterior: ${previous.setsCount} × ${previous.reps} @ ${weightText}`;
+
+}
+
 // Cabecera de comparación con la sesión anterior REAL (Fase 2.2) -- ya no
-// solo "mejor serie anterior", sino la sesión completa ("Anterior: 4×6 @
-// 60kg"), y en verde cuánto ha subido el peso de hoy si ha subido (dato
-// real de la propia sesión en curso, nunca inventado -- si todavía no hay
-// ninguna serie marcada hoy, o no hay sesión anterior, no se muestra
-// delta).
+// solo "mejor serie anterior", sino la sesión completa, y en verde cuánto
+// ha subido el peso de hoy si ha subido (dato real de la propia sesión en
+// curso, nunca inventado -- si todavía no hay ninguna serie marcada hoy, o
+// no hay sesión anterior, no se muestra delta).
 function PreviousSessionBadge(exerciseId, weightUnit, currentSessionId, todayBestWeight) {
 
     const previous = getPreviousExerciseSummary(exerciseId, { excludeSessionId: currentSessionId });
 
     if (!previous) return `<span class="gym-exercise-badge">Primera vez</span>`;
 
-    const mainText = `Anterior: ${previous.setsCount}×${previous.reps} @ ${formatWeight(previous.weight, weightUnit)}`;
+    const mainText = previousSessionText(previous, weightUnit);
 
     const delta = todayBestWeight != null ? todayBestWeight - previous.weight : null;
 

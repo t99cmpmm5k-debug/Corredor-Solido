@@ -1,5 +1,5 @@
 import "./GymHomeSummary.css";
-import { formatDayNumber, formatDayMonth, getDayAbbreviation } from "../../../utils/date.js";
+import { addDays, formatDayNumber, formatDayMonth, formatWeekday, getDayAbbreviation } from "../../../utils/date.js";
 import { getAverageDurationForDay } from "../../../data/gymSessionStore.js";
 
 // Nº de ejercicios real + duración media real de sesiones YA terminadas de
@@ -19,7 +19,31 @@ function todaySummaryLine(day) {
 
 }
 
-function todayCard(day) {
+// "Descansa hoy. Mañana toca X · N ejercicios." si el próximo entrenamiento
+// real es mañana, "Recupera hoy. Tu próximo entrenamiento es X · lunes 31."
+// si cae más adelante -- siempre con el primer elemento real de
+// getUpcomingGymDays() (gymSchedule.js), nunca un día inventado. upcoming
+// solo puede venir vacío si hasWeeklySchedule(days) fuese false, pero
+// Gym.js ya filtra ese caso antes de renderizar esta sección entera -- el
+// mensaje neutro de aquí es un colchón defensivo, no la vía esperada.
+function restDayMessage(upcoming, todayISO) {
+
+    if (!upcoming.length) return "No tienes entrenamiento programado hoy.";
+
+    const next = upcoming[0];
+
+    if (next.date === addDays(todayISO, 1)) {
+
+        const count = next.day.exercises.length;
+        return `Descansa hoy. Mañana toca ${next.day.title} · ${count} ejercicio${count === 1 ? "" : "s"}.`;
+
+    }
+
+    return `Recupera hoy. Tu próximo entrenamiento es ${next.day.title} · ${formatWeekday(next.date)} ${formatDayNumber(next.date)}.`;
+
+}
+
+function todayCard(day, upcoming, todayISO) {
 
     if (!day) {
 
@@ -31,7 +55,7 @@ function todayCard(day) {
 
                 <h2>Día de descanso</h2>
 
-                <p>No tienes entrenamiento programado hoy.</p>
+                <p>${restDayMessage(upcoming, todayISO)}</p>
 
             </div>
 
@@ -130,7 +154,20 @@ function weekSessionsList(sessions) {
 
 }
 
-function weekSummary({ completed, total, expanded, sessions }) {
+// Mensaje de cierre de la semana -- sesiones que faltan (dato real,
+// total-completed de gymSchedule.js) o "semana completada" cuando ya no
+// queda ninguna. Nunca inventa qué sesión concreta falta, solo el conteo.
+function pendingSessionMessage(completed, total) {
+
+    const remaining = total - completed;
+
+    if (remaining <= 0) return "Semana completada.";
+
+    return `Te queda${remaining === 1 ? "" : "n"} ${remaining} sesión${remaining === 1 ? "" : "es"} esta semana.`;
+
+}
+
+function weekSummary({ completed, total, exercises, sets, expanded, sessions }) {
 
     const percent = total ? Math.round((completed / total) * 100) : 0;
 
@@ -142,15 +179,19 @@ function weekSummary({ completed, total, expanded, sessions }) {
 
                 <h2>Resumen semanal</h2>
 
-                <span>${completed}/${total} sesiones completadas</span>
+                <span>${completed}/${total} sesiones</span>
 
             </button>
+
+            <p class="gym-week-summary-stats">${exercises} ejercicio${exercises === 1 ? "" : "s"} · ${sets} serie${sets === 1 ? "" : "s"}</p>
 
             <div class="gym-week-progress-track">
 
                 <div class="gym-week-progress-fill" style="width:${percent}%"></div>
 
             </div>
+
+            <p class="gym-week-summary-message">${pendingSessionMessage(completed, total)}</p>
 
             ${expanded ? weekSessionsList(sessions) : ""}
 
@@ -165,13 +206,13 @@ function weekSummary({ completed, total, expanded, sessions }) {
 // gymSchedule.js — este componente solo renderiza. weekProgress incluye
 // además expanded/sessions (estado del desplegable y su listado, con
 // dayTitle ya resuelto) para el borrado desde el resumen semanal.
-export function GymHomeSummary({ todayDay, upcoming, weekProgress }) {
+export function GymHomeSummary({ todayDay, upcoming, weekProgress, todayISO }) {
 
     return `
 
         <div class="gym-home-summary">
 
-            ${todayCard(todayDay)}
+            ${todayCard(todayDay, upcoming, todayISO)}
 
             ${upcoming.length ? `
 
