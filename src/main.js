@@ -13,7 +13,6 @@ import "@fontsource/plus-jakarta-sans/800.css";
 import "iconify-icon";
 
 import "./styles/app.css";
-import "./styles/hero.css";
 
 import { Home } from "./pages/Home/Home.js";
 import { Plan } from "./pages/Plan/Plan.js";

@@ -27,8 +27,22 @@ export function navigate(page) {
 
 }
 
-export function rerender() {
+// resetScroll: mismo bug que ya resuelve navigate() con resetScrollToTop()
+// (ver scrollReset.js) -- rerender() reemplaza #app.innerHTML entero sin
+// tocar el scroll, así que si el usuario estaba desplazado hacia abajo,
+// el contenido de arriba de la pantalla puede reaparecer superpuesto a la
+// barra de estado/isla dinámica. Pero rerender() lo llaman más de 150
+// sitios en toda la app (cada checkbox de una serie en Gym, cada +/- de
+// peso/reps, cada nota, cada edición de Plan/Running...) -- resetear el
+// scroll SIEMPRE rompería esos flujos, donde el usuario espera quedarse
+// donde estaba. Por eso es opt-in (default false, ver el resto de sitios
+// que ya llaman a rerender() sin tocar) en vez de automático: solo los
+// disparadores que de verdad reemplazan el contenido de la parte de
+// arriba de la pantalla (SessionCard, el widget de tiempo) lo piden.
+export function rerender({ resetScroll = false } = {}) {
 
     render();
+
+    if (resetScroll) resetScrollToTop();
 
 }

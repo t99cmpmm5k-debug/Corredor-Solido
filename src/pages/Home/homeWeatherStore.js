@@ -30,7 +30,12 @@ export function loadHourlyWeather(onLog = () => {}) {
             ? { status: "ready", hours: result.hours, current: result.current, label: result.label }
             : { status: "unavailable", hours: [], current: null, label: null };
 
-        rerender();
+        // resetScroll: esta petición resuelve en async, en cualquier momento
+        // mientras el usuario ya está mirando Inicio -- si añade/quita el
+        // widget de tiempo con la pantalla desplazada hacia abajo, el
+        // contenido de arriba podía reaparecer superpuesto a la barra de
+        // estado/isla dinámica (bug real 2026-08-29, ver router.js).
+        rerender({ resetScroll: true });
 
     });
 

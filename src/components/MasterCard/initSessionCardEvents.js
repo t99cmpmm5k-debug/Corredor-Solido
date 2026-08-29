@@ -29,7 +29,9 @@ function initHomeWeekPickerEvents() {
 
             if (workout) {
                 setState("homeSelectedWorkout", workout);
-                rerender();
+                // resetScroll: cambia el contenido de la tarjeta de arriba
+                // de Inicio (mismo motivo que los dos toggles de más abajo).
+                rerender({ resetScroll: true });
                 return;
             }
 
@@ -51,11 +53,17 @@ export function initSessionCardEvents() {
     // Cada botón se cablea por separado -- un early return compartido
     // dejaba el de "Cambiar" sin cablear en cualquier sesión sin
     // description (sin botón "Ver entrenamiento" que buscar primero).
+    // resetScroll en los dos: cambian la altura de la tarjeta de arriba de
+    // Inicio (RUNNING DE HOY), justo bajo el hero -- bug real reportado
+    // 2026-08-29, el botón podía reaparecer superpuesto a la barra de
+    // estado si se tocaba con la pantalla ya desplazada (mismo mecanismo
+    // que resetScrollToTop() ya resolvía para navigate(), ver
+    // scrollReset.js, pero rerender() no lo llamaba).
     const detailToggle = document.querySelector('[data-action="toggle-session-detail"]');
     if (detailToggle) {
         detailToggle.addEventListener("click", () => {
             setState("sessionDetailExpanded", !getState().sessionDetailExpanded);
-            rerender();
+            rerender({ resetScroll: true });
         });
     }
 
@@ -63,7 +71,7 @@ export function initSessionCardEvents() {
     if (weekPickerToggle) {
         weekPickerToggle.addEventListener("click", () => {
             setState("weekPickerExpanded", !getState().weekPickerExpanded);
-            rerender();
+            rerender({ resetScroll: true });
         });
     }
 

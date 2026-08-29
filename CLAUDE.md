@@ -33,7 +33,7 @@ When adding a new page or navigation flow, use `src/core/router.js` + `src/core/
 - `src/components/` — shared UI: `Hero/`, `MasterCard/` (composed of `SessionCard`, `CoachCard`, `StatusCard`), `Navigation/BottomNavigation.js`, `WorkoutCard/`, `WorkoutIcon/`, `Logo/`, `MonthCalendar/` (rejilla mensual genérica, hoy solo la usa Carreras — pensada para que Plan la reutilice cuando aborde su propia vista mensual, ver "Known duplication").
 - `src/data/` — plain JS modules exporting the app's data (not JSON): `planData.js` (the weekly plan), `todayWorkout.js`, `sessionData.js`, `shoeData.js`, `motivationalQuotes.js`, `trainingTips.js`, `weeklyGoals.js`, `workoutTypes.js`, `heroData.js`, `selectedWorkout.js`.
 - `src/theme/` — `themeManager.js` (persists choice to localStorage key `corredor-solido-theme`), `themes.js`, `timeTheme.js` (`getAutomaticTheme()` maps hour-of-day to sunrise/day/sunset/night).
-- `src/styles/` — global CSS loaded via JS imports in `main.js` (`app.css`, `hero.css`, plus `variables.css`, `cards.css`, `buttons.css`, `glass.css`, `typography.css`, `animations.css`, `utilities.css`).
+- `src/styles/` — global CSS loaded via JS imports in `main.js` (`app.css`, plus `variables.css`, `cards.css`, `buttons.css`, `glass.css`, `typography.css`, `animations.css`, `utilities.css`).
 - `src/design-system/` — a second, overlapping design-token system (`tokens.css`, `colors.css`, `spacing.css`, `radius.css`, `shadows.css`, `typography.css`). See Known duplication below.
 - `src/design/HOME.md` — design-philosophy doc for the Home screen (Spanish): the Hero is untouchable, one master card, time-of-day theming applies everywhere, minimalism ("Hoy entrenas").
 - `src/utils/` — `format.js`, `storage.js`, `date.js`.
