@@ -104,7 +104,15 @@ export function Profile() {
 
                     <label class="profile-button profile-button-secondary">
 
-                        <input type="file" id="profile-import-input" accept="application/json" hidden>
+                        <!-- Sin "accept": Safari en iOS no interpreta bien
+                             accept="application/json" de forma consistente entre
+                             versiones y puede dejar el archivo válido en gris, sin
+                             poder seleccionarlo (mismo motivo que en
+                             PlanImportUploadStep/RunningUploadStep). Se valida el
+                             contenido real (JSON.parse) ya elegido en
+                             importDataFromFile()/backup.js en vez de restringir
+                             aquí qué se puede ni siquiera tocar. -->
+                        <input type="file" id="profile-import-input" hidden>
 
                         <iconify-icon icon="solar:upload-minimalistic-bold-duotone"></iconify-icon>
 
