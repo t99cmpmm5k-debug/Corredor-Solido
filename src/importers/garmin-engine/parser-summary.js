@@ -1,17 +1,28 @@
 import * as U from "./garmin-utils.js";
 import * as E from "./extractor-engine.js";
 
-// Quita un único token final suelto de 1-2 letras -- mismo patrón que
-// cleanLocationForRetry() en weatherEstimate.js (ese se usa como
-// reintento de geocoding, este se aplica ANTES de guardar location, así
+// Quita un fragmento suelto final -- mismo patrón que
+// cleanLocationForRetry() en weatherEstimate.js y shortLocationLabel() en
+// hourlyForecast.js (esos limpian al reintentar geocoding / al mostrar
+// una location ya guardada; este se aplica ANTES de guardar location, así
 // que cubre también el caso en que el geocoding con el texto sucio sí
-// encontraba algo por casualidad). Necesario cuando la palabra de
-// actividad viene en medio del título ("Puerto Lumbreras Carrera A" --
-// bug real 2026-08-26, la letra suelta final sobrevivía a quitar
-// "Carrera" y colapsar el hueco doble, dejando location="Puerto
-// Lumbreras A" guardado tal cual).
-function stripTrailingLetterFragment(text) {
-    return text.replace(/\s+[A-Za-z]{1,2}$/, "").trim() || null;
+// encontraba algo por casualidad). Dos casos, el mismo mecanismo: quitar
+// la palabra de actividad del medio del título deja suelto lo que hubiera
+// justo antes de ella, y .trim() no lo toca porque no es espacio en
+// blanco.
+//   - Una letra/token de 1-2 caracteres ("Puerto Lumbreras Carrera A" --
+//     bug real 2026-08-26, quitar "Carrera" y colapsar el hueco doble
+//     dejaba location="Puerto Lumbreras A").
+//   - Un separador colgando sin nada detrás ("Puerto Lumbreras - Series"
+//     -- bug real 2026-08-30, quitar "Series" deja location="Puerto
+//     Lumbreras -"; cleanText() ya normaliza cualquier variante de guion
+//     a "-" antes de llegar aquí, ver garmin-utils.js).
+// Los dos pasos se aplican en orden por si se dan juntos ("... - A").
+function stripTrailingLooseFragment(text) {
+    return text
+        .replace(/\s+[A-Za-z]{1,2}$/, "")
+        .replace(/[\s:-]+$/, "")
+        .trim() || null;
 }
 
 function findTitle(lines) {
@@ -64,14 +75,14 @@ export function parse(text) {
             // .trim() solo limpia los extremos -- si la palabra de actividad
             // va en medio del título ("Aguilas Carrera A"), quitarla deja un
             // hueco doble donde estaba ("Aguilas  A") que hay que colapsar.
-            // stripTrailingLetterFragment() de arriba quita además la letra
-            // suelta final que sobrevive a ese colapso (bug real "Puerto
-            // Lumbreras A" guardado tal cual, ver 2026-08-26) -- se aplica
-            // aquí, no solo en el reintento de geocoding de
-            // weatherEstimate.js, para que quede bien guardado desde el
-            // origen y no solo "arreglado" al mostrarlo.
+            // stripTrailingLooseFragment() de arriba quita además la letra o
+            // el separador suelto final que sobrevive a ese colapso (bugs
+            // reales "Puerto Lumbreras A" / "Puerto Lumbreras -" guardados
+            // tal cual, ver 2026-08-26/2026-08-30) -- se aplica aquí, no
+            // solo al reintentar geocoding o al mostrar, para que quede bien
+            // guardado desde el origen y no solo "arreglado" en el camino.
             const collapsed = title.replace(new RegExp(`\\b${m[1]}\\b`, "i"), "").replace(/\s+/g, " ").trim();
-            location = collapsed ? stripTrailingLetterFragment(collapsed) : null;
+            location = collapsed ? stripTrailingLooseFragment(collapsed) : null;
         } else location = title;
     }
 

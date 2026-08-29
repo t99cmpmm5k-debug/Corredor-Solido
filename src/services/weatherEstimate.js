@@ -92,12 +92,18 @@ async function fetchHourlyTemperature(lat, lon, dateStr, hour, onLog) {
 
 }
 
-// Quita un único token final suelto de 1-2 letras (categoría de carrera
-// mal separada del nombre del lugar, resto de OCR...) además de colapsar
-// espacios. Deliberadamente conservador -- ver el porqué del reintento
-// único en estimateTemperature().
+// Quita un fragmento suelto final -- una palabra de 1-2 letras (categoría
+// de carrera mal separada del nombre del lugar, resto de OCR...) y/o un
+// separador colgando sin nada detrás (bug real "Puerto Lumbreras -",
+// 2026-08-30 -- el título OCR era "Puerto Lumbreras - Series", y
+// parser-summary.js guardaba el guion suelto tal cual antes de su propio
+// fix; este reintento cubre el histórico ya importado con ese mismo
+// defecto, sin tener que reimportar nada) -- además de colapsar espacios.
+// Mismo patrón que stripTrailingLooseFragment() en parser-summary.js.
+// Deliberadamente conservador -- ver el porqué del reintento único en
+// estimateTemperature().
 function cleanLocationForRetry(text) {
-    return text.replace(/\s+/g, " ").replace(/\s+[A-Za-z]{1,2}$/, "").trim() || null;
+    return text.replace(/\s+/g, " ").replace(/\s+[A-Za-z]{1,2}$/, "").replace(/[\s:-]+$/, "").trim() || null;
 }
 
 // GPS del propio workout si lo trae (reloj real) o, si no, geocoding de su

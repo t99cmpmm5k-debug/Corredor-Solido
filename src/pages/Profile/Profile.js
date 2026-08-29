@@ -3,36 +3,6 @@ import "./Profile.css";
 import { BottomNavigation } from "../../components/Navigation/BottomNavigation.js";
 import { getBackupStatus } from "../../utils/backup.js";
 import { getFeedback } from "./profileStore.js";
-import { getHourlyWeatherState, getHourlyWeatherDebugLog } from "../Home/homeWeatherStore.js";
-
-// DIAGNÓSTICO TEMPORAL (2026-08-29) -- el widget de tiempo de Inicio no
-// aparece en un dispositivo real pese a tener entrenos con ubicación
-// confirmados, aunque el mismo flujo funciona en pruebas con red real.
-// Este bloque muestra en pantalla (sin devtools) exactamente en qué paso
-// se para: resultado de getWorkouts(), si encuentra ubicación, si
-// geocodifica, si llega a pedir el pronóstico, y el estado final. Quitar
-// este bloque y su import en cuanto se confirme la causa real -- no es
-// una sección pensada para quedarse.
-function WeatherDebugBlock() {
-
-    const state = getHourlyWeatherState();
-    const log = getHourlyWeatherDebugLog();
-
-    return `
-
-        <section class="profile-backup-card">
-
-            <h3>Diagnóstico temporal — widget de tiempo</h3>
-
-            <p class="profile-backup-note">Estado: ${state.status}</p>
-
-            <p class="profile-backup-hint" style="white-space:pre-wrap;font-family:monospace;font-size:.75rem;user-select:text;">${log.length ? log.join("\n") : "(sin traza todavía -- vuelve a esta pantalla en unos segundos tras abrir Inicio)"}</p>
-
-        </section>
-
-    `;
-
-}
 
 function BackupReminder(status) {
 
@@ -157,8 +127,6 @@ export function Profile() {
                     </p>
 
                 </section>
-
-                ${WeatherDebugBlock()}
 
             </div>
 

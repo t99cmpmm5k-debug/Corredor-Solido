@@ -462,6 +462,57 @@ describe("resolveLocation", () => {
 
     });
 
+    // Bug real 2026-08-30 ("Hoy · Puerto Lumbreras -"): mismo mecanismo que
+    // el de arriba, pero un separador colgando en vez de una letra suelta
+    // (título OCR real "Puerto Lumbreras - Series" -- quitar "Series"
+    // dejaba el guion sin limpiar en imports anteriores al fix de
+    // parser-summary.js).
+    it("recorta un separador colgando que haya quedado guardado en location de un import anterior al fix", async () => {
+
+        const result = await resolveLocation([
+            { id: "a", date: "2026-08-22", time: "08:00", startLat: 37.567, startLon: -1.812, location: "Puerto Lumbreras -" }
+        ]);
+
+        expect(result.label).toBe("Puerto Lumbreras");
+
+    });
+
+    // Bug real 2026-08-30, esta vez sin GPS -- la capa que de verdad
+    // resuelve "el widget se queda en unavailable": el primer intento de
+    // geocoding usa el location tal cual ("Puerto Lumbreras -", sin
+    // limpiar) y Open-Meteo no encuentra nada con el guion colgando --
+    // resolveWorkoutCoordinates() reintenta una vez con
+    // cleanLocationForRetry() (weatherEstimate.js), que ahora sí recorta
+    // el separador y encuentra el sitio real.
+    it("sin GPS, si el primer intento de geocoding falla por el separador colgando, reintenta ya limpio y lo encuentra", async () => {
+
+        const fetchSpy = vi.spyOn(globalThis, "fetch")
+            .mockResolvedValueOnce({ ok: true, json: async () => ({ results: [] }) })
+            .mockResolvedValueOnce({
+                ok: true,
+                json: async () => ({
+                    results: [{
+                        name: "Puerto Lumbreras",
+                        admin1: "Región de Murcia",
+                        country: "España",
+                        population: 13000,
+                        latitude: 37.567,
+                        longitude: -1.812
+                    }]
+                })
+            });
+
+        const result = await resolveLocation([
+            { id: "a", date: "2026-08-22", time: "08:00", location: "Puerto Lumbreras -" }
+        ]);
+
+        expect(result).toEqual({ lat: 37.567, lon: -1.812, label: "Puerto Lumbreras" });
+        expect(fetchSpy).toHaveBeenCalledTimes(2);
+
+        fetchSpy.mockRestore();
+
+    });
+
     it("sin GPS, geocodifica el texto restringido a España -- sin resultados (p. ej. fuera de España) devuelve null", async () => {
 
         vi.spyOn(globalThis, "fetch").mockResolvedValue({
