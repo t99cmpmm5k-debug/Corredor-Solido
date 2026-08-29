@@ -152,6 +152,16 @@
 
 .gym-summary-exercise-name{
 
+    flex:1 1 auto;
+
+    min-width:0;
+
+    overflow:hidden;
+
+    text-overflow:ellipsis;
+
+    white-space:nowrap;
+
     color:var(--text-primary);
 
     font-size:.92rem;
@@ -163,6 +173,8 @@
 .gym-summary-exercise-delta{
 
     flex-shrink:0;
+
+    white-space:nowrap;
 
     font-size:.88rem;
 

@@ -2,6 +2,7 @@ import "./GymSessionSummaryView.css";
 
 import { getGymDay } from "../../../data/gymRoutineStore.js";
 import { getPreviousExerciseSummary } from "../../../data/gymSessionStore.js";
+import { formatKm } from "../../../utils/format.js";
 
 // Nunca un número inventado -- mismo criterio que durationUnreliable en
 // gymSessionStore.js (ver MAX_REASONABLE_SESSION_DURATION_SEC): si el
@@ -30,22 +31,20 @@ function sessionSetsProgress(session) {
 
 }
 
-// Un decimal como mucho, sin ceros de sobra, coma decimal -- mismo criterio
-// que formatKm() en utils/format.js.
-function formatSignedWeight(delta) {
+function formatWeightValue(weight, weightUnit) {
 
-    const rounded = Math.round(Math.abs(delta) * 10) / 10;
-    const text = (Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1)).replace(".", ",");
-
-    return `${delta > 0 ? "+" : "−"}${text}`;
+    return `${formatKm(weight)}${weightUnit === "kg/mano" ? "kg/mano" : "kg"}`;
 
 }
 
 // Progreso de un ejercicio frente a su sesión anterior real: prioriza el
 // peso (el dato que de verdad indica progresión de fuerza) y solo mira las
-// reps si el peso se mantuvo igual -- "+2,5kg" pesa más que "+2 reps" en
-// esta app (mismo peso con más reps también es progreso, pero uno de los
-// dos hubiera hecho ya que el otro no se note, así que no se suman).
+// reps si el peso se mantuvo igual (mismo peso con más reps también es
+// progreso, pero uno de los dos hubiera hecho ya que el otro no se note,
+// así que no se muestran ambos a la vez). Se muestra el valor real
+// anterior y el de hoy ("72,5kg → 75kg", "8 → 10 reps"), no un delta --
+// pedido explícito de la Fase 3: comparación directa, sin inventar
+// métricas (tonelaje, volumen, 1RM) que esta pantalla no lleva.
 // "excludeSessionId: session.id" -- la propia sesión que se acaba de
 // terminar ya vive en el histórico (finishSession() ya la marcó con
 // finishedAt antes de llegar aquí, ver initGymEvents.js), así que sin
@@ -68,7 +67,7 @@ function exerciseProgressLine(definition, sessionExercise, session) {
     if (weightDelta !== 0) {
 
         return {
-            text: `${formatSignedWeight(weightDelta)}kg`,
+            text: `${formatWeightValue(previous.weight, definition.weightUnit)} → ${formatWeightValue(todayWeight, definition.weightUnit)}`,
             tone: weightDelta > 0 ? "up" : "down"
         };
 
@@ -79,7 +78,7 @@ function exerciseProgressLine(definition, sessionExercise, session) {
     if (repsDelta !== 0) {
 
         return {
-            text: `${repsDelta > 0 ? "+" : ""}${repsDelta} rep${Math.abs(repsDelta) === 1 ? "" : "s"}`,
+            text: `${previous.reps} → ${todayReps} reps`,
             tone: repsDelta > 0 ? "up" : "down"
         };
 
