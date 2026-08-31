@@ -1,8 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { parseGarminWorkout } from "./garmin.js";
 
-function merged({ data = {}, laps = [], warnings = [] } = {}) {
-    return { data: { date: "20 ago", ...data }, laps, warnings };
+function merged({ data = {}, laps = [], warnings = [], blocks = [] } = {}) {
+    return { data: { date: "20 ago", ...data }, laps, warnings, blocks };
 }
 
 describe("parseGarminWorkout — FC media/máxima general cuando solo hay vueltas con FC", () => {
@@ -106,6 +106,46 @@ describe("parseGarminWorkout — Training Effect (bloque real dentro de Estadís
         expect(workout.trainingEffectAerobic).toBeNull();
         expect(workout.trainingEffectAnaerobic).toBeNull();
         expect(workout.exerciseLoad).toBeNull();
+
+    });
+
+});
+
+// Valores reales (5 capturas de un mismo entreno, 13,02 km: 11 km + 2,02
+// km) -- ver parser-intervals-road.test.js para el texto OCR transcrito y
+// fusion.test.js para la fusión de las dos vistas (izquierda/derecha) del
+// mismo bloque.
+describe("parseGarminWorkout — Intervalos de una Carrera normal (bloques reales, no splits de 1 km)", () => {
+
+    it("mapea cada bloque a workout.intervals, con distancia/ritmo/FC del bloque -- nunca de sus submuestras de 1 km", () => {
+
+        const workout = parseGarminWorkout(merged({
+            blocks: [
+                {
+                    lap: 1, type: "Carrera", duration: "1:05:44",
+                    distance_km: 11, pace_min_km: "5:59",
+                    avg_heart_rate_bpm: 152, max_heart_rate_bpm: 159
+                },
+                {
+                    lap: 2, type: "Carrera", duration: "11:17",
+                    distance_km: 2.02, pace_min_km: "5:35",
+                    avg_heart_rate_bpm: 159, max_heart_rate_bpm: 165
+                }
+            ]
+        }));
+
+        expect(workout.intervals).toEqual([
+            { interval: 1, type: "Carrera", durationSec: 3944, distanceKm: 11, paceSecPerKm: 359, avgHr: 152, maxHr: 159 },
+            { interval: 2, type: "Carrera", durationSec: 677, distanceKm: 2.02, paceSecPerKm: 335, avgHr: 159, maxHr: 165 }
+        ]);
+
+    });
+
+    it("sin bloques (entreno con Vueltas normales, o Intervalos no capturado): workout.intervals queda vacío", () => {
+
+        const workout = parseGarminWorkout(merged());
+
+        expect(workout.intervals).toEqual([]);
 
     });
 

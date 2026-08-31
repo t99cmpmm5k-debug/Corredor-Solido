@@ -74,10 +74,11 @@ describe("garmin-parser.parse — captura normal, con barra de estado real", () 
 
 });
 
-// Transcrito a mano a partir de 4 capturas reales aportadas por el usuario
-// (pantalla "Intervalos" de una Carrera normal, sin tramos de Recuperación
-// -- ver screen-detector.test.js). Recortada justo a la tabla, sin barra de
-// estado real por encima.
+// Transcrito a mano a partir de 5 capturas reales aportadas por el usuario
+// (pantalla "Intervalos" de una Carrera normal, entreno de 13,02 km: 11 km
+// + 2,02 km -- ver screen-detector.test.js y parser-intervals-road.test.js).
+// Recortada justo a la tabla, sin barra de estado real por encima -- la
+// primera línea es ya el filtro "Seleccionar tipo de paso".
 const REAL_INTERVALS_ROAD = [
     "Seleccionar tipo de paso",
     "Todos Carrera",
@@ -87,14 +88,38 @@ const REAL_INTERVALS_ROAD = [
     "2 5:35 5:35 159 165 7"
 ].join("\n");
 
-describe("garmin-parser.parse — Intervalos de una Carrera normal (sin columna de distancia)", () => {
+// Misma pantalla, pero capturada sin recortar -- con la barra de estado
+// real del móvil por encima de la barra de pestañas de la app.
+const REAL_INTERVALS_ROAD_WITH_STATUS_BAR = [
+    "1:13 ▲ 74% wifi",
+    "Resumen Estadísticas Intervalos Gráficos Equipo",
+    "Int. Tipo Tiempo Dist. Ritmo medio",
+    "1 Carrera 1:05:44.6 11,00 5:59",
+    "2 Carrera 11:17.6 2,02 5:35"
+].join("\n");
 
-    it("la reconoce como 'intervals-road' y no extrae ninguna vuelta -- no hay forma fiable de saber cuánto mide cada fila", () => {
+describe("garmin-parser.parse — Intervalos de una Carrera normal (bloques reales, no splits de 1 km)", () => {
+
+    it("la reconoce como 'intervals-road' y extrae el bloque real (Int.=2), sin tocar las filas hijas sin número", () => {
 
         const result = parse(REAL_INTERVALS_ROAD);
 
         expect(result.screen.type).toBe("intervals-road");
-        expect(result.extras.laps).toEqual([]);
+        expect(result.extras.blocks).toEqual([
+            { lap: 2, pace_min_km: "5:35", avg_heart_rate_bpm: 159, max_heart_rate_bpm: 165 }
+        ]);
+
+    });
+
+    it("con barra de estado real por encima, quita solo esa línea y extrae los 2 bloques (11 km y 2,02 km)", () => {
+
+        const result = parse(REAL_INTERVALS_ROAD_WITH_STATUS_BAR);
+
+        expect(result.screen.type).toBe("intervals-road");
+        expect(result.extras.blocks).toEqual([
+            { lap: 1, type: "Carrera", duration: "1:05:44", distance_km: 11, pace_min_km: "5:59" },
+            { lap: 2, type: "Carrera", duration: "11:17", distance_km: 2.02, pace_min_km: "5:35" }
+        ]);
 
     });
 

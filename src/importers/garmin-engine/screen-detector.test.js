@@ -8,7 +8,10 @@ import { detect } from "./screen-detector.js";
 // (no en pista): filtro "Seleccionar tipo de paso" con chips "Todos" /
 // "Carrera" (sin "Recuperación", a diferencia de la vista de pista), y
 // columna "Int." con número solo en algunas filas -- el resto quedan en
-// blanco, agrupadas bajo el intervalo anterior. Sin columna de distancia.
+// blanco, agrupadas bajo el bloque anterior. Esta posición de scroll
+// concreta (desplazada del todo a la derecha) no llega a ver la columna
+// Distancia -- otra posición sí la trae, ver REAL_LEFT_VIEW_TEXT en
+// parser-intervals-road.test.js.
 const REAL_INTERVALS_ROAD_TEXT = [
     "Seleccionar tipo de paso",
     "Todos Carrera",
@@ -57,11 +60,41 @@ const REAL_HR_SPLITS_TEXT = [
     "2 5:34 153 157 1"
 ].join("\n");
 
+// Transcrito a mano a partir de una captura real (ver
+// parser-intervals-road.test.js, REAL_LEFT_VIEW_TEXT): vista Int./Tipo/
+// Tiempo/Distancia/Ritmo medio, desplazada hacia abajo lo bastante para que
+// "Seleccionar tipo de paso" y los chips ya no estén visibles -- solo queda
+// la barra de pestañas fija de la app ("...Intervalos...") como señal.
+const REAL_LEFT_VIEW_SCROLLED_TEXT = [
+    "Resumen Estadísticas Intervalos Gráficos Equipo",
+    "Int. Tipo Tiempo Dist. Ritmo medio",
+    "1 Carrera 1:05:44.6 11,00 5:59",
+    "Carrera 5:16.9 1,00 5:17"
+].join("\n");
+
+// Misma barra de pestañas ("...Intervalos...", fija en toda la actividad),
+// pero body real de la pantalla Estadísticas -- el fallback final por sola
+// la palabra "intervalos" no debe robarle esta captura: sus propias
+// etiquetas (más arriba en el orden de detect()) tienen que ganar antes de
+// llegar a ese fallback.
+const REAL_STATISTICS_WITH_INTERVALOS_TAB_TEXT = [
+    "Resumen Estadísticas Intervalos Gráficos Equipo",
+    "Distancia recorrida 13,02 km",
+    "Tiempo total 1:17:02",
+    "Frecuencia cardiaca media 155 ppm"
+].join("\n");
+
 describe("screen-detector — Intervalos de una Carrera normal (sin tramos de Recuperación)", () => {
 
     it("la identifica como 'intervals-road', no como 'splits'", () => {
 
         expect(detect(REAL_INTERVALS_ROAD_TEXT).type).toBe("intervals-road");
+
+    });
+
+    it("también la identifica cuando la tabla viene desplazada y solo se ve la barra de pestañas fija de la app", () => {
+
+        expect(detect(REAL_LEFT_VIEW_SCROLLED_TEXT).type).toBe("intervals-road");
 
     });
 
@@ -74,6 +107,12 @@ describe("screen-detector — Intervalos de una Carrera normal (sin tramos de Re
     it("no afecta a la vista real de Vueltas con FC, que sigue siendo 'splits'", () => {
 
         expect(detect(REAL_HR_SPLITS_TEXT).type).toBe("splits");
+
+    });
+
+    it("no le roba una captura real de Estadísticas solo porque su barra de pestañas fija diga 'Intervalos'", () => {
+
+        expect(detect(REAL_STATISTICS_WITH_INTERVALOS_TAB_TEXT).type).toBe("statistics");
 
     });
 

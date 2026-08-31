@@ -162,6 +162,28 @@ function mergeLaps(results) {
 
 }
 
+// Bloques reales de "Intervalos" de una Carrera normal (ver
+// parser-intervals-road.js) -- a diferencia de mergeLaps(), el número de
+// bloque ("Int.") YA es el real (no relativo a la posición de scroll de
+// esa captura, como sí pasa con la tabla de Vueltas-con-FC), así que no
+// hace falta ningún realineamiento por solape: basta con fusionar campo a
+// campo (mergeLapIntoMap ya es genérico, no depende de forma "splits") las
+// capturas de la vista izquierda (Tipo/Tiempo/Distancia/Ritmo medio) y
+// derecha (Distancia/Ritmo medio/FC media/FC máx.) del mismo bloque.
+function mergeBlocks(results) {
+
+    const blocksByNumber = new Map();
+
+    results
+        .filter(r => Array.isArray(r.extras?.blocks) && r.extras.blocks.length)
+        .forEach(result => {
+            result.extras.blocks.forEach(block => mergeLapIntoMap(blocksByNumber, block));
+        });
+
+    return [...blocksByNumber.values()].sort((a, b) => a.lap - b.lap);
+
+}
+
 export function merge(results) {
     const fields = {};
     const fieldParser = {};
@@ -222,6 +244,7 @@ export function merge(results) {
     const warnings = [];
 
     const laps = mergeLaps(results);
+    const blocks = mergeBlocks(results);
 
     if (!data.title) warnings.push("Falta el título del entrenamiento.");
     if (!data.date) warnings.push("Falta la fecha del entrenamiento.");
@@ -256,6 +279,6 @@ export function merge(results) {
     return {
         parser: "garmin-final-v4.2.2",
         found: Object.values(data).filter(v => v != null).length,
-        data, fields, warnings, laps
+        data, fields, warnings, laps, blocks
     };
 }

@@ -6,6 +6,68 @@ function splitsResult(laps) {
     return { parser: "splits-v4.3", screen: { type: "splits" }, found: 0, data: {}, fields: {}, extras: { laps } };
 }
 
+function intervalsRoadResult(blocks) {
+    return { parser: "intervals-road-v2", screen: { type: "intervals-road" }, found: 0, data: {}, fields: {}, extras: { blocks } };
+}
+
+// Bloques reales de "Intervalos" de una Carrera normal (ver
+// parser-intervals-road.js) -- a diferencia de las vueltas con FC de más
+// abajo, aquí el número de bloque ("Int.") ya es el real, así que no hace
+// falta ningún realineamiento por solape entre capturas.
+describe("fusion.merge — combinación de bloques entre la vista izquierda y derecha de Intervalos", () => {
+
+    it("combina, para el mismo bloque, el tipo/tiempo/distancia de una captura con la FC de otra", () => {
+
+        // Captura 1: vista izquierda (Int./Tipo/Tiempo/Distancia/Ritmo).
+        const leftView = intervalsRoadResult([
+            { lap: 1, type: "Carrera", duration: "1:05:44", distance_km: 11, pace_min_km: "5:59" },
+            { lap: 2, type: "Carrera", duration: "11:17", distance_km: 2.02, pace_min_km: "5:35" }
+        ]);
+
+        // Captura 2: vista derecha (Int./Distancia/Ritmo medio/FC media/FC máx.).
+        const rightView = intervalsRoadResult([
+            { lap: 1, distance_km: 11, pace_min_km: "5:59", avg_heart_rate_bpm: 152, max_heart_rate_bpm: 159 },
+            { lap: 2, distance_km: 2.02, pace_min_km: "5:35", avg_heart_rate_bpm: 159, max_heart_rate_bpm: 165 }
+        ]);
+
+        const { blocks } = merge([leftView, rightView]);
+
+        expect(blocks).toEqual([
+            { lap: 1, type: "Carrera", duration: "1:05:44", distance_km: 11, pace_min_km: "5:59", avg_heart_rate_bpm: 152, max_heart_rate_bpm: 159 },
+            { lap: 2, type: "Carrera", duration: "11:17", distance_km: 2.02, pace_min_km: "5:35", avg_heart_rate_bpm: 159, max_heart_rate_bpm: 165 }
+        ]);
+
+    });
+
+    it("rellena la distancia que falta en una captura de la vista derecha sin esa columna (desplazada un paso más)", () => {
+
+        const leftView = intervalsRoadResult([
+            { lap: 2, type: "Carrera", duration: "11:17", distance_km: 2.02, pace_min_km: "5:35" }
+        ]);
+
+        // Sin columna Distancia (ver RIGHT_BLOCK_ROW_NO_DIST en parser-intervals-road.js).
+        const rightViewNoDist = intervalsRoadResult([
+            { lap: 2, pace_min_km: "5:35", avg_heart_rate_bpm: 159, max_heart_rate_bpm: 165 }
+        ]);
+
+        const { blocks } = merge([leftView, rightViewNoDist]);
+
+        expect(blocks).toEqual([
+            { lap: 2, type: "Carrera", duration: "11:17", distance_km: 2.02, pace_min_km: "5:35", avg_heart_rate_bpm: 159, max_heart_rate_bpm: 165 }
+        ]);
+
+    });
+
+    it("sin ninguna captura de Intervalos, blocks queda vacío", () => {
+
+        const { blocks } = merge([splitsResult([{ lap: 1, distance_km: 1, pace_min_km: "5:30" }])]);
+
+        expect(blocks).toEqual([]);
+
+    });
+
+});
+
 describe("fusion.merge — combinación de vueltas entre varias capturas de Vueltas", () => {
 
     it("combina, para la misma vuelta, la distancia/ritmo de una captura con la FC de otra", () => {

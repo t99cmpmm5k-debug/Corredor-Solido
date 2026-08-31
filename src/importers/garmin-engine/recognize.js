@@ -118,11 +118,8 @@ function hasEnoughFields(parsed) {
         return (parsed.extras?.laps?.length || 0) > 0;
     }
 
-    // Pantalla reconocida pero deliberadamente sin datos que extraer (ver
-    // parser-intervals-road.js) -- una segunda pasada de OCR no va a
-    // cambiar ese resultado, así que no merece la pena repetirla.
     if (parsed.screen.type === "intervals-road") {
-        return true;
+        return (parsed.extras?.blocks?.length || 0) > 0;
     }
 
     // Pantalla sin identificar todavía — la segunda pasada es la única

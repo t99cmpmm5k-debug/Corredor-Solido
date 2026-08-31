@@ -783,3 +783,49 @@ describe("RunningDetailView — comparación histórica del entreno (retoque de 
     });
 
 });
+
+describe("RunningDetailView — RITMO POR INTERVALO (bloques reales de 'Intervalos' de una Carrera normal)", () => {
+
+    // Valores reales (5 capturas de un mismo entreno, 13,02 km: 11 km +
+    // 2,02 km) -- ver garmin.test.js/parser-intervals-road.test.js.
+    const twoIntervals = [
+        { interval: 1, type: "Carrera", durationSec: 3944, distanceKm: 11, paceSecPerKm: 359, avgHr: 152, maxHr: 159 },
+        { interval: 2, type: "Carrera", durationSec: 677, distanceKm: 2.02, paceSecPerKm: 335, avgHr: 159, maxHr: 165 }
+    ];
+
+    it("se muestra con 2+ bloques reales, una barra por bloque con su distancia", () => {
+
+        const html = RunningDetailView(workout({ intervals: twoIntervals, avgPaceSecPerKm: 355 }));
+
+        expect(html).toContain("RITMO POR INTERVALO");
+        expect(html).toContain("11 km");
+        expect(html).toContain("2.02 km");
+
+    });
+
+    it("con un solo bloque no se muestra -- un bloque no compara nada entre sí", () => {
+
+        const html = RunningDetailView(workout({ intervals: [twoIntervals[0]] }));
+
+        expect(html).not.toContain("RITMO POR INTERVALO");
+
+    });
+
+    it("sin bloques (entreno con Vueltas normales, no Intervalos), no se muestra", () => {
+
+        const html = RunningDetailView(workout({ intervals: [] }));
+
+        expect(html).not.toContain("RITMO POR INTERVALO");
+
+    });
+
+    it("es independiente de RITMO POR KILÓMETRO -- se muestra aunque no haya splits de 1 km", () => {
+
+        const html = RunningDetailView(workout({ splits: [], intervals: twoIntervals, avgPaceSecPerKm: 355 }));
+
+        expect(html).not.toContain("RITMO POR KILÓMETRO");
+        expect(html).toContain("RITMO POR INTERVALO");
+
+    });
+
+});

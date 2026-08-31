@@ -36,20 +36,16 @@ export function detect(text) {
     // familia que la de arriba (filtro "Seleccionar tipo de paso"), pero
     // para una actividad sin tramos de Recuperación que filtrar -- solo
     // trae los chips "Todos"/"Carrera", nunca la palabra "recuperacion",
-    // así que la rama de arriba no la reconoce. Sus columnas (Ritmo
-    // medio/GAP medio/FC media/FC máx./Ascenso/Descenso) coinciden letra a
-    // letra con las de la tabla de Vueltas desplazada a la FC (ver
+    // así que la rama de arriba no la reconoce. Sus columnas coinciden
+    // letra a letra con las de la tabla de Vueltas desplazada a la FC (ver
     // parser-splits.js) -- sin este chequeo ANTES de esa rama, esta
-    // pantalla caía ahí y cada fila se numeraba como si fuera una vuelta
-    // real de ~1 km. Verificado con 4 capturas reales que eso está mal:
-    // la columna "Int." solo trae número en algunas filas (el resto queda
-    // en blanco, agrupadas bajo el intervalo anterior) y no hay ninguna
-    // columna de distancia -- una de esas filas traía 73 m de ascenso
-    // frente a 1-15 m en las vecinas, señal de que las filas no cubren una
-    // distancia uniforme. Sin saber cuánto mide cada una no hay forma
-    // fiable de tratarlas como splits de 1 km, así que esta pantalla se
-    // reconoce pero se deja sin soportar (ver parser-intervals-road.js) en
-    // vez de inventar una distancia y graficar algo potencialmente falso.
+    // pantalla caía ahí y cada fila (bloque real Y submuestra de ~1 km) se
+    // numeraba por igual como si fuera una vuelta. Confirmado con 5
+    // capturas reales de un mismo entreno (11 km + 2,02 km) que la fila con
+    // número en "Int." SÍ es un agregado real por bloque (Tipo/Tiempo/
+    // Distancia/Ritmo medio/FC media/FC máx., ya calculado por Garmin) y
+    // las filas sin número son sus submuestras de 1 km -- ver
+    // parser-intervals-road.js, que solo usa las primeras.
     if (/seleccionar tipo de paso/.test(n)) {
         return { type: "intervals-road", confidence: .9 };
     }
@@ -89,6 +85,22 @@ export function detect(text) {
         && countNumericPairRows(n) >= 2
     ) {
         return { type: "splits", confidence: .96 };
+    }
+
+    // Última red para "Intervalos" de una Carrera normal: capturas
+    // recortadas a la vista Int./Tipo/Tiempo/Distancia/Ritmo medio (sin el
+    // filtro "Seleccionar tipo de paso" visible, ver arriba, porque la
+    // tabla venía desplazada hacia abajo) no traen ninguna etiqueta propia
+    // de FC ni de Vueltas -- la única señal que les queda es la barra de
+    // pestañas de la app, que dice "Intervalos" en vez de "Vueltas" (misma
+    // barra que usa la rama de pista, más arriba). Se deja como ÚLTIMO
+    // recurso, después de estadísticas/splits: esa misma barra de pestañas
+    // aparece también en capturas de Resumen/Estadísticas/Gráficos/Equipo
+    // de una actividad de este tipo, así que solo debe ganar cuando
+    // ninguna etiqueta más específica de esas pantallas identificó ya la
+    // captura.
+    if (/\bintervalos\b/.test(n)) {
+        return { type: "intervals-road", confidence: .75 };
     }
 
     return { type: "unknown", confidence: .35 };

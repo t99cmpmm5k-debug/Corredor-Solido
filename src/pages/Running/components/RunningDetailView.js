@@ -13,6 +13,11 @@ const RESIDUAL_LAP_THRESHOLD_KM = 0.3;
 // Un solo split no dice nada sobre si hubo positivo/negativo split.
 const MIN_SPLITS_FOR_CHART = 2;
 
+// Mismo criterio que MIN_SPLITS_FOR_CHART, pero para RITMO POR INTERVALO
+// (workout.intervals, ver parser-intervals-road.js): un solo bloque no
+// compara nada entre sí.
+const MIN_INTERVALS_FOR_CHART = 2;
+
 // Escala fija alrededor del ritmo medio (no del propio rango min/max de la
 // carrera) — si no, una carrera regular y una irregular se verían igual de
 // "montañosas", porque la barra más alta siempre sería la vuelta más rápida.
@@ -518,6 +523,74 @@ function RunningPaceChart(splits, avgPaceRef, avgHrRef, metricMode = "both", wor
 
 }
 
+// Ritmo de referencia para escalar las barras (mismo mecanismo que
+// barHeightPx()/PACE_WINDOW_SEC de RunningPaceChart, pero centrado en el
+// ritmo medio REAL del entreno completo -- workout.avgPaceSecPerKm, que ya
+// pondera por distancia -- en vez de la media simple de solo 2-3 bloques
+// de duración muy distinta entre sí, que pesaría igual un bloque de 11 km
+// que uno de 2 km.
+function averageIntervalPace(workout, intervals) {
+
+    if (workout.avgPaceSecPerKm != null) return workout.avgPaceSecPerKm;
+
+    return intervals.reduce((sum, i) => sum + i.paceSecPerKm, 0) / intervals.length;
+
+}
+
+// Gráfico "RITMO POR INTERVALO" -- una barra por bloque real de la
+// pantalla "Intervalos" de una Carrera normal (ver parser-intervals-road.js),
+// no por kilómetro. Deliberadamente más simple que RunningPaceChart (sin
+// overlay de FC por punto, sin insights/deriva cardíaca): cada bloque ya es
+// un agregado de Garmin sobre una distancia variable, así que comparar la
+// FC de un bloque de 11 km contra uno de 2 km punto a punto no aporta lo
+// mismo que hacerlo entre splits de 1 km reales.
+function RunningIntervalChart(intervals, avgPaceRef) {
+
+    return `
+
+        <div class="pace-chart">
+
+            <div class="pace-chart-header">
+
+                <h3 class="pace-chart-title">RITMO POR INTERVALO</h3>
+
+            </div>
+
+            <div class="pace-chart-track">
+
+                <div class="pace-chart-bars">
+
+                    <div class="pace-chart-refline" style="bottom:${REFLINE_BOTTOM_PX}px"></div>
+
+                    <span class="pace-chart-refline-label" style="bottom:${REFLINE_BOTTOM_PX}px">Media</span>
+
+                    ${intervals.map(interval => `
+
+                        <div class="pace-chart-column">
+
+                            <span class="pace-chart-value">${formatSecondsAsClock(interval.paceSecPerKm)}</span>
+
+                            <div
+                                class="pace-chart-bar"
+                                style="height:${barHeightPx(interval.paceSecPerKm, avgPaceRef)}px"
+                            ></div>
+
+                            <span class="pace-chart-lap">${interval.distanceKm != null ? `${interval.distanceKm} km` : `Int. ${interval.interval}`}</span>
+
+                        </div>
+
+                    `).join("")}
+
+                </div>
+
+            </div>
+
+        </div>
+
+    `;
+
+}
+
 // Retroactivo: entrenamientos guardados antes de que existiera el tipo
 // no tienen workout.type — se ve "Sin tipo" en vez de caer por defecto
 // en la primera opción real, para no fingir una clasificación que nunca
@@ -716,6 +789,12 @@ export function RunningDetailView(workout, shoes = [], warningsExpanded = false,
     const avgHrRef = averageHr(workout, splits);
     const warnings = workout.importWarnings || [];
 
+    // RITMO POR INTERVALO -- independiente de splits/RITMO POR KILÓMETRO
+    // (ver el comentario junto a RunningIntervalChart): solo llega si el
+    // usuario capturó la pantalla "Intervalos" de una Carrera normal.
+    const intervals = (workout.intervals || []).filter(i => i.paceSecPerKm != null);
+    const avgIntervalPaceRef = intervals.length ? averageIntervalPace(workout, intervals) : null;
+
     // Comparación histórica de ESTE entreno (retoque de cierre, punto 10)
     // -- independiente del gráfico de arriba (no necesita splits, solo el
     // ritmo/FC medios de siempre), así que se calcula y se pinta aparte,
@@ -777,6 +856,8 @@ export function RunningDetailView(workout, shoes = [], warningsExpanded = false,
             </div>
 
             ${splits.length >= MIN_SPLITS_FOR_CHART ? RunningPaceChart(splits, avgPaceRef, avgHrRef, chartMetricMode, workout) : ""}
+
+            ${intervals.length >= MIN_INTERVALS_FOR_CHART ? RunningIntervalChart(intervals, avgIntervalPaceRef) : ""}
 
             ${workoutComparison ? `
 

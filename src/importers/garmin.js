@@ -191,6 +191,22 @@ export function parseGarminWorkout(merged) {
         segmentType: lap.segmentType ?? null
     }));
 
+    // Bloques reales de "Intervalos" de una Carrera normal (ver
+    // parser-intervals-road.js) -- array aparte de splits a propósito: cada
+    // bloque cubre varios km (11 km, 2 km...), no 1 como un split, así que
+    // mezclarlos en el mismo array contaminaría RITMO POR KILÓMETRO
+    // (chartSplits() en RunningDetailView.js) con "vueltas" que en realidad
+    // son la media de muchas.
+    const intervals = (merged.blocks || []).map(block => ({
+        interval: block.lap,
+        type: block.type ?? null,
+        durationSec: parseDurationToSeconds(block.duration),
+        distanceKm: block.distance_km,
+        paceSecPerKm: parsePaceToSecPerKm(block.pace_min_km),
+        avgHr: block.avg_heart_rate_bpm ?? null,
+        maxHr: block.max_heart_rate_bpm ?? null
+    }));
+
     const { type, confidence: typeConfidence } = inferWorkoutType({ title, distanceKm, splits });
 
     // type es un campo calculado (heurística de clasificación), no una
@@ -235,6 +251,7 @@ export function parseGarminWorkout(merged) {
         exerciseLoad: parseNumber(data.exercise_load),
 
         splits,
+        intervals,
 
         fieldMeta,
         importWarnings
