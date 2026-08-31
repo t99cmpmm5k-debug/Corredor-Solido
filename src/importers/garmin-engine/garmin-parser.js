@@ -4,13 +4,26 @@ import * as GarminSummaryParser from "./parser-summary.js";
 import * as GarminStatisticsParser from "./parser-statistics.js";
 import * as GarminSplitsParser from "./parser-splits.js";
 import * as GarminIntervalsParser from "./parser-intervals.js";
+import * as GarminIntervalsRoadParser from "./parser-intervals-road.js";
 import * as GarminFusion from "./fusion.js";
 
 export function parse(text) {
     // La primera línea de una captura del móvil es siempre la barra de
     // estado del sistema (hora, wifi, batería) — nunca es dato del entreno.
     const lines = U.linesOf(text);
-    const withoutStatusBar = lines.slice(1).join("\n");
+
+    // Salvo cuando la captura llega recortada justo en el encabezado
+    // "Seleccionar tipo de paso" (pantallas Intervalos, ver
+    // screen-detector.js): esa frase nunca es la barra de estado del móvil,
+    // así que quitarla a ciegas por ser la primera línea destruye la única
+    // señal que distingue "Intervalos de una Carrera normal" de la vista de
+    // Vueltas con FC (parser-splits.js) -- y, a diferencia del resto de
+    // casos recortados, lo que queda SÍ basta para una detección (la
+    // equivocada) por sí sola, así que el reintento de más abajo -- que
+    // solo se dispara si el resultado es "unknown" -- nunca llega a
+    // activarse para corregirlo.
+    const firstLineIsStatusBar = !/seleccionar tipo de paso/i.test(lines[0] || "");
+    const withoutStatusBar = (firstLineIsStatusBar ? lines.slice(1) : lines).join("\n");
 
     let screen = GarminScreenDetector.detect(withoutStatusBar);
     let bodyText = withoutStatusBar;
@@ -47,6 +60,8 @@ export function parse(text) {
         parsed = GarminSplitsParser.parse(bodyText);
     } else if (screen.type === "intervals") {
         parsed = GarminIntervalsParser.parse(bodyText);
+    } else if (screen.type === "intervals-road") {
+        parsed = GarminIntervalsRoadParser.parse(bodyText);
     } else {
         parsed = { parser: "unknown-screen", fields: {} };
     }

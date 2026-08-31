@@ -73,3 +73,29 @@ describe("garmin-parser.parse — captura normal, con barra de estado real", () 
     });
 
 });
+
+// Transcrito a mano a partir de 4 capturas reales aportadas por el usuario
+// (pantalla "Intervalos" de una Carrera normal, sin tramos de Recuperación
+// -- ver screen-detector.test.js). Recortada justo a la tabla, sin barra de
+// estado real por encima.
+const REAL_INTERVALS_ROAD = [
+    "Seleccionar tipo de paso",
+    "Todos Carrera",
+    "Int. Ritmo medio GAP medio Frecuencia cardiaca media Frec. cardiaca max. Ascenso total Descenso total",
+    "min/km min/km ppm ppm m m",
+    "6:10 6:14 154 157 1",
+    "2 5:35 5:35 159 165 7"
+].join("\n");
+
+describe("garmin-parser.parse — Intervalos de una Carrera normal (sin columna de distancia)", () => {
+
+    it("la reconoce como 'intervals-road' y no extrae ninguna vuelta -- no hay forma fiable de saber cuánto mide cada fila", () => {
+
+        const result = parse(REAL_INTERVALS_ROAD);
+
+        expect(result.screen.type).toBe("intervals-road");
+        expect(result.extras.laps).toEqual([]);
+
+    });
+
+});

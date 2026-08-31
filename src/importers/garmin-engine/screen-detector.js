@@ -32,6 +32,28 @@ export function detect(text) {
         return { type: "intervals", confidence: .97 };
     }
 
+    // Pantalla "Intervalos" de una Carrera normal (no en pista): misma
+    // familia que la de arriba (filtro "Seleccionar tipo de paso"), pero
+    // para una actividad sin tramos de Recuperación que filtrar -- solo
+    // trae los chips "Todos"/"Carrera", nunca la palabra "recuperacion",
+    // así que la rama de arriba no la reconoce. Sus columnas (Ritmo
+    // medio/GAP medio/FC media/FC máx./Ascenso/Descenso) coinciden letra a
+    // letra con las de la tabla de Vueltas desplazada a la FC (ver
+    // parser-splits.js) -- sin este chequeo ANTES de esa rama, esta
+    // pantalla caía ahí y cada fila se numeraba como si fuera una vuelta
+    // real de ~1 km. Verificado con 4 capturas reales que eso está mal:
+    // la columna "Int." solo trae número en algunas filas (el resto queda
+    // en blanco, agrupadas bajo el intervalo anterior) y no hay ninguna
+    // columna de distancia -- una de esas filas traía 73 m de ascenso
+    // frente a 1-15 m en las vecinas, señal de que las filas no cubren una
+    // distancia uniforme. Sin saber cuánto mide cada una no hay forma
+    // fiable de tratarlas como splits de 1 km, así que esta pantalla se
+    // reconoce pero se deja sin soportar (ver parser-intervals-road.js) en
+    // vez de inventar una distancia y graficar algo potencialmente falso.
+    if (/seleccionar tipo de paso/.test(n)) {
+        return { type: "intervals-road", confidence: .9 };
+    }
+
     // "estadisticas" solo no basta — esa palabra aparece en la barra de
     // pestañas de CUALQUIER pantalla (Vueltas, Gráficos, Equipo...), no
     // solo en la propia pantalla de Estadísticas. Igual que "resumen"
