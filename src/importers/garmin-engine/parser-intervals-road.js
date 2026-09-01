@@ -37,6 +37,22 @@ const RIGHT_BLOCK_ROW = /^([0-9]{1,2})\s+([0-9]{1,3}[,.][0-9]{1,2})\s+([0-9]{1,2
 // la traiga (mismo número de "Int.", ver fusion.js) en vez de perderse.
 const RIGHT_BLOCK_ROW_NO_DIST = /^([0-9]{1,2})\s+([0-9]{1,2}:[0-5][0-9])\s+[0-9]{1,2}:[0-5][0-9]\s+([0-9]{2,3})\s+([0-9]{2,3})\b/;
 
+// Fila hija de esa misma vista sin Distancia -- "6:10 6:14 154 157 1":
+// Ritmo medio/GAP medio/FC media/FC máx/Ascenso, sin número de bloque
+// delante. Sin distancia no se puede validar contra la suma del bloque
+// (checkBlockChildSum se salta estas filas), pero el ritmo y la FC por km
+// SÍ son datos reales -- fusion.js las combina por número de vuelta con
+// las de la vista izquierda (que sí trae distancia), igual que ya hace
+// parseHrRows() en parser-splits.js con la tabla de Vueltas desplazada.
+// Esta era la vista que de verdad usó el usuario para este entreno (ver
+// REAL_INTERVALS_ROAD en garmin-parser.test.js) -- sin extraer esta fila,
+// workout.splits se quedaba sin FC por km aunque la captura sí la traía,
+// y RITMO POR KILÓMETRO perdía el toggle Ritmo+FC/Ritmo/FC, la línea de
+// FC superpuesta y el bloque de análisis (deriva, FC máxima por km) que
+// dependen de esa FC por split -- todos ellos ya existían en el
+// componente compartido, solo les faltaba el dato.
+const RIGHT_CHILD_ROW_NO_DIST = /^([0-9]{1,2}:[0-5][0-9])\s+[0-9]{1,2}:[0-5][0-9]\s+([0-9]{2,3})\s+([0-9]{2,3})\b/;
+
 // Tolerancia entre la suma de distancias de las filas hijas de un bloque y
 // la distancia del propio bloque -- 0,05 km cubre el redondeo real que ya
 // se ve en las capturas (Garmin redondea cada fila a 2 decimales), sin
@@ -166,6 +182,18 @@ export function parse(text) {
                 max_heart_rate_bpm: U.num(rightBlockNoDist[4])
             };
             blocks.push(currentBlock);
+            continue;
+        }
+
+        const rightChildNoDist = line.match(RIGHT_CHILD_ROW_NO_DIST);
+        if (rightChildNoDist) {
+            laps.push({
+                lap: ++lapCounter,
+                pace_min_km: U.pace(rightChildNoDist[1]),
+                avg_heart_rate_bpm: U.num(rightChildNoDist[2]),
+                max_heart_rate_bpm: U.num(rightChildNoDist[3]),
+                numberingIsRelative: true
+            });
         }
 
     }

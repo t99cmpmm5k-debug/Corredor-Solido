@@ -141,7 +141,10 @@ describe("parser-intervals-road — vista derecha (Int./Distancia/Ritmo medio/GA
 // en una conversación anterior (mismo entreno, pero desplazado un paso más
 // a la derecha que REAL_RIGHT_VIEW_TEXT -- sin columna de Distancia). Este
 // fue el caso que originalmente se detectaba mal como "splits" (commit
-// b752969); aquí solo se verifica la extracción de bloques sin distancia.
+// b752969) -- y, según confirmó el usuario más tarde, la vista que de
+// verdad usó para importar este entreno (ver REAL_INTERVALS_ROAD en
+// garmin-parser.test.js), así que sus filas hijas SÍ deben aportar FC por
+// km a workout.splits aunque no traigan distancia.
 const REAL_RIGHT_VIEW_NO_DIST_TEXT = [
     "Seleccionar tipo de paso",
     "Todos Carrera",
@@ -165,15 +168,23 @@ describe("parser-intervals-road — vista derecha sin columna de Distancia (desp
 
     });
 
-    // Sin columna de Distancia no hay dato con el que formar un split real
-    // de 1 km (a diferencia de las otras dos vistas) -- se sigue sin
-    // extraer nada de estas filas, ni se avisa de un desajuste que no se
-    // puede ni comprobar sin distancia alguna.
-    it("no extrae splits de estas filas hijas (sin distancia) ni genera avisos de descuadre", () => {
+    // Sin columna de Distancia no hay con qué formar la distancia del
+    // split (a diferencia de las otras dos vistas), pero el ritmo y la FC
+    // por km SÍ son datos reales -- se extraen igual, sin distance_km, para
+    // que fusion.js los combine con la distancia de otra captura (vista
+    // izquierda) por número de vuelta. Sin esto, workout.splits se quedaba
+    // sin FC por km pese a que la captura sí la traía, y RITMO POR
+    // KILÓMETRO perdía el toggle/la línea de FC/el bloque de análisis.
+    it("extrae las 3 filas hijas con ritmo y FC, sin distance_km -- y no genera avisos de descuadre (no hay distancia que comprobar)", () => {
 
         const { extras } = parse(REAL_RIGHT_VIEW_NO_DIST_TEXT);
 
-        expect(extras.laps).toEqual([]);
+        expect(extras.laps).toEqual([
+            { lap: 1, pace_min_km: "6:10", avg_heart_rate_bpm: 154, max_heart_rate_bpm: 157, numberingIsRelative: true },
+            { lap: 2, pace_min_km: "6:23", avg_heart_rate_bpm: 154, max_heart_rate_bpm: 157, numberingIsRelative: true },
+            { lap: 3, pace_min_km: "6:29", avg_heart_rate_bpm: 153, max_heart_rate_bpm: 156, numberingIsRelative: true }
+        ]);
+
         expect(extras.warnings).toEqual([]);
 
     });

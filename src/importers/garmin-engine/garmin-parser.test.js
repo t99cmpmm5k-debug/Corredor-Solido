@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { parse } from "./garmin-parser.js";
+import { merge } from "./fusion.js";
 
 // Mismos dos textos OCR reales que parser-splits.test.js (dos posiciones de
 // scroll distintas de la tabla de Vueltas desplazada), pero aquí probados a
@@ -119,6 +120,39 @@ describe("garmin-parser.parse — Intervalos de una Carrera normal (bloques real
         expect(result.extras.blocks).toEqual([
             { lap: 1, type: "Carrera", duration: "1:05:44", distance_km: 11, pace_min_km: "5:59" },
             { lap: 2, type: "Carrera", duration: "11:17", distance_km: 2.02, pace_min_km: "5:35" }
+        ]);
+
+    });
+
+    // Vista izquierda (Tipo/Tiempo/Distancia/Ritmo) del MISMO entreno, con
+    // el mismo primer split hijo (ritmo "6:10") que REAL_INTERVALS_ROAD --
+    // para probar la integración real que faltaba: esta era la vista que de
+    // verdad usó el usuario para importar este entreno (RIGHT sin
+    // distancia, ver el fix de más arriba), y sin extraer su FC por km,
+    // workout.splits se quedaba sin FC pese a que la captura sí la traía.
+    const REAL_LEFT_VIEW_PARTIAL = [
+        "Seleccionar tipo de paso",
+        "Todos Carrera",
+        "Int. Tipo Tiempo Dist. Ritmo medio",
+        "1 Carrera 1:05:44.6 11,00 5:59",
+        "Carrera 6:10.0 1,00 6:10",
+        "2 Carrera 11:17.6 2,02 5:35"
+    ].join("\n");
+
+    it("integración real: la vista izquierda (distancia/ritmo) + la vista derecha sin distancia (ritmo/FC) fusionan en el mismo split -- no en dos independientes", () => {
+
+        const leftResult = parse(REAL_LEFT_VIEW_PARTIAL);
+        const rightResult = parse(REAL_INTERVALS_ROAD);
+
+        const { laps, blocks } = merge([leftResult, rightResult]);
+
+        expect(laps).toEqual([
+            { lap: 1, distance_km: 1, pace_min_km: "6:10", avg_heart_rate_bpm: 154, max_heart_rate_bpm: 157 }
+        ]);
+
+        expect(blocks).toEqual([
+            { lap: 1, type: "Carrera", duration: "1:05:44", distance_km: 11, pace_min_km: "5:59" },
+            { lap: 2, type: "Carrera", duration: "11:17", distance_km: 2.02, pace_min_km: "5:35", avg_heart_rate_bpm: 159, max_heart_rate_bpm: 165 }
         ]);
 
     });

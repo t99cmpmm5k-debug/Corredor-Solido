@@ -869,4 +869,46 @@ describe("RunningDetailView — RITMO POR INTERVALO (bloques reales de 'Interval
 
     });
 
+    // El bug reportado por el usuario: en el dispositivo real, la vista que
+    // de verdad usó para capturar este entreno fue la derecha SIN columna
+    // de Distancia (RIGHT_BLOCK_ROW_NO_DIST/RIGHT_CHILD_ROW_NO_DIST) --
+    // hasta este fix esas filas hijas no aportaban FC, así que
+    // workout.splits llegaba sin avgHr y RunningPaceChart (el MISMO
+    // componente de siempre, nunca uno distinto) se quedaba sin toggle, sin
+    // línea de FC superpuesta y sin la parte del análisis que depende de FC
+    // por km -- no porque el componente fuera otro, sino porque le faltaba
+    // el dato. Con avgHr ya presente en los splits (tras el fix de
+    // extracción), deben reaparecer todos esos elementos, exactamente igual
+    // que en cualquier entreno con la tabla de Vueltas desplazada con FC.
+    it("con FC por km en los splits (tras el fix de extracción de la vista sin Distancia), aparecen el toggle Ritmo+FC/Ritmo/FC, la línea de FC superpuesta y 'FC máxima por km' -- el mismo componente que cualquier otro entreno", () => {
+
+        const splitsWithHr = [
+            { lap: 1, distanceKm: 1, paceSecPerKm: 317, avgHr: 140 },
+            { lap: 2, distanceKm: 1, paceSecPerKm: 325, avgHr: 142 },
+            { lap: 3, distanceKm: 1, paceSecPerKm: 349, avgHr: 145 },
+            { lap: 4, distanceKm: 1, paceSecPerKm: 350, avgHr: 146 },
+            { lap: 5, distanceKm: 1, paceSecPerKm: 352, avgHr: 147 },
+            { lap: 6, distanceKm: 1, paceSecPerKm: 369, avgHr: 150 },
+            { lap: 7, distanceKm: 1, paceSecPerKm: 368, avgHr: 150 },
+            { lap: 8, distanceKm: 1, paceSecPerKm: 373, avgHr: 151 },
+            { lap: 9, distanceKm: 1, paceSecPerKm: 370, avgHr: 151 },
+            { lap: 10, distanceKm: 1, paceSecPerKm: 383, avgHr: 153 },
+            { lap: 11, distanceKm: 1, paceSecPerKm: 389, avgHr: 154 },
+            { lap: 12, distanceKm: 1, paceSecPerKm: 333, avgHr: 161 },
+            { lap: 13, distanceKm: 1, paceSecPerKm: 333, avgHr: 162 },
+            { lap: 14, distanceKm: 0.02, paceSecPerKm: 506, avgHr: 158 }
+        ];
+
+        const html = RunningDetailView(workout({ splits: splitsWithHr, intervals: twoIntervals, avgPaceSecPerKm: 355, avgHr: 150 }));
+
+        expect(html).toContain("pace-chart-mode-toggle");
+        expect(html).toContain('data-mode="both"');
+        expect(html).toContain('data-mode="pace"');
+        expect(html).toContain('data-mode="hr"');
+        expect(html).toContain("pace-chart-hr-overlay");
+        expect(html).toContain("pace-chart-hr-line");
+        expect(html).toContain("FC máxima por km: 162 ppm (km 13)");
+
+    });
+
 });
