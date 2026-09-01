@@ -61,6 +61,34 @@ describe("parser-intervals-road — vista izquierda (Int./Tipo/Tiempo/Distancia/
 
     });
 
+    // Ampliación del fix anterior: las filas hijas ya NO se ignoran -- son
+    // splits reales de 1 km, con la misma forma que usa parser-splits.js
+    // (lap/distance_km/pace_min_km), para que fusion.js/garmin.js las
+    // fusionen en workout.splits por el mismo camino que cualquier otro
+    // entreno (RITMO POR KILÓMETRO no distingue el origen del split).
+    it("extrae las 14 filas hijas (11 del bloque 1 + 3 del bloque 2) como splits de 1 km, numeradas por orden de aparición", () => {
+
+        const { extras } = parse(REAL_LEFT_VIEW_TEXT);
+
+        expect(extras.laps).toHaveLength(14);
+
+        expect(extras.laps[0]).toEqual({ lap: 1, distance_km: 1, pace_min_km: "5:17", numberingIsRelative: true });
+        expect(extras.laps[10]).toEqual({ lap: 11, distance_km: 1, pace_min_km: "6:29", numberingIsRelative: true });
+        expect(extras.laps[11]).toEqual({ lap: 12, distance_km: 1, pace_min_km: "5:33", numberingIsRelative: true });
+        expect(extras.laps[13]).toEqual({ lap: 14, distance_km: 0.02, pace_min_km: "8:26", numberingIsRelative: true });
+
+        const totalKm = extras.laps.reduce((sum, l) => sum + l.distance_km, 0);
+        expect(totalKm).toBeCloseTo(13.02, 5);
+
+    });
+
+    it("la suma de las filas hijas de cada bloque cuadra con la distancia del bloque -- sin avisos", () => {
+
+        const { extras } = parse(REAL_LEFT_VIEW_TEXT);
+        expect(extras.warnings).toEqual([]);
+
+    });
+
 });
 
 describe("parser-intervals-road — vista derecha (Int./Distancia/Ritmo medio/GAP medio/FC media/FC máx.)", () => {
@@ -72,6 +100,37 @@ describe("parser-intervals-road — vista derecha (Int./Distancia/Ritmo medio/GA
         expect(extras.blocks).toEqual([
             { lap: 1, distance_km: 11, pace_min_km: "5:59", avg_heart_rate_bpm: 152, max_heart_rate_bpm: 159 },
             { lap: 2, distance_km: 2.02, pace_min_km: "5:35", avg_heart_rate_bpm: 159, max_heart_rate_bpm: 165 }
+        ]);
+
+    });
+
+    it("extrae también las filas hijas de esta vista, con distancia/ritmo/FC media/FC máx. propias", () => {
+
+        const { extras } = parse(REAL_RIGHT_VIEW_TEXT);
+
+        expect(extras.laps).toEqual([
+            { lap: 1, distance_km: 1, pace_min_km: "5:17", avg_heart_rate_bpm: 140, max_heart_rate_bpm: 149, numberingIsRelative: true },
+            { lap: 2, distance_km: 1, pace_min_km: "5:25", avg_heart_rate_bpm: 151, max_heart_rate_bpm: 155, numberingIsRelative: true },
+            { lap: 3, distance_km: 1, pace_min_km: "5:49", avg_heart_rate_bpm: 154, max_heart_rate_bpm: 157, numberingIsRelative: true },
+            { lap: 4, distance_km: 1, pace_min_km: "5:50", avg_heart_rate_bpm: 153, max_heart_rate_bpm: 157, numberingIsRelative: true },
+            { lap: 5, distance_km: 1, pace_min_km: "5:33", avg_heart_rate_bpm: 159, max_heart_rate_bpm: 161, numberingIsRelative: true },
+            { lap: 6, distance_km: 1, pace_min_km: "5:33", avg_heart_rate_bpm: 160, max_heart_rate_bpm: 165, numberingIsRelative: true },
+            { lap: 7, distance_km: 0.02, pace_min_km: "8:26", avg_heart_rate_bpm: 158, max_heart_rate_bpm: 160, numberingIsRelative: true }
+        ]);
+
+    });
+
+    // Este fragmento de captura (transcrito a mano, no la tabla completa)
+    // solo trae 4 de las 11 filas hijas reales del bloque 1 -- a propósito,
+    // para verificar que un desajuste real entre la distancia del bloque y
+    // la suma de sus filas hijas se señala en vez de forzarse. El bloque 2
+    // sí trae sus 3 filas completas y cuadra, así que solo debe avisar del 1.
+    it("si la suma de las filas hijas de un bloque no cuadra con la distancia del bloque, avisa en vez de forzar el dato", () => {
+
+        const { extras } = parse(REAL_RIGHT_VIEW_TEXT);
+
+        expect(extras.warnings).toEqual([
+            "El bloque 1 de Intervalos mide 11 km pero sus filas de 1 km suman 4.00 km -- revisar la captura."
         ]);
 
     });
@@ -106,6 +165,19 @@ describe("parser-intervals-road — vista derecha sin columna de Distancia (desp
 
     });
 
+    // Sin columna de Distancia no hay dato con el que formar un split real
+    // de 1 km (a diferencia de las otras dos vistas) -- se sigue sin
+    // extraer nada de estas filas, ni se avisa de un desajuste que no se
+    // puede ni comprobar sin distancia alguna.
+    it("no extrae splits de estas filas hijas (sin distancia) ni genera avisos de descuadre", () => {
+
+        const { extras } = parse(REAL_RIGHT_VIEW_NO_DIST_TEXT);
+
+        expect(extras.laps).toEqual([]);
+        expect(extras.warnings).toEqual([]);
+
+    });
+
 });
 
 describe("parser-intervals-road — identifica la pantalla como 'intervals-road'", () => {
@@ -127,6 +199,8 @@ describe("parser-intervals-road — sin ninguna fila reconocible", () => {
         const { extras } = parse("Resumen\nAñadir notas\n5 km en 25:00");
 
         expect(extras.blocks).toEqual([]);
+        expect(extras.laps).toEqual([]);
+        expect(extras.warnings).toEqual([]);
 
     });
 

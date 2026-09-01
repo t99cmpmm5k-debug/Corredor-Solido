@@ -149,4 +149,34 @@ describe("parseGarminWorkout — Intervalos de una Carrera normal (bloques reale
 
     });
 
+    // Ampliación del fix: merged.laps de las filas hijas de Intervalos
+    // (parser-intervals-road.js, fusionadas por fusion.js igual que
+    // cualquier otra vuelta) entra en workout.splits por el MISMO mapeo que
+    // ya usa cualquier entreno con Vueltas normales (RAW_FIELD_BY_NEUTRAL_KEY
+    // / el .map de más arriba en garmin.js) -- ninguna rama nueva, ningún
+    // campo distinto. workout.intervals (los bloques) y workout.splits (las
+    // filas hijas) conviven, cada uno alimentando su propio gráfico.
+    it("las filas hijas (merged.laps) entran en workout.splits exactamente igual que las vueltas de un entreno normal -- mismo camino, mismos campos", () => {
+
+        const workout = parseGarminWorkout(merged({
+            blocks: [
+                { lap: 1, type: "Carrera", duration: "1:05:44", distance_km: 11, pace_min_km: "5:59" },
+                { lap: 2, type: "Carrera", duration: "11:17", distance_km: 2.02, pace_min_km: "5:35" }
+            ],
+            laps: [
+                { lap: 1, distance_km: 1, pace_min_km: "5:17" },
+                { lap: 2, distance_km: 1, pace_min_km: "5:25" }
+            ]
+        }));
+
+        expect(workout.splits).toEqual([
+            { lap: 1, distanceKm: 1, paceSecPerKm: 317, avgHr: null, maxHr: null, segmentType: null },
+            { lap: 2, distanceKm: 1, paceSecPerKm: 325, avgHr: null, maxHr: null, segmentType: null }
+        ]);
+
+        // Coexisten: los bloques siguen alimentando workout.intervals aparte.
+        expect(workout.intervals).toHaveLength(2);
+
+    });
+
 });

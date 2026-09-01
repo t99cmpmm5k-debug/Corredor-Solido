@@ -6,8 +6,8 @@ function splitsResult(laps) {
     return { parser: "splits-v4.3", screen: { type: "splits" }, found: 0, data: {}, fields: {}, extras: { laps } };
 }
 
-function intervalsRoadResult(blocks) {
-    return { parser: "intervals-road-v2", screen: { type: "intervals-road" }, found: 0, data: {}, fields: {}, extras: { blocks } };
+function intervalsRoadResult(blocks, laps = [], warnings = []) {
+    return { parser: "intervals-road-v2", screen: { type: "intervals-road" }, found: 0, data: {}, fields: {}, extras: { blocks, laps, warnings } };
 }
 
 // Bloques reales de "Intervalos" de una Carrera normal (ver
@@ -63,6 +63,55 @@ describe("fusion.merge — combinación de bloques entre la vista izquierda y de
         const { blocks } = merge([splitsResult([{ lap: 1, distance_km: 1, pace_min_km: "5:30" }])]);
 
         expect(blocks).toEqual([]);
+
+    });
+
+});
+
+// Ampliación del fix: las filas hijas de Intervalos (extras.laps, ver
+// parser-intervals-road.js) usan la misma forma que las de parser-splits.js
+// -- mergeLaps() ya es genérico sobre extras.laps de cualquier resultado,
+// así que se fusionan por el mismo camino sin ningún caso especial aquí.
+describe("fusion.merge — filas hijas de Intervalos (splits de 1 km) entran en `laps` como cualquier otra captura", () => {
+
+    it("combina, para el mismo split, la distancia/ritmo de la vista izquierda con la FC de la vista derecha", () => {
+
+        const leftView = intervalsRoadResult(
+            [{ lap: 1, type: "Carrera", duration: "1:05:44", distance_km: 11, pace_min_km: "5:59" }],
+            [
+                { lap: 1, distance_km: 1, pace_min_km: "5:17", numberingIsRelative: true },
+                { lap: 2, distance_km: 1, pace_min_km: "5:25", numberingIsRelative: true }
+            ]
+        );
+
+        const rightView = intervalsRoadResult(
+            [{ lap: 1, distance_km: 11, pace_min_km: "5:59", avg_heart_rate_bpm: 152, max_heart_rate_bpm: 159 }],
+            [
+                { lap: 1, distance_km: 1, pace_min_km: "5:17", avg_heart_rate_bpm: 140, max_heart_rate_bpm: 149, numberingIsRelative: true },
+                { lap: 2, distance_km: 1, pace_min_km: "5:25", avg_heart_rate_bpm: 151, max_heart_rate_bpm: 155, numberingIsRelative: true }
+            ]
+        );
+
+        const { laps } = merge([leftView, rightView]);
+
+        expect(laps).toEqual([
+            { lap: 1, distance_km: 1, pace_min_km: "5:17", avg_heart_rate_bpm: 140, max_heart_rate_bpm: 149 },
+            { lap: 2, distance_km: 1, pace_min_km: "5:25", avg_heart_rate_bpm: 151, max_heart_rate_bpm: 155 }
+        ]);
+
+    });
+
+    it("los avisos de descuadre bloque/filas hijas de una captura llegan a merged.warnings", () => {
+
+        const rightView = intervalsRoadResult(
+            [{ lap: 1, distance_km: 11, pace_min_km: "5:59", avg_heart_rate_bpm: 152, max_heart_rate_bpm: 159 }],
+            [{ lap: 1, distance_km: 1, pace_min_km: "5:17", avg_heart_rate_bpm: 140, max_heart_rate_bpm: 149, numberingIsRelative: true }],
+            ["El bloque 1 de Intervalos mide 11 km pero sus filas de 1 km suman 1.00 km -- revisar la captura."]
+        );
+
+        const { warnings } = merge([rightView]);
+
+        expect(warnings).toContain("El bloque 1 de Intervalos mide 11 km pero sus filas de 1 km suman 1.00 km -- revisar la captura.");
 
     });
 

@@ -246,6 +246,12 @@ export function merge(results) {
     const laps = mergeLaps(results);
     const blocks = mergeBlocks(results);
 
+    // Avisos generados por el propio parser de una captura (hoy solo
+    // parser-intervals-road.js, ver checkBlockChildSum) -- se agregan tal
+    // cual, sin deduplicar: cada captura avisa como mucho una vez por
+    // bloque real que no cuadra.
+    results.forEach(r => { if (Array.isArray(r.extras?.warnings)) warnings.push(...r.extras.warnings); });
+
     if (!data.title) warnings.push("Falta el título del entrenamiento.");
     if (!data.date) warnings.push("Falta la fecha del entrenamiento.");
     if (data.calories_kcal != null && data.distance_km != null && data.calories_kcal < data.distance_km * 25) {

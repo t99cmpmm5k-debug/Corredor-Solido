@@ -828,4 +828,45 @@ describe("RunningDetailView — RITMO POR INTERVALO (bloques reales de 'Interval
 
     });
 
+    // Ampliación del fix: las filas hijas de Intervalos (14 splits de 1 km
+    // reales, mismo entreno de 13,02 km -- ver parser-intervals-road.test.js)
+    // ahora entran en workout.splits, así que RITMO POR KILÓMETRO debe
+    // pintarse EXACTAMENTE igual que en cualquier otro entreno con Vueltas
+    // normales (mismo componente RunningPaceChart, cero rama nueva) -- la
+    // única diferencia real de este entreno es que ADEMÁS aparece RITMO POR
+    // INTERVALO encima, no en su lugar.
+    it("con las 14 filas hijas reales como splits, RITMO POR KILÓMETRO se pinta igual que en cualquier otro entreno (13 barras, tras descartar el remanente de 0,02 km) y RITMO POR INTERVALO aparece además con sus 2 bloques", () => {
+
+        const fourteenSplits = [
+            { lap: 1, distanceKm: 1, paceSecPerKm: 317 },
+            { lap: 2, distanceKm: 1, paceSecPerKm: 325 },
+            { lap: 3, distanceKm: 1, paceSecPerKm: 349 },
+            { lap: 4, distanceKm: 1, paceSecPerKm: 350 },
+            { lap: 5, distanceKm: 1, paceSecPerKm: 352 },
+            { lap: 6, distanceKm: 1, paceSecPerKm: 369 },
+            { lap: 7, distanceKm: 1, paceSecPerKm: 368 },
+            { lap: 8, distanceKm: 1, paceSecPerKm: 373 },
+            { lap: 9, distanceKm: 1, paceSecPerKm: 370 },
+            { lap: 10, distanceKm: 1, paceSecPerKm: 383 },
+            { lap: 11, distanceKm: 1, paceSecPerKm: 389 },
+            { lap: 12, distanceKm: 1, paceSecPerKm: 333 },
+            { lap: 13, distanceKm: 1, paceSecPerKm: 333 },
+            // Remanente real al parar el cronómetro -- se descarta del
+            // gráfico igual que en cualquier otro entreno (ver
+            // RESIDUAL_LAP_THRESHOLD_KM), no es un caso especial de Intervalos.
+            { lap: 14, distanceKm: 0.02, paceSecPerKm: 506 }
+        ];
+
+        const html = RunningDetailView(workout({ splits: fourteenSplits, intervals: twoIntervals, avgPaceSecPerKm: 355 }));
+
+        expect(html).toContain("RITMO POR KILÓMETRO");
+        expect(html).toContain("RITMO POR INTERVALO");
+
+        const [kmChartHtml, intervalChartHtml] = html.split("RITMO POR INTERVALO");
+
+        expect((kmChartHtml.match(/pace-chart-column/g) || [])).toHaveLength(13);
+        expect((intervalChartHtml.match(/pace-chart-column/g) || [])).toHaveLength(2);
+
+    });
+
 });
