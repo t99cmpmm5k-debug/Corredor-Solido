@@ -82,8 +82,8 @@ describe("fusion.merge — filas hijas de Intervalos (splits de 1 km) entran en 
         const rightView = intervalsRoadResult(
             [{ lap: 1, distance_km: 11, pace_min_km: "5:59", avg_heart_rate_bpm: 152, max_heart_rate_bpm: 159 }],
             [
-                { lap: 1, distance_km: 1, pace_min_km: "5:17", avg_heart_rate_bpm: 140, max_heart_rate_bpm: 149, numberingIsRelative: true },
-                { lap: 2, distance_km: 1, pace_min_km: "5:25", avg_heart_rate_bpm: 151, max_heart_rate_bpm: 155, numberingIsRelative: true }
+                { blockLap: 1, childIndex: 1, distance_km: 1, pace_min_km: "5:17", avg_heart_rate_bpm: 140, max_heart_rate_bpm: 149 },
+                { blockLap: 1, childIndex: 2, distance_km: 1, pace_min_km: "5:25", avg_heart_rate_bpm: 151, max_heart_rate_bpm: 155 }
             ]
         );
 
@@ -100,7 +100,7 @@ describe("fusion.merge — filas hijas de Intervalos (splits de 1 km) entran en 
 
         const rightView = intervalsRoadResult(
             [{ lap: 1, distance_km: 11, pace_min_km: "5:59", avg_heart_rate_bpm: 152, max_heart_rate_bpm: 159 }],
-            [{ lap: 1, distance_km: 1, pace_min_km: "5:17", avg_heart_rate_bpm: 140, max_heart_rate_bpm: 149, numberingIsRelative: true }],
+            [{ blockLap: 1, childIndex: 1, distance_km: 1, pace_min_km: "5:17", avg_heart_rate_bpm: 140, max_heart_rate_bpm: 149 }],
             ["El bloque 1 de Intervalos mide 11 km pero sus filas de 1 km suman 1.00 km -- revisar la captura."]
         );
 
@@ -124,11 +124,23 @@ describe("fusion.merge — filas hijas de Intervalos (splits de 1 km) entran en 
 // incluso con solape "verificado", un solo par de FC coincidente por
 // casualidad (un tramo estable de carrera repite el mismo ppm en varios km
 // reales distintos) basta para anclar un desplazamiento completamente
-// falso. Reproducido abajo con las capturas reales de este mismo entreno
-// (mismo texto que parser-intervals-road.test.js/garmin-parser.test.js).
-describe("fusion.merge — mergeSingleIntervalsRoadCapture: varias capturas de Intervalos NUNCA se combinan por número de vuelta", () => {
+// falso.
+//
+// El fix de 540d26c corrigió esto usando UNA sola captura entera (la más
+// completa) y descartando las demás -- pero eso resultó ser demasiado
+// drástico: la vista izquierda (Tipo/Tiempo/Distancia/Ritmo) es casi
+// siempre la más completa y NUNCA trae FC (esa columna no existe ahí), así
+// que ganaba siempre y la FC real de la vista derecha (con FC) se perdía
+// al 100 % -- bug reportado por el usuario tras verificar a mano en Garmin
+// Connect que cada split sí tiene FC real. mergeIntervalsRoadLaps()
+// combina ahora por POSICIÓN real (blockLap + childIndex, ver
+// parser-intervals-road.js) en vez de por solape/fallback de número de
+// vuelta: el número de bloque SÍ es absoluto, así que es una referencia
+// segura para saber que dos filas de capturas distintas hablan del mismo
+// km real, sin necesidad de adivinar ningún desplazamiento.
+describe("fusion.merge — mergeIntervalsRoadLaps: varias capturas de Intervalos se combinan por posición real (bloque + índice dentro del bloque)", () => {
 
-    it("reproduce el bug real: combinar 3 capturas de Intervalos por solape/fallback generaba 21 filas con ritmos duplicados (5:33 x2, 8:26 x2) y números negativos -- con el fix, se usa solo la más completa (14 filas, la vista izquierda)", () => {
+    it("reproduce el bug real reportado: con las 3 capturas reales de este entreno, la FC de la vista derecha sobrevive al merge en vez de perderse por completo", () => {
 
         // Las 3 capturas reales de este entreno (mismos ritmos que
         // REAL_LEFT_VIEW_TEXT en parser-intervals-road.test.js): vista
@@ -136,89 +148,169 @@ describe("fusion.merge — mergeSingleIntervalsRoadCapture: varias capturas de I
         // distancia (parcial, 4 de las 11 filas del bloque 1, con FC) y
         // vista derecha sin distancia (parcial, 1 fila, con FC).
         const left14Paces = ["5:17", "5:25", "5:49", "5:50", "5:52", "6:09", "6:08", "6:13", "6:10", "6:23", "6:29", "5:33", "5:33", "8:26"];
-        const left14 = intervalsRoadResult([], left14Paces.map((pace, i) => ({
-            lap: i + 1, distance_km: i < 13 ? 1 : 0.02, pace_min_km: pace, numberingIsRelative: true
-        })));
+        const left14 = intervalsRoadResult([], left14Paces.map((pace, i) => {
+            const inBlock1 = i < 11;
+            return {
+                blockLap: inBlock1 ? 1 : 2,
+                childIndex: inBlock1 ? i + 1 : i - 10,
+                distance_km: i < 13 ? 1 : 0.02,
+                pace_min_km: pace
+            };
+        }));
 
         const rightPartial4 = intervalsRoadResult([], [
-            { lap: 1, distance_km: 1, pace_min_km: "5:17", avg_heart_rate_bpm: 140, max_heart_rate_bpm: 149, numberingIsRelative: true },
-            { lap: 2, distance_km: 1, pace_min_km: "5:25", avg_heart_rate_bpm: 151, max_heart_rate_bpm: 155, numberingIsRelative: true },
-            { lap: 3, distance_km: 1, pace_min_km: "5:49", avg_heart_rate_bpm: 154, max_heart_rate_bpm: 157, numberingIsRelative: true },
-            { lap: 4, distance_km: 1, pace_min_km: "5:50", avg_heart_rate_bpm: 153, max_heart_rate_bpm: 157, numberingIsRelative: true }
+            { blockLap: 1, childIndex: 1, distance_km: 1, pace_min_km: "5:17", avg_heart_rate_bpm: 140, max_heart_rate_bpm: 149 },
+            { blockLap: 1, childIndex: 2, distance_km: 1, pace_min_km: "5:25", avg_heart_rate_bpm: 151, max_heart_rate_bpm: 155 },
+            { blockLap: 1, childIndex: 3, distance_km: 1, pace_min_km: "5:49", avg_heart_rate_bpm: 154, max_heart_rate_bpm: 157 },
+            { blockLap: 1, childIndex: 4, distance_km: 1, pace_min_km: "5:50", avg_heart_rate_bpm: 153, max_heart_rate_bpm: 157 }
         ]);
 
+        // Fila huérfana (sin blockLap -- el bloque 1 al que en realidad
+        // pertenece quedó recortado por encima del encuadre de esta
+        // captura), pero sin ningún bloque propio detrás tampoco (extras.
+        // blocks=[]) -- no hay ninguna referencia con la que posicionarla,
+        // así que se descarta (más seguro que adivinar), a diferencia del
+        // caso "TAIL" de más abajo, que sí trae su propio bloque siguiente.
         const rightNoDistPartial1 = intervalsRoadResult([], [
-            { lap: 1, pace_min_km: "6:10", avg_heart_rate_bpm: 154, max_heart_rate_bpm: 157, numberingIsRelative: true }
+            { blockLap: null, childIndex: 1, pace_min_km: "6:10", avg_heart_rate_bpm: 154, max_heart_rate_bpm: 157 }
         ]);
 
         const { laps } = merge([rightPartial4, rightNoDistPartial1, left14]);
 
-        // Antes del fix (mergeLapsFromResults reutilizada aquí): 21 filas,
-        // con "km" negativos y ritmos repetidos (5:33 y 8:26 aparecían dos
-        // veces cada uno, en posiciones muy distintas -- una vez sin FC,
-        // otra con FC prestada de una captura sin relación real). Con el
-        // fix: exactamente las 14 filas de la captura más completa
-        // (left14), en el mismo orden, sin ninguna aportación de las otras
-        // dos capturas descartadas.
+        // Las 14 filas de la columna vertebral (left14), en el mismo orden
+        // y sin duplicados/huecos -- y ahora CON la FC real recuperada de
+        // rightPartial4 en las posiciones 1-4 (las únicas para las que hay
+        // una captura con FC y posición verificable). rightNoDistPartial1
+        // se descarta entera (sin ancla), tal como debe ser.
         expect(laps).toHaveLength(14);
         expect(laps.map(l => l.lap)).toEqual(Array.from({ length: 14 }, (_, i) => i + 1));
         expect(laps.map(l => l.pace_min_km)).toEqual(left14Paces);
-        expect(laps.every(l => l.avg_heart_rate_bpm == null)).toBe(true); // ninguna FC prestada de las otras capturas
+        expect(laps.slice(0, 4).map(l => `${l.avg_heart_rate_bpm}/${l.max_heart_rate_bpm}`)).toEqual([
+            "140/149", "151/155", "154/157", "153/157"
+        ]);
+        expect(laps.slice(4).every(l => l.avg_heart_rate_bpm == null)).toBe(true);
 
     });
 
-    it("con dos capturas de Intervalos con el mismo número de filas, gana la que trae FC -- nunca se combinan entre sí", () => {
+    it("una fila huérfana (sin blockLap) SÍ se recupera cuando la misma captura trae después su propio bloque siguiente", () => {
+
+        // Cola real del bloque 1 (posiciones 9-11, ver REAL_RIGHT_VIEW_NO_
+        // DIST_TEXT en parser-intervals-road.test.js): el bloque 1 nunca
+        // aparece en esta captura (recortado por encima), pero el bloque 2
+        // sí -- eso basta para inferir con seguridad que estas 3 filas son
+        // las últimas 3 del bloque 1, siempre que otra captura ya confirme
+        // que el bloque 1 tiene 11 filas hijas en total.
+        const left14Paces = ["5:17", "5:25", "5:49", "5:50", "5:52", "6:09", "6:08", "6:13", "6:10", "6:23", "6:29", "5:33", "5:33", "8:26"];
+        const left14 = intervalsRoadResult([], left14Paces.map((pace, i) => {
+            const inBlock1 = i < 11;
+            return {
+                blockLap: inBlock1 ? 1 : 2,
+                childIndex: inBlock1 ? i + 1 : i - 10,
+                distance_km: i < 13 ? 1 : 0.02,
+                pace_min_km: pace
+            };
+        }));
+
+        const tailNoBlock1Header = intervalsRoadResult(
+            [{ lap: 2, pace_min_km: "5:35", avg_heart_rate_bpm: 159, max_heart_rate_bpm: 165 }],
+            [
+                { blockLap: null, childIndex: 1, pace_min_km: "6:10", avg_heart_rate_bpm: 154, max_heart_rate_bpm: 157 },
+                { blockLap: null, childIndex: 2, pace_min_km: "6:23", avg_heart_rate_bpm: 154, max_heart_rate_bpm: 157 },
+                { blockLap: null, childIndex: 3, pace_min_km: "6:29", avg_heart_rate_bpm: 153, max_heart_rate_bpm: 156 }
+            ]
+        );
+
+        const { laps } = merge([left14, tailNoBlock1Header]);
+
+        expect(laps).toHaveLength(14);
+        // Posiciones 9, 10, 11 (0-indexed 8-10) son las que la cola resuelve.
+        expect(laps.slice(8, 11).map(l => `${l.avg_heart_rate_bpm}/${l.max_heart_rate_bpm}`)).toEqual([
+            "154/157", "154/157", "153/156"
+        ]);
+        expect(laps.slice(0, 8).every(l => l.avg_heart_rate_bpm == null)).toBe(true);
+        expect(laps.slice(11).every(l => l.avg_heart_rate_bpm == null)).toBe(true);
+
+    });
+
+    it("con dos capturas de Intervalos con el mismo número de filas y la misma posición real, se combinan campo a campo", () => {
 
         const withoutHr = intervalsRoadResult([], [
-            { lap: 1, distance_km: 1, pace_min_km: "5:17", numberingIsRelative: true },
-            { lap: 2, distance_km: 1, pace_min_km: "5:25", numberingIsRelative: true }
+            { blockLap: 1, childIndex: 1, distance_km: 1, pace_min_km: "5:17" },
+            { blockLap: 1, childIndex: 2, distance_km: 1, pace_min_km: "5:25" }
         ]);
 
         const withHr = intervalsRoadResult([], [
-            { lap: 1, pace_min_km: "5:17", avg_heart_rate_bpm: 140, max_heart_rate_bpm: 149, numberingIsRelative: true },
-            { lap: 2, pace_min_km: "5:25", avg_heart_rate_bpm: 151, max_heart_rate_bpm: 155, numberingIsRelative: true }
+            { blockLap: 1, childIndex: 1, pace_min_km: "5:17", avg_heart_rate_bpm: 140, max_heart_rate_bpm: 149 },
+            { blockLap: 1, childIndex: 2, pace_min_km: "5:25", avg_heart_rate_bpm: 151, max_heart_rate_bpm: 155 }
         ]);
 
         const { laps } = merge([withoutHr, withHr]);
 
-        // Gana withHr entera -- withoutHr se descarta por completo, así
-        // que la distancia de withoutHr NO aparece (no se combinan).
+        // Misma posición real (mismo blockLap/childIndex) en las dos
+        // capturas -- se combinan campo a campo, como los bloques.
         expect(laps).toEqual([
-            { lap: 1, pace_min_km: "5:17", avg_heart_rate_bpm: 140, max_heart_rate_bpm: 149 },
-            { lap: 2, pace_min_km: "5:25", avg_heart_rate_bpm: 151, max_heart_rate_bpm: 155 }
+            { lap: 1, distance_km: 1, pace_min_km: "5:17", avg_heart_rate_bpm: 140, max_heart_rate_bpm: 149 },
+            { lap: 2, distance_km: 1, pace_min_km: "5:25", avg_heart_rate_bpm: 151, max_heart_rate_bpm: 155 }
         ]);
 
     });
 
-    it("false-positive verificado: un solo par de FC coincidente por casualidad entre dos capturas distintas NO debe usarse como ancla -- ya no se intenta ningún anclaje entre capturas de Intervalos", () => {
+    it("false-positive verificado: un solo par de FC coincidente por casualidad entre dos capturas distintas NO debe usarse como ancla -- sin blockLap, la fila se descarta en vez de emparejarse por FC", () => {
 
-        // captureA: 1 fila real, hr=154/157 (dato real de un km cualquiera).
+        // captureA: 1 fila huérfana (sin blockLap, sin ningún bloque propio
+        // en esta captura), hr=154/157 (dato real de un km cualquiera).
         const captureA = intervalsRoadResult([], [
-            { lap: 1, pace_min_km: "6:10", avg_heart_rate_bpm: 154, max_heart_rate_bpm: 157, numberingIsRelative: true }
+            { blockLap: null, childIndex: 1, pace_min_km: "6:10", avg_heart_rate_bpm: 154, max_heart_rate_bpm: 157 }
         ]);
 
-        // captureB: 4 filas reales de OTRO tramo del entreno -- por pura
-        // coincidencia (tramo estable en Z2), su 3ª fila comparte
-        // EXACTAMENTE el mismo par de FC (154/157) que captureA, sin ser
-        // el mismo km real. Antes del fix, esto anclaba un desplazamiento
-        // de -2 y numeraba filas con "km" 0 y negativos.
+        // captureB: 4 filas reales del bloque 1 -- por pura coincidencia
+        // (tramo estable en Z2), su 3ª fila comparte EXACTAMENTE el mismo
+        // par de FC (154/157) que captureA, sin ser el mismo km real.
+        // Antes del fix "único ganador" esto ya no podía anclar nada (ver
+        // commit 540d26c); con mergeIntervalsRoadLaps, sin blockLap y sin
+        // ningún bloque propio detrás en captureA, ni siquiera se intenta
+        // resolver su posición -- se descarta sin más.
         const captureB = intervalsRoadResult([], [
-            { lap: 1, distance_km: 1, pace_min_km: "5:17", avg_heart_rate_bpm: 140, max_heart_rate_bpm: 149, numberingIsRelative: true },
-            { lap: 2, distance_km: 1, pace_min_km: "5:25", avg_heart_rate_bpm: 151, max_heart_rate_bpm: 155, numberingIsRelative: true },
-            { lap: 3, distance_km: 1, pace_min_km: "5:49", avg_heart_rate_bpm: 154, max_heart_rate_bpm: 157, numberingIsRelative: true },
-            { lap: 4, distance_km: 1, pace_min_km: "5:50", avg_heart_rate_bpm: 153, max_heart_rate_bpm: 157, numberingIsRelative: true }
+            { blockLap: 1, childIndex: 1, distance_km: 1, pace_min_km: "5:17", avg_heart_rate_bpm: 140, max_heart_rate_bpm: 149 },
+            { blockLap: 1, childIndex: 2, distance_km: 1, pace_min_km: "5:25", avg_heart_rate_bpm: 151, max_heart_rate_bpm: 155 },
+            { blockLap: 1, childIndex: 3, distance_km: 1, pace_min_km: "5:49", avg_heart_rate_bpm: 154, max_heart_rate_bpm: 157 },
+            { blockLap: 1, childIndex: 4, distance_km: 1, pace_min_km: "5:50", avg_heart_rate_bpm: 153, max_heart_rate_bpm: 157 }
         ]);
 
         const { laps } = merge([captureA, captureB]);
 
-        // captureB gana (más filas) entera y tal cual -- ningún número
-        // negativo, cero, ni ningún intento de anclar captureA contra ella.
+        // captureB gana (más filas) tal cual -- captureA se descarta
+        // entera, ningún número negativo ni cero, ninguna FC prestada.
         expect(laps.every(l => l.lap >= 1)).toBe(true);
         expect(laps).toEqual([
             { lap: 1, distance_km: 1, pace_min_km: "5:17", avg_heart_rate_bpm: 140, max_heart_rate_bpm: 149 },
             { lap: 2, distance_km: 1, pace_min_km: "5:25", avg_heart_rate_bpm: 151, max_heart_rate_bpm: 155 },
             { lap: 3, distance_km: 1, pace_min_km: "5:49", avg_heart_rate_bpm: 154, max_heart_rate_bpm: 157 },
             { lap: 4, distance_km: 1, pace_min_km: "5:50", avg_heart_rate_bpm: 153, max_heart_rate_bpm: 157 }
+        ]);
+
+    });
+
+    it("desalineación detectada por ritmo: si dos capturas discrepan en el ritmo de la misma posición real, no se fusiona ningún campo de esa fila (más seguro que pegar FC de un km en otro)", () => {
+
+        const captureA = intervalsRoadResult([], [
+            { blockLap: 1, childIndex: 1, distance_km: 1, pace_min_km: "5:17" }
+        ]);
+
+        // Misma posición real (blockLap 1, childIndex 1) pero con un ritmo
+        // distinto -- una de las dos capturas se desalineó de verdad.
+        const captureB = intervalsRoadResult([], [
+            { blockLap: 1, childIndex: 1, pace_min_km: "5:59", avg_heart_rate_bpm: 152, max_heart_rate_bpm: 159 }
+        ]);
+
+        const { laps } = merge([captureA, captureB]);
+
+        // Empate a 1 fila -- gana captureB (trae FC) como columna
+        // vertebral; el ritmo de captureA no coincide en esa misma
+        // posición real, así que ninguno de sus campos (aquí, distance_km)
+        // se fusiona -- captureB queda tal cual llegó.
+        expect(laps).toEqual([
+            { lap: 1, pace_min_km: "5:59", avg_heart_rate_bpm: 152, max_heart_rate_bpm: 159 }
         ]);
 
     });
@@ -292,8 +384,8 @@ describe("fusion.merge — Vueltas reales + Intervalos del mismo entreno no se m
     it("sin ninguna captura real de Vueltas, las filas hijas de Intervalos SÍ se usan (el caso para el que se diseñaron)", () => {
 
         const intervalsOnly = intervalsRoadResult([], [
-            { lap: 1, distance_km: 1, pace_min_km: "5:17", numberingIsRelative: true },
-            { lap: 2, distance_km: 1, pace_min_km: "5:25", numberingIsRelative: true }
+            { blockLap: 1, childIndex: 1, distance_km: 1, pace_min_km: "5:17" },
+            { blockLap: 1, childIndex: 2, distance_km: 1, pace_min_km: "5:25" }
         ]);
 
         const { laps } = merge([intervalsOnly]);

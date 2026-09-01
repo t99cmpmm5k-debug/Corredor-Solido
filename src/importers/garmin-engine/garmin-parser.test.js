@@ -221,11 +221,26 @@ describe("garmin-parser.parse — Intervalos de una Carrera normal (bloques real
 
     const EXPECTED_14_PACES = ["5:17", "5:25", "5:49", "5:50", "5:52", "6:09", "6:08", "6:13", "6:10", "6:23", "6:29", "5:33", "5:33", "8:26"];
 
+    // Bug real reportado por el usuario tras el fix del "km 17"/"km 19"
+    // (commits 816c120/540d26c): el orden y count de splits ya eran
+    // correctos, pero la FC real (verificada a mano por el usuario contra
+    // Garmin Connect: split 3 → 154/157, entre otros) desaparecía por
+    // completo -- REAL_RIGHT_VIEW_TEXT (la única de las 3 capturas con FC)
+    // se descartaba entera porque REAL_LEFT_VIEW_TEXT (sin FC) tiene más
+    // filas. null en las posiciones 5-11 es correcto y esperado: ninguna de
+    // las 3 capturas de este fixture aporta FC verificable para esas
+    // posiciones concretas (no se inventa).
+    const EXPECTED_14_HR = [
+        "140/149", "151/155", "154/157", "153/157",
+        "null/null", "null/null", "null/null", "null/null", "null/null", "null/null", "null/null",
+        "159/161", "160/165", "158/160"
+    ];
+
     it.each([
         ["izquierda, derecha-con-dist, derecha-sin-dist", () => [REAL_LEFT_VIEW_TEXT, REAL_RIGHT_VIEW_TEXT, REAL_INTERVALS_ROAD]],
         ["derecha-con-dist, derecha-sin-dist, izquierda", () => [REAL_RIGHT_VIEW_TEXT, REAL_INTERVALS_ROAD, REAL_LEFT_VIEW_TEXT]],
         ["derecha-sin-dist, izquierda, derecha-con-dist", () => [REAL_INTERVALS_ROAD, REAL_LEFT_VIEW_TEXT, REAL_RIGHT_VIEW_TEXT]]
-    ])("orden de subida %s: workout.splits tiene exactamente 14 splits reales, sin duplicados ni fuera de rango", (_label, getTexts) => {
+    ])("orden de subida %s: workout.splits tiene exactamente 14 splits reales, sin duplicados ni fuera de rango, y conserva la FC real de la vista derecha", (_label, getTexts) => {
 
         const results = getTexts().map(parse);
         const merged = merge(results);
@@ -240,6 +255,8 @@ describe("garmin-parser.parse — Intervalos de una Carrera normal (bloques real
             return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`;
         });
         expect(paces).toEqual(EXPECTED_14_PACES);
+
+        expect(workout.splits.map(s => `${s.avgHr}/${s.maxHr}`)).toEqual(EXPECTED_14_HR);
 
     });
 

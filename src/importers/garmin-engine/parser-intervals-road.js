@@ -79,9 +79,10 @@ function checkBlockChildSum(block, childSumKm, warnings) {
 // filas hijas (submuestras de ~1 km sin número en "Int."): a diferencia del
 // intento anterior (que las descartaba, ver el commit b28fa65), SÍ son
 // splits reales de 1 km con ritmo real de Garmin -- igual de fiables que
-// los de la vista clásica "Vueltas" (parser-splits.js), así que se numeran
-// y devuelven en `extras.laps` con la misma forma que esa vista, para que
-// fusion.js/garmin.js las fusionen en `workout.splits` por el mismo camino
+// los de la vista clásica "Vueltas" (parser-splits.js), así que se anclan
+// a su bloque real (blockLap/childIndex, ver más abajo) y se devuelven en
+// `extras.laps` para que fusion.js las combine entre capturas y las
+// renumere 1..N antes de que garmin.js las fusione en `workout.splits`
 // (RITMO POR KILÓMETRO no distingue de dónde vino cada split).
 export function parse(text) {
     const raw = U.cleanText(text);
@@ -94,13 +95,21 @@ export function parse(text) {
     const laps = [];
     const warnings = [];
 
-    // Las filas hijas no traen número de "Int." -- se numeran por orden de
-    // aparición en la captura, igual que parseHrRows() en parser-splits.js,
-    // y por el mismo motivo llevan numberingIsRelative: si el entreno no
-    // cupo en una sola captura, fusion.js ya sabe realinearlas contra otra
-    // captura de la misma pantalla (por solape de FC) en vez de asumir que
-    // el "1" de la segunda es de verdad la vuelta 1.
-    let lapCounter = 0;
+    // Las filas hijas no traen número de "Int." -- a diferencia de la tabla
+    // de Vueltas desplazada (parser-splits.js), aquí SÍ hay una referencia
+    // absoluta cerca: el número de bloque real que las precede en la propia
+    // captura (currentBlock.lap). Cada fila hija se ancla a ese bloque más
+    // su posición dentro de él (childIndex, reiniciado en cada bloque) --
+    // esa pareja (blockLap, childIndex) es una posición real y estable, a
+    // diferencia del contador global usado antes (numberingIsRelative), que
+    // no sobrevivía a combinar varias capturas parciales de esta misma
+    // pantalla (bug real: hasta 21 filas con duplicados, ver fusion.js).
+    // Si una fila hija aparece ANTES de ver ningún bloque en esta captura
+    // (recortada por scroll, el bloque que la precede quedó por encima del
+    // encuadre), blockLap queda null aquí -- fusion.js la resuelve después
+    // si esta misma captura muestra más adelante el siguiente bloque
+    // (mergeIntervalsRoadLaps), o la descarta si no hay ninguna referencia.
+    let childIndexInBlock = 0;
 
     // Bloque cuyas filas hijas se están acumulando ahora mismo, para poder
     // comparar su distancia contra la suma de esas filas en cuanto se sabe
@@ -119,6 +128,7 @@ export function parse(text) {
         const leftBlock = line.match(LEFT_BLOCK_ROW);
         if (leftBlock) {
             closeCurrentBlock();
+            childIndexInBlock = 0;
             currentBlock = {
                 lap: Number(leftBlock[1]),
                 type: leftBlock[2],
@@ -134,10 +144,10 @@ export function parse(text) {
         if (leftChild) {
             const distanceKm = U.num(leftChild[3]);
             laps.push({
-                lap: ++lapCounter,
+                blockLap: currentBlock ? currentBlock.lap : null,
+                childIndex: ++childIndexInBlock,
                 distance_km: distanceKm,
-                pace_min_km: U.pace(leftChild[4]),
-                numberingIsRelative: true
+                pace_min_km: U.pace(leftChild[4])
             });
             if (distanceKm != null) childSumKm += distanceKm;
             continue;
@@ -146,6 +156,7 @@ export function parse(text) {
         const rightBlock = line.match(RIGHT_BLOCK_ROW);
         if (rightBlock) {
             closeCurrentBlock();
+            childIndexInBlock = 0;
             currentBlock = {
                 lap: Number(rightBlock[1]),
                 distance_km: U.num(rightBlock[2]),
@@ -161,12 +172,12 @@ export function parse(text) {
         if (rightChild) {
             const distanceKm = U.num(rightChild[1]);
             laps.push({
-                lap: ++lapCounter,
+                blockLap: currentBlock ? currentBlock.lap : null,
+                childIndex: ++childIndexInBlock,
                 distance_km: distanceKm,
                 pace_min_km: U.pace(rightChild[2]),
                 avg_heart_rate_bpm: U.num(rightChild[3]),
-                max_heart_rate_bpm: U.num(rightChild[4]),
-                numberingIsRelative: true
+                max_heart_rate_bpm: U.num(rightChild[4])
             });
             if (distanceKm != null) childSumKm += distanceKm;
             continue;
@@ -175,6 +186,7 @@ export function parse(text) {
         const rightBlockNoDist = line.match(RIGHT_BLOCK_ROW_NO_DIST);
         if (rightBlockNoDist) {
             closeCurrentBlock();
+            childIndexInBlock = 0;
             currentBlock = {
                 lap: Number(rightBlockNoDist[1]),
                 pace_min_km: U.pace(rightBlockNoDist[2]),
@@ -188,11 +200,11 @@ export function parse(text) {
         const rightChildNoDist = line.match(RIGHT_CHILD_ROW_NO_DIST);
         if (rightChildNoDist) {
             laps.push({
-                lap: ++lapCounter,
+                blockLap: currentBlock ? currentBlock.lap : null,
+                childIndex: ++childIndexInBlock,
                 pace_min_km: U.pace(rightChildNoDist[1]),
                 avg_heart_rate_bpm: U.num(rightChildNoDist[2]),
-                max_heart_rate_bpm: U.num(rightChildNoDist[3]),
-                numberingIsRelative: true
+                max_heart_rate_bpm: U.num(rightChildNoDist[3])
             });
         }
 

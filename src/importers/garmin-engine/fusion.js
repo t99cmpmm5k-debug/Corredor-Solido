@@ -179,47 +179,53 @@ function mergeLapsFromResults(results) {
 // por bloque) y las filas hijas de Intervalos se descartan enteras: no hay
 // forma fiable de saber a qué kilómetro real corresponden. Solo si NO hay
 // ninguna captura de Vueltas se usan las de Intervalos -- ver
-// mergeSingleIntervalsRoadCapture() para por qué, DENTRO de esa familia,
-// tampoco se combinan varias capturas de Intervalos entre sí.
+// mergeIntervalsRoadLaps() para cómo se combinan varias capturas de
+// Intervalos entre sí DENTRO de esa familia.
 function mergeLaps(results) {
 
     const splitsFamily = results.filter(r => r.parser?.startsWith("splits"));
     const fromSplits = mergeLapsFromResults(splitsFamily);
     if (fromSplits.length) return fromSplits;
 
-    return mergeSingleIntervalsRoadCapture(results);
+    return mergeIntervalsRoadLaps(results);
 
 }
 
 // A diferencia de Vueltas (mergeLapsFromResults, con su mecanismo de
 // solape/fallback pensado para varios RE-SCROLLS genuinos de la MISMA
-// tabla continua), las capturas de Intervalos NUNCA se combinan entre sí
-// por número de vuelta relativo -- verificado real, con las propias
-// capturas de este entreno de 13,02 km, que ese mecanismo rompe de dos
-// formas distintas aquí: (a) sin solape real detectable, el fallback
+// tabla continua), las capturas de Intervalos NUNCA se combinan por número
+// de vuelta relativo ni por solape de FC -- verificado real, con las
+// propias capturas de este entreno de 13,02 km, que ese mecanismo rompe de
+// dos formas distintas aquí: (a) sin solape real detectable, el fallback
 // "continúa tras la última vuelta conocida" ancla contra un número que no
-// tiene ninguna relación real con esta captura -- mismo tipo de bug que el
-// del "km 17" entre familias, pero DENTRO de la propia familia de
-// Intervalos (reproducido real: hasta 21 filas, con duplicados exactos de
-// ritmo como los "6:09/6:08/6:13" y "5:33/5:33" del reporte, y el
-// remanente real de 0,02 km/8:26 apareciendo repetido); (b) incluso con
-// solape "verificado" (un par de FC coincidente EXACTO), un solo tramo de
-// carrera estable repite el mismo ppm con total normalidad en varios km
-// reales distintos -- un solo par no es evidencia suficiente, y anclar el
-// desplazamiento contra él produjo vueltas con número NEGATIVO en la
-// reproducción real. No hay ninguna señal fiable con la que stitchear
-// capturas parciales de Intervalos sin arriesgarse a inventar una
-// posición -- así que, en vez de intentarlo, se usa UNA sola captura: la
-// más completa (más filas hijas; a igualdad de filas, la que además trae
-// FC). Las demás capturas de Intervalos se descartan enteras para
-// `laps` -- sus bloques (mergeBlocks) sí se siguen fusionando igual,
-// independiente de esto.
-function mergeSingleIntervalsRoadCapture(results) {
+// tiene ninguna relación real con esta captura; (b) incluso con solape
+// "verificado" (un par de FC coincidente EXACTO), un solo tramo de carrera
+// estable repite el mismo ppm con total normalidad en varios km reales
+// distintos -- un solo par no es evidencia suficiente.
+//
+// En vez de eso, se combinan por POSICIÓN real: cada fila hija ya viene de
+// parser-intervals-road.js anclada a su bloque real (blockLap) y a su
+// orden dentro de él (childIndex) -- el número de bloque SÍ es absoluto
+// (no relativo a la captura, a diferencia de la numeración de Vueltas), así
+// que (blockLap, childIndex) identifica el mismo kilómetro físico en
+// cualquier captura de esta pantalla, sea cual sea su recorte de scroll.
+// Esto es lo que permite recuperar la FC real de una captura parcial de la
+// vista derecha (que casi nunca cabe entera) sin arriesgarse al bug de
+// duplicados/km fuera de rango que tenía el intento anterior (offset
+// global + solape de FC).
+//
+// Se parte de la captura más completa (más filas hijas; a igualdad, la que
+// además trae FC) como "columna vertebral": su orden y distancias ya están
+// verificados (checkBlockChildSum), así que fijan la lista final. Las
+// demás capturas solo APORTAN campos que falten (typicamente FC) en las
+// posiciones donde se puede confirmar que hablan del mismo km -- nunca
+// sustituyen ni reordenan la columna vertebral.
+function mergeIntervalsRoadLaps(results) {
 
     const candidates = results.filter(r => r.parser?.startsWith("intervals-road") && r.extras?.laps?.length);
     if (!candidates.length) return [];
 
-    const best = candidates.reduce((a, b) => {
+    const backbone = candidates.reduce((a, b) => {
         if (b.extras.laps.length !== a.extras.laps.length) {
             return b.extras.laps.length > a.extras.laps.length ? b : a;
         }
@@ -228,9 +234,93 @@ function mergeSingleIntervalsRoadCapture(results) {
         return (bHasHr && !aHasHr) ? b : a;
     });
 
-    return best.extras.laps
-        .map(({ numberingIsRelative, ...lap }) => lap)
-        .sort((a, b) => a.lap - b.lap);
+    // Copia mutable de la columna vertebral, en su orden original -- ese
+    // orden ya es el real (viene de una única captura sin mezclar).
+    const merged = backbone.extras.laps.map(lap => ({ ...lap }));
+
+    // Cuántas filas hijas conoce la columna vertebral por bloque -- hace
+    // falta para poder resolver una fila hija de OTRA captura que aparezca
+    // antes de ver ningún bloque en ESA captura (recortada por scroll, ver
+    // resolveLeadingRun más abajo).
+    const blockChildCount = new Map();
+    merged.forEach(lap => {
+        if (lap.blockLap == null) return;
+        const count = blockChildCount.get(lap.blockLap) ?? 0;
+        if (lap.childIndex > count) blockChildCount.set(lap.blockLap, lap.childIndex);
+    });
+
+    const positionByKey = new Map();
+    merged.forEach((lap, index) => {
+        if (lap.blockLap != null) positionByKey.set(`${lap.blockLap}:${lap.childIndex}`, index);
+    });
+
+    // Una fila hija sin blockLap apareció antes de ver ningún bloque EN ESA
+    // captura (el bloque que la precede de verdad quedó recortado por
+    // encima del encuadre). Si esa misma captura sí muestra más adelante el
+    // primer bloque siguiente, se puede inferir con seguridad de qué bloque
+    // se trata (el anterior a ese) y su posición real dentro de él, usando
+    // cuántas filas hijas tiene ese bloque según la columna vertebral --
+    // nunca al revés (la columna vertebral nunca se corrige con esto).
+    function resolveLeadingRun(leadingRows, nextKnownBlockLap) {
+
+        if (nextKnownBlockLap == null) return []; // toda la captura es anónima -- sin ninguna referencia, se descarta entera.
+
+        const resolvedBlock = nextKnownBlockLap - 1;
+        const knownCount = blockChildCount.get(resolvedBlock);
+        if (resolvedBlock < 1 || knownCount == null) return [];
+
+        const startIndex = knownCount - leadingRows.length + 1;
+        if (startIndex < 1) return []; // la captura dice tener más filas de ese bloque de las que la columna vertebral conoce -- no se puede posicionar con seguridad.
+
+        return leadingRows.map((lap, i) => ({ ...lap, blockLap: resolvedBlock, childIndex: startIndex + i }));
+
+    }
+
+    candidates.forEach(result => {
+        if (result === backbone) return;
+
+        const laps = result.extras.laps;
+        const firstKnownIndex = laps.findIndex(l => l.blockLap != null);
+        const leadingRows = firstKnownIndex === -1 ? laps : laps.slice(0, firstKnownIndex);
+        const knownRows = firstKnownIndex === -1 ? [] : laps.slice(firstKnownIndex);
+
+        // El bloque que sigue a la fila hija huérfana no siempre trae más
+        // filas hijas propias detrás EN ESTA MISMA captura (puede acabar
+        // justo en la fila de bloque, ver REAL_RIGHT_VIEW_NO_DIST_TEXT) --
+        // así que la referencia real es la propia fila de bloque
+        // (extras.blocks[0], el primer bloque que aparece en esta captura,
+        // que por construcción es siempre el que sigue a la fila huérfana:
+        // blockLap solo es null ANTES de ver el primer bloque de la
+        // captura), no la siguiente fila hija con blockLap conocido.
+        const nextKnownBlockLap = result.extras.blocks?.[0]?.lap ?? knownRows[0]?.blockLap ?? null;
+
+        const resolvedLeading = leadingRows.length ? resolveLeadingRun(leadingRows, nextKnownBlockLap) : [];
+
+        [...resolvedLeading, ...knownRows].forEach(lap => {
+
+            const position = positionByKey.get(`${lap.blockLap}:${lap.childIndex}`);
+            if (position == null) return; // la columna vertebral no tiene esta posición -- no se inventa una fila nueva.
+
+            const target = merged[position];
+
+            // Si ambas capturas traen ritmo para la misma posición y no
+            // coincide, no son en realidad el mismo km real -- alguna de
+            // las dos se desalineó. Más seguro no fusionar nada de esa fila
+            // que arriesgarse a pegar la FC de un km en el ritmo de otro.
+            if (target.pace_min_km != null && lap.pace_min_km != null && target.pace_min_km !== lap.pace_min_km) return;
+
+            Object.entries(lap).forEach(([key, value]) => {
+                if (value != null && target[key] == null) target[key] = value;
+            });
+
+        });
+
+    });
+
+    // El orden ya es el correcto -- es el de la columna vertebral tal cual
+    // vino de una única captura sin mezclar; aquí solo se renumera de forma
+    // secuencial y se quitan los campos de posicionamiento internos.
+    return merged.map(({ blockLap, childIndex, ...lap }, index) => ({ ...lap, lap: index + 1 }));
 
 }
 

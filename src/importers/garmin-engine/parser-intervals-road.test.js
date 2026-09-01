@@ -66,16 +66,16 @@ describe("parser-intervals-road — vista izquierda (Int./Tipo/Tiempo/Distancia/
     // (lap/distance_km/pace_min_km), para que fusion.js/garmin.js las
     // fusionen en workout.splits por el mismo camino que cualquier otro
     // entreno (RITMO POR KILÓMETRO no distingue el origen del split).
-    it("extrae las 14 filas hijas (11 del bloque 1 + 3 del bloque 2) como splits de 1 km, numeradas por orden de aparición", () => {
+    it("extrae las 14 filas hijas (11 del bloque 1 + 3 del bloque 2) como splits de 1 km, ancladas a su bloque real y su posición dentro de él", () => {
 
         const { extras } = parse(REAL_LEFT_VIEW_TEXT);
 
         expect(extras.laps).toHaveLength(14);
 
-        expect(extras.laps[0]).toEqual({ lap: 1, distance_km: 1, pace_min_km: "5:17", numberingIsRelative: true });
-        expect(extras.laps[10]).toEqual({ lap: 11, distance_km: 1, pace_min_km: "6:29", numberingIsRelative: true });
-        expect(extras.laps[11]).toEqual({ lap: 12, distance_km: 1, pace_min_km: "5:33", numberingIsRelative: true });
-        expect(extras.laps[13]).toEqual({ lap: 14, distance_km: 0.02, pace_min_km: "8:26", numberingIsRelative: true });
+        expect(extras.laps[0]).toEqual({ blockLap: 1, childIndex: 1, distance_km: 1, pace_min_km: "5:17" });
+        expect(extras.laps[10]).toEqual({ blockLap: 1, childIndex: 11, distance_km: 1, pace_min_km: "6:29" });
+        expect(extras.laps[11]).toEqual({ blockLap: 2, childIndex: 1, distance_km: 1, pace_min_km: "5:33" });
+        expect(extras.laps[13]).toEqual({ blockLap: 2, childIndex: 3, distance_km: 0.02, pace_min_km: "8:26" });
 
         const totalKm = extras.laps.reduce((sum, l) => sum + l.distance_km, 0);
         expect(totalKm).toBeCloseTo(13.02, 5);
@@ -109,13 +109,13 @@ describe("parser-intervals-road — vista derecha (Int./Distancia/Ritmo medio/GA
         const { extras } = parse(REAL_RIGHT_VIEW_TEXT);
 
         expect(extras.laps).toEqual([
-            { lap: 1, distance_km: 1, pace_min_km: "5:17", avg_heart_rate_bpm: 140, max_heart_rate_bpm: 149, numberingIsRelative: true },
-            { lap: 2, distance_km: 1, pace_min_km: "5:25", avg_heart_rate_bpm: 151, max_heart_rate_bpm: 155, numberingIsRelative: true },
-            { lap: 3, distance_km: 1, pace_min_km: "5:49", avg_heart_rate_bpm: 154, max_heart_rate_bpm: 157, numberingIsRelative: true },
-            { lap: 4, distance_km: 1, pace_min_km: "5:50", avg_heart_rate_bpm: 153, max_heart_rate_bpm: 157, numberingIsRelative: true },
-            { lap: 5, distance_km: 1, pace_min_km: "5:33", avg_heart_rate_bpm: 159, max_heart_rate_bpm: 161, numberingIsRelative: true },
-            { lap: 6, distance_km: 1, pace_min_km: "5:33", avg_heart_rate_bpm: 160, max_heart_rate_bpm: 165, numberingIsRelative: true },
-            { lap: 7, distance_km: 0.02, pace_min_km: "8:26", avg_heart_rate_bpm: 158, max_heart_rate_bpm: 160, numberingIsRelative: true }
+            { blockLap: 1, childIndex: 1, distance_km: 1, pace_min_km: "5:17", avg_heart_rate_bpm: 140, max_heart_rate_bpm: 149 },
+            { blockLap: 1, childIndex: 2, distance_km: 1, pace_min_km: "5:25", avg_heart_rate_bpm: 151, max_heart_rate_bpm: 155 },
+            { blockLap: 1, childIndex: 3, distance_km: 1, pace_min_km: "5:49", avg_heart_rate_bpm: 154, max_heart_rate_bpm: 157 },
+            { blockLap: 1, childIndex: 4, distance_km: 1, pace_min_km: "5:50", avg_heart_rate_bpm: 153, max_heart_rate_bpm: 157 },
+            { blockLap: 2, childIndex: 1, distance_km: 1, pace_min_km: "5:33", avg_heart_rate_bpm: 159, max_heart_rate_bpm: 161 },
+            { blockLap: 2, childIndex: 2, distance_km: 1, pace_min_km: "5:33", avg_heart_rate_bpm: 160, max_heart_rate_bpm: 165 },
+            { blockLap: 2, childIndex: 3, distance_km: 0.02, pace_min_km: "8:26", avg_heart_rate_bpm: 158, max_heart_rate_bpm: 160 }
         ]);
 
     });
@@ -170,19 +170,24 @@ describe("parser-intervals-road — vista derecha sin columna de Distancia (desp
 
     // Sin columna de Distancia no hay con qué formar la distancia del
     // split (a diferencia de las otras dos vistas), pero el ritmo y la FC
-    // por km SÍ son datos reales -- se extraen igual, sin distance_km, para
-    // que fusion.js los combine con la distancia de otra captura (vista
-    // izquierda) por número de vuelta. Sin esto, workout.splits se quedaba
-    // sin FC por km pese a que la captura sí la traía, y RITMO POR
-    // KILÓMETRO perdía el toggle/la línea de FC/el bloque de análisis.
-    it("extrae las 3 filas hijas con ritmo y FC, sin distance_km -- y no genera avisos de descuadre (no hay distancia que comprobar)", () => {
+    // por km SÍ son datos reales -- se extraen igual, sin distance_km. Las
+    // 3 filas aparecen ANTES de ver ningún bloque en esta captura concreta
+    // (el bloque 1, al que en realidad pertenecen, quedó recortado por
+    // encima del encuadre) -- blockLap queda null aquí; es fusion.js
+    // (mergeIntervalsRoadLaps) quien la resuelve después usando el primer
+    // bloque que SÍ aparece en esta misma captura (extras.blocks[0]) y
+    // cuántas filas hijas tiene ese bloque según otra captura más completa.
+    // Sin esto, workout.splits se quedaba sin FC por km pese a que la
+    // captura sí la traía, y RITMO POR KILÓMETRO perdía el toggle/la línea
+    // de FC/el bloque de análisis.
+    it("extrae las 3 filas hijas con ritmo y FC, sin distance_km ni blockLap (bloque recortado por encima) -- y no genera avisos de descuadre (no hay distancia que comprobar)", () => {
 
         const { extras } = parse(REAL_RIGHT_VIEW_NO_DIST_TEXT);
 
         expect(extras.laps).toEqual([
-            { lap: 1, pace_min_km: "6:10", avg_heart_rate_bpm: 154, max_heart_rate_bpm: 157, numberingIsRelative: true },
-            { lap: 2, pace_min_km: "6:23", avg_heart_rate_bpm: 154, max_heart_rate_bpm: 157, numberingIsRelative: true },
-            { lap: 3, pace_min_km: "6:29", avg_heart_rate_bpm: 153, max_heart_rate_bpm: 156, numberingIsRelative: true }
+            { blockLap: null, childIndex: 1, pace_min_km: "6:10", avg_heart_rate_bpm: 154, max_heart_rate_bpm: 157 },
+            { blockLap: null, childIndex: 2, pace_min_km: "6:23", avg_heart_rate_bpm: 154, max_heart_rate_bpm: 157 },
+            { blockLap: null, childIndex: 3, pace_min_km: "6:29", avg_heart_rate_bpm: 153, max_heart_rate_bpm: 156 }
         ]);
 
         expect(extras.warnings).toEqual([]);
