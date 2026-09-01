@@ -1,0 +1,323 @@
+.reference-routes-intro{
+
+    color:var(--text-secondary);
+
+    font-size:.85rem;
+
+    line-height:1.5;
+
+}
+
+.reference-routes-add{
+
+    width:100%;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    gap:8px;
+
+}
+
+/* ==========================
+   FORMULARIO "CREAR RECORRIDO"
+========================== */
+
+.reference-route-form{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:10px;
+
+    padding:16px;
+
+    border-radius:var(--radius-md);
+
+    background:color-mix(in srgb, var(--card-background) 60%, transparent);
+
+    border:1px solid var(--card-border);
+
+}
+
+.reference-route-form input{
+
+    padding:12px 14px;
+
+    border-radius:var(--radius-sm);
+
+    background:color-mix(in srgb, var(--color-surface) 70%, transparent);
+
+    border:1px solid var(--card-border);
+
+    color:var(--text-primary);
+
+    font-size:.95rem;
+
+    outline:none;
+
+}
+
+.reference-route-form input::placeholder{
+
+    color:var(--color-text-muted);
+
+}
+
+.reference-route-form-actions{
+
+    display:flex;
+
+    gap:10px;
+
+}
+
+.reference-route-form-actions button{
+
+    flex:1;
+
+}
+
+.reference-route-form-actions button:disabled{
+
+    opacity:.5;
+
+    cursor:default;
+
+}
+
+/* ==========================
+   LISTA DE TARJETAS
+========================== */
+
+.reference-routes-list{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:14px;
+
+}
+
+.reference-route-card{
+
+    position:relative;
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:6px;
+
+    padding:16px;
+
+    border-radius:var(--radius-lg);
+
+    background:color-mix(in srgb, var(--card-background) 70%, transparent);
+
+    border:1px solid var(--card-border);
+
+}
+
+.reference-route-card[data-action="open-reference-route-detail"]{
+
+    cursor:pointer;
+
+}
+
+.reference-route-header{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+
+}
+
+.reference-route-name{
+
+    color:var(--text-primary);
+
+    font-size:1.05rem;
+
+    font-weight:800;
+
+    flex:1;
+
+    min-width:0;
+
+}
+
+.reference-route-count{
+
+    color:var(--text-secondary);
+
+    font-size:.78rem;
+
+    flex-shrink:0;
+
+}
+
+.reference-route-empty{
+
+    color:var(--text-secondary);
+
+    font-size:.82rem;
+
+    line-height:1.5;
+
+}
+
+.reference-route-line{
+
+    color:var(--text-secondary);
+
+    font-size:.88rem;
+
+}
+
+.reference-route-line strong{
+
+    color:var(--text-primary);
+
+}
+
+.reference-route-line--muted{
+
+    color:var(--color-text-muted);
+
+    font-size:.82rem;
+
+}
+
+.reference-route-drift-label{
+
+    font-weight:700;
+
+}
+
+.reference-route-drift-label--up{
+    color:var(--color-success);
+}
+
+.reference-route-drift-label--flat{
+    color:var(--color-primary);
+}
+
+.reference-route-drift-label--down{
+    color:var(--color-warning);
+}
+
+/* ==========================
+   MENÚ "···" (borrar recorrido) -- mismo patrón que .workout-menu/
+   .history-menu (Plan/Running).
+========================== */
+
+.reference-route-menu{
+
+    position:relative;
+
+    flex-shrink:0;
+
+}
+
+.reference-route-menu-toggle{
+
+    background:none;
+
+    border:none;
+
+    padding:8px;
+
+    cursor:pointer;
+
+    display:flex;
+
+    color:var(--color-text-muted);
+
+}
+
+.reference-route-menu-toggle iconify-icon{
+
+    font-size:20px;
+
+}
+
+.reference-route-menu-popover{
+
+    position:absolute;
+
+    top:calc(100% + 6px);
+
+    right:0;
+
+    z-index:5;
+
+    display:flex;
+
+    flex-direction:column;
+
+    min-width:180px;
+
+    padding:6px;
+
+    border-radius:14px;
+
+    background:color-mix(in srgb, var(--card-background) 96%, transparent);
+
+    backdrop-filter:blur(20px);
+    -webkit-backdrop-filter:blur(20px);
+
+    border:1px solid color-mix(in srgb, var(--color-primary) 20%, transparent);
+
+    box-shadow:0 10px 30px rgba(0,0,0,.35);
+
+}
+
+.reference-route-menu-popover button{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+
+    padding:10px 12px;
+
+    border:none;
+
+    border-radius:9px;
+
+    background:none;
+
+    color:var(--color-danger);
+
+    font-size:.88rem;
+
+    font-weight:600;
+
+    text-align:left;
+
+    cursor:pointer;
+
+}
+
+.reference-route-menu-popover button:hover{
+
+    background:color-mix(in srgb, var(--color-danger) 10%, transparent);
+
+}
+
+.reference-route-menu-popover iconify-icon{
+
+    font-size:17px;
+
+    color:var(--color-danger);
+
+}

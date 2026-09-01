@@ -1,5 +1,6 @@
 import { rerender } from "../../core/router.js";
 import { addWorkout, addShoe, deleteWorkout, findSimilarWorkout, updateWorkoutType, updateWorkoutShoe, retireShoe, updateShoe } from "../../data/workoutStore.js";
+import { createReferenceRoute, deleteReferenceRoute, assignWorkoutToRoute, unassignWorkoutFromReferenceRoutes } from "../../data/referenceRouteStore.js";
 import { parseGarminScreenshots, warmUpWorker } from "../../importers/garmin-engine/recognize.js";
 import { readShoePhotoAsDataUrl } from "./shoePhoto.js";
 import { importWorkout } from "../../importers/index.js";
@@ -38,7 +39,16 @@ import {
     setHistoryMenuOpenId,
     getWarningsExpanded,
     setWarningsExpanded,
-    setChartMetricMode
+    setChartMetricMode,
+    getDetailRouteId,
+    setDetailRouteId,
+    isCreatingRoute,
+    startCreatingRoute,
+    cancelCreatingRoute,
+    getNewRouteName,
+    setNewRouteName,
+    getRouteMenuOpenId,
+    setRouteMenuOpenId
 } from "./runningStore.js";
 
 const DETAIL_HISTORY_STATE = { runningDetail: true };
@@ -127,6 +137,83 @@ function closeHistoryTable() {
 
 }
 
+const REFERENCE_ROUTES_HISTORY_STATE = { runningReferenceRoutes: true };
+const REFERENCE_ROUTE_DETAIL_HISTORY_STATE = { runningReferenceRouteDetail: true };
+
+function openReferenceRoutes() {
+
+    cancelCreatingRoute();
+    setRouteMenuOpenId(null);
+    setWizardStep("referenceRoutes");
+
+    history.pushState(REFERENCE_ROUTES_HISTORY_STATE, "");
+
+    rerender();
+
+}
+
+function closeReferenceRoutes() {
+
+    if (history.state?.runningReferenceRoutes) {
+        history.back();
+        return;
+    }
+
+    setWizardStep("idle");
+    rerender();
+
+}
+
+function openReferenceRouteDetail(routeId) {
+
+    setDetailRouteId(routeId);
+    setWizardStep("referenceRouteDetail");
+
+    history.pushState(REFERENCE_ROUTE_DETAIL_HISTORY_STATE, "");
+
+    rerender();
+
+}
+
+function closeReferenceRouteDetail() {
+
+    if (history.state?.runningReferenceRouteDetail) {
+        history.back();
+        return;
+    }
+
+    setDetailRouteId(null);
+    setWizardStep("referenceRoutes");
+    rerender();
+
+}
+
+function saveNewRoute() {
+
+    const name = getNewRouteName().trim();
+    if (!name) return;
+
+    createReferenceRoute(name).then(() => {
+        cancelCreatingRoute();
+        rerender();
+    });
+
+}
+
+function deleteRouteWithConfirm(routeId) {
+
+    setRouteMenuOpenId(null);
+
+    if (!window.confirm("¿Borrar este recorrido de referencia? Los entrenos que agrupa NO se borran, solo dejan de estar agrupados. No se puede deshacer.")) {
+        rerender();
+        return;
+    }
+
+    deleteReferenceRoute(routeId);
+    rerender();
+
+}
+
 // Registrado una sola vez a nivel de módulo (no dentro de initRunningEvents,
 // que se vuelve a llamar en cada render) — si no, se acumularía un listener
 // de window por cada rerender y un solo gesto de atrás cerraría estas
@@ -139,8 +226,12 @@ window.addEventListener("popstate", () => {
         setDetailWorkoutId(null);
         setWizardStep("idle");
         rerender();
-    } else if (step === "shoes" || step === "historyTable") {
+    } else if (step === "shoes" || step === "historyTable" || step === "referenceRoutes") {
         setWizardStep("idle");
+        rerender();
+    } else if (step === "referenceRouteDetail") {
+        setDetailRouteId(null);
+        setWizardStep("referenceRoutes");
         rerender();
     }
 
@@ -157,6 +248,17 @@ document.addEventListener("click", event => {
     if (event.target.closest(".history-menu")) return;
 
     setHistoryMenuOpenId(null);
+    rerender();
+});
+
+// Mismo patrón que el listener de arriba, pero para el menú "···" de una
+// tarjeta de recorrido de referencia (ReferenceRoutesListView.js).
+document.addEventListener("click", event => {
+
+    if (!getRouteMenuOpenId()) return;
+    if (event.target.closest(".reference-route-menu")) return;
+
+    setRouteMenuOpenId(null);
     rerender();
 
 });
@@ -737,6 +839,124 @@ export function initRunningEvents() {
         button.addEventListener("click", () => {
             toggleSort(button.dataset.column);
             rerender();
+        });
+
+    });
+
+    /*==========================
+        RECORRIDOS DE REFERENCIA (V1)
+    ==========================*/
+
+    document.querySelectorAll('[data-action="open-reference-routes"]').forEach(el => {
+
+        el.addEventListener("click", openReferenceRoutes);
+
+    });
+
+    document.querySelectorAll('[data-action="close-reference-routes"]').forEach(button => {
+
+        button.addEventListener("click", closeReferenceRoutes);
+
+    });
+
+    document.querySelectorAll('[data-action="open-reference-route-detail"]').forEach(el => {
+
+        el.addEventListener("click", () => {
+            openReferenceRouteDetail(el.dataset.routeId);
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="close-reference-route-detail"]').forEach(button => {
+
+        button.addEventListener("click", closeReferenceRouteDetail);
+
+    });
+
+    document.querySelectorAll('[data-action="start-creating-route"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+            startCreatingRoute();
+            rerender();
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="cancel-creating-route"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+            cancelCreatingRoute();
+            rerender();
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="set-new-route-name"]').forEach(input => {
+
+        input.addEventListener("input", () => {
+            setNewRouteName(input.value);
+            rerender();
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="save-new-route"]').forEach(button => {
+
+        button.addEventListener("click", saveNewRoute);
+
+    });
+
+    // Sin stopPropagation, este click burbujearía hasta la tarjeta entera
+    // (que abre el detalle del recorrido, ver "open-reference-route-detail"
+    // más arriba) -- mismo motivo que toggle-history-menu/toggle-workout-menu.
+    document.querySelectorAll('[data-action="toggle-route-menu"]').forEach(button => {
+
+        button.addEventListener("click", event => {
+
+            event.stopPropagation();
+
+            const id = button.dataset.routeId;
+            setRouteMenuOpenId(getRouteMenuOpenId() === id ? null : id);
+            rerender();
+
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="delete-route"]').forEach(button => {
+
+        button.addEventListener("click", event => {
+            event.stopPropagation();
+            deleteRouteWithConfirm(button.dataset.routeId);
+        });
+
+    });
+
+    // "Asignar a recorrido" del menú "···" de cada entreno (Running.js,
+    // RunningHistoryItem) -- mismo <select> real reutilizable, ver
+    // routeSelector() en ReferenceRouteSelector.js.
+    document.querySelectorAll('[data-action="set-workout-route"]').forEach(select => {
+
+        select.addEventListener("change", () => {
+
+            assignWorkoutToRoute(select.value || null, select.dataset.workoutId);
+            rerender();
+
+        });
+
+    });
+
+    // Botón "quitar" de una fila de ReferenceRouteDetailView.js -- saca el
+    // entreno de ESTE recorrido sin borrar el entreno real ni el recorrido.
+    document.querySelectorAll('[data-action="unassign-workout-from-route"]').forEach(button => {
+
+        button.addEventListener("click", event => {
+
+            event.stopPropagation();
+
+            unassignWorkoutFromReferenceRoutes(button.dataset.workoutId);
+            rerender();
+
         });
 
     });

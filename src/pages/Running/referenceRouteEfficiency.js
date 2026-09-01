@@ -1,3 +1,15 @@
+// Resuelve route.workoutIds (referenceRouteStore.js) a los objetos de
+// entreno reales de workoutStore.js -- función pura (recibe `allWorkouts`
+// ya cargado, no importa workoutStore.js aquí) para poder testear sin
+// IndexedDB de por medio y para no crear un ciclo de imports entre las
+// dos stores.
+export function resolveRouteWorkouts(route, allWorkouts) {
+
+    const ids = new Set(route.workoutIds);
+    return allWorkouts.filter(w => ids.has(w.id));
+
+}
+
 // Regla de comparación de eficiencia aeróbica para Recorridos de
 // referencia (V1) -- ritmo a FC similar, nunca "quién corrió más rápido"
 // a secas. Constante con nombre (no un número embebido en la lógica) para

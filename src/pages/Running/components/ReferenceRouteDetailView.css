@@ -1,0 +1,81 @@
+.route-workout-list{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:6px;
+
+}
+
+.route-workout-row{
+
+    display:grid;
+
+    grid-template-columns:auto 1fr 1fr 1fr auto;
+
+    align-items:center;
+
+    gap:8px;
+
+    padding:10px 12px;
+
+    border-radius:var(--radius-sm);
+
+    background:color-mix(in srgb, var(--card-background) 60%, transparent);
+
+    border:1px solid var(--card-border);
+
+    cursor:pointer;
+
+}
+
+.route-workout-date{
+
+    color:var(--text-primary);
+
+    font-size:.82rem;
+
+    font-weight:700;
+
+}
+
+.route-workout-pace,
+.route-workout-hr,
+.route-workout-temp{
+
+    color:var(--text-secondary);
+
+    font-size:.8rem;
+
+    text-align:center;
+
+}
+
+.route-workout-remove{
+
+    background:none;
+
+    border:none;
+
+    padding:4px;
+
+    display:flex;
+
+    cursor:pointer;
+
+    color:var(--color-text-muted);
+
+}
+
+.route-workout-remove iconify-icon{
+
+    font-size:18px;
+
+}
+
+.route-workout-remove:hover{
+
+    color:var(--color-danger);
+
+}

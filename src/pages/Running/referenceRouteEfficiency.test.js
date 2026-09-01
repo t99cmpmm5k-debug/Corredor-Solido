@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { FC_SIMILAR_THRESHOLD_PPM, isHrSimilar, compareEfficiency, findBestEfficiencyWorkout, buildEfficiencyTrend } from "./referenceRouteEfficiency.js";
+import { FC_SIMILAR_THRESHOLD_PPM, isHrSimilar, compareEfficiency, findBestEfficiencyWorkout, buildEfficiencyTrend, resolveRouteWorkouts } from "./referenceRouteEfficiency.js";
 
 function workout(id, { avgPaceSecPerKm, avgHr } = {}) {
     return { id, avgPaceSecPerKm, avgHr };
@@ -130,6 +130,36 @@ describe("findBestEfficiencyWorkout — 'mejor eficiencia' de un recorrido con v
         const b = workout("b", { avgPaceSecPerKm: 349, avgHr: 170 }); // media = 155, ninguno de los dos está a ≤4ppm de 155
 
         expect(findBestEfficiencyWorkout([a, b])).toBeNull();
+
+    });
+
+});
+
+describe("resolveRouteWorkouts — route.workoutIds a objetos de entreno reales", () => {
+
+    it("filtra allWorkouts por los ids del recorrido, en cualquier orden", () => {
+
+        const route = { id: "r1", workoutIds: ["w2", "w1"] };
+        const all = [workout("w1"), workout("w2"), workout("w3")];
+
+        const resolved = resolveRouteWorkouts(route, all);
+        expect(resolved.map(w => w.id).sort()).toEqual(["w1", "w2"]);
+
+    });
+
+    it("un id del recorrido que ya no existe en allWorkouts (entreno borrado) simplemente no aparece", () => {
+
+        const route = { id: "r1", workoutIds: ["w1", "borrado"] };
+        const all = [workout("w1")];
+
+        expect(resolveRouteWorkouts(route, all)).toEqual([workout("w1")]);
+
+    });
+
+    it("recorrido sin entrenos asignados devuelve un array vacío", () => {
+
+        const route = { id: "r1", workoutIds: [] };
+        expect(resolveRouteWorkouts(route, [workout("w1")])).toEqual([]);
 
     });
 

@@ -1,6 +1,8 @@
 import "./Running.css";
 
 import { getWorkouts, getShoes, getPossibleDataLoss, getShoeTotalKm } from "../../data/workoutStore.js";
+import { getReferenceRoutes, getReferenceRouteById } from "../../data/referenceRouteStore.js";
+import { resolveRouteWorkouts } from "./referenceRouteEfficiency.js";
 import { RUNNING_WORKOUT_TYPES } from "../../data/runningWorkoutTypes.js";
 import { formatDayMonth } from "../../utils/date.js";
 import { formatSecondsAsClock, formatShoeName } from "../../utils/format.js";
@@ -29,7 +31,11 @@ import {
     getSortDirection,
     getHistoryMenuOpenId,
     getWarningsExpanded,
-    getChartMetricMode
+    getChartMetricMode,
+    getDetailRouteId,
+    isCreatingRoute,
+    getNewRouteName,
+    getRouteMenuOpenId
 } from "./runningStore.js";
 
 import { RunningUploadStep } from "./components/RunningUploadStep.js";
@@ -38,6 +44,9 @@ import { RunningShoeStep } from "./components/RunningShoeStep.js";
 import { RunningDetailView, typeSelector, shoeSelector } from "./components/RunningDetailView.js";
 import { RunningShoesScreen, ShoePhoto, shoeBarPercent, formatKm } from "./components/RunningShoesScreen.js";
 import { RunningHeader } from "./components/RunningHeader.js";
+import { routeSelector } from "./components/ReferenceRouteSelector.js";
+import { ReferenceRoutesListView } from "./components/ReferenceRoutesListView.js";
+import { ReferenceRouteDetailView } from "./components/ReferenceRouteDetailView.js";
 
 function shoeLabel(shoeId, shoes) {
 
@@ -70,7 +79,7 @@ function workoutTypeBadge(type) {
 // mismo patrón que Plan/Gimnasio (data-session-id reutiliza el mismo
 // nombre de atributo que esos menús, aunque aquí sea un workoutId, para
 // que el mismo tipo de listener sirva sin inventar un atributo nuevo).
-function RunningHistoryItem(workout, shoes) {
+function RunningHistoryItem(workout, shoes, routes) {
 
     const distance = formatDistance(workout.distanceKm);
     const duration = workout.durationSec != null ? formatSecondsAsClock(workout.durationSec) : "—";
@@ -120,6 +129,15 @@ function RunningHistoryItem(workout, shoes) {
                                 <iconify-icon icon="solar:running-round-bold-duotone"></iconify-icon>
                                 ${shoeSelector(workout, shoes)}
                             </label>
+
+                            ${routes.length ? `
+
+                                <label class="history-menu-select-row">
+                                    <iconify-icon icon="solar:map-point-bold-duotone"></iconify-icon>
+                                    ${routeSelector(workout, routes)}
+                                </label>
+
+                            ` : ""}
 
                             <button class="history-menu-danger" data-action="delete-workout" data-workout-id="${workout.id}">
                                 <iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon>
@@ -382,6 +400,36 @@ function ShoeMileageRow(shoe, km) {
 
 }
 
+// Entrada a "Recorridos de referencia" (V1) -- siempre visible (incluso
+// con 0 recorridos creados todavía, para poder descubrir/crear el
+// primero) mientras haya al menos un entreno importado del que tirar.
+// Mismo patrón visual compacto que RunningShoeMileageSummary (tarjeta
+// tocable, tap abre la pantalla completa) en vez de mostrar aquí el
+// listado entero -- eso vive en ReferenceRoutesListView.js.
+function ReferenceRoutesEntryCard(routes) {
+
+    return `
+
+        <div class="reference-routes-entry" data-action="open-reference-routes">
+
+            <span class="reference-routes-entry-text">
+
+                <iconify-icon icon="solar:map-point-bold-duotone"></iconify-icon>
+
+                RECORRIDOS DE REFERENCIA
+
+                ${routes.length ? `<span class="reference-routes-entry-count">${routes.length}</span>` : ""}
+
+            </span>
+
+            <iconify-icon icon="solar:alt-arrow-right-bold-duotone"></iconify-icon>
+
+        </div>
+
+    `;
+
+}
+
 // Resumen de kilometraje embebido en Running, debajo de la lista de
 // carreras — versión compacta de RunningShoesScreen.js (que sigue siendo
 // la única pantalla para añadir/retirar/subir foto). "" si no hay ninguna
@@ -617,6 +665,8 @@ function RunningIdleView() {
     // de zapatilla, que siempre mira el total real de todos los entrenos.
     const listInsight = filtered.length ? buildListInsight({ filteredWorkouts: filtered, allWorkouts: workouts, shoes }) : null;
 
+    const routes = getReferenceRoutes();
+
     return `
 
         <div class="running-content">
@@ -661,6 +711,8 @@ function RunningIdleView() {
 
                 ${RunningTypeSummary(typeFilter, typeSummary, progressInsight, paceComparison)}
 
+                ${ReferenceRoutesEntryCard(routes)}
+
                 ${RunningTypeFilters(typeFilter, workouts)}
 
                 ${filtered.length === 0 ? `
@@ -697,7 +749,7 @@ function RunningIdleView() {
 
                     <div class="running-history">
 
-                        ${filtered.map(workout => RunningHistoryItem(workout, shoes)).join("")}
+                        ${filtered.map(workout => RunningHistoryItem(workout, shoes, routes)).join("")}
 
                     </div>
 
@@ -817,6 +869,15 @@ export function Running() {
     } else if (step === "historyTable") {
 
         content = RunningFullTableView();
+
+    } else if (step === "referenceRoutes") {
+
+        content = ReferenceRoutesListView(isCreatingRoute(), getNewRouteName(), getRouteMenuOpenId());
+
+    } else if (step === "referenceRouteDetail") {
+
+        const route = getReferenceRouteById(getDetailRouteId());
+        content = ReferenceRouteDetailView(route, route ? resolveRouteWorkouts(route, getWorkouts()) : []);
 
     } else {
 

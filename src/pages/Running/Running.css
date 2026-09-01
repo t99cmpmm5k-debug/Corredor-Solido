@@ -468,6 +468,81 @@
 
 }
 
+/* Entrada a "Recorridos de referencia" (V1) -- mismo lenguaje visual que
+   .shoe-mileage-summary (tarjeta compacta tocable), tap abre
+   ReferenceRoutesListView.js. */
+.reference-routes-entry{
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:space-between;
+
+    gap:12px;
+
+    padding:14px 16px;
+
+    border-radius:var(--radius-lg);
+
+    background:color-mix(in srgb, var(--card-background) 70%, transparent);
+
+    border:1px solid var(--card-border);
+
+    cursor:pointer;
+
+}
+
+.reference-routes-entry-text{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:8px;
+
+    color:var(--color-primary);
+
+    font-size:.8rem;
+
+    font-weight:800;
+
+    letter-spacing:.02em;
+
+}
+
+.reference-routes-entry-count{
+
+    display:inline-flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    min-width:20px;
+
+    height:20px;
+
+    padding:0 6px;
+
+    border-radius:10px;
+
+    background:color-mix(in srgb, var(--color-primary) 22%, transparent);
+
+    color:var(--text-primary);
+
+    font-size:.72rem;
+
+}
+
+.reference-routes-entry > iconify-icon{
+
+    color:var(--color-text-muted);
+
+    font-size:18px;
+
+}
+
 /* Insight rotatorio sobre la lista (ver runningListInsight.js/
    RunningListInsightCard() en Running.js) -- una sola línea de texto real,
    mismo lenguaje visual ligero que el resumen de progreso de

@@ -20,7 +20,17 @@ const initial = () => ({
     newShoePhoto: null,
     editingShoeId: null,
     warningsExpanded: false,
-    chartMetricMode: "both"
+    chartMetricMode: "both",
+
+    // Recorridos de referencia (V1) -- detailRouteId: qué recorrido está
+    // abierto en el paso "referenceRouteDetail". creatingRoute/newRouteName:
+    // formulario mínimo de "crear recorrido" (solo nombre, ver
+    // ReferenceRoutesListView.js). routeMenuOpenId: menú "···" de una
+    // tarjeta de recorrido (borrar), mismo patrón que historyMenuOpenId.
+    detailRouteId: null,
+    creatingRoute: false,
+    newRouteName: "",
+    routeMenuOpenId: null
 
 });
 
@@ -337,6 +347,69 @@ export function getChartMetricMode() {
 export function setChartMetricMode(mode) {
 
     wizard.chartMetricMode = mode;
+
+}
+
+/*==========================
+   RECORRIDOS DE REFERENCIA (V1)
+==========================*/
+
+export function getDetailRouteId() {
+
+    return wizard.detailRouteId;
+
+}
+
+export function setDetailRouteId(id) {
+
+    wizard.detailRouteId = id;
+
+}
+
+export function isCreatingRoute() {
+
+    return wizard.creatingRoute;
+
+}
+
+// Abrir el formulario siempre parte de un nombre en blanco -- igual que
+// startCreateSession() en Plan/planStore.js, no arrastra lo que se
+// hubiera escrito la última vez que se abrió.
+export function startCreatingRoute() {
+
+    wizard.creatingRoute = true;
+    wizard.newRouteName = "";
+
+}
+
+export function cancelCreatingRoute() {
+
+    wizard.creatingRoute = false;
+    wizard.newRouteName = "";
+
+}
+
+export function getNewRouteName() {
+
+    return wizard.newRouteName;
+
+}
+
+export function setNewRouteName(name) {
+
+    wizard.newRouteName = name;
+
+}
+
+export function getRouteMenuOpenId() {
+
+    return wizard.routeMenuOpenId;
+
+}
+
+export function setRouteMenuOpenId(id) {
+
+    wizard.routeMenuOpenId = id;
 
 }
 
