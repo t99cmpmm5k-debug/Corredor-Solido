@@ -203,124 +203,264 @@ function mergeLaps(results) {
 // estable repite el mismo ppm con total normalidad en varios km reales
 // distintos -- un solo par no es evidencia suficiente.
 //
-// En vez de eso, se combinan por POSICIÓN real: cada fila hija ya viene de
-// parser-intervals-road.js anclada a su bloque real (blockLap) y a su
-// orden dentro de él (childIndex) -- el número de bloque SÍ es absoluto
-// (no relativo a la captura, a diferencia de la numeración de Vueltas), así
-// que (blockLap, childIndex) identifica el mismo kilómetro físico en
-// cualquier captura de esta pantalla, sea cual sea su recorte de scroll.
-// Esto es lo que permite recuperar la FC real de una captura parcial de la
-// vista derecha (que casi nunca cabe entera) sin arriesgarse al bug de
-// duplicados/km fuera de rango que tenía el intento anterior (offset
-// global + solape de FC).
+// Se combinan en su lugar por POSICIÓN real, con dos señales, de más a
+// menos fuerte:
+// (1) Ancla directa por bloque -- cada fila hija ya viene de
+//     parser-intervals-road.js anclada a su bloque real (blockLap, SÍ
+//     absoluto, a diferencia de la numeración de Vueltas) y su orden
+//     dentro de él (childIndex). Cuando una fila trae blockLap directo (el
+//     bloque aparece dentro de esa misma captura), es la señal más fiable.
+// (2) Solape de RITMO -- cuando una captura no ve ningún bloque propio
+//     (recortada por scroll, p. ej. una vista de FC en mitad de un bloque
+//     largo sin llegar a ver ni el de arriba ni el de abajo), el ritmo real
+//     de cada km varía lo bastante de sus vecinos como para que 2+
+//     coincidencias EXACTAS y consecutivas en la misma posición relativa
+//     sean prueba sólida -- a diferencia de la FC (que sí puede quedarse
+//     plana varios km, ver el test "false-positive" más abajo), un ritmo
+//     GPS real no se repite así por casualidad.
 //
-// Se parte de la captura más completa (más filas hijas; a igualdad, la que
-// además trae FC) como "columna vertebral": su orden y distancias ya están
-// verificados (checkBlockChildSum), así que fijan la lista final. Las
-// demás capturas solo APORTAN campos que falten (typicamente FC) en las
-// posiciones donde se puede confirmar que hablan del mismo km -- nunca
-// sustituyen ni reordenan la columna vertebral.
+// Verificado real con las 6 capturas de este entreno de 13,02 km (ver
+// REAL_CAPTURAS_13_02 en garmin-parser.test.js): la vista izquierda sola
+// (sin FC) nunca cupo entera en una sola captura -- dos capturas parciales
+// (posiciones 1-10 y 6-14) se combinan por solape de ritmo para formar el
+// "esqueleto" completo de 14 posiciones con distancia real, y solo LUEGO
+// las capturas de FC (todas parciales, algunas sin ver ningún bloque en
+// absoluto) aportan FC a las posiciones que se pueden verificar contra ese
+// esqueleto ya completo -- nunca añaden filas nuevas, así que una fila
+// espuria (la fila "Total" de Garmin, sin FC "5:55" y sin ninguna etiqueta
+// que la distinga de un km real cuando la vista está desplazada del todo a
+// la derecha, sin la columna "Tipo" donde normalmente se lee "Total") no
+// puede colarse como un km 15 inventado: su ritmo no coincide con ningún
+// km real del esqueleto, así que no encuentra dónde encajar y se descarta.
+const MIN_PACE_OVERLAP_MATCHES = 2;
+
+function applyFieldMerge(existing, lap) {
+
+    // Si ambas capturas traen ritmo para la misma posición y no coincide,
+    // no son en realidad el mismo km real -- alguna de las dos se
+    // desalineó. Más seguro no fusionar nada de esa fila que arriesgarse a
+    // pegar la FC de un km en el ritmo de otro.
+    if (existing.pace_min_km != null && lap.pace_min_km != null && existing.pace_min_km !== lap.pace_min_km) return;
+
+    Object.entries(lap).forEach(([key, value]) => {
+        if (value != null && existing[key] == null) existing[key] = value;
+    });
+
+}
+
+// Reparte candidateLaps entre "resueltas por clave directa" (se fusionan ya
+// mismo, fila a fila e independientes entre sí -- (blockLap, childIndex) es
+// una identidad absoluta, no depende de la posición dentro del array, así
+// que una captura que salta de un bloque a otro sin filas intermedias --
+// REAL_RIGHT_VIEW_TEXT, con solo 4 de las 11 filas del bloque 1 antes de
+// saltar al bloque 2 -- no rompe nada) y "sin resolver" (blockLap
+// desconocido, o una posición que la secuencia aún no tiene).
+function matchByKey(sequence, candidateLaps) {
+
+    const seqKeyIndex = new Map();
+    sequence.forEach((lap, index) => {
+        if (lap.blockLap != null) seqKeyIndex.set(`${lap.blockLap}:${lap.childIndex}`, index);
+    });
+
+    const unresolved = [];
+    candidateLaps.forEach(lap => {
+        const key = lap.blockLap != null ? `${lap.blockLap}:${lap.childIndex}` : null;
+        const target = key != null ? seqKeyIndex.get(key) : null;
+        if (target == null) { unresolved.push(lap); return; }
+        applyFieldMerge(sequence[target], lap);
+    });
+
+    return unresolved;
+
+}
+
+// Una fila hija sin blockLap apareció antes de ver ningún bloque EN ESA
+// captura (el bloque que la precede de verdad quedó recortado por encima
+// del encuadre) -- por construcción de parser-intervals-road.js, como mucho
+// hay UNA de estas rachas iniciales por captura. Si esa misma captura SÍ
+// muestra más adelante el primer bloque siguiente (nextBlockLap), se puede
+// inferir con seguridad de qué bloque se trata (el anterior) y su posición
+// real dentro de él, usando cuántas filas hijas tiene ese bloque según la
+// secuencia YA COMPLETA -- solo se llama con la secuencia ya formada a
+// partir de las capturas con distancia, nunca al construirla, así que ese
+// recuento ya es el real (a diferencia de un intento anterior que lo
+// calculaba sobre una secuencia todavía incompleta y desplazaba las
+// posiciones).
+function resolveOrphanRun(sequence, unresolved, nextBlockLap) {
+
+    if (nextBlockLap == null) return unresolved;
+
+    const firstKnown = unresolved.findIndex(l => l.blockLap != null);
+    const leading = firstKnown === -1 ? unresolved : unresolved.slice(0, firstKnown);
+    if (!leading.length) return unresolved;
+
+    const resolvedBlock = nextBlockLap - 1;
+    if (resolvedBlock < 1) return unresolved;
+
+    const knownCount = sequence.reduce((max, l) => (l.blockLap === resolvedBlock && l.childIndex > max ? l.childIndex : max), 0);
+    if (!knownCount) return unresolved;
+
+    const startIndex = knownCount - leading.length + 1;
+    if (startIndex < 1) return unresolved; // la captura dice tener más filas de ese bloque de las que la secuencia conoce -- no se puede posicionar con seguridad.
+
+    const resolvedLeading = leading.map((lap, i) => ({ ...lap, blockLap: resolvedBlock, childIndex: startIndex + i }));
+    return [...resolvedLeading, ...unresolved.slice(firstKnown === -1 ? unresolved.length : firstKnown)];
+
+}
+
+// Solape de ritmo: única señal que queda para lo que ni tiene clave directa
+// ni se pudo anclar por bloque -- cada coincidencia EXACTA de ritmo entre
+// una fila y la secuencia "vota" por el desplazamiento que las haría
+// corresponder. El ritmo real de cada km varía lo bastante de sus vecinos
+// como para que 2+ coincidencias consecutivas sin contradicción sean prueba
+// sólida -- a diferencia de la FC (que sí puede quedarse plana varios km,
+// ver el test "false-positive" más abajo), un ritmo GPS real no se repite
+// así por casualidad.
+function findPaceOverlapOffset(sequence, laps) {
+
+    const votes = new Map();
+    laps.forEach((lap, i) => {
+        if (lap.pace_min_km == null) return;
+        sequence.forEach((seqLap, j) => {
+            if (seqLap.pace_min_km !== lap.pace_min_km) return;
+            const offset = j - i;
+            votes.set(offset, (votes.get(offset) ?? 0) + 1);
+        });
+    });
+
+    let bestOffset = null, bestVotes = 0;
+    votes.forEach((count, offset) => { if (count > bestVotes) { bestVotes = count; bestOffset = offset; } });
+    if (bestOffset == null || bestVotes < MIN_PACE_OVERLAP_MATCHES) return null;
+
+    // El desplazamiento ganador no puede contradecir NINGUNA fila (no solo
+    // las que votaron).
+    for (let i = 0; i < laps.length; i++) {
+        const target = sequence[i + bestOffset];
+        if (!target || target.pace_min_km == null || laps[i].pace_min_km == null) continue;
+        if (target.pace_min_km !== laps[i].pace_min_km) return null;
+    }
+
+    return bestOffset;
+
+}
+
+// allowExtend=false impide que esta captura añada filas nuevas al final --
+// reservado a capturas SIN distancia (no pueden demostrar que un km nuevo
+// es real, solo ritmo/FC que podría pertenecer a cualquier tramo, o ser la
+// fila "Total" mal recortada, ver el bug real documentado más arriba).
+function mergeIntoSequence(sequence, candidateLaps, { allowExtend, nextBlockLap = null }) {
+
+    let unresolved = matchByKey(sequence, candidateLaps);
+    if (!unresolved.length) return;
+
+    // resolveOrphanRun asume que el recuento de filas por bloque de
+    // `sequence` YA es el definitivo -- cierto para el relleno de FC
+    // (allowExtend=false, después de cerrar el esqueleto), pero no
+    // mientras el propio esqueleto todavía se está construyendo
+    // (allowExtend=true): un recuento aún incompleto en ese momento
+    // desplazaría la posición inferida (verificado real: descolocaba en 1
+    // las filas de una vista izquierda parcial que sí llegaba hasta el
+    // final del bloque 1 cuando otra vista izquierda, procesada antes,
+    // solo había aportado 10 de sus 11 filas). Durante la construcción del
+    // esqueleto solo se confía en clave directa + solape de ritmo.
+    if (!allowExtend) {
+        unresolved = resolveOrphanRun(sequence, unresolved, nextBlockLap);
+        unresolved = matchByKey(sequence, unresolved);
+        if (!unresolved.length) return;
+    }
+
+    const offset = findPaceOverlapOffset(sequence, unresolved);
+    if (offset == null) return; // sin ninguna referencia fiable -- se descarta el resto de esta captura.
+
+    unresolved.forEach((lap, i) => {
+
+        const target = i + offset;
+        if (target < 0 || target > sequence.length) return; // hueco o fuera de rango -- no se inventa una posición.
+
+        if (target === sequence.length) {
+            if (allowExtend) sequence.push({ ...lap });
+            return;
+        }
+
+        applyFieldMerge(sequence[target], lap);
+
+    });
+
+}
+
+// Reasigna blockLap/childIndex a cada fila del esqueleto ya completo
+// consumiendo los bloques absolutos (ordenados) por distancia acumulada --
+// más fiable que arrastrar esos campos a través de cada fusión, porque no
+// depende de qué fila concreta "trajo" la etiqueta originalmente (algunas,
+// como una fila huérfana recuperada por solape de ritmo, no traían
+// ninguna). Un bloque sin distancia conocida (ninguna captura la trajo) no
+// se puede consumir con seguridad -- se deja el resto del esqueleto sin
+// re-etiquetar antes que asignar mal el resto.
+function retagSequenceWithBlocks(sequence, blocks) {
+
+    let seqIndex = 0;
+
+    [...blocks].sort((a, b) => a.lap - b.lap).forEach(block => {
+
+        if (block.distance_km == null) return;
+
+        let consumed = 0;
+        let childIndex = 0;
+
+        while (seqIndex < sequence.length && consumed < block.distance_km - 0.005) {
+            childIndex++;
+            sequence[seqIndex].blockLap = block.lap;
+            sequence[seqIndex].childIndex = childIndex;
+            consumed += sequence[seqIndex].distance_km ?? 0;
+            seqIndex++;
+        }
+
+    });
+
+}
+
 function mergeIntervalsRoadLaps(results) {
 
     const candidates = results.filter(r => r.parser?.startsWith("intervals-road") && r.extras?.laps?.length);
     if (!candidates.length) return [];
 
-    const backbone = candidates.reduce((a, b) => {
-        if (b.extras.laps.length !== a.extras.laps.length) {
-            return b.extras.laps.length > a.extras.laps.length ? b : a;
-        }
-        const bHasHr = b.extras.laps.some(l => l.avg_heart_rate_bpm != null);
-        const aHasHr = a.extras.laps.some(l => l.avg_heart_rate_bpm != null);
-        return (bHasHr && !aHasHr) ? b : a;
-    });
+    // Las capturas CON distancia (vista izquierda, o una vista derecha que
+    // también traiga la columna Distancia) son las únicas que pueden
+    // demostrar que un km es real y dónde acaba -- forman el "esqueleto"
+    // (orden + distancia). Las capturas sin distancia (típicamente FC) solo
+    // rellenan huecos en ese esqueleto, nunca lo alargan.
+    const distanceBearing = candidates.filter(c => c.extras.laps.some(l => l.distance_km != null));
+    const hrOnly = candidates.filter(c => !distanceBearing.includes(c));
 
-    // Copia mutable de la columna vertebral, en su orden original -- ese
-    // orden ya es el real (viene de una única captura sin mezclar).
-    const merged = backbone.extras.laps.map(lap => ({ ...lap }));
+    // Si ninguna captura trae distancia (caso raro pero posible), mejor
+    // partir de la más completa igualmente que devolver nada.
+    const skeletonSource = distanceBearing.length ? distanceBearing : candidates;
+    const seed = skeletonSource.reduce((a, b) => (b.extras.laps.length > a.extras.laps.length ? b : a));
 
-    // Cuántas filas hijas conoce la columna vertebral por bloque -- hace
-    // falta para poder resolver una fila hija de OTRA captura que aparezca
-    // antes de ver ningún bloque en ESA captura (recortada por scroll, ver
-    // resolveLeadingRun más abajo).
-    const blockChildCount = new Map();
-    merged.forEach(lap => {
-        if (lap.blockLap == null) return;
-        const count = blockChildCount.get(lap.blockLap) ?? 0;
-        if (lap.childIndex > count) blockChildCount.set(lap.blockLap, lap.childIndex);
-    });
+    const sequence = seed.extras.laps.map(lap => ({ ...lap }));
 
-    const positionByKey = new Map();
-    merged.forEach((lap, index) => {
-        if (lap.blockLap != null) positionByKey.set(`${lap.blockLap}:${lap.childIndex}`, index);
-    });
+    const nextBlockLapOf = c => c.extras.blocks?.[0]?.lap ?? null;
 
-    // Una fila hija sin blockLap apareció antes de ver ningún bloque EN ESA
-    // captura (el bloque que la precede de verdad quedó recortado por
-    // encima del encuadre). Si esa misma captura sí muestra más adelante el
-    // primer bloque siguiente, se puede inferir con seguridad de qué bloque
-    // se trata (el anterior a ese) y su posición real dentro de él, usando
-    // cuántas filas hijas tiene ese bloque según la columna vertebral --
-    // nunca al revés (la columna vertebral nunca se corrige con esto).
-    function resolveLeadingRun(leadingRows, nextKnownBlockLap) {
+    skeletonSource.filter(c => c !== seed)
+        .forEach(c => mergeIntoSequence(sequence, c.extras.laps, { allowExtend: true, nextBlockLap: nextBlockLapOf(c) }));
 
-        if (nextKnownBlockLap == null) return []; // toda la captura es anónima -- sin ninguna referencia, se descarta entera.
+    // El esqueleto ya está completo (orden + distancia reales) -- se
+    // re-etiqueta blockLap/childIndex desde cero usando los bloques
+    // absolutos conocidos (por distancia acumulada), en vez de arrastrar
+    // esos campos fila a fila durante la fusión anterior: una fila
+    // extendida por solape de ritmo (huérfana, sin blockLap propio) se
+    // quedaba sin etiquetar, y eso hacía que el relleno de FC de más abajo
+    // (que sí necesita blockLap para ubicar filas huérfanas de otras
+    // capturas) contara mal cuántas filas tiene ese bloque.
+    retagSequenceWithBlocks(sequence, mergeBlocks(candidates));
 
-        const resolvedBlock = nextKnownBlockLap - 1;
-        const knownCount = blockChildCount.get(resolvedBlock);
-        if (resolvedBlock < 1 || knownCount == null) return [];
-
-        const startIndex = knownCount - leadingRows.length + 1;
-        if (startIndex < 1) return []; // la captura dice tener más filas de ese bloque de las que la columna vertebral conoce -- no se puede posicionar con seguridad.
-
-        return leadingRows.map((lap, i) => ({ ...lap, blockLap: resolvedBlock, childIndex: startIndex + i }));
-
+    if (distanceBearing.length) {
+        hrOnly.forEach(c => mergeIntoSequence(sequence, c.extras.laps, { allowExtend: false, nextBlockLap: nextBlockLapOf(c) }));
     }
 
-    candidates.forEach(result => {
-        if (result === backbone) return;
-
-        const laps = result.extras.laps;
-        const firstKnownIndex = laps.findIndex(l => l.blockLap != null);
-        const leadingRows = firstKnownIndex === -1 ? laps : laps.slice(0, firstKnownIndex);
-        const knownRows = firstKnownIndex === -1 ? [] : laps.slice(firstKnownIndex);
-
-        // El bloque que sigue a la fila hija huérfana no siempre trae más
-        // filas hijas propias detrás EN ESTA MISMA captura (puede acabar
-        // justo en la fila de bloque, ver REAL_RIGHT_VIEW_NO_DIST_TEXT) --
-        // así que la referencia real es la propia fila de bloque
-        // (extras.blocks[0], el primer bloque que aparece en esta captura,
-        // que por construcción es siempre el que sigue a la fila huérfana:
-        // blockLap solo es null ANTES de ver el primer bloque de la
-        // captura), no la siguiente fila hija con blockLap conocido.
-        const nextKnownBlockLap = result.extras.blocks?.[0]?.lap ?? knownRows[0]?.blockLap ?? null;
-
-        const resolvedLeading = leadingRows.length ? resolveLeadingRun(leadingRows, nextKnownBlockLap) : [];
-
-        [...resolvedLeading, ...knownRows].forEach(lap => {
-
-            const position = positionByKey.get(`${lap.blockLap}:${lap.childIndex}`);
-            if (position == null) return; // la columna vertebral no tiene esta posición -- no se inventa una fila nueva.
-
-            const target = merged[position];
-
-            // Si ambas capturas traen ritmo para la misma posición y no
-            // coincide, no son en realidad el mismo km real -- alguna de
-            // las dos se desalineó. Más seguro no fusionar nada de esa fila
-            // que arriesgarse a pegar la FC de un km en el ritmo de otro.
-            if (target.pace_min_km != null && lap.pace_min_km != null && target.pace_min_km !== lap.pace_min_km) return;
-
-            Object.entries(lap).forEach(([key, value]) => {
-                if (value != null && target[key] == null) target[key] = value;
-            });
-
-        });
-
-    });
-
-    // El orden ya es el correcto -- es el de la columna vertebral tal cual
-    // vino de una única captura sin mezclar; aquí solo se renumera de forma
+    // El orden ya es el correcto -- aquí solo se renumera de forma
     // secuencial y se quitan los campos de posicionamiento internos.
-    return merged.map(({ blockLap, childIndex, ...lap }, index) => ({ ...lap, lap: index + 1 }));
+    return sequence.map(({ blockLap, childIndex, ...lap }, index) => ({ ...lap, lap: index + 1 }));
 
 }
 

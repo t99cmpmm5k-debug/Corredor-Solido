@@ -305,12 +305,14 @@ describe("fusion.merge — mergeIntervalsRoadLaps: varias capturas de Intervalos
 
         const { laps } = merge([captureA, captureB]);
 
-        // Empate a 1 fila -- gana captureB (trae FC) como columna
-        // vertebral; el ritmo de captureA no coincide en esa misma
-        // posición real, así que ninguno de sus campos (aquí, distance_km)
-        // se fusiona -- captureB queda tal cual llegó.
+        // captureA trae distancia (captureB no) -- captureA forma la
+        // columna vertebral (el esqueleto solo lo fijan capturas con
+        // distancia real, ver mergeIntervalsRoadLaps). captureB entra como
+        // relleno de FC, pero su ritmo no coincide con el de captureA en
+        // esa misma posición real -- alguna de las dos se desalineó, así
+        // que ninguno de sus campos (aquí, la FC) se fusiona.
         expect(laps).toEqual([
-            { lap: 1, pace_min_km: "5:59", avg_heart_rate_bpm: 152, max_heart_rate_bpm: 159 }
+            { lap: 1, distance_km: 1, pace_min_km: "5:17" }
         ]);
 
     });
