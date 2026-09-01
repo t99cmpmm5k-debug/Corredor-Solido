@@ -168,29 +168,69 @@ function mergeLapsFromResults(results) {
 // autolaps de 1 km de Vueltas corren sin interrupción durante todo el
 // entreno, mientras que los de Intervalos reinician el conteo en cada
 // bloque manual -- su vuelta "5" y la vuelta "5" de Vueltas casi nunca son
-// el mismo kilómetro físico. Fusionarlas por número de vuelta (como hacía
-// mergeLapsFromResults antes de este fix) mezclaba ritmo/distancia de un
-// tramo con la FC de un tramo distinto sin ningún aviso, y el propio
-// desplazamiento relativo de Intervalos (numberingIsRelative, pensado para
-// realinear MÚLTIPLES capturas de esa MISMA vista entre sí) podía arrastrar
-// una vuelta a un número que ni siquiera existe en el entreno real (p. ej.
+// el mismo kilómetro físico. Fusionarlas por número de vuelta mezclaba
+// ritmo/distancia de un tramo con la FC de un tramo distinto sin ningún
+// aviso, y el desplazamiento relativo de Intervalos podía arrastrar una
+// vuelta a un número que ni siquiera existe en el entreno real (p. ej.
 // "km 17" en un entreno de 13,02 km) al chocar con las vueltas ya
 // conocidas de Vueltas. Por eso se fusionan por familia, nunca mezcladas:
 // si hay alguna captura real de Vueltas, esa es la única fuente de
 // workout.splits (más fiable: numeración continua de verdad, sin reinicios
 // por bloque) y las filas hijas de Intervalos se descartan enteras: no hay
 // forma fiable de saber a qué kilómetro real corresponden. Solo si NO hay
-// ninguna captura de Vueltas se usan las de Intervalos -- el caso para el
-// que se diseñó esta extracción, un entreno importado únicamente desde esa
-// pantalla.
+// ninguna captura de Vueltas se usan las de Intervalos -- ver
+// mergeSingleIntervalsRoadCapture() para por qué, DENTRO de esa familia,
+// tampoco se combinan varias capturas de Intervalos entre sí.
 function mergeLaps(results) {
 
     const splitsFamily = results.filter(r => r.parser?.startsWith("splits"));
     const fromSplits = mergeLapsFromResults(splitsFamily);
     if (fromSplits.length) return fromSplits;
 
-    const intervalsRoadFamily = results.filter(r => r.parser?.startsWith("intervals-road"));
-    return mergeLapsFromResults(intervalsRoadFamily);
+    return mergeSingleIntervalsRoadCapture(results);
+
+}
+
+// A diferencia de Vueltas (mergeLapsFromResults, con su mecanismo de
+// solape/fallback pensado para varios RE-SCROLLS genuinos de la MISMA
+// tabla continua), las capturas de Intervalos NUNCA se combinan entre sí
+// por número de vuelta relativo -- verificado real, con las propias
+// capturas de este entreno de 13,02 km, que ese mecanismo rompe de dos
+// formas distintas aquí: (a) sin solape real detectable, el fallback
+// "continúa tras la última vuelta conocida" ancla contra un número que no
+// tiene ninguna relación real con esta captura -- mismo tipo de bug que el
+// del "km 17" entre familias, pero DENTRO de la propia familia de
+// Intervalos (reproducido real: hasta 21 filas, con duplicados exactos de
+// ritmo como los "6:09/6:08/6:13" y "5:33/5:33" del reporte, y el
+// remanente real de 0,02 km/8:26 apareciendo repetido); (b) incluso con
+// solape "verificado" (un par de FC coincidente EXACTO), un solo tramo de
+// carrera estable repite el mismo ppm con total normalidad en varios km
+// reales distintos -- un solo par no es evidencia suficiente, y anclar el
+// desplazamiento contra él produjo vueltas con número NEGATIVO en la
+// reproducción real. No hay ninguna señal fiable con la que stitchear
+// capturas parciales de Intervalos sin arriesgarse a inventar una
+// posición -- así que, en vez de intentarlo, se usa UNA sola captura: la
+// más completa (más filas hijas; a igualdad de filas, la que además trae
+// FC). Las demás capturas de Intervalos se descartan enteras para
+// `laps` -- sus bloques (mergeBlocks) sí se siguen fusionando igual,
+// independiente de esto.
+function mergeSingleIntervalsRoadCapture(results) {
+
+    const candidates = results.filter(r => r.parser?.startsWith("intervals-road") && r.extras?.laps?.length);
+    if (!candidates.length) return [];
+
+    const best = candidates.reduce((a, b) => {
+        if (b.extras.laps.length !== a.extras.laps.length) {
+            return b.extras.laps.length > a.extras.laps.length ? b : a;
+        }
+        const bHasHr = b.extras.laps.some(l => l.avg_heart_rate_bpm != null);
+        const aHasHr = a.extras.laps.some(l => l.avg_heart_rate_bpm != null);
+        return (bHasHr && !aHasHr) ? b : a;
+    });
+
+    return best.extras.laps
+        .map(({ numberingIsRelative, ...lap }) => lap)
+        .sort((a, b) => a.lap - b.lap);
 
 }
 

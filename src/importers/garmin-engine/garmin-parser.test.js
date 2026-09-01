@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { parse } from "./garmin-parser.js";
 import { merge } from "./fusion.js";
+import { parseGarminWorkout } from "../garmin.js";
 
 // Mismos dos textos OCR reales que parser-splits.test.js (dos posiciones de
 // scroll distintas de la tabla de Vueltas desplazada), pero aquí probados a
@@ -125,11 +126,7 @@ describe("garmin-parser.parse — Intervalos de una Carrera normal (bloques real
     });
 
     // Vista izquierda (Tipo/Tiempo/Distancia/Ritmo) del MISMO entreno, con
-    // el mismo primer split hijo (ritmo "6:10") que REAL_INTERVALS_ROAD --
-    // para probar la integración real que faltaba: esta era la vista que de
-    // verdad usó el usuario para importar este entreno (RIGHT sin
-    // distancia, ver el fix de más arriba), y sin extraer su FC por km,
-    // workout.splits se quedaba sin FC pese a que la captura sí la traía.
+    // el mismo primer split hijo (ritmo "6:10") que REAL_INTERVALS_ROAD.
     const REAL_LEFT_VIEW_PARTIAL = [
         "Seleccionar tipo de paso",
         "Todos Carrera",
@@ -139,7 +136,20 @@ describe("garmin-parser.parse — Intervalos de una Carrera normal (bloques real
         "2 Carrera 11:17.6 2,02 5:35"
     ].join("\n");
 
-    it("integración real: la vista izquierda (distancia/ritmo) + la vista derecha sin distancia (ritmo/FC) fusionan en el mismo split -- no en dos independientes", () => {
+    // Corrección posterior (bug real "km 17"/"km 19" en producción, ver
+    // fusion.test.js "mergeSingleIntervalsRoadCapture"): combinar varias
+    // capturas de Intervalos por número de vuelta relativo -- lo que este
+    // test comprobaba originalmente -- generaba splits duplicados/fuera de
+    // rango en el entreno real de 13,02 km. Ahora NUNCA se combinan: se usa
+    // una sola captura de Intervalos (la más completa; a igualdad, la que
+    // trae FC), y las demás se descartan enteras para `laps` -- aquí las
+    // dos capturas tienen 1 fila hija cada una (empate), así que gana la
+    // que trae FC (REAL_INTERVALS_ROAD) y la distancia de la otra captura
+    // se pierde -- correcto: menos dato disponible es preferible a un dato
+    // fusionado con la vuelta equivocada. Los bloques (mergeBlocks) SÍ
+    // siguen fusionando con normalidad -- su número ya es absoluto, ese
+    // mecanismo nunca tuvo este problema.
+    it("con dos capturas de Intervalos (empate en filas hijas), gana la que trae FC -- nunca se combinan por número de vuelta relativo", () => {
 
         const leftResult = parse(REAL_LEFT_VIEW_PARTIAL);
         const rightResult = parse(REAL_INTERVALS_ROAD);
@@ -147,13 +157,89 @@ describe("garmin-parser.parse — Intervalos de una Carrera normal (bloques real
         const { laps, blocks } = merge([leftResult, rightResult]);
 
         expect(laps).toEqual([
-            { lap: 1, distance_km: 1, pace_min_km: "6:10", avg_heart_rate_bpm: 154, max_heart_rate_bpm: 157 }
+            { lap: 1, pace_min_km: "6:10", avg_heart_rate_bpm: 154, max_heart_rate_bpm: 157 }
         ]);
 
         expect(blocks).toEqual([
             { lap: 1, type: "Carrera", duration: "1:05:44", distance_km: 11, pace_min_km: "5:59" },
             { lap: 2, type: "Carrera", duration: "11:17", distance_km: 2.02, pace_min_km: "5:35", avg_heart_rate_bpm: 159, max_heart_rate_bpm: 165 }
         ]);
+
+    });
+
+    // Verificación pedida por el usuario tras el bug real de splits
+    // duplicados/fuera de rango (km 17, luego km 19): pipeline COMPLETO
+    // (texto OCR real -> garmin-parser.parse -> fusion.merge ->
+    // garmin.parseGarminWorkout), con las 3 capturas reales de este mismo
+    // entreno de 13,02 km (sábado 29 ago) ya transcritas en el repo --
+    // vista izquierda completa (REAL_LEFT_VIEW_TEXT, parser-intervals-
+    // road.test.js), vista derecha con distancia parcial (REAL_RIGHT_VIEW_
+    // TEXT, misma fuente) y vista derecha sin distancia parcial
+    // (REAL_INTERVALS_ROAD, arriba en este archivo). Confirma que
+    // workout.splits.length es exactamente 14 (los 13,02 km reales,
+    // último de 0,02 km) pase lo que pase con el orden de subida de las
+    // capturas, sin duplicados de ritmo ni ningún "lap" fuera de 1-14.
+    const REAL_LEFT_VIEW_TEXT = [
+        "Resumen Estadísticas Intervalos Gráficos Equipo",
+        "Int. Tipo Tiempo Dist. Ritmo medio",
+        "km",
+        "1 Carrera 1:05:44.6 11,00 5:59",
+        "Carrera 5:16.9 1,00 5:17",
+        "Carrera 5:24.8 1,00 5:25",
+        "Carrera 5:48.9 1,00 5:49",
+        "Carrera 5:50.2 1,00 5:50",
+        "Carrera 5:52.4 1,00 5:52",
+        "Carrera 6:09.1 1,00 6:09",
+        "Carrera 6:08.0 1,00 6:08",
+        "Carrera 6:12.9 1,00 6:13",
+        "Carrera 6:09.9 1,00 6:10",
+        "Carrera 6:22.7 1,00 6:23",
+        "Carrera 6:28.5 1,00 6:29",
+        "2 Carrera 11:17.6 2,02 5:35",
+        "Carrera 5:33.0 1,00 5:33",
+        "Carrera 5:32.7 1,00 5:33",
+        "Carrera 0:11.9 0,02 8:26",
+        "Total 1:17:02.2 13,02 5:55"
+    ].join("\n");
+
+    const REAL_RIGHT_VIEW_TEXT = [
+        "Seleccionar tipo de paso",
+        "Todos Carrera",
+        "Int. Distancia Ritmo medio GAP medio Frecuencia cardiaca media Frec. cardiaca max.",
+        "km min/km min/km ppm ppm",
+        "1 11,00 5:59 5:59 152 159",
+        "1,00 5:17 5:22 140 149",
+        "1,00 5:25 5:25 151 155",
+        "1,00 5:49 5:44 154 157",
+        "1,00 5:50 5:50 153 157",
+        "2 2,02 5:35 5:35 159 165",
+        "1,00 5:33 5:34 159 161",
+        "1,00 5:33 5:33 160 165",
+        "0,02 8:26 7:12 158 160",
+        "Total 13,02 5:55 5:55 153 165"
+    ].join("\n");
+
+    const EXPECTED_14_PACES = ["5:17", "5:25", "5:49", "5:50", "5:52", "6:09", "6:08", "6:13", "6:10", "6:23", "6:29", "5:33", "5:33", "8:26"];
+
+    it.each([
+        ["izquierda, derecha-con-dist, derecha-sin-dist", () => [REAL_LEFT_VIEW_TEXT, REAL_RIGHT_VIEW_TEXT, REAL_INTERVALS_ROAD]],
+        ["derecha-con-dist, derecha-sin-dist, izquierda", () => [REAL_RIGHT_VIEW_TEXT, REAL_INTERVALS_ROAD, REAL_LEFT_VIEW_TEXT]],
+        ["derecha-sin-dist, izquierda, derecha-con-dist", () => [REAL_INTERVALS_ROAD, REAL_LEFT_VIEW_TEXT, REAL_RIGHT_VIEW_TEXT]]
+    ])("orden de subida %s: workout.splits tiene exactamente 14 splits reales, sin duplicados ni fuera de rango", (_label, getTexts) => {
+
+        const results = getTexts().map(parse);
+        const merged = merge(results);
+        const workout = parseGarminWorkout(merged);
+
+        expect(workout.splits).toHaveLength(14);
+        expect(workout.splits.map(s => s.lap)).toEqual(Array.from({ length: 14 }, (_, i) => i + 1));
+        expect(workout.splits.map(s => s.distanceKm).reduce((sum, d) => sum + d, 0)).toBeCloseTo(13.02, 5);
+
+        const paces = workout.splits.map(s => {
+            const sec = s.paceSecPerKm;
+            return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`;
+        });
+        expect(paces).toEqual(EXPECTED_14_PACES);
 
     });
 
