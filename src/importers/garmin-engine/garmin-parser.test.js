@@ -275,13 +275,40 @@ describe("garmin-parser.parse — Intervalos de una Carrera normal (bloques real
 // la fila "Total" de Garmin colándose sin ninguna etiqueta que la distinga
 // de un km real cuando la vista de FC está desplazada del todo a la derecha
 // (99475cee, ritmo "5:55" que no es de ningún km real de este entreno).
+//
+// El texto de las 7 capturas se corrigió después (ver el bug real reportado
+// tras 3f8ff00: FC ausente en los km 9-11) para que sea el que de verdad
+// produce Tesseract, no una transcripción idealizada -- reproducido a mano
+// con el mismo pipeline enhance()+two-pass de recognize.js (gris, sin
+// reintento en binario porque ninguna de las 7 mejora el recuento de campos)
+// contra los 7 JPG reales. La transcripción anterior "limpiaba" sin querer
+// la basura OCR que Tesseract prepone real y sistemáticamente a la fila de
+// bloque ("7N 1 Carrera...", "NV 2 Carrera...") cuando lee el icono de
+// "EXPANDIR"/scroll justo encima -- con eso limpio, el número de bloque SÍ
+// se reconocía y el test pasaba aunque el bug real (ver más abajo) seguía
+// vivo. Con la basura real delante, NINGUNA fila de bloque de las 3 vistas
+// izquierda logra reconocerse (LEFT_BLOCK_ROW exige que la línea EMPIECE
+// por el número), así que ningún bloque llega a saber su distancia real y
+// retagSequenceWithBlocks() nunca llega a etiquetar el esqueleto -- el bug
+// real no estaba ahí (el esqueleto de distancia/ritmo se arma igual por
+// solape de ritmo, ver mergeIntervalsRoadLaps), sino en que matchByKey()
+// daba por resuelta la fila huérfana de RIGHT_3 (posiciones 9-11) contra la
+// posición 1-3 (la única cuenta de "childIndex por bloque" que
+// resolveOrphanRun podía ver en ese momento, la que ya había dejado
+// RIGHT_1 en el esqueleto) aunque el ritmo no coincidiera -- applyFieldMerge
+// rechazaba la fusión por el ritmo contradictorio, pero matchByKey no
+// miraba ese resultado y la daba igualmente por "ya resuelta", perdiendo su
+// FC real en vez de dejarla caer al solape de ritmo (que sí la sitúa bien).
 describe("garmin-parser — 7 capturas reales del dispositivo (entreno 13,02 km, 29 ago), ninguna vista cabe entera", () => {
 
-    const LEFT_1 = [ // 63f2745f -- bloque 1 completo hasta la posición 10 (falta la 11)
-        "Resumen Estadísticas Intervalos Gráficos Equi",
-        "EXPANDIR",
-        "Int. Tipo Tiempo Dist. Ritmo medio",
-        "1 Carrera 1:05:44.6 11,00 5:59",
+    const LEFT_1 = [ // 63f2745f -- bloque 1 completo hasta la posición 10 (falta la 11); "7N " delante del número de bloque es basura OCR real (icono de scroll/EXPANDIR), no un error de transcripción
+        "20:21 N sl 56 0 >",
+        "< Carrera :",
+        "lesumen Estadísticas Intervalos Gráficos Equipo",
+        "- EXPANDIR",
+        "Int. Tipo Tiempo Dist. Ritmo",
+        "km medio",
+        "7N 1 Carrera 1:05:44.6 11,00 5:59",
         "Carrera 5:16.9 1,00 5:17",
         "Carrera 5:24.8 1,00 5:25",
         "Carrera 5:48.9 1,00 5:49",
@@ -294,11 +321,11 @@ describe("garmin-parser — 7 capturas reales del dispositivo (entreno 13,02 km,
         "Carrera 6:22.7 1,00 6:23"
     ].join("\n");
 
-    const LEFT_2 = [ // 12f756cf -- posiciones 3-11, bloque 2 colapsado (sin sus hijas)
-        "20:21",
-        "Carrera",
-        "Resumen Estadísticas Intervalos Gráficos Equipo",
-        "Carrera 5:48.9 1,00 5:49",
+    const LEFT_2 = [ // 12f756cf -- posiciones 3-11, bloque 2 colapsado (sin sus hijas); "T5489" (posición 3) y "NV 2 Carrera..." (bloque 2) son basura OCR real, no un error de transcripción
+        "20:21 A wl 5G @",
+        "< Carrera :",
+        "lesumen Estadísticas Intervalos Gráficos Equipo",
+        "Carrera T5489 1,00 5:49",
         "Carrera 5:50.2 1,00 5:50",
         "Carrera 5:52.4 1,00 5:52",
         "Carrera 6:09.1 1,00 6:09",
@@ -307,19 +334,21 @@ describe("garmin-parser — 7 capturas reales del dispositivo (entreno 13,02 km,
         "Carrera 6:09.9 1,00 6:10",
         "Carrera 6:22.7 1,00 6:23",
         "Carrera 6:28.5 1,00 6:29",
-        "2 Carrera 11:17.6 2,02 5:35",
+        "NV 2 Carrera 11:17.6 2,02 5:35",
         "Total 1:17:02.2 13,02 5:55"
     ].join("\n");
 
-    const LEFT_3 = [ // d57bb0c1 -- posiciones 6-11 + bloque 2 con sus 3 hijas + Total
-        "Resumen Estadísticas Intervalos Gráficos Equi",
-        "Carrera 6:09.1 1,00 6:09",
+    const LEFT_3 = [ // d57bb0c1 -- posiciones 6-11 + bloque 2 con sus 3 hijas + Total; "©" (posición 6) y "7N 2 Carrera..." (bloque 2) son basura OCR real, no un error de transcripción
+        "20:21 A wl 5G @",
+        "< Carrera :",
+        "lesumen Estadísticas Intervalos Gráficos Equipo",
+        "Carrera © 6:091 1,00 6:09",
         "Carrera 6:08.0 1,00 6:08",
         "Carrera 6:12.9 1,00 6:13",
         "Carrera 6:09.9 1,00 6:10",
         "Carrera 6:22.7 1,00 6:23",
         "Carrera 6:28.5 1,00 6:29",
-        "2 Carrera 11:17.6 2,02 5:35",
+        "7N 2 Carrera 11:17.6 2,02 5:35",
         "Carrera 5:33.0 1,00 5:33",
         "Carrera 5:32.7 1,00 5:33",
         "Carrera 0:11.9 0,02 8:26",
@@ -329,8 +358,8 @@ describe("garmin-parser — 7 capturas reales del dispositivo (entreno 13,02 km,
     const RIGHT_1 = [ // 0e4dd1d0 -- bloque 1 + posiciones 1-4 (FC)
         "Seleccionar tipo de paso",
         "Todos Carrera",
-        "Int. Ritmo medio GAP medio Frecuencia cardiaca media Frec. cardiaca max. Ascenso total Descenso total",
-        "min/km min/km ppm ppm m m",
+        "Int. Ritmo medio GAP medio Frecuencia cardiaca media Frec. cardiaca max. Ascenso total Desce",
+        "min/km ppm ppm m",
         "1 5:59 5:59 152 159 66",
         "5:17 5:22 140 149 5",
         "5:25 5:25 151 155 3",
@@ -340,8 +369,8 @@ describe("garmin-parser — 7 capturas reales del dispositivo (entreno 13,02 km,
     const RIGHT_2 = [ // f9aa31df -- posiciones 4-8 (FC), sin ver ningún bloque en absoluto
         "Seleccionar tipo de paso",
         "Todos Carrera",
-        "Int. Ritmo medio GAP medio Frecuencia cardiaca media Frec. cardiaca max. Ascenso total Descenso total",
-        "min/km min/km ppm ppm m m",
+        "Int. Ritmo medio GAP medio Frecuencia cardiaca media Frec. cardiaca max. Ascenso total Desce",
+        "min/km ppm ppm m",
         "5:50 5:50 153 157 9",
         "5:52 5:52 153 156 4",
         "6:09 6:06 154 159 15",
@@ -349,11 +378,11 @@ describe("garmin-parser — 7 capturas reales del dispositivo (entreno 13,02 km,
         "6:13 6:14 154 159 3"
     ].join("\n");
 
-    const RIGHT_3 = [ // 1a66469c -- cola del bloque 1 (posiciones 9-11, sin ver el bloque 1) + bloque 2
+    const RIGHT_3 = [ // 1a66469c -- cola del bloque 1 (posiciones 9-11, sin ver el bloque 1) + bloque 2. Esta es la captura cuya FC real se perdía (bug real reportado tras 3f8ff00): sin ver ningún bloque antes de sus 3 filas, quedaban huérfanas y resolveOrphanRun las anclaba mal contra un recuento de bloque todavía incompleto (ver el comentario del describe)
         "Seleccionar tipo de paso",
         "Todos Carrera",
-        "Int. Ritmo medio GAP medio Frecuencia cardiaca media Frec. cardiaca max. Ascenso total Descenso total",
-        "min/km min/km ppm ppm m m",
+        "Int. Ritmo medio GAP medio Frecuencia cardiaca media Frec. cardiaca max. Ascenso total Desce",
+        "min/km ppm ppm m",
         "6:10 6:14 154 157 1",
         "6:23 6:18 154 157 6",
         "6:29 6:29 153 156 9",
@@ -363,8 +392,8 @@ describe("garmin-parser — 7 capturas reales del dispositivo (entreno 13,02 km,
     const RIGHT_4 = [ // 99475cee -- bloque 2 + sus 3 hijas (FC) + fila "Total" espuria (ritmo "5:55", ningún km real)
         "Seleccionar tipo de paso",
         "Todos Carrera",
-        "Int. Ritmo medio GAP medio Frecuencia cardiaca media Frec. cardiaca max. Ascenso total Descenso total",
-        "min/km min/km ppm ppm m m",
+        "Int. Ritmo medio GAP medio Frecuencia cardiaca media Frec. cardiaca max. Ascenso total Desce",
+        "min/km ppm ppm m",
         "2 5:35 5:35 159 165 7",
         "5:33 5:34 159 161 2",
         "5:33 5:33 160 165 3",

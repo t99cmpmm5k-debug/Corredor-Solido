@@ -234,17 +234,40 @@ function mergeLaps(results) {
 // km real del esqueleto, así que no encuentra dónde encajar y se descarta.
 const MIN_PACE_OVERLAP_MATCHES = 2;
 
+// Devuelve si de verdad se fusionó algo -- false si la fila contradice a la
+// ya existente (ver el comentario de más abajo), NUNCA silenciosamente
+// "aceptada sin efecto". matchByKey depende de este valor para decidir si
+// una fila con clave directa está realmente resuelta (ver más abajo): un
+// candidato con clave (blockLap, childIndex) errónea puede apuntar a una
+// posición YA OCUPADA por un km real distinto -- verificado real, entreno
+// de 13,02 km (ver garmin-parser.test.js): con las capturas de Intervalos
+// reales, ningún bloque logra leer su distancia (el número de bloque en el
+// encabezado sale con basura OCR delante -- "7N 1 Carrera...", "NV 2
+// Carrera..." -- y ninguna de las variantes de fila lo reconoce), así que
+// retagSequenceWithBlocks nunca corre y el (blockLap, childIndex) de cada
+// posición del esqueleto se queda parcial (solo el que ya trajeron consigo
+// las propias filas hijas de FC que sí vieron su bloque, como RIGHT_1 con
+// las posiciones 1-3). Cuando resolveOrphanRun necesita ese recuento para
+// otra captura de FC posterior (RIGHT_3, huérfana), lo encuentra
+// incompleto (3 en vez de 11) y le asigna las posiciones 1-3 -- que ya
+// pertenecen a otro km real. Sin este valor de retorno, matchByKey daba
+// esa fila por resuelta (encontró clave) aunque applyFieldMerge no llegara
+// a fusionar nada por el ritmo contradictorio, perdiendo la FC real de esa
+// fila entera en vez de dejarla caer al solape de ritmo (que sí la
+// posiciona bien, ver findPaceOverlapOffset).
 function applyFieldMerge(existing, lap) {
 
     // Si ambas capturas traen ritmo para la misma posición y no coincide,
     // no son en realidad el mismo km real -- alguna de las dos se
     // desalineó. Más seguro no fusionar nada de esa fila que arriesgarse a
     // pegar la FC de un km en el ritmo de otro.
-    if (existing.pace_min_km != null && lap.pace_min_km != null && existing.pace_min_km !== lap.pace_min_km) return;
+    if (existing.pace_min_km != null && lap.pace_min_km != null && existing.pace_min_km !== lap.pace_min_km) return false;
 
     Object.entries(lap).forEach(([key, value]) => {
         if (value != null && existing[key] == null) existing[key] = value;
     });
+
+    return true;
 
 }
 
@@ -254,7 +277,9 @@ function applyFieldMerge(existing, lap) {
 // que una captura que salta de un bloque a otro sin filas intermedias --
 // REAL_RIGHT_VIEW_TEXT, con solo 4 de las 11 filas del bloque 1 antes de
 // saltar al bloque 2 -- no rompe nada) y "sin resolver" (blockLap
-// desconocido, o una posición que la secuencia aún no tiene).
+// desconocido, una posición que la secuencia aún no tiene, o una clave que
+// SÍ existe pero pertenece a otro km real -- ver el comentario de
+// applyFieldMerge sobre por qué esa clave puede ser errónea).
 function matchByKey(sequence, candidateLaps) {
 
     const seqKeyIndex = new Map();
@@ -266,8 +291,7 @@ function matchByKey(sequence, candidateLaps) {
     candidateLaps.forEach(lap => {
         const key = lap.blockLap != null ? `${lap.blockLap}:${lap.childIndex}` : null;
         const target = key != null ? seqKeyIndex.get(key) : null;
-        if (target == null) { unresolved.push(lap); return; }
-        applyFieldMerge(sequence[target], lap);
+        if (target == null || !applyFieldMerge(sequence[target], lap)) { unresolved.push(lap); return; }
     });
 
     return unresolved;
