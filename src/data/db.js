@@ -2,7 +2,7 @@ import { SEED_RACES } from "./seedRaces.js";
 import { gymDays as DEFAULT_GYM_DAYS } from "./gymData.js";
 
 const DB_NAME = "corredor-solido";
-const DB_VERSION = 9;
+const DB_VERSION = 10;
 
 // Bookkeeping en meta (misma store que lastExportAt, ver backup.js) — se
 // escribe una sola vez, la primera vez que esta instalación pasa por
@@ -105,7 +105,8 @@ export const STORES = {
     gymSessions: "gymSessions",
     gymRoutines: "gymRoutines",
     plannedRaces: "plannedRaces",
-    customExercises: "customExercises"
+    customExercises: "customExercises",
+    referenceRoutes: "referenceRoutes"
 
 };
 
@@ -336,6 +337,18 @@ function upgrade(db, transaction) {
     if (!db.objectStoreNames.contains(STORES.customExercises)) {
 
         db.createObjectStore(STORES.customExercises, { keyPath: "id" });
+
+    }
+
+    // Recorridos de referencia (Running): agrupan entrenos ya existentes
+    // (por id, en workoutIds) para comparar eficiencia aeróbica entre
+    // ellos -- store nueva y separada a propósito, no un campo en
+    // `workouts`, para no tocar la estructura de un entreno ya importado
+    // por algo que puede no aplicarle nunca (ver
+    // referenceRouteStore.js/CLAUDE.md).
+    if (!db.objectStoreNames.contains(STORES.referenceRoutes)) {
+
+        db.createObjectStore(STORES.referenceRoutes, { keyPath: "id" });
 
     }
 

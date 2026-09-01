@@ -490,3 +490,82 @@ describe("deletePlannedSessions — borrado por lote (borrar una semana o el pla
     });
 
 });
+
+describe("updateWorkoutDayState — \"Estado del día\" opcional (Recorridos de referencia, ver RunningDetailView.js)", () => {
+
+    beforeEach(() => {
+
+        resetFakeIndexedDB();
+        vi.resetModules();
+
+    });
+
+    it("un entreno recién importado no tiene dayState -- puramente aditivo", async () => {
+
+        const { hydrate, addWorkout } = await import("./workoutStore.js");
+        await hydrate();
+
+        const workout = addWorkout({ date: "2026-08-24", distanceKm: 8, avgHr: 150 });
+
+        expect(workout.dayState).toBeUndefined();
+
+    });
+
+    it("guarda un patch parcial, creando dayState si no existía", async () => {
+
+        const { hydrate, addWorkout, updateWorkoutDayState, getWorkouts } = await import("./workoutStore.js");
+        await hydrate();
+
+        const workout = addWorkout({ date: "2026-08-24", distanceKm: 8, avgHr: 150 });
+        updateWorkoutDayState(workout.id, { sleepHours: 7, legsFeeling: "fresh" });
+
+        const updated = getWorkouts().find(w => w.id === workout.id);
+        expect(updated.dayState).toEqual({ sleepHours: 7, legsFeeling: "fresh" });
+
+        // Los datos reales del entreno no se tocan.
+        expect(updated.distanceKm).toBe(8);
+        expect(updated.avgHr).toBe(150);
+
+    });
+
+    it("un segundo patch se fusiona con el anterior, sin borrar campos ya guardados", async () => {
+
+        const { hydrate, addWorkout, updateWorkoutDayState, getWorkouts } = await import("./workoutStore.js");
+        await hydrate();
+
+        const workout = addWorkout({ date: "2026-08-24", distanceKm: 8 });
+        updateWorkoutDayState(workout.id, { legsFeeling: "heavy" });
+        updateWorkoutDayState(workout.id, { sessionRating: 7 });
+
+        const updated = getWorkouts().find(w => w.id === workout.id);
+        expect(updated.dayState).toEqual({ legsFeeling: "heavy", sessionRating: 7 });
+
+    });
+
+    it("un id que no existe no rompe nada, devuelve null", async () => {
+
+        const { hydrate, updateWorkoutDayState } = await import("./workoutStore.js");
+        await hydrate();
+
+        expect(updateWorkoutDayState("no-existe", { sleepHours: 8 })).toBeNull();
+
+    });
+
+    it("persiste de verdad en IndexedDB (sobrevive a una re-hidratación)", async () => {
+
+        const { hydrate, addWorkout, updateWorkoutDayState } = await import("./workoutStore.js");
+        await hydrate();
+
+        const workout = addWorkout({ date: "2026-08-24", distanceKm: 8 });
+        updateWorkoutDayState(workout.id, { fatigueLevel: "high" });
+
+        vi.resetModules();
+
+        const { hydrate: hydrateAgain, getWorkouts } = await import("./workoutStore.js");
+        await hydrateAgain();
+
+        expect(getWorkouts().find(w => w.id === workout.id).dayState).toEqual({ fatigueLevel: "high" });
+
+    });
+
+});

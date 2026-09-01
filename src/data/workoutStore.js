@@ -440,6 +440,30 @@ export function updateWorkoutShoe(id, shoeId) {
 
 }
 
+// "Estado del día" (Running, V1: Recorridos de referencia) -- campos
+// opcionales de contexto SUBJETIVO introducidos a mano (sueño/piernas/
+// fatiga/calor percibido/sensación 1-10, ver dayStateOptions.js), nunca
+// una corrección de ningún dato real importado -- por eso vive en su
+// propio sub-objeto `dayState` en vez de mezclarse con los campos del
+// propio entreno (distanceKm, avgHr...), y se fusiona campo a campo
+// (patch parcial) en vez de reemplazar el objeto entero: guardar solo
+// "sensación 7/10" no debe borrar unas "piernas pesadas" ya guardadas
+// antes para ese mismo entreno. Un entreno sin dayState (todos los ya
+// importados hasta ahora) sigue funcionando exactamente igual que antes
+// -- este campo es puramente aditivo.
+export function updateWorkoutDayState(id, patch) {
+
+    const workout = workouts.find(w => w.id === id);
+    if (!workout) return null;
+
+    workout.dayState = { ...(workout.dayState || {}), ...patch };
+
+    put(STORES.workouts, workout).catch(() => {});
+
+    return workout;
+
+}
+
 export function retireShoe(id) {
 
     return updateShoe(id, { status: "retired", retiredDate: formatISODate(new Date()) });
