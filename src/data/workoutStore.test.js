@@ -420,3 +420,73 @@ describe("duplicatePlannedSession — clonar una sesión real a otro día (menú
     });
 
 });
+
+describe("deletePlannedSessions — borrado por lote (borrar una semana o el plan completo de golpe, ver PlanHeader.js)", () => {
+
+    beforeEach(() => {
+
+        resetFakeIndexedDB();
+        vi.resetModules();
+
+    });
+
+    it("borra exactamente las sesiones cuyo id se le pasa, dejando el resto intacto", async () => {
+
+        const { hydrate, addPlannedSession, deletePlannedSessions, getPlannedSessions } = await import("./workoutStore.js");
+        await hydrate();
+
+        const a = addPlannedSession({ date: "2026-08-24", type: "z2" });
+        const b = addPlannedSession({ date: "2026-08-25", type: "tempo" });
+        const c = addPlannedSession({ date: "2026-08-26", type: "recovery" });
+
+        const deletedCount = deletePlannedSessions([a.id, b.id]);
+
+        expect(deletedCount).toBe(2);
+        expect(getPlannedSessions().map(s => s.id)).toEqual([c.id]);
+
+    });
+
+    it("borrar una semana entera solo afecta a esa semana (getWeekSessions), no a otras", async () => {
+
+        const { hydrate, addPlannedSession, deletePlannedSessions, getWeekSessions, getPlannedSessions } = await import("./workoutStore.js");
+        await hydrate();
+
+        addPlannedSession({ date: "2026-08-24", type: "z2" }); // semana del 24-08 (lunes)
+        addPlannedSession({ date: "2026-08-27", type: "tempo" }); // misma semana
+        addPlannedSession({ date: "2026-08-31", type: "longRun" }); // semana siguiente
+
+        const thisWeekIds = getWeekSessions("2026-08-24").map(s => s.id);
+        deletePlannedSessions(thisWeekIds);
+
+        expect(getPlannedSessions()).toHaveLength(1);
+        expect(getPlannedSessions()[0].date).toBe("2026-08-31");
+
+    });
+
+    it("borrar el plan completo (todas las plannedSessions) deja el store vacío", async () => {
+
+        const { hydrate, addPlannedSession, deletePlannedSessions, getPlannedSessions } = await import("./workoutStore.js");
+        await hydrate();
+
+        addPlannedSession({ date: "2026-08-24", type: "z2" });
+        addPlannedSession({ date: "2026-08-31", type: "longRun" });
+
+        deletePlannedSessions(getPlannedSessions().map(s => s.id));
+
+        expect(getPlannedSessions()).toHaveLength(0);
+
+    });
+
+    it("un array vacío no borra nada", async () => {
+
+        const { hydrate, addPlannedSession, deletePlannedSessions, getPlannedSessions } = await import("./workoutStore.js");
+        await hydrate();
+
+        addPlannedSession({ date: "2026-08-24", type: "z2" });
+
+        expect(deletePlannedSessions([])).toBe(0);
+        expect(getPlannedSessions()).toHaveLength(1);
+
+    });
+
+});

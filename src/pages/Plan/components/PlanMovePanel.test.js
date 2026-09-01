@@ -27,4 +27,18 @@ describe("PlanMovePanel -- modo mover vs. duplicar (fase 4 del pulido de Plan)",
 
     });
 
+    it("mode=\"moveGym\": instrucciones propias (día de la semana recurrente, no una fecha concreta) + cancelar mover gimnasio", () => {
+
+        const gymDay = { id: "gym1", title: "Torso" };
+        const html = PlanMovePanel(gymDay, "moveGym");
+
+        expect(html).toContain("Torso");
+        expect(html).toContain("cada semana");
+        expect(html).not.toContain("Desliza para cambiar de semana");
+        expect(html).toContain('data-action="cancel-move-gym-day"');
+        expect(html).not.toContain('data-action="cancel-move-session"');
+        expect(html).not.toContain('data-action="cancel-duplicate-session"');
+
+    });
+
 });

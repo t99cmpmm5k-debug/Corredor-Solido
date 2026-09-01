@@ -7,15 +7,17 @@ import { PlanConnector } from "./components/PlanConnector";
 import { PlanWorkoutCard } from "./components/PlanWorkoutCard";
 import { PlanGymDayCard } from "./components/PlanGymDayCard.js";
 import { PlanMoveDayPicker } from "./components/PlanMoveDayPicker.js";
+import { PlanGymMoveDayPicker } from "./components/PlanGymMoveDayPicker.js";
 import { PlanMovePanel } from "./components/PlanMovePanel.js";
 import { PlanImportWizard } from "./components/PlanImportWizard.js";
 import { PlanMonthCalendar } from "./components/PlanMonthCalendar.js";
 import { PlanCreateSessionPanel } from "./components/PlanCreateSessionPanel.js";
 import { BottomSheet } from "../../components/BottomSheet/BottomSheet.js";
 
-import { getSelectedWorkout, getViewedWeekStart, getMovingSessionId, getDuplicatingSessionId, getPlanViewMode, getViewedMonth, getCreatingSessionDate, getEditingSessionId, getNewSessionType, getNewSessionNotes, isAddSheetOpen } from "./planStore";
+import { getSelectedWorkout, getViewedWeekStart, getMovingSessionId, getDuplicatingSessionId, getMovingGymDayId, getPlanViewMode, getViewedMonth, getCreatingSessionDate, getEditingSessionId, getNewSessionType, getNewSessionNotes, isAddSheetOpen, isPlanOptionsMenuOpen } from "./planStore";
 import { getImportStep } from "./planImportStore.js";
 import { getWeekSessions, getSessionById, getPlannedSessions } from "../../data/workoutStore.js";
+import { getGymDay } from "../../data/gymRoutineStore.js";
 import { BottomNavigation } from "../../components/Navigation/BottomNavigation.js";
 import { parseISODate, addDays, formatDayMonth, getISOWeekNumber } from "../../utils/date.js";
 
@@ -126,6 +128,13 @@ export function Plan() {
     const duplicatingSessionId = getDuplicatingSessionId();
     const duplicatingSession = duplicatingSessionId ? getSessionById(duplicatingSessionId) : null;
 
+    // Día de gimnasio que se está moviendo a otro día de la semana (ver
+    // PlanGymDayCard.js/PlanGymMoveDayPicker.js/planStore.js) -- getGymDay()
+    // busca en TODAS las rutinas guardadas, no depende de qué semana se
+    // esté viendo (un día de gimnasio no tiene fecha propia).
+    const movingGymDayId = getMovingGymDayId();
+    const movingGymDay = movingGymDayId ? getGymDay(movingGymDayId) : null;
+
     // PlanEmptyState solo cubre "nunca se ha importado ningún plan" (cero
     // plannedSessions en toda la app) — una semana concreta sin sesiones
     // ya no manda aquí, la línea temporal pinta sus 7 días igual, con
@@ -135,8 +144,10 @@ export function Plan() {
     // mismo mes, ver PlanMonthCalendar). Si hay un movimiento o duplicado
     // en curso, se deja ver el selector de día igualmente (defensivo: en
     // la práctica no puede haber una sesión que mover/duplicar si nunca
-    // se importó ninguna).
-    if (viewMode === "week" && getPlannedSessions().length === 0 && !movingSession && !duplicatingSession) {
+    // se importó ninguna) -- moverGymDay puede darse aun sin ninguna
+    // plannedSession (gimnasio vive en su propio store), así que también
+    // cuenta aquí.
+    if (viewMode === "week" && getPlannedSessions().length === 0 && !movingSession && !duplicatingSession && !movingGymDay) {
         return PlanEmptyState(viewedWeekStart);
     }
 
@@ -160,13 +171,15 @@ export function Plan() {
             ? PlanMovePanel(movingSession, "move")
             : duplicatingSession
                 ? PlanMovePanel(duplicatingSession, "duplicate")
-                // Un día "solo gimnasio" (sin running, ver attachGymInfo()
-                // en PlanTimeline.js) guarda su objeto sintético en el mismo
-                // selectedWorkout -- gymOnly decide qué tarjeta pintar aquí,
-                // sin añadir un cuarto estado paralelo al ya existente.
-                : selectedWorkout?.gymOnly
-                    ? PlanGymDayCard(selectedWorkout)
-                    : PlanWorkoutCard(selectedWorkout);
+                : movingGymDay
+                    ? PlanMovePanel(movingGymDay, "moveGym")
+                    // Un día "solo gimnasio" (sin running, ver attachGymInfo()
+                    // en PlanTimeline.js) guarda su objeto sintético en el mismo
+                    // selectedWorkout -- gymOnly decide qué tarjeta pintar aquí,
+                    // sin añadir un cuarto estado paralelo al ya existente.
+                    : selectedWorkout?.gymOnly
+                        ? PlanGymDayCard(selectedWorkout)
+                        : PlanWorkoutCard(selectedWorkout);
 
     // Capa flotante por encima de toda la pantalla (fase 5 del pulido de
     // Plan) -- independiente de qué ocupe el hueco de detalle, así que se
@@ -189,7 +202,7 @@ export function Plan() {
 
             <section class="plan-page">
 
-                ${PlanHeader(viewedWeekStart, sessions, "", { viewMode })}
+                ${PlanHeader(viewedWeekStart, sessions, "", { viewMode, optionsMenuOpen: isPlanOptionsMenuOpen() })}
 
                 <div class="plan-month-section">
 
@@ -213,13 +226,15 @@ export function Plan() {
         ? PlanMoveDayPicker(viewedWeekStart, sessions, movingSession, "move")
         : duplicatingSession
             ? PlanMoveDayPicker(viewedWeekStart, sessions, duplicatingSession, "duplicate")
-            : PlanTimeline(selectedWorkout, sessions, viewedWeekStart);
+            : movingGymDay
+                ? PlanGymMoveDayPicker(movingGymDay)
+                : PlanTimeline(selectedWorkout, sessions, viewedWeekStart);
 
     return `
 
         <section class="plan-page">
 
-            ${PlanHeader(viewedWeekStart, sessions, timelineHtml, { viewMode })}
+            ${PlanHeader(viewedWeekStart, sessions, timelineHtml, { viewMode, optionsMenuOpen: isPlanOptionsMenuOpen() })}
 
             ${PlanConnector()}
 

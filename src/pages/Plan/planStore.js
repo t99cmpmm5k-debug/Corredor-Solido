@@ -133,6 +133,29 @@ export function setDuplicatingSessionId(id) {
 
 }
 
+// Id del día de gimnasio (gymDayId, ver PlanGymDayCard.js) que se está
+// moviendo a otro día de la semana -- aparte de movingSessionId a
+// propósito: son dos cosas distintas (mover running reasigna una FECHA
+// dentro de la semana que se esté viendo, ver movePlannedSession() en
+// workoutStore.js; mover gimnasio reasigna el weekday RECURRENTE de la
+// rutina, ver moveRoutineDayToWeekday() en gymRoutineStore.js -- afecta a
+// todas las semanas futuras, no solo a la que se esté viendo). Nunca
+// conviven a la vez (mover una sesión de running y un día de gimnasio al
+// mismo tiempo no tiene sentido en la UI), pero se guardan aparte para no
+// forzar a Plan.js a distinguir "¿qué tipo de cosa es este id?" leyendo
+// el propio store.
+export function getMovingGymDayId() {
+
+    return getState().movingGymDayId;
+
+}
+
+export function setMovingGymDayId(id) {
+
+    setState("movingGymDayId", id);
+
+}
+
 // Id de la sesión cuyo menú "···" está abierto ahora mismo (fase 4 del
 // pulido de Plan) — solo puede haber una tarjeta de sesión a la vez, así
 // que un simple id (no un Set) basta; null cuando no hay ningún menú
@@ -182,6 +205,21 @@ export function setAddSheetOpen(open) {
 
 }
 
+// Menú "···" de opciones de la cabecera de Plan (borrar semana/plan
+// completo) -- mismo patrón booleano simple que isAddSheetOpen(), solo
+// puede haber uno abierto a la vez.
+export function isPlanOptionsMenuOpen() {
+
+    return getState().planOptionsMenuOpen ?? false;
+
+}
+
+export function setPlanOptionsMenuOpen(open) {
+
+    setState("planOptionsMenuOpen", open);
+
+}
+
 // Vuelve a la semana actual y olvida cualquier sesión seleccionada de
 // otra semana — se llama solo al entrar en Plan desde la barra de
 // navegación (ver BottomNavigation.js), nunca en cada render de Plan(),
@@ -193,9 +231,11 @@ export function resetPlanView() {
     setState("selectedWorkout", null);
     setState("movingSessionId", null);
     setState("duplicatingSessionId", null);
+    setState("movingGymDayId", null);
     setState("sessionMenuOpenId", null);
     setState("expandedSessionId", null);
     setState("addSheetOpen", false);
+    setState("planOptionsMenuOpen", false);
     setState("planViewMode", "week");
     setState("viewedMonth", null);
     setState("creatingSessionDate", null);

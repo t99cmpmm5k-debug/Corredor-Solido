@@ -401,3 +401,102 @@
     border-color:var(--color-primary);
 
 }
+
+/* ==========================
+   MENÚ "···" (borrar semana/plan completo) -- mismo lenguaje visual que
+   .workout-menu-popover (PlanWorkoutCard.css), pero definido aparte:
+   ese vive sobre una tarjeta con fondo sólido, este sobre la foto de
+   cabecera, y position:relative propio aquí porque .plan-header-actions
+   no lo lleva (los otros dos botones no lo necesitan).
+========================== */
+
+.plan-options-menu{
+
+    position:relative;
+
+}
+
+.plan-options-popover{
+
+    position:absolute;
+
+    top:calc(100% + 8px);
+
+    right:0;
+
+    z-index:6;
+
+    display:flex;
+
+    flex-direction:column;
+
+    min-width:190px;
+
+    padding:6px;
+
+    border-radius:14px;
+
+    background:color-mix(in srgb, var(--card-background) 96%, transparent);
+
+    backdrop-filter:blur(20px);
+    -webkit-backdrop-filter:blur(20px);
+
+    border:1px solid color-mix(in srgb, var(--color-primary) 20%, transparent);
+
+    box-shadow:0 10px 30px rgba(0,0,0,.45);
+
+}
+
+.plan-options-popover button{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+
+    padding:10px 12px;
+
+    border:none;
+
+    border-radius:9px;
+
+    background:none;
+
+    color:var(--text-primary);
+
+    font-size:.88rem;
+
+    font-weight:600;
+
+    text-align:left;
+
+    cursor:pointer;
+
+}
+
+.plan-options-popover button:hover{
+
+    background:color-mix(in srgb, var(--color-primary) 10%, transparent);
+
+}
+
+.plan-options-popover iconify-icon{
+
+    font-size:17px;
+
+    color:var(--color-primary);
+
+}
+
+.plan-options-popover .plan-options-danger{
+
+    color:var(--color-danger);
+
+}
+
+.plan-options-popover .plan-options-danger iconify-icon{
+
+    color:var(--color-danger);
+
+}

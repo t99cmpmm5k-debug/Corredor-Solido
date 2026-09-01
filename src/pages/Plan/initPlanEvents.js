@@ -1,15 +1,16 @@
-import { setSelectedWorkout, getViewedWeekStart, setViewedWeekStart, getMovingSessionId, setMovingSessionId, getDuplicatingSessionId, setDuplicatingSessionId, getSessionMenuOpenId, setSessionMenuOpenId, getExpandedSessionId, setExpandedSessionId, getPlanViewMode, setPlanViewMode, shiftViewedMonth, getCreatingSessionDate, getEditingSessionId, startCreateSession, startEditSession, cancelCreateSession, getNewSessionType, setNewSessionType, getNewSessionNotes, setNewSessionNotes, isAddSheetOpen, setAddSheetOpen } from "./planStore";
+import { setSelectedWorkout, getViewedWeekStart, setViewedWeekStart, getMovingSessionId, setMovingSessionId, getDuplicatingSessionId, setDuplicatingSessionId, getMovingGymDayId, setMovingGymDayId, getSessionMenuOpenId, setSessionMenuOpenId, getExpandedSessionId, setExpandedSessionId, getPlanViewMode, setPlanViewMode, shiftViewedMonth, getCreatingSessionDate, getEditingSessionId, startCreateSession, startEditSession, cancelCreateSession, getNewSessionType, setNewSessionType, getNewSessionNotes, setNewSessionNotes, isAddSheetOpen, setAddSheetOpen, isPlanOptionsMenuOpen, setPlanOptionsMenuOpen } from "./planStore";
 import { rerender, navigate } from "../../core/router";
 
 import { importPlan } from "../../importers/plan/index.js";
-import { importPlannedSessions, addPlannedSession, updatePlannedSession, duplicatePlannedSession, getWeekSessions, getSessionById, getSessionsForDate, movePlannedSession, deletePlannedSession, deletePlannedSessionsByBatch } from "../../data/workoutStore.js";
-import { addDays, formatISODate } from "../../utils/date.js";
+import { importPlannedSessions, addPlannedSession, updatePlannedSession, duplicatePlannedSession, getWeekSessions, getSessionById, getSessionsForDate, getPlannedSessions, movePlannedSession, deletePlannedSession, deletePlannedSessions, deletePlannedSessionsByBatch } from "../../data/workoutStore.js";
+import { addDays, formatISODate, parseISODate, formatDayMonth, getISOWeekNumber } from "../../utils/date.js";
 import { PLAN_SESSION_REVIEW_FIELDS, parseSessionFieldValue } from "./components/PlanImportReviewStep.js";
 import { Running } from "../Running/Running.js";
 import { openDetail as openRunningDetail } from "../Running/initRunningEvents.js";
 import { Gym } from "../Gym/Gym.js";
 import { openDaySession, openRoutineBuilder } from "../Gym/initGymEvents.js";
-import { getRoutineById, deleteRoutine } from "../../data/gymRoutineStore.js";
+import { getRoutineById, deleteRoutine, moveRoutineDayToWeekday } from "../../data/gymRoutineStore.js";
+import { WEEKDAY_OPTIONS } from "../Gym/gymSchedule.js";
 import { buildGymOnlyDay } from "./components/PlanTimeline.js";
 
 import {
@@ -152,6 +153,20 @@ document.addEventListener("click", event => {
     if (event.target.closest(".workout-menu")) return;
 
     setSessionMenuOpenId(null);
+    rerender();
+
+});
+
+// Mismo patrón que el listener de arriba, pero para el menú "···" de la
+// cabecera de Plan (borrar semana/plan completo, ver PlanHeader.js) --
+// aparte porque es un booleano simple (isPlanOptionsMenuOpen), no un id
+// como sessionMenuOpenId.
+document.addEventListener("click", event => {
+
+    if (!isPlanOptionsMenuOpen()) return;
+    if (event.target.closest(".plan-options-menu")) return;
+
+    setPlanOptionsMenuOpen(false);
     rerender();
 
 });
@@ -352,14 +367,16 @@ function changeViewedWeek(deltaWeeks) {
 
 // Alterna semanal/mensual sin perder la posición de cada una (viewedWeekStart
 // y viewedMonth son estados independientes, ver planStore.js). Un
-// movimiento en curso no tiene UI en vista mensual (PlanMovePanel/
-// PlanMoveDayPicker son solo de la semanal) — cambiar de vista en medio
-// lo cancela, en vez de dejarlo colgado sin ningún control para salir de él.
+// movimiento en curso (running o gimnasio) no tiene UI en vista mensual
+// (PlanMoveDayPicker/PlanGymMoveDayPicker son solo de la semanal) —
+// cambiar de vista en medio lo cancela, en vez de dejarlo colgado sin
+// ningún control para salir de él.
 function togglePlanView() {
 
     setPlanViewMode(getPlanViewMode() === "week" ? "month" : "week");
 
     if (getMovingSessionId()) setMovingSessionId(null);
+    if (getMovingGymDayId()) setMovingGymDayId(null);
     if (getCreatingSessionDate()) cancelCreateSession();
 
     rerender();
@@ -525,6 +542,53 @@ function moveSessionTo(date) {
 
 }
 
+// "Mover sesión" de un día de gimnasio (ver PlanGymDayCard.js) -- mismo
+// patrón que startMoveSession()/cancelMoveSession(), pero con su propio
+// id de store (movingGymDayId, ver planStore.js): mover running y mover
+// gimnasio son dos flujos independientes que nunca conviven a la vez.
+function startMoveGymDay(dayId) {
+
+    setSessionMenuOpenId(null);
+    setMovingGymDayId(dayId);
+    rerender();
+
+}
+
+function cancelMoveGymDay() {
+
+    setMovingGymDayId(null);
+    rerender();
+
+}
+
+// A diferencia de moveSessionTo() (reasigna una FECHA concreta dentro de
+// la semana que se esté viendo), esto reasigna el weekday RECURRENTE del
+// día de gimnasio -- afecta a todas las semanas futuras, no solo a la
+// actual (ver moveRoutineDayToWeekday() en gymRoutineStore.js). Sin paso
+// de confirmación aparte, mismo criterio que moveSessionTo(). Reselecciona
+// el mismo día en su nueva columna DENTRO de la semana que se esté viendo
+// (WEEKDAY_OPTIONS va lunes-domingo, igual que las 7 columnas del
+// timeline, así que su índice ya es el offset real desde
+// getViewedWeekStart()) -- mismo "aterrizaje" que moveSessionTo() deja
+// para running (la tarjeta de detalle sigue mostrando el día movido, ya
+// en su sitio nuevo, en vez de quedarse sin nada seleccionado).
+function moveGymDayTo(weekday) {
+
+    const dayId = getMovingGymDayId();
+    if (!dayId) return;
+
+    moveRoutineDayToWeekday(dayId, weekday);
+    setMovingGymDayId(null);
+
+    const offset = WEEKDAY_OPTIONS.findIndex(w => w.id === weekday);
+    const newDate = offset === -1 ? null : addDays(getViewedWeekStart(), offset);
+
+    setSelectedWorkout(newDate ? buildGymOnlyDay(newDate) : null);
+
+    rerender();
+
+}
+
 const WEEK_SWIPE_THRESHOLD_PX = 50;
 const HORIZONTAL_INTENT_PX = 10;
 
@@ -643,6 +707,74 @@ function deleteSession(id) {
 
 }
 
+function togglePlanOptionsMenu() {
+
+    setPlanOptionsMenuOpen(!isPlanOptionsMenuOpen());
+    rerender();
+
+}
+
+// Borra de golpe TODAS las sesiones planificadas de la semana que se esté
+// viendo ahora mismo (getViewedWeekStart(), no la semana "actual" real) --
+// hasta ahora solo se podía borrar sesión por sesión desde el menú "···"
+// de cada tarjeta. Mismo criterio de confirmación que deleteSession(), con
+// el rango de fechas real en el texto para que quede claro QUÉ semana se
+// va a borrar antes de confirmar (fácil confundirse si se navegó a otra
+// semana). No toca gimnasio -- vive en un store aparte (gymRoutineStore.js,
+// recurrente por weekday, no por semana concreta), fuera del alcance de
+// "borrar esta semana del plan".
+function deletePlanWeek() {
+
+    setPlanOptionsMenuOpen(false);
+
+    const weekStart = getViewedWeekStart();
+    const sessions = getWeekSessions(weekStart);
+
+    if (!sessions.length) { rerender(); return; }
+
+    const weekNumber = getISOWeekNumber(parseISODate(weekStart));
+    const dateRange = `${formatDayMonth(weekStart)} · ${formatDayMonth(addDays(weekStart, 6))}`;
+
+    const sessionWord = sessions.length === 1 ? "la 1 sesión" : `las ${sessions.length} sesiones`;
+
+    if (!window.confirm(`¿Borrar toda la semana ${weekNumber} (${dateRange})? Se borrará ${sessionWord} de esa semana. No se puede deshacer.`)) {
+        rerender();
+        return;
+    }
+
+    deletePlannedSessions(sessions.map(s => s.id));
+    setSelectedWorkout(null);
+
+    rerender();
+
+}
+
+// Borra TODO el plan importado (todas las plannedSessions de la app,
+// cualquier semana) de golpe -- confirmación más explícita que
+// deletePlanWeek() (menciona el total real, no solo "esta semana") porque
+// el alcance es mucho mayor y no hay forma de deshacerlo salvo
+// reimportando. Mismo criterio "no toca gimnasio" que deletePlanWeek().
+function deletePlanAll() {
+
+    setPlanOptionsMenuOpen(false);
+
+    const allSessions = getPlannedSessions();
+    if (!allSessions.length) { rerender(); return; }
+
+    const sessionWord = allSessions.length === 1 ? "la 1 sesión" : `las ${allSessions.length} sesiones`;
+
+    if (!window.confirm(`¿Borrar TODO el plan? Se borrará ${sessionWord} de todas las semanas. No se puede deshacer.`)) {
+        rerender();
+        return;
+    }
+
+    deletePlannedSessions(allSessions.map(s => s.id));
+    setSelectedWorkout(null);
+
+    rerender();
+
+}
+
 // Deshace de golpe la importación que se acaba de guardar — solo
 // disponible desde la propia pantalla de éxito del wizard, con el
 // batchId que importPlannedSessions() acaba de devolver (ver
@@ -711,6 +843,31 @@ export function initPlanEvents() {
     document.querySelectorAll('[data-action="toggle-plan-view"]').forEach(button => {
 
         button.addEventListener("click", togglePlanView);
+
+    });
+
+    /*==========================
+        MENÚ "···" DE LA CABECERA (borrar semana/plan completo, PlanHeader.js)
+    ==========================*/
+
+    document.querySelectorAll('[data-action="toggle-plan-options-menu"]').forEach(button => {
+
+        button.addEventListener("click", event => {
+            event.stopPropagation();
+            togglePlanOptionsMenu();
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="delete-plan-week"]').forEach(button => {
+
+        button.addEventListener("click", deletePlanWeek);
+
+    });
+
+    document.querySelectorAll('[data-action="delete-plan-all"]').forEach(button => {
+
+        button.addEventListener("click", deletePlanAll);
 
     });
 
@@ -851,6 +1008,32 @@ export function initPlanEvents() {
 
         day.addEventListener("click", () => {
             moveSessionTo(day.dataset.date);
+        });
+
+    });
+
+    /*==========================
+        MOVER SESIÓN DE GIMNASIO (PlanGymDayCard.js/PlanGymMoveDayPicker.js)
+    ==========================*/
+
+    document.querySelectorAll('[data-action="start-move-gym-day"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+            startMoveGymDay(button.dataset.dayId);
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="cancel-move-gym-day"]').forEach(button => {
+
+        button.addEventListener("click", cancelMoveGymDay);
+
+    });
+
+    document.querySelectorAll('[data-action="move-gym-day-to"]').forEach(day => {
+
+        day.addEventListener("click", () => {
+            moveGymDayTo(day.dataset.weekday);
         });
 
     });

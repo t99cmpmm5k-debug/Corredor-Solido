@@ -11,7 +11,12 @@ import { formatKm } from "../../../utils/format.js";
 // viewMode "month" oculta las stats de la semana (semana/progreso) y el
 // timeline — no pintan nada en vista mensual, MonthCalendar ya trae su
 // propia cabecera con el mes y la navegación entre meses.
-export function PlanHeader(weekStartDate, sessions, timelineHtml = "", { viewMode = "week" } = {}) {
+//
+// optionsMenuOpen: menú "···" con "Borrar esta semana"/"Borrar plan
+// completo" (ver planStore.js/initPlanEvents.js) -- hasta ahora solo se
+// podía borrar sesión por sesión (menú "···" de cada tarjeta), sin forma
+// de tirar de golpe una semana entera o un plan importado por error.
+export function PlanHeader(weekStartDate, sessions, timelineHtml = "", { viewMode = "week", optionsMenuOpen = false } = {}) {
 
     const theme = themeManager.getTheme();
     const showWeekStats = viewMode === "week";
@@ -75,6 +80,38 @@ export function PlanHeader(weekStartDate, sessions, timelineHtml = "", { viewMod
                         +
 
                     </button>
+
+                    <div class="plan-options-menu">
+
+                        <button
+                            class="plan-add-button"
+                            data-action="toggle-plan-options-menu"
+                            aria-label="Más opciones del plan"
+                        >
+
+                            <iconify-icon icon="solar:menu-dots-bold-duotone"></iconify-icon>
+
+                        </button>
+
+                        ${optionsMenuOpen ? `
+
+                            <div class="plan-options-popover">
+
+                                <button data-action="delete-plan-week">
+                                    <iconify-icon icon="solar:calendar-mark-bold-duotone"></iconify-icon>
+                                    Borrar esta semana
+                                </button>
+
+                                <button class="plan-options-danger" data-action="delete-plan-all">
+                                    <iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon>
+                                    Borrar plan completo
+                                </button>
+
+                            </div>
+
+                        ` : ""}
+
+                    </div>
 
                     <button
                         class="plan-add-button plan-view-toggle"

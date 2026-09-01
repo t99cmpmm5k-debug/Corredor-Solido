@@ -23,6 +23,11 @@
     --color-warning: #FFB020;
     --color-danger: #FF5D5D;
 
+    /* Fuerza/Gimnasio -- antes reutilizaba un azul casi idéntico a
+       --color-primary (#2faeff vs #2EA8FF), indistinguible de "pendiente"
+       salvo por el icono a tamaño pequeño (ver planDayColor.js). */
+    --color-gym: #A78BFA;
+
     /* =====================================================
        BORDES
     ===================================================== */

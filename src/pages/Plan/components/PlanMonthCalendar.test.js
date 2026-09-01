@@ -41,7 +41,7 @@ describe("buildMarkersByDate", () => {
 
         const sessions = [
             { id: "s1", date: "2026-08-10", type: "z2", status: "pending" },
-            { id: "s2", date: "2026-08-11", type: "strength", status: "completed" }
+            { id: "s2", date: "2026-08-11", type: "recovery", status: "completed" }
         ];
 
         const markers = buildMarkersByDate(sessions);
@@ -52,7 +52,7 @@ describe("buildMarkersByDate", () => {
         });
 
         expect(markers["2026-08-11"][0]).toEqual({
-            icon: getWorkoutIcon("strength"),
+            icon: getWorkoutIcon("recovery"),
             color: resolveDayColor(sessions[1])
         });
 
@@ -61,17 +61,19 @@ describe("buildMarkersByDate", () => {
 
     });
 
-    it("series (intervals) y tirada larga (longRun) mantienen su color fijo pase lo que pase con el estado", () => {
+    it("series (intervals), tirada larga (longRun) y gimnasio (strength) mantienen su color fijo pase lo que pase con el estado", () => {
 
         const sessions = [
             { id: "s1", date: "2026-08-10", type: "intervals", status: "completed" },
-            { id: "s2", date: "2026-08-11", type: "longRun", status: "pending" }
+            { id: "s2", date: "2026-08-11", type: "longRun", status: "pending" },
+            { id: "s3", date: "2026-08-12", type: "strength", status: "completed" }
         ];
 
         const markers = buildMarkersByDate(sessions);
 
         expect(markers["2026-08-10"][0].color).toBe("#ff7a33");
         expect(markers["2026-08-11"][0].color).toBe("var(--color-warning)");
+        expect(markers["2026-08-12"][0].color).toBe("var(--color-gym)");
 
     });
 

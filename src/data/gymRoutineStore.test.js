@@ -242,4 +242,39 @@ describe("gymRoutineStore — CRUD real (crear/editar/borrar), ya no un único p
 
     });
 
+    it("moveRoutineDayToWeekday cambia el weekday de un día suelto sin tocar el resto de la rutina ni de las demás", async () => {
+
+        const { hydrate, createRoutine, moveRoutineDayToWeekday, getGymDay, getRoutineById } = await import("./gymRoutineStore.js");
+        await hydrate();
+
+        const routine = await createRoutine({
+            name: "Torso",
+            days: [
+                { id: "dia-lunes", title: "Día 1", weekday: "lunes", exercises: [] },
+                { id: "dia-jueves", title: "Día 2", weekday: "jueves", exercises: [] }
+            ],
+            progressionNote: "nota real"
+        });
+
+        const updated = moveRoutineDayToWeekday("dia-lunes", "martes");
+
+        expect(updated.id).toBe(routine.id);
+        expect(getGymDay("dia-lunes").weekday).toBe("martes");
+        // El otro día de la MISMA rutina no se toca.
+        expect(getGymDay("dia-jueves").weekday).toBe("jueves");
+        // El resto de la rutina (nombre, nota) tampoco se pierde al reescribir days.
+        expect(getRoutineById(routine.id).name).toBe("Torso");
+        expect(getRoutineById(routine.id).progressionNote).toBe("nota real");
+
+    });
+
+    it("moveRoutineDayToWeekday devuelve null si el día no pertenece a ninguna rutina guardada", async () => {
+
+        const { hydrate, moveRoutineDayToWeekday } = await import("./gymRoutineStore.js");
+        await hydrate();
+
+        expect(moveRoutineDayToWeekday("no-existe", "martes")).toBeNull();
+
+    });
+
 });

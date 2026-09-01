@@ -144,6 +144,34 @@ export function updateRoutine(id, { name, days, progressionNote }) {
 
 }
 
+// "Mover sesión" de gimnasio (ver PlanGymDayCard.js/PlanGymMoveDayPicker.js
+// en Plan) -- a diferencia de mover una sesión de running (que reasigna una
+// FECHA concreta dentro de esa semana, ver movePlannedSession() en
+// workoutStore.js), un día de gimnasio no tiene fecha propia: es un patrón
+// recurrente por día de la semana (day.weekday), así que "moverlo" cambia
+// ESE campo -- afecta a todas las semanas futuras, no solo a la que se
+// esté viendo en Plan en ese momento. updateRoutine() no tiene un update
+// parcial de un solo día, así que se reescribe el array `days` entero de
+// la rutina que lo contiene, igual que hace el propio constructor al
+// guardar cualquier otro cambio. null si dayId no pertenece a ninguna
+// rutina guardada (defensivo, no debería pasar: solo se llama con un id
+// que ya viene de un día real pintado en Plan).
+export function moveRoutineDayToWeekday(dayId, weekday) {
+
+    for (const routine of routines) {
+
+        const index = routine.days.findIndex(d => d.id === dayId);
+        if (index === -1) continue;
+
+        const days = routine.days.map((day, i) => i === index ? { ...day, weekday } : day);
+        return updateRoutine(routine.id, { name: routine.name, days, progressionNote: routine.progressionNote });
+
+    }
+
+    return null;
+
+}
+
 export function deleteRoutine(id) {
 
     const index = routines.findIndex(r => r.id === id);

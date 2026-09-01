@@ -149,6 +149,20 @@ export function PlanGymDayCard(gymDay) {
 
             </button>
 
+            ${!completed ? `
+
+                <button
+                    class="workout-button workout-button--ghost"
+                    data-action="start-move-gym-day"
+                    data-day-id="${gymDay.gymDayId}"
+                >
+
+                    MOVER SESIÓN
+
+                </button>
+
+            ` : ""}
+
         </section>
 
     `;

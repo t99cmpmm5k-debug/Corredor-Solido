@@ -106,6 +106,25 @@ describe("PlanGymDayCard -- tarjeta de detalle inline de gimnasio en Plan", () =
 
     });
 
+    it("sin completar, muestra MOVER SESIÓN (mismo patrón que running -- ver PlanWorkoutCard.js)", () => {
+
+        const html = PlanGymDayCard(gymDay({ gymCompleted: false }));
+
+        expect(html).toContain("MOVER SESIÓN");
+        expect(html).toContain('data-action="start-move-gym-day"');
+        expect(html).toContain('data-day-id="day-1"');
+
+    });
+
+    it("ya completada, no ofrece MOVER SESIÓN", () => {
+
+        const html = PlanGymDayCard(gymDay({ gymCompleted: true }));
+
+        expect(html).not.toContain("MOVER SESIÓN");
+        expect(html).not.toContain('data-action="start-move-gym-day"');
+
+    });
+
     it("el menú \"···\" solo se abre cuando este día tiene el menú activo, con Editar/Eliminar rutina (sin Duplicar)", () => {
 
         const closed = PlanGymDayCard(gymDay());

@@ -88,20 +88,22 @@ describe("fillWeekDays", () => {
 
 // Sistema de color con significado fijo (fase 2 del pulido de Plan,
 // 2026-08-27): azul=pendiente, verde=realizado, gris=descanso por
-// defecto -- series/tirada larga mantienen su color fijo pase lo que
-// pase con el estado (decisión explícita del usuario).
-describe("resolveDayColor -- color por ESTADO, con series/tirada larga como únicas excepciones fijas", () => {
+// defecto -- series/tirada larga/gimnasio mantienen su color fijo pase lo
+// que pase con el estado (decisión explícita del usuario). Gimnasio se
+// sumó después (bug real: reutilizaba el mismo azul que "pendiente",
+// #2faeff casi idéntico a --color-primary #2EA8FF, indistinguible salvo
+// por el icono a tamaño pequeño).
+describe("resolveDayColor -- color por ESTADO, con series/tirada larga/gimnasio como únicas excepciones fijas", () => {
 
     it("descanso (isRest) siempre gris, sin importar el tipo", () => {
         expect(resolveDayColor({ isRest: true, type: "z2", status: "pending" })).toBe("var(--color-text-muted)");
     });
 
-    it("pendiente (no completado) es azul, para cualquier tipo salvo series/tirada larga", () => {
+    it("pendiente (no completado) es azul, para cualquier tipo salvo series/tirada larga/gimnasio", () => {
         expect(resolveDayColor({ type: "z2", status: "pending" })).toBe("var(--color-primary)");
-        expect(resolveDayColor({ type: "strength", status: "upcoming" })).toBe("var(--color-primary)");
     });
 
-    it("realizado es verde, para cualquier tipo salvo series/tirada larga", () => {
+    it("realizado es verde, para cualquier tipo salvo series/tirada larga/gimnasio", () => {
         expect(resolveDayColor({ type: "z2", status: "completed" })).toBe("var(--color-success)");
         expect(resolveDayColor({ type: "recovery", status: "completed" })).toBe("var(--color-success)");
     });
@@ -114,6 +116,11 @@ describe("resolveDayColor -- color por ESTADO, con series/tirada larga como úni
     it("tirada larga (longRun) es siempre amarilla, tanto pendiente como realizada", () => {
         expect(resolveDayColor({ type: "longRun", status: "pending" })).toBe("var(--color-warning)");
         expect(resolveDayColor({ type: "longRun", status: "completed" })).toBe("var(--color-warning)");
+    });
+
+    it("gimnasio (strength) es siempre violeta, tanto pendiente como realizado -- nunca el azul de 'pendiente'", () => {
+        expect(resolveDayColor({ type: "strength", status: "upcoming" })).toBe("var(--color-gym)");
+        expect(resolveDayColor({ type: "strength", status: "completed" })).toBe("var(--color-gym)");
     });
 
 });

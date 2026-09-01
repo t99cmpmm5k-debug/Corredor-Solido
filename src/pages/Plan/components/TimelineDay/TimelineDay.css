@@ -191,8 +191,10 @@
    Día con running Y gimnasio a la vez -- el icono principal sigue siendo
    el de running (running manda al tocar, ver initPlanEvents.js), esto es
    solo la señal de que también hay gimnasio ese día. Arriba-derecha para
-   no pisar el check de completado (abajo-derecha). Mismo color #2faeff
-   que ya usa "strength" en WorkoutIcon.css.
+   no pisar el check de completado (abajo-derecha). Mismo --color-gym que
+   ya usa "strength" en WorkoutIcon.css -- antes era un azul casi idéntico
+   a --color-primary (#2faeff vs #2EA8FF), indistinguible de "pendiente"
+   salvo por el icono a este tamaño (bug real reportado).
 ========================*/
 
 .day-gym-badge{
@@ -211,7 +213,7 @@
     align-items:center;
     justify-content:center;
 
-    background:#2faeff;
+    background:var(--color-gym);
     border:2px solid var(--card-background);
     color:#FFFFFF;
 

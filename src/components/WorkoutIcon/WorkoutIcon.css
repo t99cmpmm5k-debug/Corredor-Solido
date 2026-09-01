@@ -159,8 +159,8 @@
 
 .workout-icon.strength{
 
-    color:#2faeff;
-    border-color:#2faeff;
+    color:var(--color-gym);
+    border-color:var(--color-gym);
 
 }
 

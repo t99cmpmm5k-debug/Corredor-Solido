@@ -353,6 +353,23 @@ export function deletePlannedSessionsByBatch(batchId) {
 
 }
 
+// Borrado por lote genérico (ver initPlanEvents.js: borrar una semana
+// entera o el plan completo de golpe, no solo sesión por sesión) --
+// misma base que deletePlannedSessionsByBatch() (deletePlannedSession()
+// ya limpia cualquier carrera enlazada), pero por lista de ids en vez de
+// por importBatchId, para cubrir también sesiones creadas/editadas a
+// mano que nunca tuvieron un lote de importación. Copia el array antes
+// de iterar -- deletePlannedSession() muta `plannedSessions` por dentro
+// (splice), recorrer ids en vez de la lista de sesiones evita cualquier
+// problema de índices desplazándose a mitad de la vuelta.
+export function deletePlannedSessions(ids) {
+
+    ids.forEach(id => deletePlannedSession(id));
+
+    return ids.length;
+
+}
+
 export function addShoe(shoeInput) {
 
     const shoe = {
