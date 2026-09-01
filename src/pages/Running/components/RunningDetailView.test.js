@@ -784,58 +784,38 @@ describe("RunningDetailView — comparación histórica del entreno (retoque de 
 
 });
 
-describe("RunningDetailView — RITMO POR INTERVALO (bloques reales de 'Intervalos' de una Carrera normal)", () => {
+// RITMO POR INTERVALO se eliminó por completo (no aportaba valor) -- el
+// componente RunningIntervalChart, su lógica de cálculo (averageIntervalPace)
+// y cualquier referencia a workout.intervals en RunningDetailView.js ya no
+// existen. Este describe solo confirma que no queda ningún rastro visible.
+describe("RunningDetailView — RITMO POR INTERVALO ya no existe", () => {
 
-    // Valores reales (5 capturas de un mismo entreno, 13,02 km: 11 km +
-    // 2,02 km) -- ver garmin.test.js/parser-intervals-road.test.js.
-    const twoIntervals = [
-        { interval: 1, type: "Carrera", durationSec: 3944, distanceKm: 11, paceSecPerKm: 359, avgHr: 152, maxHr: 159 },
-        { interval: 2, type: "Carrera", durationSec: 677, distanceKm: 2.02, paceSecPerKm: 335, avgHr: 159, maxHr: 165 }
-    ];
+    it("nunca aparece, ni aunque el workout traiga un campo 'intervals' residual (dato ignorado, no leído)", () => {
 
-    it("se muestra con 2+ bloques reales, una barra por bloque con su distancia", () => {
-
-        const html = RunningDetailView(workout({ intervals: twoIntervals, avgPaceSecPerKm: 355 }));
-
-        expect(html).toContain("RITMO POR INTERVALO");
-        expect(html).toContain("11 km");
-        expect(html).toContain("2.02 km");
-
-    });
-
-    it("con un solo bloque no se muestra -- un bloque no compara nada entre sí", () => {
-
-        const html = RunningDetailView(workout({ intervals: [twoIntervals[0]] }));
+        const html = RunningDetailView(workout({
+            intervals: [
+                { interval: 1, distanceKm: 11, paceSecPerKm: 359 },
+                { interval: 2, distanceKm: 2.02, paceSecPerKm: 335 }
+            ]
+        }));
 
         expect(html).not.toContain("RITMO POR INTERVALO");
 
     });
 
-    it("sin bloques (entreno con Vueltas normales, no Intervalos), no se muestra", () => {
+});
 
-        const html = RunningDetailView(workout({ intervals: [] }));
-
-        expect(html).not.toContain("RITMO POR INTERVALO");
-
-    });
-
-    it("es independiente de RITMO POR KILÓMETRO -- se muestra aunque no haya splits de 1 km", () => {
-
-        const html = RunningDetailView(workout({ splits: [], intervals: twoIntervals, avgPaceSecPerKm: 355 }));
-
-        expect(html).not.toContain("RITMO POR KILÓMETRO");
-        expect(html).toContain("RITMO POR INTERVALO");
-
-    });
+// Valores reales (5 capturas de un mismo entreno, 13,02 km: 11 km +
+// 2,02 km) -- ver garmin.test.js/parser-intervals-road.test.js.
+describe("RunningDetailView — entreno de 13,02 km importado solo desde 'Intervalos' (filas hijas como splits)", () => {
 
     // Ampliación del fix: las filas hijas de Intervalos (14 splits de 1 km
     // reales, mismo entreno de 13,02 km -- ver parser-intervals-road.test.js)
-    // ahora entran en workout.splits, así que RITMO POR KILÓMETRO debe
-    // pintarse EXACTAMENTE igual que en cualquier otro entreno con Vueltas
-    // normales (mismo componente RunningPaceChart, cero rama nueva) -- la
-    // única diferencia real de este entreno es que ADEMÁS aparece RITMO POR
-    // INTERVALO encima, no en su lugar.
-    it("con las 14 filas hijas reales como splits, RITMO POR KILÓMETRO se pinta igual que en cualquier otro entreno (13 barras, tras descartar el remanente de 0,02 km) y RITMO POR INTERVALO aparece además con sus 2 bloques", () => {
+    // entran en workout.splits, así que RITMO POR KILÓMETRO se pinta
+    // EXACTAMENTE igual que en cualquier otro entreno con Vueltas normales
+    // (mismo componente RunningPaceChart, cero rama nueva) -- sin ningún
+    // otro gráfico añadido encima (RITMO POR INTERVALO ya no existe).
+    it("con las 14 filas hijas reales como splits, RITMO POR KILÓMETRO se pinta igual que en cualquier otro entreno (13 barras, tras descartar el remanente de 0,02 km)", () => {
 
         const fourteenSplits = [
             { lap: 1, distanceKm: 1, paceSecPerKm: 317 },
@@ -857,15 +837,11 @@ describe("RunningDetailView — RITMO POR INTERVALO (bloques reales de 'Interval
             { lap: 14, distanceKm: 0.02, paceSecPerKm: 506 }
         ];
 
-        const html = RunningDetailView(workout({ splits: fourteenSplits, intervals: twoIntervals, avgPaceSecPerKm: 355 }));
+        const html = RunningDetailView(workout({ splits: fourteenSplits, avgPaceSecPerKm: 355 }));
 
         expect(html).toContain("RITMO POR KILÓMETRO");
-        expect(html).toContain("RITMO POR INTERVALO");
-
-        const [kmChartHtml, intervalChartHtml] = html.split("RITMO POR INTERVALO");
-
-        expect((kmChartHtml.match(/pace-chart-column/g) || [])).toHaveLength(13);
-        expect((intervalChartHtml.match(/pace-chart-column/g) || [])).toHaveLength(2);
+        expect(html).not.toContain("RITMO POR INTERVALO");
+        expect((html.match(/pace-chart-column/g) || [])).toHaveLength(13);
 
     });
 
@@ -878,8 +854,10 @@ describe("RunningDetailView — RITMO POR INTERVALO (bloques reales de 'Interval
     // línea de FC superpuesta y sin la parte del análisis que depende de FC
     // por km -- no porque el componente fuera otro, sino porque le faltaba
     // el dato. Con avgHr ya presente en los splits (tras el fix de
-    // extracción), deben reaparecer todos esos elementos, exactamente igual
-    // que en cualquier entreno con la tabla de Vueltas desplazada con FC.
+    // extracción), reaparecen todos esos elementos, exactamente igual que
+    // en cualquier entreno con la tabla de Vueltas desplazada con FC. Los
+    // 13 km tienen FC en este caso (dato real, sin huecos) -- el caso con
+    // huecos reales de FC se cubre aparte, ver el describe de más abajo.
     it("con FC por km en los splits (tras el fix de extracción de la vista sin Distancia), aparecen el toggle Ritmo+FC/Ritmo/FC, la línea de FC superpuesta y 'FC máxima por km' -- el mismo componente que cualquier otro entreno", () => {
 
         const splitsWithHr = [
@@ -899,7 +877,7 @@ describe("RunningDetailView — RITMO POR INTERVALO (bloques reales de 'Interval
             { lap: 14, distanceKm: 0.02, paceSecPerKm: 506, avgHr: 158 }
         ];
 
-        const html = RunningDetailView(workout({ splits: splitsWithHr, intervals: twoIntervals, avgPaceSecPerKm: 355, avgHr: 150 }));
+        const html = RunningDetailView(workout({ splits: splitsWithHr, avgPaceSecPerKm: 355, avgHr: 150 }));
 
         expect(html).toContain("pace-chart-mode-toggle");
         expect(html).toContain('data-mode="both"');
@@ -908,6 +886,42 @@ describe("RunningDetailView — RITMO POR INTERVALO (bloques reales de 'Interval
         expect(html).toContain("pace-chart-hr-overlay");
         expect(html).toContain("pace-chart-hr-line");
         expect(html).toContain("FC máxima por km: 162 ppm (km 13)");
+
+    });
+
+    // Bug real reportado: cuando la FC de verdad falta para un tramo (no un
+    // índice inventado, sino splits reales sin avgHr), la línea no debe
+    // saltar de un punto al siguiente como si fueran contiguos -- cada
+    // hueco corta el segmento (ver hrSegments()), y aquí se confirma que un
+    // hueco de varios km seguidos (6-10) dibuja dos grupos de puntos
+    // separados, nunca una única línea continua de km 5 a km 11.
+    it("un hueco real de FC en varios km seguidos no dibuja una línea continua saltando el hueco -- corta en dos segmentos", () => {
+
+        const splitsWithGap = [
+            { lap: 1, distanceKm: 1, paceSecPerKm: 317 },
+            { lap: 2, distanceKm: 1, paceSecPerKm: 325 },
+            { lap: 3, distanceKm: 1, paceSecPerKm: 349 },
+            { lap: 4, distanceKm: 1, paceSecPerKm: 350, avgHr: 146 },
+            { lap: 5, distanceKm: 1, paceSecPerKm: 352, avgHr: 147 },
+            { lap: 6, distanceKm: 1, paceSecPerKm: 369 },
+            { lap: 7, distanceKm: 1, paceSecPerKm: 368 },
+            { lap: 8, distanceKm: 1, paceSecPerKm: 373 },
+            { lap: 9, distanceKm: 1, paceSecPerKm: 370 },
+            { lap: 10, distanceKm: 1, paceSecPerKm: 383 },
+            { lap: 11, distanceKm: 1, paceSecPerKm: 389, avgHr: 154 },
+            { lap: 12, distanceKm: 1, paceSecPerKm: 333 },
+            { lap: 13, distanceKm: 1, paceSecPerKm: 333 }
+        ];
+
+        const html = RunningDetailView(workout({ splits: splitsWithGap, avgPaceSecPerKm: 355 }));
+
+        // Un único punto (km 11) sin vecino con FC no forma polyline -- solo
+        // el tramo 4-5 (2 puntos contiguos con FC real) dibuja una línea.
+        // class="pace-chart-hr-line" (con comillas) para no contar también
+        // el contenedor <svg class="pace-chart-hr-lines">, que comparte el
+        // mismo prefijo de nombre.
+        expect((html.match(/class="pace-chart-hr-line"/g) || [])).toHaveLength(1);
+        expect((html.match(/pace-chart-hr-dot/g) || [])).toHaveLength(3);
 
     });
 

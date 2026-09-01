@@ -69,9 +69,11 @@ describe("fusion.merge — combinación de bloques entre la vista izquierda y de
 });
 
 // Ampliación del fix: las filas hijas de Intervalos (extras.laps, ver
-// parser-intervals-road.js) usan la misma forma que las de parser-splits.js
-// -- mergeLaps() ya es genérico sobre extras.laps de cualquier resultado,
-// así que se fusionan por el mismo camino sin ningún caso especial aquí.
+// parser-intervals-road.js) usan la misma forma que las de parser-splits.js,
+// así que dentro de su propia familia (sin ninguna captura real de Vueltas
+// de por medio) se fusionan exactamente igual, sin ningún caso especial.
+// Cuando SÍ hay una captura real de Vueltas de por medio, mergeLaps() las
+// segrega en vez de mezclarlas -- ver el describe de más abajo.
 describe("fusion.merge — filas hijas de Intervalos (splits de 1 km) entran en `laps` como cualquier otra captura", () => {
 
     it("combina, para el mismo split, la distancia/ritmo de la vista izquierda con la FC de la vista derecha", () => {
@@ -112,6 +114,88 @@ describe("fusion.merge — filas hijas de Intervalos (splits de 1 km) entran en 
         const { warnings } = merge([rightView]);
 
         expect(warnings).toContain("El bloque 1 de Intervalos mide 11 km pero sus filas de 1 km suman 1.00 km -- revisar la captura.");
+
+    });
+
+});
+
+// Bug real reportado por el usuario: "FC máxima por km: 160 ppm (km 17)" en
+// un entreno de 13,02 km -- no existe ningún km 17. Causa: Vueltas
+// (parser-splits.js) e Intervalos (parser-intervals-road.js) son DOS
+// descomposiciones distintas del mismo entreno -- los autolaps de Vueltas
+// corren sin interrupción durante todo el entreno; los de Intervalos
+// reinician el conteo en cada bloque manual. Antes de este fix,
+// mergeLaps() las trataba como capturas de la MISMA tabla y las fusionaba
+// por número de vuelta compartido: cuando ya había una vuelta con FC
+// conocida (aunque viniera de una fusión previa de Intervalos, no de
+// Vueltas) y llegaba una nueva captura de Intervalos con numeración
+// relativa sin solape real que realinear, el fallback de "continúa tras la
+// última vuelta conocida" usaba el MÁXIMO de Vueltas (13) como ancla y
+// arrastraba las vueltas de Intervalos a números que no existen en el
+// entreno real (14-18 en este caso, con 17 en medio) -- silenciosamente,
+// sin ningún aviso, contaminando además la FC de vueltas que nunca
+// tuvieron relación real con esos splits.
+describe("fusion.merge — Vueltas reales + Intervalos del mismo entreno no se mezclan (bug del 'km 17')", () => {
+
+    it("con Vueltas reales de por medio, las filas hijas de Intervalos se descartan enteras -- nunca aparece un número de vuelta fuera del rango real del entreno", () => {
+
+        // Vueltas real: 13 vueltas reales (1-13), solo distancia/ritmo, sin FC.
+        const realVueltas = splitsResult(
+            Array.from({ length: 13 }, (_, i) => ({ lap: i + 1, distance_km: 1, pace_min_km: "5:30" }))
+        );
+
+        // Captura 1 de Intervalos (numeración relativa): local 1-3, con FC
+        // -- coincide por casualidad con las vueltas reales 1-3 y les rellena
+        // la FC (esto YA sería fusión cruzada indebida, pero es el paso que
+        // deja hasKnownHr=true para el bug real de más abajo).
+        const intervalsCapture1 = intervalsRoadResult([], [
+            { lap: 1, avg_heart_rate_bpm: 140, max_heart_rate_bpm: 150, numberingIsRelative: true },
+            { lap: 2, avg_heart_rate_bpm: 141, max_heart_rate_bpm: 151, numberingIsRelative: true },
+            { lap: 3, avg_heart_rate_bpm: 142, max_heart_rate_bpm: 152, numberingIsRelative: true }
+        ]);
+
+        // Captura 2 de Intervalos (numeración relativa, local 1-5, SIN
+        // solape real con la captura 1 -- ninguna FC coincide): con el bug
+        // real, el fallback de offset usa el máximo conocido (13, de
+        // Vueltas) y desplaza estas vueltas a 14-18, incluyendo el 17 del
+        // reporte real. avgHr=160 es a propósito el más alto de todos los
+        // splits para reproducir literalmente "FC máxima por km... (km 17)".
+        const intervalsCapture2 = intervalsRoadResult([], [
+            { lap: 1, avg_heart_rate_bpm: 155, max_heart_rate_bpm: 165, numberingIsRelative: true },
+            { lap: 2, avg_heart_rate_bpm: 156, max_heart_rate_bpm: 166, numberingIsRelative: true },
+            { lap: 3, avg_heart_rate_bpm: 157, max_heart_rate_bpm: 167, numberingIsRelative: true },
+            { lap: 4, avg_heart_rate_bpm: 160, max_heart_rate_bpm: 170, numberingIsRelative: true },
+            { lap: 5, avg_heart_rate_bpm: 158, max_heart_rate_bpm: 168, numberingIsRelative: true }
+        ]);
+
+        const { laps } = merge([realVueltas, intervalsCapture1, intervalsCapture2]);
+
+        // Solo las 13 vueltas reales -- ninguna de Intervalos entra, así
+        // que ningún número de vuelta puede superar el 13 real.
+        expect(laps).toHaveLength(13);
+        expect(Math.max(...laps.map(l => l.lap))).toBe(13);
+        expect(laps.every(l => l.lap >= 1 && l.lap <= 13)).toBe(true);
+
+        // Y, en particular, ninguna vuelta real queda contaminada con la FC
+        // de Intervalos -- las 13 vueltas reales siguen sin FC, tal cual
+        // las trajo Vueltas.
+        expect(laps.every(l => l.avg_heart_rate_bpm == null)).toBe(true);
+
+    });
+
+    it("sin ninguna captura real de Vueltas, las filas hijas de Intervalos SÍ se usan (el caso para el que se diseñaron)", () => {
+
+        const intervalsOnly = intervalsRoadResult([], [
+            { lap: 1, distance_km: 1, pace_min_km: "5:17", numberingIsRelative: true },
+            { lap: 2, distance_km: 1, pace_min_km: "5:25", numberingIsRelative: true }
+        ]);
+
+        const { laps } = merge([intervalsOnly]);
+
+        expect(laps).toEqual([
+            { lap: 1, distance_km: 1, pace_min_km: "5:17" },
+            { lap: 2, distance_km: 1, pace_min_km: "5:25" }
+        ]);
 
     });
 

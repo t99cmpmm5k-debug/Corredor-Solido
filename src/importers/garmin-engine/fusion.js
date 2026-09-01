@@ -129,7 +129,7 @@ function findOverlapOffset(lapsByNumber, candidateLaps) {
 // asume que la segunda continúa justo después de la última vuelta ya
 // conocida — mejor esa suposición razonable que perder las vueltas
 // enteras, que es el bug que esto corrige.
-function mergeLaps(results) {
+function mergeLapsFromResults(results) {
 
     const lapsByNumber = new Map();
 
@@ -159,6 +159,38 @@ function mergeLaps(results) {
     return [...lapsByNumber.values()]
         .map(({ numberingIsRelative, ...lap }) => lap)
         .sort((a, b) => a.lap - b.lap);
+
+}
+
+// Las vueltas de "Vueltas" (parser-splits.js) y las filas hijas de
+// "Intervalos" (parser-intervals-road.js) son DOS descomposiciones
+// distintas del mismo entreno, no dos capturas de la MISMA tabla: los
+// autolaps de 1 km de Vueltas corren sin interrupción durante todo el
+// entreno, mientras que los de Intervalos reinician el conteo en cada
+// bloque manual -- su vuelta "5" y la vuelta "5" de Vueltas casi nunca son
+// el mismo kilómetro físico. Fusionarlas por número de vuelta (como hacía
+// mergeLapsFromResults antes de este fix) mezclaba ritmo/distancia de un
+// tramo con la FC de un tramo distinto sin ningún aviso, y el propio
+// desplazamiento relativo de Intervalos (numberingIsRelative, pensado para
+// realinear MÚLTIPLES capturas de esa MISMA vista entre sí) podía arrastrar
+// una vuelta a un número que ni siquiera existe en el entreno real (p. ej.
+// "km 17" en un entreno de 13,02 km) al chocar con las vueltas ya
+// conocidas de Vueltas. Por eso se fusionan por familia, nunca mezcladas:
+// si hay alguna captura real de Vueltas, esa es la única fuente de
+// workout.splits (más fiable: numeración continua de verdad, sin reinicios
+// por bloque) y las filas hijas de Intervalos se descartan enteras: no hay
+// forma fiable de saber a qué kilómetro real corresponden. Solo si NO hay
+// ninguna captura de Vueltas se usan las de Intervalos -- el caso para el
+// que se diseñó esta extracción, un entreno importado únicamente desde esa
+// pantalla.
+function mergeLaps(results) {
+
+    const splitsFamily = results.filter(r => r.parser?.startsWith("splits"));
+    const fromSplits = mergeLapsFromResults(splitsFamily);
+    if (fromSplits.length) return fromSplits;
+
+    const intervalsRoadFamily = results.filter(r => r.parser?.startsWith("intervals-road"));
+    return mergeLapsFromResults(intervalsRoadFamily);
 
 }
 
