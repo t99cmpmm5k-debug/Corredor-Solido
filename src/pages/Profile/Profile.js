@@ -3,6 +3,7 @@ import "./Profile.css";
 import { BottomNavigation } from "../../components/Navigation/BottomNavigation.js";
 import { getBackupStatus } from "../../utils/backup.js";
 import { getFeedback } from "./profileStore.js";
+import { BUILD_ID } from "../../utils/buildInfo.js";
 
 function BackupReminder(status) {
 
@@ -127,6 +128,8 @@ export function Profile() {
                     </p>
 
                 </section>
+
+                <p class="profile-build-id">Versión ${BUILD_ID}</p>
 
             </div>
 
