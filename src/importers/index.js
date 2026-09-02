@@ -1,10 +1,12 @@
 import { parseGarminWorkout } from "./garmin.js";
 import { parseTcxWorkout } from "./tcx.js";
+import { parseGpxWorkout } from "./gpx.js";
 
 const parsers = {
 
     garmin: parseGarminWorkout,
-    tcx: parseTcxWorkout
+    tcx: parseTcxWorkout,
+    gpx: parseGpxWorkout
 
 };
 

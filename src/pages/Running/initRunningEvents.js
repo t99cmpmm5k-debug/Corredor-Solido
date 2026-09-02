@@ -304,6 +304,10 @@ function looksLikeTcx(text) {
     return /^\s*<\?xml/i.test(text) && text.includes("TrainingCenterDatabase");
 }
 
+function looksLikeGpx(text) {
+    return /^\s*<\?xml/i.test(text) && /<gpx[\s>]/i.test(text);
+}
+
 // Rellena la temperatura en segundo plano cuando el reloj no la trajo —
 // no bloquea la pantalla de revisión, que ya se muestra con el resto de
 // datos. Sin GPS ni nombre de lugar no hay nada que consultar, así que ni
@@ -350,7 +354,7 @@ function maybeEstimateTemperature(workout) {
 
 }
 
-// Un .tcx es un archivo de actividad ya completo por sí solo (a
+// Un .tcx/.gpx es un archivo de actividad ya completo por sí solo (a
 // diferencia de las capturas, que necesitan varias para fusionarse) —
 // no pasa por Tesseract ni por el paso "processing", el parseo XML es
 // instantáneo. Selección múltiple sigue yendo siempre por capturas.
@@ -377,9 +381,32 @@ async function handleTcxFileSelected(xmlText) {
 
 }
 
+async function handleGpxFileSelected(xmlText) {
+
+    setOcrError(null);
+    setParseError(null);
+
+    try {
+
+        const workout = importWorkout("gpx", xmlText);
+
+        setWorkout(workout);
+        setWizardStep("review");
+        maybeEstimateTemperature(workout);
+
+    } catch (err) {
+
+        setParseError(err.message);
+
+    }
+
+    rerender();
+
+}
+
 // Con un solo archivo que no es reconocible como imagen (captura), se lee
-// su contenido para decidir: si es un TCX válido se importa directo; si
-// no, se avisa con claridad en vez de intentar el OCR sobre algo que no
+// su contenido para decidir: si es un TCX o GPX válido se importa directo;
+// si no, se avisa con claridad en vez de intentar el OCR sobre algo que no
 // es una captura — mejor eso que un fallo confuso dentro de Tesseract.
 async function handleSingleNonImageFile(file) {
 
@@ -400,7 +427,11 @@ async function handleSingleNonImageFile(file) {
         return handleTcxFileSelected(text);
     }
 
-    setParseError(`"${file.name}" no es un archivo compatible — sube una captura de pantalla o un .tcx exportado desde tu reloj.`);
+    if (looksLikeGpx(text)) {
+        return handleGpxFileSelected(text);
+    }
+
+    setParseError(`"${file.name}" no es un archivo compatible — sube una captura de pantalla o un .tcx/.gpx exportado desde tu reloj.`);
     rerender();
 
 }

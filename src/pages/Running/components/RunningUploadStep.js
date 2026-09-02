@@ -73,17 +73,17 @@ export function RunningUploadStep({ progress, ocrError, parseError, timingLog })
                 <label class="upload-trigger">
 
                     <!-- Sin "accept": Safari en iOS no interpreta bien extensiones
-                         sueltas como ".tcx" (sin tipo MIME estándar) y puede dejar
-                         el archivo válido en gris, sin poder seleccionarlo. Se
+                         sueltas como ".tcx"/".gpx" (sin tipo MIME estándar) y puede
+                         dejar el archivo válido en gris, sin poder seleccionarlo. Se
                          valida el contenido real ya elegido en initRunningEvents.js
                          en vez de restringir aquí qué se puede ni siquiera tocar. -->
                     <input type="file" id="running-file-input" multiple hidden>
 
                     <iconify-icon icon="solar:gallery-add-bold-duotone"></iconify-icon>
 
-                    <strong>Seleccionar capturas o archivo TCX</strong>
+                    <strong>Seleccionar capturas o archivo TCX/GPX</strong>
 
-                    <span>Sube una o varias capturas del mismo entrenamiento (Resumen, Estadísticas, Vueltas...) o un único archivo .tcx exportado desde tu reloj/app (Amazfit, etc.). Para ver la FC por vuelta en el gráfico, en Vueltas desliza la tabla a la derecha hasta la columna "Frecuencia cardíaca media" antes de capturar — si no, el gráfico mostrará solo la FC media del entreno.</span>
+                    <span>Sube una o varias capturas del mismo entrenamiento (Resumen, Estadísticas, Vueltas...) o un único archivo .tcx/.gpx exportado desde tu reloj/app (Amazfit, Garmin Connect, Strava, etc.). Para ver la FC por vuelta en el gráfico, en Vueltas desliza la tabla a la derecha hasta la columna "Frecuencia cardíaca media" antes de capturar — si no, el gráfico mostrará solo la FC media del entreno.</span>
 
                 </label>
 
