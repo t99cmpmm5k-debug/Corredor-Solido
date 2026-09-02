@@ -3,11 +3,14 @@ import { addDays, formatISODate } from "./date.js";
 import {
     ACWR_ACUTE_DAYS,
     ACWR_CHRONIC_DAYS,
+    ACWR_BAR_DOMAIN_MAX,
     classifyAcwrZone,
     resolveReferenceMaxHr,
     computeRunningWorkoutLoad,
     buildRunningLoadEntries,
-    buildAcwrInsight
+    buildAcwrInsight,
+    ratioToBarPercent,
+    buildAcwrRecommendation
 } from "./acwr.js";
 
 const TODAY = new Date(2026, 8, 2); // 2026-09-02
@@ -27,6 +30,61 @@ describe("classifyAcwrZone", () => {
         expect(classifyAcwrZone(1.31).id).toBe("moderateRisk");
         expect(classifyAcwrZone(1.5).id).toBe("moderateRisk");
         expect(classifyAcwrZone(1.51).id).toBe("highRisk");
+
+    });
+
+    it("las etiquetas evitan lenguaje de diagnóstico -- nunca 'Riesgo elevado' en la franja más alta", () => {
+
+        expect(classifyAcwrZone(2).badgeLabel).toBe("Carga muy alta");
+        expect(classifyAcwrZone(2).badgeLabel).not.toMatch(/riesgo/i);
+        expect(classifyAcwrZone(2).barLabel).toBe("Muy alta");
+
+    });
+
+});
+
+describe("ratioToBarPercent", () => {
+
+    it("recorta al dominio visual -- un ratio por encima del tope se queda pegado al 100%", () => {
+
+        expect(ratioToBarPercent(0)).toBe(0);
+        expect(ratioToBarPercent(1, 2)).toBe(50);
+        expect(ratioToBarPercent(2, 2)).toBe(100);
+        expect(ratioToBarPercent(5, 2)).toBe(100);
+        expect(ratioToBarPercent(-1, 2)).toBe(0);
+
+    });
+
+    it("usa ACWR_BAR_DOMAIN_MAX por defecto", () => {
+
+        expect(ratioToBarPercent(ACWR_BAR_DOMAIN_MAX)).toBe(100);
+
+    });
+
+});
+
+describe("buildAcwrRecommendation", () => {
+
+    it("zonas Alta/Muy alta añaden el matiz de escucha corporal, sin sustituir la recomendación base", () => {
+
+        const high = buildAcwrRecommendation(classifyAcwrZone(1.4));
+        const veryHigh = buildAcwrRecommendation(classifyAcwrZone(2));
+
+        expect(high).toContain("Mantén o reduce ligeramente la carga");
+        expect(high).toContain("Si notas fatiga, piernas pesadas o peor recuperación");
+
+        expect(veryHigh).toContain("dale prioridad al descanso");
+        expect(veryHigh).toContain("Si notas fatiga, piernas pesadas o peor recuperación");
+
+    });
+
+    it("zonas Baja/Óptima no llevan el matiz de escucha corporal (no aplica a carga baja/normal)", () => {
+
+        const low = buildAcwrRecommendation(classifyAcwrZone(0.5));
+        const optimal = buildAcwrRecommendation(classifyAcwrZone(1));
+
+        expect(low).not.toContain("Si notas fatiga");
+        expect(optimal).not.toContain("Si notas fatiga");
 
     });
 
@@ -163,6 +221,7 @@ describe("buildAcwrInsight", () => {
         expect(result.ratio).toBeCloseTo(expectedAcute / expectedChronic, 6);
         expect(result.ratio).toBeCloseTo(1.6, 6);
         expect(result.zone.id).toBe("highRisk");
+        expect(result.percentVsBase).toBe(60); // (1.6 - 1) * 100
 
     });
 

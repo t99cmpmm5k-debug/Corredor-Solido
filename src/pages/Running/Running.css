@@ -438,7 +438,10 @@
 
 /* =========================
    CARGA DE ENTRENAMIENTO (ACWR)
-   Solo running por ahora -- ver utils/acwr.js
+   Solo running por ahora -- ver utils/acwr.js. 4 colores fijos por franja,
+   reutilizados en badge/barra de zonas/barra de comparación: Baja=primary
+   (azul, informativo, no "malo"), Óptima=success, Alta=warning,
+   Muy alta=danger.
 ========================= */
 
 .acwr-card{
@@ -447,7 +450,7 @@
 
     flex-direction:column;
 
-    gap:12px;
+    gap:16px;
 
     padding:16px;
 
@@ -463,7 +466,7 @@
 
     display:flex;
 
-    align-items:center;
+    align-items:flex-start;
 
     gap:12px;
 
@@ -495,6 +498,8 @@
 
 .acwr-card-header-text{
 
+    flex:1;
+
     display:flex;
 
     flex-direction:column;
@@ -502,6 +507,16 @@
     gap:2px;
 
     min-width:0;
+
+}
+
+.acwr-card-title-row{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:8px;
 
 }
 
@@ -519,11 +534,51 @@
 
 }
 
+.acwr-card-chip{
+
+    padding:1px 7px;
+
+    border-radius:999px;
+
+    background:color-mix(in srgb, var(--color-primary) 18%, transparent);
+
+    color:var(--color-primary);
+
+    font-size:.62rem;
+
+    font-weight:800;
+
+    letter-spacing:.02em;
+
+}
+
 .acwr-card-sublabel{
 
     color:var(--text-secondary);
 
     font-size:.76rem;
+
+    line-height:1.35;
+
+}
+
+.acwr-card-sublabel--muted{
+
+    opacity:.75;
+
+    font-size:.72rem;
+
+}
+
+.acwr-card-info-icon{
+
+    flex-shrink:0;
+
+    color:var(--text-secondary);
+
+    font-size:18px;
+
+    cursor:help;
 
 }
 
@@ -574,8 +629,8 @@
 }
 
 .acwr-card-zone-badge--detrained{
-    background:color-mix(in srgb, var(--color-warning) 16%, transparent);
-    color:var(--color-warning);
+    background:color-mix(in srgb, var(--color-primary) 16%, transparent);
+    color:var(--color-primary);
 }
 
 .acwr-card-zone-badge--optimal{
@@ -593,15 +648,337 @@
     color:var(--color-danger);
 }
 
-.acwr-card-hint{
+/* ---- Barra de zonas ---- */
+
+.acwr-zone-bar-wrap{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:6px;
+
+}
+
+.acwr-zone-bar-thresholds{
+
+    position:relative;
+
+    height:14px;
+
+}
+
+.acwr-zone-bar-thresholds span{
+
+    position:absolute;
+
+    top:0;
+
+    transform:translateX(-50%);
+
+    color:var(--text-secondary);
+
+    font-size:.66rem;
+
+    font-weight:700;
+
+    white-space:nowrap;
+
+}
+
+.acwr-zone-bar{
+
+    position:relative;
+
+    display:flex;
+
+    height:8px;
+
+    border-radius:999px;
+
+    overflow:hidden;
+
+}
+
+.acwr-zone-segment{
+
+    height:100%;
+
+}
+
+.acwr-zone-segment--detrained{ background:var(--color-primary); }
+.acwr-zone-segment--optimal{ background:var(--color-success); }
+.acwr-zone-segment--moderateRisk{ background:var(--color-warning); }
+.acwr-zone-segment--highRisk{ background:var(--color-danger); }
+
+/* Punto y etiqueta del marcador, independientes (no anidados) -- cada uno
+   se centra en horizontal con su propio translateX sobre el mismo left%,
+   así el punto queda exactamente sobre la línea de la barra y la
+   etiqueta flota encima, sin que el alto combinado de los dos descentre
+   al punto (ver commit de esta ronda). */
+.acwr-zone-marker-dot{
+
+    position:absolute;
+
+    top:50%;
+
+    z-index:2;
+
+    transform:translate(-50%, -50%);
+
+    width:14px;
+
+    height:14px;
+
+    border-radius:50%;
+
+    background:var(--text-primary);
+
+    border:3px solid var(--card-background);
+
+    box-shadow:0 2px 6px rgba(0,0,0,.35);
+
+}
+
+.acwr-zone-marker-value{
+
+    position:absolute;
+
+    bottom:calc(100% + 6px);
+
+    z-index:2;
+
+    transform:translateX(-50%);
+
+    padding:2px 7px;
+
+    border-radius:8px;
+
+    background:var(--text-primary);
+
+    color:var(--card-background);
+
+    font-size:.72rem;
+
+    font-weight:800;
+
+    white-space:nowrap;
+
+}
+
+.acwr-zone-bar-labels{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    color:var(--text-secondary);
+
+    font-size:.68rem;
+
+    font-weight:600;
+
+}
+
+/* ---- Comparación 7 días / base 28 días ---- */
+
+.acwr-compare{
+
+    display:flex;
+
+    flex-wrap:wrap;
+
+    gap:14px;
+
+    padding-top:14px;
+
+    border-top:1px solid color-mix(in srgb, var(--card-border) 70%, transparent);
+
+}
+
+.acwr-compare-bars{
+
+    flex:1;
+
+    min-width:160px;
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:10px;
+
+}
+
+.acwr-compare-row{
+
+    display:grid;
+
+    grid-template-columns:84px 1fr 40px;
+
+    align-items:center;
+
+    gap:8px;
+
+}
+
+.acwr-compare-label{
+
+    color:var(--text-secondary);
+
+    font-size:.72rem;
+
+}
+
+.acwr-compare-track{
+
+    height:8px;
+
+    border-radius:999px;
+
+    background:color-mix(in srgb, var(--card-border) 60%, transparent);
+
+    overflow:hidden;
+
+}
+
+.acwr-compare-fill{
+
+    display:block;
+
+    height:100%;
+
+    border-radius:999px;
+
+}
+
+.acwr-compare-fill--chronic{ background:var(--color-primary); }
+.acwr-compare-fill--detrained{ background:var(--color-primary); }
+.acwr-compare-fill--optimal{ background:var(--color-success); }
+.acwr-compare-fill--moderateRisk{ background:var(--color-warning); }
+.acwr-compare-fill--highRisk{ background:var(--color-danger); }
+
+.acwr-compare-value{
+
+    color:var(--text-primary);
+
+    font-size:.78rem;
+
+    font-weight:800;
+
+    text-align:right;
+
+}
+
+.acwr-percent-box{
+
+    flex-shrink:0;
+
+    min-width:112px;
+
+    display:flex;
+
+    flex-direction:column;
+
+    align-items:flex-start;
+
+    gap:2px;
+
+    padding:10px 12px;
+
+    border-radius:var(--radius-md);
+
+    background:color-mix(in srgb, var(--color-primary) 10%, transparent);
+
+}
+
+.acwr-percent-box iconify-icon{
+
+    color:var(--color-primary);
+
+    font-size:16px;
+
+}
+
+.acwr-percent-value{
+
+    color:var(--text-primary);
+
+    font-size:1rem;
+
+    font-weight:800;
+
+}
+
+.acwr-percent-label{
+
+    color:var(--text-secondary);
+
+    font-size:.68rem;
+
+    line-height:1.3;
+
+}
+
+/* ---- Recomendación ---- */
+
+.acwr-recommendation{
+
+    display:flex;
+
+    align-items:flex-start;
+
+    gap:10px;
+
+    padding:12px;
+
+    border-radius:var(--radius-md);
+
+    background:color-mix(in srgb, var(--color-primary) 8%, transparent);
+
+}
+
+.acwr-recommendation-icon{
+
+    flex-shrink:0;
+
+    color:var(--color-primary);
+
+    font-size:18px;
+
+    margin-top:1px;
+
+}
+
+.acwr-recommendation-body{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:2px;
+
+}
+
+.acwr-recommendation-title{
+
+    color:var(--color-primary);
+
+    font-size:.76rem;
+
+    font-weight:800;
+
+}
+
+.acwr-recommendation-body p{
 
     margin:0;
 
     color:var(--text-secondary);
 
-    font-size:.76rem;
+    font-size:.82rem;
 
-    line-height:1.4;
+    line-height:1.45;
 
 }
 

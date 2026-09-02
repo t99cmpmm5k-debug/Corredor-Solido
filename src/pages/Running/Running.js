@@ -9,7 +9,14 @@ import { formatSecondsAsClock, formatShoeName } from "../../utils/format.js";
 import { buildTypeProgressInsight, buildProgressMessage, buildPaceComparison, buildComparisonMessage } from "./runningProgress.js";
 import { buildTypeSummary } from "./runningSummary.js";
 import { buildListInsight } from "./runningListInsight.js";
-import { ACWR_CHRONIC_DAYS, buildRunningLoadEntries, buildAcwrInsight } from "../../utils/acwr.js";
+import {
+    ACWR_CHRONIC_DAYS,
+    ACWR_ZONE_THRESHOLDS,
+    buildRunningLoadEntries,
+    buildAcwrInsight,
+    ratioToBarPercent,
+    buildAcwrRecommendation
+} from "../../utils/acwr.js";
 
 import { BottomNavigation } from "../../components/Navigation/BottomNavigation.js";
 
@@ -661,6 +668,134 @@ function acwrUnavailableMessage(insight) {
 
 }
 
+function formatAcwrRatio(value) {
+    return value.toFixed(2);
+}
+
+// Posiciones fijas de la barra de zonas -- dependen solo de los cortes
+// reales (ACWR_ZONE_THRESHOLDS), nunca del ratio de un usuario concreto,
+// así que se calculan una vez.
+const ACWR_BAR_STOP_LOW = ratioToBarPercent(ACWR_ZONE_THRESHOLDS.low);
+const ACWR_BAR_STOP_OPTIMAL = ratioToBarPercent(ACWR_ZONE_THRESHOLDS.optimal);
+const ACWR_BAR_STOP_HIGH = ratioToBarPercent(ACWR_ZONE_THRESHOLDS.high);
+
+// Barra de zonas con los 3 cortes reales marcados y el ratio del usuario
+// como marcador móvil -- el marcador se recorta al dominio visual
+// (ratioToBarPercent) pero sigue mostrando el valor real en su etiqueta,
+// nunca un valor recortado como si fuera el real.
+function AcwrZoneBar(ratio) {
+
+    const markerPercent = ratioToBarPercent(ratio);
+
+    return `
+
+        <div class="acwr-zone-bar-wrap">
+
+            <div class="acwr-zone-bar-thresholds">
+                <span style="left:${ACWR_BAR_STOP_LOW}%">${formatAcwrRatio(ACWR_ZONE_THRESHOLDS.low)}</span>
+                <span style="left:${ACWR_BAR_STOP_OPTIMAL}%">${formatAcwrRatio(ACWR_ZONE_THRESHOLDS.optimal)}</span>
+                <span style="left:${ACWR_BAR_STOP_HIGH}%">${formatAcwrRatio(ACWR_ZONE_THRESHOLDS.high)}</span>
+            </div>
+
+            <div class="acwr-zone-bar">
+
+                <span class="acwr-zone-segment acwr-zone-segment--detrained" style="width:${ACWR_BAR_STOP_LOW}%"></span>
+                <span class="acwr-zone-segment acwr-zone-segment--optimal" style="width:${ACWR_BAR_STOP_OPTIMAL - ACWR_BAR_STOP_LOW}%"></span>
+                <span class="acwr-zone-segment acwr-zone-segment--moderateRisk" style="width:${ACWR_BAR_STOP_HIGH - ACWR_BAR_STOP_OPTIMAL}%"></span>
+                <span class="acwr-zone-segment acwr-zone-segment--highRisk" style="width:${100 - ACWR_BAR_STOP_HIGH}%"></span>
+
+                <span class="acwr-zone-marker-value" style="left:${markerPercent}%">${formatAcwrRatio(ratio)}</span>
+                <span class="acwr-zone-marker-dot" style="left:${markerPercent}%"></span>
+
+            </div>
+
+            <div class="acwr-zone-bar-labels">
+                <span>Baja</span>
+                <span>Óptima</span>
+                <span>Alta</span>
+                <span>Muy alta</span>
+            </div>
+
+        </div>
+
+    `;
+
+}
+
+// Carga crónica normalizada a 1.00 (es la base con la que se compara) --
+// la barra "Últimos 7 días" muestra el ratio real, "Base 28 días" siempre
+// 1.00. El signo del % lo pone insight.percentVsBase (buildAcwrInsight),
+// ya calculado a partir del mismo ratio, sin recalcular nada aquí.
+function AcwrCompareSection(insight) {
+
+    const acutePercent = ratioToBarPercent(insight.ratio);
+    const chronicPercent = ratioToBarPercent(1);
+
+    const percent = insight.percentVsBase;
+    const trendIcon = percent > 0
+        ? "solar:graph-up-bold-duotone"
+        : percent < 0
+            ? "solar:graph-down-bold-duotone"
+            : "solar:chart-2-bold-duotone";
+    const sign = percent > 0 ? "+" : "";
+
+    return `
+
+        <div class="acwr-compare">
+
+            <div class="acwr-compare-bars">
+
+                <div class="acwr-compare-row">
+                    <span class="acwr-compare-label">Últimos 7 días</span>
+                    <div class="acwr-compare-track">
+                        <span class="acwr-compare-fill acwr-compare-fill--${insight.zone.id}" style="width:${acutePercent}%"></span>
+                    </div>
+                    <span class="acwr-compare-value">${formatAcwrRatio(insight.ratio)}</span>
+                </div>
+
+                <div class="acwr-compare-row">
+                    <span class="acwr-compare-label">Base 28 días</span>
+                    <div class="acwr-compare-track">
+                        <span class="acwr-compare-fill acwr-compare-fill--chronic" style="width:${chronicPercent}%"></span>
+                    </div>
+                    <span class="acwr-compare-value">1.00</span>
+                </div>
+
+            </div>
+
+            <div class="acwr-percent-box">
+                <iconify-icon icon="${trendIcon}"></iconify-icon>
+                <span class="acwr-percent-value">${sign}${percent}%</span>
+                <span class="acwr-percent-label">vs. base 28 días</span>
+            </div>
+
+        </div>
+
+    `;
+
+}
+
+function AcwrRecommendationCard(zone) {
+
+    return `
+
+        <div class="acwr-recommendation">
+
+            <span class="acwr-recommendation-icon">
+                <iconify-icon icon="solar:lightbulb-bold-duotone"></iconify-icon>
+            </span>
+
+            <div class="acwr-recommendation-body">
+                <span class="acwr-recommendation-title">Recomendación</span>
+                <p>${buildAcwrRecommendation(zone)}</p>
+            </div>
+
+        </div>
+
+    `;
+
+}
+
 // Carga aguda (7 días) frente a carga crónica (28 días) -- solo running
 // por ahora (ver cabecera de utils/acwr.js). Siempre visible en Inicio de
 // Running, fuera del filtro por tipo -- es un dato sobre el conjunto real
@@ -676,7 +811,7 @@ function AcwrCard(insight) {
                 <div class="acwr-card-header">
 
                     <span class="acwr-card-header-icon">
-                        <iconify-icon icon="solar:shield-warning-bold-duotone"></iconify-icon>
+                        <iconify-icon icon="solar:chart-2-bold-duotone"></iconify-icon>
                     </span>
 
                     <div class="acwr-card-header-text">
@@ -702,25 +837,40 @@ function AcwrCard(insight) {
             <div class="acwr-card-header">
 
                 <span class="acwr-card-header-icon">
-                    <iconify-icon icon="solar:shield-warning-bold-duotone"></iconify-icon>
+                    <iconify-icon icon="solar:chart-2-bold-duotone"></iconify-icon>
                 </span>
 
                 <div class="acwr-card-header-text">
-                    <span class="acwr-card-label">CARGA DE ENTRENAMIENTO (ACWR)</span>
-                    <span class="acwr-card-sublabel">Solo running -- todavía sin datos de gimnasio</span>
+
+                    <span class="acwr-card-title-row">
+                        <span class="acwr-card-label">CARGA DE ENTRENAMIENTO</span>
+                        <span class="acwr-card-chip">ACWR</span>
+                    </span>
+
+                    <span class="acwr-card-sublabel">Calculado solo con running</span>
+                    <span class="acwr-card-sublabel acwr-card-sublabel--muted">La carga de gimnasio se añadirá cuando haya suficientes datos registrados.</span>
+
                 </div>
+
+                <span class="acwr-card-info-icon" title="Compara tu carga de los últimos 7 días con tu media de las últimas 4 semanas.">
+                    <iconify-icon icon="solar:info-circle-bold-duotone"></iconify-icon>
+                </span>
 
             </div>
 
             <div class="acwr-card-body">
 
-                <span class="acwr-card-ratio">${ratio.toFixed(2)}</span>
+                <span class="acwr-card-ratio">${formatAcwrRatio(ratio)}</span>
 
-                <span class="acwr-card-zone-badge acwr-card-zone-badge--${zone.id}">${zone.label}</span>
+                <span class="acwr-card-zone-badge acwr-card-zone-badge--${zone.id}">${zone.badgeLabel}</span>
 
             </div>
 
-            <p class="acwr-card-hint">Carga aguda (últimos 7 días) frente a carga crónica (últimos 28 días).</p>
+            ${AcwrZoneBar(ratio)}
+
+            ${AcwrCompareSection(insight)}
+
+            ${AcwrRecommendationCard(zone)}
 
         </div>
 

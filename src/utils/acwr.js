@@ -23,28 +23,82 @@ export const ACWR_CHRONIC_DAYS = 28;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 // Franjas estándar de interpretación del ratio (mismos cortes que usan
-// las guías de carga de entrenamiento habituales). 1.3-1.5 no se pidió
-// explícitamente, pero dejarlo sin clasificar entre "zona óptima" y
-// "riesgo elevado" sería un hueco -- se etiqueta aparte como riesgo
-// moderado en vez de forzarlo a una de las otras dos franjas.
+// las guías de carga de entrenamiento habituales: 0.8/1.3/1.5). 1.3-1.5
+// no se pidió explícitamente, pero dejarlo sin clasificar entre "zona
+// óptima" y la franja alta sería un hueco -- se etiqueta aparte en vez de
+// forzarlo a una de las otras dos.
+//
+// Dos etiquetas por franja a propósito: barLabel (corta, para la barra de
+// zonas) y badgeLabel (para el badge junto al ratio) -- ambas evitan
+// lenguaje de diagnóstico médico ("Riesgo elevado" sonaba a predicción de
+// lesión). El corte de la franja más alta sigue en 1.5, no en 1.8 -- una
+// imagen de referencia (mockup generado por IA) usaba 1.8, pero no es
+// fuente de verdad sobre el umbral real ya testeado.
 export const ACWR_ZONES = [
-    { id: "detrained", label: "Desentrenado" },
-    { id: "optimal", label: "Zona óptima" },
-    { id: "moderateRisk", label: "Riesgo moderado" },
-    { id: "highRisk", label: "Riesgo elevado" }
+    { id: "detrained", barLabel: "Baja", badgeLabel: "Carga baja" },
+    { id: "optimal", barLabel: "Óptima", badgeLabel: "Carga óptima" },
+    { id: "moderateRisk", barLabel: "Alta", badgeLabel: "Carga alta" },
+    { id: "highRisk", barLabel: "Muy alta", badgeLabel: "Carga muy alta" }
 ];
 
 const [DETRAINED, OPTIMAL, MODERATE_RISK, HIGH_RISK] = ACWR_ZONES;
 
-// Los tres cortes (0.8/1.3/1.5) caen siempre en la franja de ABAJO --
-// p. ej. 1.3 en punto todavía es "zona óptima", no "riesgo moderado".
+// Cortes reales de clasificación -- también usados para dibujar los
+// límites de la barra de zonas (ver ratioToBarPercent()/ACWR_BAR_STOPS).
+export const ACWR_ZONE_THRESHOLDS = { low: 0.8, optimal: 1.3, high: 1.5 };
+
+// Los tres cortes caen siempre en la franja de ABAJO -- p. ej. 1.3 en
+// punto todavía es "óptima", no "alta".
 export function classifyAcwrZone(ratio) {
 
-    if (ratio < 0.8) return DETRAINED;
-    if (ratio <= 1.3) return OPTIMAL;
-    if (ratio <= 1.5) return MODERATE_RISK;
+    if (ratio < ACWR_ZONE_THRESHOLDS.low) return DETRAINED;
+    if (ratio <= ACWR_ZONE_THRESHOLDS.optimal) return OPTIMAL;
+    if (ratio <= ACWR_ZONE_THRESHOLDS.high) return MODERATE_RISK;
 
     return HIGH_RISK;
+
+}
+
+// Tope visual de la barra de zonas -- el ratio real puede superarlo (una
+// racha muy intensa), la marca simplemente se queda pegada al borde
+// derecho en vez de salirse de la tarjeta. No afecta a la clasificación
+// real (classifyAcwrZone no tiene techo).
+export const ACWR_BAR_DOMAIN_MAX = 2;
+
+// Posición (0-100) de un ratio dentro de la barra de zonas, recortado al
+// dominio visual -- para el marcador del ratio actual y las dos barras de
+// comparación (7 días / base 28 días, esta última siempre en 1.00 por
+// definición).
+export function ratioToBarPercent(ratio, domainMax = ACWR_BAR_DOMAIN_MAX) {
+
+    const clamped = Math.max(0, Math.min(ratio, domainMax));
+
+    return (clamped / domainMax) * 100;
+
+}
+
+// Recomendación en lenguaje natural por franja. Alta/Muy alta llevan
+// además un matiz condicional de escucha corporal ("si notas...") --
+// nunca una predicción de lesión, solo una señal de cuándo NO forzar más
+// esta semana. Frase adicional, no sustituye a la recomendación base.
+const ACWR_RECOMMENDATION_BY_ZONE = {
+    detrained: "Tu carga actual es más baja que tu media de las últimas 4 semanas -- buen momento para retomar el ritmo con normalidad.",
+    optimal: "Tu carga actual está en una proporción saludable respecto a tu base de las últimas 4 semanas.",
+    moderateRisk: "Mantén o reduce ligeramente la carga antes de volver a aumentarla.",
+    highRisk: "Tu carga ha subido mucho más rápido de lo habitual -- dale prioridad al descanso antes de sumar más volumen o intensidad."
+};
+
+const ACWR_BODY_AWARENESS_HINT = "Si notas fatiga, piernas pesadas o peor recuperación, evita aumentar más la carga esta semana.";
+
+export function buildAcwrRecommendation(zone) {
+
+    const base = ACWR_RECOMMENDATION_BY_ZONE[zone.id];
+
+    if (zone.id === "moderateRisk" || zone.id === "highRisk") {
+        return `${base} ${ACWR_BODY_AWARENESS_HINT}`;
+    }
+
+    return base;
 
 }
 
@@ -149,6 +203,10 @@ export function buildAcwrInsight(loadEntries, { referenceDate = new Date() } = {
         zone: classifyAcwrZone(ratio),
         acuteLoad,
         chronicLoad,
+        // Carga crónica normalizada a 1.00 (es la base) -- el ratio ES
+        // directamente cuánto más/menos está la aguda respecto a esa base,
+        // así que el % es (ratio-1)*100, sin recalcular nada aparte.
+        percentVsBase: Math.round((ratio - 1) * 100),
         daysOfHistory
     };
 
