@@ -62,6 +62,32 @@ describe("parseGpxWorkout", () => {
 
     });
 
+    // Bug real (importación de un GPX de Strava/Garmin, 4 jul 2026):
+    // "10,529095678107987 km" se colaba tal cual en Revisar-datos y en la
+    // cabecera del detalle — a diferencia de TCX (metros/segundos enteros
+    // de la fuente) y OCR (dígitos ya redondeados de pantalla), aquí
+    // distanceKm sale de sumar haversine sobre cientos de puntos y arrastra
+    // ruido de punto flotante si no se redondea al construir el campo.
+    it("redondea distanceKm a 2 decimales aunque el haversine acumulado no salga limpio", () => {
+
+        const workout = parseGpxWorkout(buildGpx());
+        const decimals = String(workout.distanceKm).split(".")[1] ?? "";
+
+        // Sin redondear, la suma de haversine sobre estos puntos da un
+        // número con muchos más de 2 decimales (ruido de punto flotante) —
+        // este umbral falla si se quita el redondeo.
+        expect(decimals.length).toBeLessThanOrEqual(2);
+
+    });
+
+    it("redondea durationSec a segundos enteros", () => {
+
+        const workout = parseGpxWorkout(buildGpx());
+
+        expect(Number.isInteger(workout.durationSec)).toBe(true);
+
+    });
+
     it("deriva FC media/máxima de los propios puntos", () => {
 
         const workout = parseGpxWorkout(buildGpx());

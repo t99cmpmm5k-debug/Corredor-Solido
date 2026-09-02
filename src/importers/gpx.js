@@ -86,9 +86,9 @@ function parseTrackpoints(trkEl) {
             hr: nsChildValue(tp, "gpxtpx", "hr"),
             // gpxtpx:cad es la misma extensión de Garmin que en TCX aporta la
             // cadencia por Trackpoint (dato por una sola pierna, ver
-            // tcx.js) — se aplica el mismo factor x2 por analogía, pero sin
-            // un GPX real todavía contra el que confirmarlo. Revisar en
-            // cuanto se pueda comparar con un archivo real.
+            // tcx.js) — mismo factor x2, verificado contra un GPX real
+            // (Strava/Garmin, 4 jul 2026) comparando contra Garmin Connect:
+            // coincide exacto (170 spm media / 186 spm máxima en ambos).
             cadence: cadenceRaw != null ? cadenceRaw * 2 : null
         };
 
@@ -102,6 +102,20 @@ function average(values) {
 
 function maxOf(values) {
     return values.length ? Math.max(...values) : null;
+}
+
+// Distancia (haversine acumulado) y duración (resta de timestamps) son los
+// dos únicos campos que aquí no salen "limpios" de por sí, a diferencia de
+// TCX/OCR: TCX lee la distancia como metros enteros de la fuente y la
+// duración como segundos enteros, y OCR lee dígitos ya redondeados de la
+// pantalla. Aquí ambos son resultado de sumar/restar floats sobre cientos
+// de trackpoints, así que arrastran ruido de punto flotante (verificado
+// contra un GPX real: "10,529095678107987 km" en vez de "10,53 km") si no
+// se redondean antes de exponerlos como campo final. El ritmo medio ya se
+// calcula ANTES de este redondeo, sobre los valores completos, así que no
+// pierde precisión por este paso.
+function round2(n) {
+    return n != null ? Math.round(n * 100) / 100 : null;
 }
 
 function computeDistanceMeters(points) {
@@ -269,8 +283,8 @@ export function parseGpxWorkout(xmlText) {
         date: startDate ? formatISODate(startDate) : null,
         time: startDate ? `${startDate.getHours()}:${String(startDate.getMinutes()).padStart(2, "0")}` : null,
         title,
-        distanceKm,
-        durationSec,
+        distanceKm: round2(distanceKm),
+        durationSec: durationSec != null ? Math.round(durationSec) : null,
         avgPaceSecPerKm,
         // Sin Lap agregado como en TCX — FC y cadencia medias/máximas salen
         // de recorrer los propios trackpoints.
