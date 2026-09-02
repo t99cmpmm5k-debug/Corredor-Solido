@@ -260,3 +260,63 @@
     line-height:1.4;
 
 }
+
+/*==========================
+  DIAGNÓSTICO ACWR (temporal)
+==========================*/
+
+.acwr-check-group-title{
+
+    margin:6px 0 -4px;
+
+    color:var(--text-secondary);
+
+    font-size:.72rem;
+
+    font-weight:800;
+
+    text-transform:uppercase;
+
+    letter-spacing:.04em;
+
+}
+
+.acwr-check-row{
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:space-between;
+
+    gap:12px;
+
+    padding:8px 0;
+
+    border-bottom:1px solid color-mix(in srgb, var(--text-secondary) 14%, transparent);
+
+    font-size:.86rem;
+
+}
+
+.acwr-check-row:last-child{
+
+    border-bottom:none;
+
+}
+
+.acwr-check-row span{
+
+    color:var(--text-secondary);
+
+}
+
+.acwr-check-row strong{
+
+    color:var(--text-primary);
+
+    font-weight:800;
+
+    text-align:right;
+
+}

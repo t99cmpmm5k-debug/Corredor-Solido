@@ -5,6 +5,9 @@ import { getBackupStatus } from "../../utils/backup.js";
 import { getFeedback } from "./profileStore.js";
 import { BUILD_ID } from "../../utils/buildInfo.js";
 
+// TEMPORAL - QUITAR CUANDO SE CIERRE EL DIAGNÓSTICO DE ACWR (ver AcwrDataCheck.js)
+import { AcwrDataCheckCard } from "../../dev/AcwrDataCheck.js";
+
 function BackupReminder(status) {
 
     if (!status.shouldRemind) return "";
@@ -128,6 +131,8 @@ export function Profile() {
                     </p>
 
                 </section>
+
+                ${AcwrDataCheckCard()}
 
                 <p class="profile-build-id">Versión ${BUILD_ID}</p>
 
