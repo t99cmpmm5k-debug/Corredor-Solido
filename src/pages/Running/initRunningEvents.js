@@ -48,7 +48,8 @@ import {
     getNewRouteName,
     setNewRouteName,
     getRouteMenuOpenId,
-    setRouteMenuOpenId
+    setRouteMenuOpenId,
+    toggleRouteSort
 } from "./runningStore.js";
 
 const DETAIL_HISTORY_STATE = { runningDetail: true };
@@ -957,6 +958,18 @@ export function initRunningEvents() {
             unassignWorkoutFromReferenceRoutes(button.dataset.workoutId);
             rerender();
 
+        });
+
+    });
+
+    // Cabeceras ordenables de ReferenceRouteWorkoutTable.js -- estado
+    // propio (routeSortColumn/routeSortDirection), independiente del de
+    // la tabla general de Running (toggleSort/sort-history-table).
+    document.querySelectorAll('[data-action="sort-route-table"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+            toggleRouteSort(button.dataset.column);
+            rerender();
         });
 
     });

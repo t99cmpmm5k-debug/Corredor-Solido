@@ -36,19 +36,19 @@ describe("ReferenceRouteDetailView -- pantalla de detalle de un recorrido", () =
 
     });
 
-    it("sin entrenos asignados, no pinta la lista de filas (nada que listar)", () => {
+    it("sin entrenos asignados, no pinta la tabla (nada que listar)", () => {
 
-        const html = ReferenceRouteDetailView({ id: "r1", name: "8K referencia" }, []);
-        expect(html).not.toContain("route-workout-row");
+        const html = ReferenceRouteDetailView({ id: "r1", name: "8K referencia" }, [], "date", "desc");
+        expect(html).not.toContain("route-table-row");
 
     });
 
-    it("una fila por entreno, más reciente primero, cada una abre el detalle real y permite quitarla del recorrido", () => {
+    it("una fila por entreno, ordenada según se pida, cada una abre el detalle real y permite quitarla del recorrido", () => {
 
         const older = workout({ id: "w1", date: "2026-08-01" });
         const newer = workout({ id: "w2", date: "2026-08-20" });
 
-        const html = ReferenceRouteDetailView({ id: "r1", name: "8K referencia" }, [older, newer]);
+        const html = ReferenceRouteDetailView({ id: "r1", name: "8K referencia" }, [older, newer], "date", "desc");
 
         const firstRowIndex = html.indexOf('data-workout-id="w2"');
         const secondRowIndex = html.indexOf('data-workout-id="w1"');
@@ -57,6 +57,16 @@ describe("ReferenceRouteDetailView -- pantalla de detalle de un recorrido", () =
 
         expect(html).toContain('data-action="open-detail"');
         expect(html).toContain('data-action="unassign-workout-from-route"');
+
+    });
+
+    it("con 2+ entrenos con ritmo real, también incluye el gráfico de evolución", () => {
+
+        const a = workout({ id: "w1", date: "2026-08-01" });
+        const b = workout({ id: "w2", date: "2026-08-10" });
+
+        const html = ReferenceRouteDetailView({ id: "r1", name: "8K referencia" }, [a, b], "date", "desc");
+        expect(html).toContain("route-evolution-chart");
 
     });
 

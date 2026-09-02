@@ -35,7 +35,9 @@ import {
     getDetailRouteId,
     isCreatingRoute,
     getNewRouteName,
-    getRouteMenuOpenId
+    getRouteMenuOpenId,
+    getRouteSortColumn,
+    getRouteSortDirection
 } from "./runningStore.js";
 
 import { RunningUploadStep } from "./components/RunningUploadStep.js";
@@ -877,7 +879,12 @@ export function Running() {
     } else if (step === "referenceRouteDetail") {
 
         const route = getReferenceRouteById(getDetailRouteId());
-        content = ReferenceRouteDetailView(route, route ? resolveRouteWorkouts(route, getWorkouts()) : []);
+        content = ReferenceRouteDetailView(
+            route,
+            route ? resolveRouteWorkouts(route, getWorkouts()) : [],
+            getRouteSortColumn(),
+            getRouteSortDirection()
+        );
 
     } else {
 

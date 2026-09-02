@@ -1,0 +1,169 @@
+/* 6 columnas de datos (fecha/ritmo/FC/temperatura/deriva/cadencia) + un
+   botón "quitar" no caben cómodas en un iPhone estrecho a la vez --
+   scroll horizontal propio (igual que .route-chart-track) en vez de
+   comprimir texto hasta ilegible, con grid-template-columns fijas para
+   que las columnas queden alineadas entre cabecera y filas. */
+.route-workout-table{
+
+    border-radius:var(--radius-lg);
+
+    background:color-mix(in srgb, var(--card-background) 70%, transparent);
+
+    border:1px solid var(--card-border);
+
+    overflow-x:auto;
+
+    -webkit-overflow-scrolling:touch;
+
+}
+
+.route-table-row{
+
+    display:grid;
+
+    grid-template-columns:64px 64px 56px 52px 64px 56px 32px;
+
+    align-items:center;
+
+    gap:8px;
+
+    padding:12px 14px;
+
+    border-bottom:1px solid color-mix(in srgb, var(--card-border) 70%, transparent);
+
+    cursor:pointer;
+
+    font-variant-numeric:tabular-nums;
+
+    min-width:max-content;
+
+}
+
+.route-table-row:last-child{
+
+    border-bottom:none;
+
+}
+
+.route-table-header{
+
+    cursor:default;
+
+    background:color-mix(in srgb, var(--card-background) 40%, transparent);
+
+}
+
+.route-table-header .route-table-cell{
+
+    color:var(--text-secondary);
+
+    font-size:.64rem;
+
+    font-weight:700;
+
+    text-transform:uppercase;
+
+    letter-spacing:.02em;
+
+}
+
+.route-table-cell--sortable{
+
+    display:inline-flex;
+
+    align-items:center;
+
+    gap:3px;
+
+    border:none;
+
+    background:none;
+
+    padding:0;
+
+    font:inherit;
+
+    cursor:pointer;
+
+}
+
+.route-table-cell--sortable:active{
+
+    opacity:.6;
+
+}
+
+.route-table-cell--sortable.is-active{
+
+    color:var(--color-primary);
+
+}
+
+.route-table-sort-icon{
+
+    flex-shrink:0;
+
+    font-size:.7rem;
+
+    color:var(--color-text-muted);
+
+}
+
+.route-table-cell--sortable.is-active .route-table-sort-icon{
+
+    color:var(--color-primary);
+
+}
+
+.route-table-cell{
+
+    min-width:0;
+
+    color:var(--text-primary);
+
+    font-size:.78rem;
+
+    font-weight:600;
+
+    overflow:hidden;
+
+    text-overflow:ellipsis;
+
+    white-space:nowrap;
+
+}
+
+.route-table-remove,
+.route-table-remove-spacer{
+
+    width:24px;
+
+}
+
+.route-table-remove{
+
+    background:none;
+
+    border:none;
+
+    padding:2px;
+
+    display:flex;
+
+    cursor:pointer;
+
+    color:var(--color-text-muted);
+
+}
+
+.route-table-remove iconify-icon{
+
+    font-size:18px;
+
+}
+
+.route-table-remove:hover{
+
+    color:var(--color-danger);
+
+}

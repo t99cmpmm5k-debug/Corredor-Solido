@@ -86,6 +86,37 @@ export function toggleSort(column) {
 
 }
 
+// Orden de la tabla de un recorrido de referencia (ReferenceRouteDetailView.js)
+// -- aparte de sortColumn/sortDirection de arriba a propósito: son dos
+// tablas independientes (la general de Running y la de un recorrido);
+// compartir el mismo estado haría que ordenar una cambiara la otra sin
+// que el usuario la haya tocado.
+let routeSortColumn = "date";
+let routeSortDirection = "desc";
+
+export function getRouteSortColumn() {
+
+    return routeSortColumn;
+
+}
+
+export function getRouteSortDirection() {
+
+    return routeSortDirection;
+
+}
+
+export function toggleRouteSort(column) {
+
+    if (routeSortColumn === column) {
+        routeSortDirection = routeSortDirection === "desc" ? "asc" : "desc";
+    } else {
+        routeSortColumn = column;
+        routeSortDirection = "desc";
+    }
+
+}
+
 // Id del entreno cuyo menú "···" está abierto en la lista (ver
 // RunningHistoryItem en Running.js) -- mismo patrón que sessionMenuOpenId
 // en Plan/planStore.js: solo puede haber uno abierto a la vez, aparte de

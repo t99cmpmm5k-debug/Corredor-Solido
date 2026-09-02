@@ -1,0 +1,248 @@
+/* Mismo lenguaje visual que .pace-chart-* (RunningDetailView.css) --
+   barra = ritmo, línea+puntos rojos = FC -- pero clases propias
+   (route-chart-*) porque este gráfico vive fuera de esa pantalla. */
+
+.route-evolution-chart{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:10px;
+
+    padding:16px;
+
+    border-radius:var(--radius-lg);
+
+    background:color-mix(in srgb, var(--card-background) 70%, transparent);
+
+    border:1px solid var(--card-border);
+
+}
+
+.route-chart-header{
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:space-between;
+
+    gap:10px;
+
+}
+
+.route-chart-title{
+
+    color:var(--text-primary);
+
+    font-size:.82rem;
+
+    font-weight:800;
+
+    letter-spacing:.02em;
+
+}
+
+.route-chart-badges{
+
+    display:flex;
+
+    gap:8px;
+
+}
+
+.route-chart-avg-badge{
+
+    padding:3px 9px;
+
+    border-radius:999px;
+
+    background:color-mix(in srgb, var(--color-primary) 16%, transparent);
+
+    color:var(--color-primary);
+
+    font-size:.68rem;
+
+    font-weight:700;
+
+    white-space:nowrap;
+
+}
+
+.route-chart-avg-badge--hr{
+
+    background:color-mix(in srgb, var(--color-danger) 16%, transparent);
+
+    color:var(--color-danger);
+
+}
+
+.route-chart-track{
+
+    position:relative;
+
+    height:170px;
+
+    overflow-x:auto;
+    overflow-y:hidden;
+
+    -webkit-overflow-scrolling:touch;
+
+    scrollbar-width:none;
+
+}
+
+.route-chart-track::-webkit-scrollbar{
+
+    display:none;
+
+}
+
+.route-chart-bars{
+
+    position:relative;
+
+    height:100%;
+
+    width:max-content;
+    min-width:100%;
+
+    display:flex;
+
+    align-items:flex-end;
+
+    gap:8px;
+
+}
+
+.route-chart-column{
+
+    flex:1 1 0;
+
+    min-width:44px;
+
+    height:100%;
+
+    display:flex;
+
+    flex-direction:column;
+
+    align-items:center;
+
+    justify-content:flex-end;
+
+    gap:4px;
+
+}
+
+.route-chart-pace-value{
+
+    color:var(--text-secondary);
+
+    font-size:.68rem;
+
+    font-weight:700;
+
+    white-space:nowrap;
+
+}
+
+.route-chart-bar{
+
+    width:100%;
+
+    max-width:22px;
+
+    border-radius:6px 6px 3px 3px;
+
+    background:var(--color-primary);
+
+    transition:.25s;
+
+}
+
+.route-chart-date{
+
+    color:var(--color-text-muted);
+
+    font-size:.66rem;
+
+    font-weight:700;
+
+}
+
+.route-chart-temp{
+
+    color:var(--color-text-muted);
+
+    font-size:.6rem;
+
+    opacity:.75;
+
+}
+
+/*==========================
+     FC (overlay)
+==========================*/
+
+.route-chart-hr-overlay{
+
+    position:absolute;
+
+    left:0;
+    right:0;
+
+    z-index:2;
+
+    pointer-events:none;
+
+}
+
+.route-chart-hr-lines{
+
+    position:absolute;
+
+    inset:0;
+
+    width:100%;
+
+    height:100%;
+
+    overflow:visible;
+
+}
+
+.route-chart-hr-line{
+
+    fill:none;
+
+    stroke:var(--color-danger);
+
+    stroke-width:2;
+
+    vector-effect:non-scaling-stroke;
+
+    stroke-linecap:round;
+
+    stroke-linejoin:round;
+
+}
+
+.route-chart-hr-dot{
+
+    position:absolute;
+
+    width:6px;
+
+    height:6px;
+
+    border-radius:50%;
+
+    background:var(--color-danger);
+
+    box-shadow:0 0 6px color-mix(in srgb, var(--color-danger) 60%, transparent);
+
+    transform:translate(-50%, 50%);
+
+}

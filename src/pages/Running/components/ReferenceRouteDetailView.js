@@ -1,52 +1,19 @@
 import "./ReferenceRoutesListView.css";
-import "./ReferenceRouteDetailView.css";
 
-import { formatDayMonth } from "../../../utils/date.js";
-import { formatSecondsAsClock } from "../../../utils/format.js";
 import { ReferenceRouteCard } from "./ReferenceRouteCard.js";
+import { ReferenceRouteEvolutionChart } from "./ReferenceRouteEvolutionChart.js";
+import { ReferenceRouteWorkoutTable } from "./ReferenceRouteWorkoutTable.js";
 
-// Fila compacta de un entreno del recorrido -- toca la fila para abrir su
-// ficha completa (openDetail(), ya conectado en initRunningEvents.js vía
-// data-action="open-detail" -- el listener escanea toda la pantalla en
-// cada render, así que reutilizarlo aquí no necesita wiring nuevo). El
-// botón "quitar" para de propagar el click (mismo motivo que
-// delete-workout en RunningHistoryItem, Running.js).
-function RouteWorkoutRow(workout) {
-
-    const pace = workout.avgPaceSecPerKm != null ? `${formatSecondsAsClock(workout.avgPaceSecPerKm)}/km` : "—";
-    const hr = workout.avgHr != null ? `${Math.round(workout.avgHr)} ppm` : "—";
-    const temp = workout.temperatureC != null ? `${workout.temperatureC}°C` : "—";
-
-    return `
-
-        <div class="route-workout-row" data-action="open-detail" data-workout-id="${workout.id}">
-
-            <span class="route-workout-date">${formatDayMonth(workout.date)}</span>
-
-            <span class="route-workout-pace">${pace}</span>
-
-            <span class="route-workout-hr">${hr}</span>
-
-            <span class="route-workout-temp">${temp}</span>
-
-            <button
-                class="route-workout-remove"
-                data-action="unassign-workout-from-route"
-                data-workout-id="${workout.id}"
-                aria-label="Quitar del recorrido"
-            >
-
-                <iconify-icon icon="solar:close-circle-bold-duotone"></iconify-icon>
-
-            </button>
-
-        </div>
-
-    `;
-
-}
-
-export function ReferenceRouteDetailView(route, workouts) {
+// Vista de detalle de un recorrido de referencia -- tarjeta resumen
+// (ReferenceRouteCard.js) + gráfico de evolución (ritmo/FC por fecha,
+// temperatura como contexto, ver ReferenceRouteEvolutionChart.js) + tabla
+// ordenable con todos sus entrenos (ReferenceRouteWorkoutTable.js). Cada
+// fila de la tabla abre la ficha completa real (openDetail(), ya
+// conectado en initRunningEvents.js vía data-action="open-detail" -- el
+// listener escanea toda la pantalla en cada render, así que reutilizarlo
+// aquí no necesita wiring nuevo) y permite quitar ese entreno del
+// recorrido sin borrarlo.
+export function ReferenceRouteDetailView(route, workouts, sortColumn, sortDirection) {
 
     if (!route) return "";
 
@@ -70,15 +37,9 @@ export function ReferenceRouteDetailView(route, workouts) {
 
             ${ReferenceRouteCard(route, sorted)}
 
-            ${sorted.length ? `
+            ${ReferenceRouteEvolutionChart(sorted)}
 
-                <div class="route-workout-list">
-
-                    ${sorted.map(RouteWorkoutRow).join("")}
-
-                </div>
-
-            ` : ""}
+            ${ReferenceRouteWorkoutTable(sorted, sortColumn, sortDirection)}
 
         </section>
 
