@@ -1,5 +1,5 @@
 import { rerender } from "../../core/router.js";
-import { addWorkout, addShoe, deleteWorkout, findSimilarWorkout, updateWorkoutType, updateWorkoutShoe, retireShoe, updateShoe } from "../../data/workoutStore.js";
+import { addWorkout, addShoe, deleteWorkout, findSimilarWorkout, updateWorkoutType, updateWorkoutShoe, updateWorkoutDayState, retireShoe, updateShoe } from "../../data/workoutStore.js";
 import { createReferenceRoute, deleteReferenceRoute, assignWorkoutToRoute, unassignWorkoutFromReferenceRoutes } from "../../data/referenceRouteStore.js";
 import { parseGarminScreenshots, warmUpWorker } from "../../importers/garmin-engine/recognize.js";
 import { readShoePhotoAsDataUrl } from "./shoePhoto.js";
@@ -805,6 +805,59 @@ export function initRunningEvents() {
             // modelo (getSelectedShoeId() por defecto, workout.shoeId sin
             // asignar), no un string vacío suelto.
             updateWorkoutShoe(select.dataset.workoutId, select.value || null);
+            rerender();
+
+        });
+
+    });
+
+    /*==========================
+        "ESTADO DEL DÍA" (Recorridos de referencia, V1 -- RunningDetailView.js)
+    ==========================*/
+
+    // Piernas/Fatiga general/Calor percibido -- 3 <select> distintos que
+    // comparten el mismo data-action (dayStateOptionSelect() en
+    // RunningDetailView.js ya pone el nombre real del campo en cada uno),
+    // así que un único listener basta para los tres en vez de repetirlo.
+    document.querySelectorAll('[data-action^="set-day-state-"]').forEach(field => {
+
+        // sleep-hours y session-rating tienen su propio tipo/coerción
+        // (número), gestionados aparte más abajo -- este listener genérico
+        // es solo para los 3 <select> de vocabulario cerrado.
+        if (field.dataset.action === "set-day-state-sleep-hours" || field.dataset.action === "set-day-state-session-rating") return;
+
+        const FIELD_BY_ACTION = {
+            "set-day-state-legs-feeling": "legsFeeling",
+            "set-day-state-fatigue-level": "fatigueLevel",
+            "set-day-state-heat-feeling": "heatFeeling"
+        };
+
+        field.addEventListener("change", () => {
+
+            updateWorkoutDayState(field.dataset.workoutId, { [FIELD_BY_ACTION[field.dataset.action]]: field.value || null });
+            rerender();
+
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="set-day-state-sleep-hours"]').forEach(input => {
+
+        input.addEventListener("change", () => {
+
+            const value = input.value === "" ? null : Number(input.value);
+            updateWorkoutDayState(input.dataset.workoutId, { sleepHours: value });
+            rerender();
+
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="set-day-state-session-rating"]').forEach(select => {
+
+        select.addEventListener("change", () => {
+
+            updateWorkoutDayState(select.dataset.workoutId, { sessionRating: select.value ? Number(select.value) : null });
             rerender();
 
         });

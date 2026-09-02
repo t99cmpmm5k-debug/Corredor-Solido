@@ -463,13 +463,14 @@ describe("RunningDetailView — insights reales bajo el gráfico", () => {
 
 describe("RunningDetailView — métricas agrupadas por categoría", () => {
 
-    it("agrupa en Rendimiento/Condiciones/Equipamiento, con sus títulos reales", () => {
+    it("agrupa en Rendimiento/Condiciones/Equipamiento/Estado del día, con sus títulos reales", () => {
 
         const html = RunningDetailView(workout({ temperatureC: 18 }));
 
         expect(html).toContain("RENDIMIENTO");
         expect(html).toContain("CONDICIONES");
         expect(html).toContain("EQUIPAMIENTO");
+        expect(html).toContain("ESTADO DEL DÍA");
 
     });
 
@@ -922,6 +923,79 @@ describe("RunningDetailView — entreno de 13,02 km importado solo desde 'Interv
         // mismo prefijo de nombre.
         expect((html.match(/class="pace-chart-hr-line"/g) || [])).toHaveLength(1);
         expect((html.match(/pace-chart-hr-dot/g) || [])).toHaveLength(3);
+
+    });
+
+});
+
+describe("RunningDetailView — \"Estado del día\" (Recorridos de referencia, V1: campos opcionales, nunca corrigen el entreno real)", () => {
+
+    it("siempre se muestra, aunque el entreno no tenga ningún dayState todavía -- son campos para RELLENAR, no un dato ya existente que ocultar", () => {
+
+        const html = RunningDetailView(workout({ dayState: undefined }));
+
+        expect(html).toContain("ESTADO DEL DÍA");
+        expect(html).toContain("Horas de sueño");
+        expect(html).toContain("Piernas");
+        expect(html).toContain("Fatiga general");
+        expect(html).toContain("Calor percibido");
+        expect(html).toContain("Sensación (1-10)");
+
+    });
+
+    it("sin dayState, todos los campos aparecen 'Sin registrar' -- nunca un valor inventado", () => {
+
+        const html = RunningDetailView(workout({ dayState: undefined }));
+
+        expect((html.match(/Sin registrar/g) || []).length).toBeGreaterThanOrEqual(4);
+        expect(html).not.toContain("undefined");
+        expect(html).not.toContain("null");
+
+    });
+
+    it("con dayState ya guardado, cada campo muestra su valor real seleccionado", () => {
+
+        const html = RunningDetailView(workout({
+            dayState: { sleepHours: 7.5, legsFeeling: "heavy", fatigueLevel: "high", heatFeeling: "medium", sessionRating: 8 }
+        }));
+
+        expect(html).toContain('value="7.5"');
+        expect(html).toMatch(/<option value="heavy"[^>]*selected/);
+        expect(html).toMatch(/<option value="high"[^>]*selected/);
+        expect(html).toMatch(/<option value="medium"[^>]*selected/);
+        expect(html).toMatch(/<option value="8"[^>]*selected/);
+
+    });
+
+    it("un dayState PARCIAL (solo algunos campos) no inventa el resto -- cada campo se mira por separado", () => {
+
+        const html = RunningDetailView(workout({ dayState: { legsFeeling: "fresh" } }));
+
+        expect(html).toMatch(/<option value="fresh"[^>]*selected/);
+        // El resto de campos siguen "Sin registrar" -- al menos 3 (sueño, fatiga, calor, sensación).
+        expect((html.match(/Sin registrar/g) || []).length).toBeGreaterThanOrEqual(3);
+
+    });
+
+    it("los campos van conectados a los data-action reales que initRunningEvents.js escucha, con el workoutId correcto", () => {
+
+        const html = RunningDetailView(workout({ id: "w-real" }));
+
+        expect(html).toContain('data-action="set-day-state-sleep-hours"');
+        expect(html).toContain('data-action="set-day-state-legs-feeling"');
+        expect(html).toContain('data-action="set-day-state-fatigue-level"');
+        expect(html).toContain('data-action="set-day-state-heat-feeling"');
+        expect(html).toContain('data-action="set-day-state-session-rating"');
+        expect((html.match(/data-workout-id="w-real"/g) || []).length).toBeGreaterThanOrEqual(5);
+
+    });
+
+    it("nunca toca ni muestra los datos reales importados del entreno -- solo añade campos nuevos", () => {
+
+        const html = RunningDetailView(workout({ distanceKm: 5, avgHr: 150, dayState: { sessionRating: 9 } }));
+
+        // El resumen real del entreno sigue mostrando sus propios datos tal cual.
+        expect(html).toContain("5 km");
 
     });
 

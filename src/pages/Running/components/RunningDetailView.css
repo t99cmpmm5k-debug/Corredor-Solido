@@ -1119,3 +1119,47 @@
     cursor:pointer;
 
 }
+
+/* "Estado del día" (Recorridos de referencia, V1) -- mismo tratamiento
+   visual que .detail-shoe-select (campo editable dentro de detailStat()),
+   pero sin negrita: son campos de contexto subjetivo, no el dato
+   principal de la tarjeta. */
+.detail-daystate-select,
+.detail-daystate-input{
+
+    display:block;
+
+    width:100%;
+
+    max-width:100%;
+
+    padding:2px 0;
+
+    border:none;
+
+    background:none;
+
+    color:var(--text-primary);
+
+    font-size:.9rem;
+
+    font-weight:700;
+
+    font-family:inherit;
+
+    cursor:pointer;
+
+}
+
+.detail-daystate-input{
+
+    cursor:text;
+
+}
+
+.detail-daystate-select option:disabled,
+.detail-daystate-select option[value=""]{
+
+    color:var(--color-text-muted);
+
+}

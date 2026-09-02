@@ -5,6 +5,7 @@ import { formatSecondsAsClock, formatShoeName } from "../../../utils/format.js";
 import { RUNNING_WORKOUT_TYPES } from "../../../data/runningWorkoutTypes.js";
 import { buildWorkoutComparison, buildWorkoutComparisonMessage } from "../runningProgress.js";
 import { buildCardiacDrift } from "../../../utils/cardiacDrift.js";
+import { LEGS_FEELING_OPTIONS, FATIGUE_LEVEL_OPTIONS, HEAT_FEELING_OPTIONS, SESSION_RATING_OPTIONS } from "../../../data/dayStateOptions.js";
 
 // Garmin cierra la vuelta en curso al parar el cronómetro, así que la
 // última entrada de splits suele ser un remanente corto (0.01-0.4 km) con
@@ -619,6 +620,72 @@ function detailStatGroup(title, statsHtml) {
 
 }
 
+// "Estado del día" (Recorridos de referencia, V1) -- campos opcionales de
+// contexto SUBJETIVO introducidos a mano (sueño/piernas/fatiga/calor
+// percibido/sensación 1-10, ver dayStateOptions.js/updateWorkoutDayState()
+// en workoutStore.js), nunca una corrección de ningún dato real del
+// propio entreno. Mismo patrón que typeSelector()/shoeSelector() -- un
+// <select>/<input> real que se autoguarda al cambiar, reutilizado dentro
+// de detailStat() (wide:true, igual que Zapatilla) para heredar su mismo
+// layout sin CSS nuevo. A diferencia de esas dos, este grupo SIEMPRE se
+// muestra (nunca "sin dato" oculta la fila entera): son campos para
+// RELLENAR, no para mostrar un dato ya existente.
+function dayStateOptionSelect(workout, field, options, action) {
+
+    const current = workout.dayState?.[field] ?? "";
+
+    return `
+
+        <select class="detail-daystate-select" data-action="${action}" data-workout-id="${workout.id}">
+
+            <option value="" ${!current ? "selected" : ""}>Sin registrar</option>
+
+            ${options.map(option => `
+
+                <option value="${option.id}" ${current === option.id ? "selected" : ""}>
+
+                    ${option.label}
+
+                </option>
+
+            `).join("")}
+
+        </select>
+
+    `;
+
+}
+
+function sleepHoursInput(workout) {
+
+    const current = workout.dayState?.sleepHours ?? "";
+
+    return `<input type="number" class="detail-daystate-input" data-action="set-day-state-sleep-hours" data-workout-id="${workout.id}" min="0" max="24" step="0.5" placeholder="Sin registrar" value="${current}">`;
+
+}
+
+function sessionRatingSelect(workout) {
+
+    const current = workout.dayState?.sessionRating ?? "";
+
+    return `
+
+        <select class="detail-daystate-select" data-action="set-day-state-session-rating" data-workout-id="${workout.id}">
+
+            <option value="" ${!current ? "selected" : ""}>Sin registrar</option>
+
+            ${SESSION_RATING_OPTIONS.map(n => `
+
+                <option value="${n}" ${current === n ? "selected" : ""}>${n}/10</option>
+
+            `).join("")}
+
+        </select>
+
+    `;
+
+}
+
 // Acordeón colapsable (retoque de cierre): antes era un banner amarillo
 // siempre desplegado (mismo .wizard-banner-warning que usan
 // RunningReviewStep.js/RunningShoeStep.js para otros avisos, no tocado
@@ -779,6 +846,20 @@ export function RunningDetailView(workout, shoes = [], warningsExpanded = false,
                 ${detailStat("solar:running-round-bold-duotone", "Zapatilla", shoeSelector(workout, shoes), null, { wide: true })}
 
                 ${detailStat("solar:fire-bold-duotone", "Calorías", workout.calories != null ? `${workout.calories} kcal` : "—")}
+
+            `)}
+
+            ${detailStatGroup("ESTADO DEL DÍA", `
+
+                ${detailStat("solar:moon-bold-duotone", "Horas de sueño", sleepHoursInput(workout), null, { wide: true })}
+
+                ${detailStat("solar:walking-round-bold-duotone", "Piernas", dayStateOptionSelect(workout, "legsFeeling", LEGS_FEELING_OPTIONS, "set-day-state-legs-feeling"), null, { wide: true })}
+
+                ${detailStat("solar:battery-low-bold-duotone", "Fatiga general", dayStateOptionSelect(workout, "fatigueLevel", FATIGUE_LEVEL_OPTIONS, "set-day-state-fatigue-level"), null, { wide: true })}
+
+                ${detailStat("solar:sun-bold-duotone", "Calor percibido", dayStateOptionSelect(workout, "heatFeeling", HEAT_FEELING_OPTIONS, "set-day-state-heat-feeling"), null, { wide: true })}
+
+                ${detailStat("solar:star-bold-duotone", "Sensación (1-10)", sessionRatingSelect(workout), null, { wide: true })}
 
             `)}
 
