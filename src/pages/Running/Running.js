@@ -9,6 +9,7 @@ import { formatSecondsAsClock, formatShoeName } from "../../utils/format.js";
 import { buildTypeProgressInsight, buildProgressMessage, buildPaceComparison, buildComparisonMessage } from "./runningProgress.js";
 import { buildTypeSummary } from "./runningSummary.js";
 import { buildListInsight } from "./runningListInsight.js";
+import { ACWR_CHRONIC_DAYS, buildRunningLoadEntries, buildAcwrInsight } from "../../utils/acwr.js";
 
 import { BottomNavigation } from "../../components/Navigation/BottomNavigation.js";
 
@@ -641,6 +642,92 @@ function RunningListInsightCard(insight) {
 
 }
 
+// Mensaje real por motivo de "no disponible" (ver buildAcwrInsight() en
+// utils/acwr.js) -- nunca un ratio a medias ni un "—" sin explicar por
+// qué. "no-recent-load" no debería darse con historial ya suficiente
+// salvo una racha larga sin correr, pero se cubre igual por completitud.
+function acwrUnavailableMessage(insight) {
+
+    if (insight.reason === "no-data") {
+        return "Todavía no hay entrenos de running con FC media registrada para calcular tu carga de entrenamiento.";
+    }
+
+    if (insight.reason === "insufficient-history") {
+        const days = insight.missingDays;
+        return `Necesitas ${days} día${days === 1 ? "" : "s"} más de historial para calcular tu carga de entrenamiento (hacen falta ${ACWR_CHRONIC_DAYS} días seguidos).`;
+    }
+
+    return "No hay carga de running en las últimas semanas -- vuelve a correr para que el cálculo tenga sentido.";
+
+}
+
+// Carga aguda (7 días) frente a carga crónica (28 días) -- solo running
+// por ahora (ver cabecera de utils/acwr.js). Siempre visible en Inicio de
+// Running, fuera del filtro por tipo -- es un dato sobre el conjunto real
+// de entrenos, no sobre "rodajes" o "series" por separado.
+function AcwrCard(insight) {
+
+    if (!insight.available) {
+
+        return `
+
+            <div class="acwr-card">
+
+                <div class="acwr-card-header">
+
+                    <span class="acwr-card-header-icon">
+                        <iconify-icon icon="solar:shield-warning-bold-duotone"></iconify-icon>
+                    </span>
+
+                    <div class="acwr-card-header-text">
+                        <span class="acwr-card-label">CARGA DE ENTRENAMIENTO (ACWR)</span>
+                    </div>
+
+                </div>
+
+                <p class="acwr-card-message">${acwrUnavailableMessage(insight)}</p>
+
+            </div>
+
+        `;
+
+    }
+
+    const { ratio, zone } = insight;
+
+    return `
+
+        <div class="acwr-card acwr-card--${zone.id}">
+
+            <div class="acwr-card-header">
+
+                <span class="acwr-card-header-icon">
+                    <iconify-icon icon="solar:shield-warning-bold-duotone"></iconify-icon>
+                </span>
+
+                <div class="acwr-card-header-text">
+                    <span class="acwr-card-label">CARGA DE ENTRENAMIENTO (ACWR)</span>
+                    <span class="acwr-card-sublabel">Solo running -- todavía sin datos de gimnasio</span>
+                </div>
+
+            </div>
+
+            <div class="acwr-card-body">
+
+                <span class="acwr-card-ratio">${ratio.toFixed(2)}</span>
+
+                <span class="acwr-card-zone-badge acwr-card-zone-badge--${zone.id}">${zone.label}</span>
+
+            </div>
+
+            <p class="acwr-card-hint">Carga aguda (últimos 7 días) frente a carga crónica (últimos 28 días).</p>
+
+        </div>
+
+    `;
+
+}
+
 function RunningIdleView() {
 
     const workouts = getWorkouts();
@@ -666,6 +753,11 @@ function RunningIdleView() {
     // sobre el conjunto YA filtrado (mismo que se ve debajo), salvo el %
     // de zapatilla, que siempre mira el total real de todos los entrenos.
     const listInsight = filtered.length ? buildListInsight({ filteredWorkouts: filtered, allWorkouts: workouts, shoes }) : null;
+
+    // ACWR mira SIEMPRE el conjunto real de entrenos (workouts), nunca el
+    // filtrado por tipo -- es carga de entrenamiento total, no de "solo
+    // rodajes" o "solo series".
+    const acwrInsight = buildAcwrInsight(buildRunningLoadEntries(workouts));
 
     const routes = getReferenceRoutes();
 
@@ -712,6 +804,8 @@ function RunningIdleView() {
             `) : `
 
                 ${RunningTypeSummary(typeFilter, typeSummary, progressInsight, paceComparison)}
+
+                ${AcwrCard(acwrInsight)}
 
                 ${ReferenceRoutesEntryCard(routes)}
 

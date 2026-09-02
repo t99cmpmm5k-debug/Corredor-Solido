@@ -436,6 +436,175 @@
 
 }
 
+/* =========================
+   CARGA DE ENTRENAMIENTO (ACWR)
+   Solo running por ahora -- ver utils/acwr.js
+========================= */
+
+.acwr-card{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:12px;
+
+    padding:16px;
+
+    border-radius:var(--radius-lg);
+
+    background:color-mix(in srgb, var(--card-background) 70%, transparent);
+
+    border:1px solid var(--card-border);
+
+}
+
+.acwr-card-header{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:12px;
+
+}
+
+.acwr-card-header-icon{
+
+    flex-shrink:0;
+
+    width:40px;
+
+    height:40px;
+
+    border-radius:50%;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    background:color-mix(in srgb, var(--color-primary) 22%, transparent);
+
+    color:var(--color-primary);
+
+    font-size:20px;
+
+}
+
+.acwr-card-header-text{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:2px;
+
+    min-width:0;
+
+}
+
+.acwr-card-label{
+
+    color:var(--text-secondary);
+
+    font-size:.68rem;
+
+    font-weight:700;
+
+    text-transform:uppercase;
+
+    letter-spacing:.06em;
+
+}
+
+.acwr-card-sublabel{
+
+    color:var(--text-secondary);
+
+    font-size:.76rem;
+
+}
+
+.acwr-card-message{
+
+    margin:0;
+
+    color:var(--text-secondary);
+
+    font-size:.85rem;
+
+    line-height:1.4;
+
+}
+
+.acwr-card-body{
+
+    display:flex;
+
+    align-items:baseline;
+
+    gap:12px;
+
+}
+
+.acwr-card-ratio{
+
+    color:var(--text-primary);
+
+    font-size:2rem;
+
+    font-weight:800;
+
+    line-height:1;
+
+}
+
+.acwr-card-zone-badge{
+
+    padding:4px 10px;
+
+    border-radius:999px;
+
+    font-size:.76rem;
+
+    font-weight:800;
+
+}
+
+.acwr-card-zone-badge--detrained{
+    background:color-mix(in srgb, var(--color-warning) 16%, transparent);
+    color:var(--color-warning);
+}
+
+.acwr-card-zone-badge--optimal{
+    background:color-mix(in srgb, var(--color-success) 16%, transparent);
+    color:var(--color-success);
+}
+
+.acwr-card-zone-badge--moderateRisk{
+    background:color-mix(in srgb, var(--color-warning) 16%, transparent);
+    color:var(--color-warning);
+}
+
+.acwr-card-zone-badge--highRisk{
+    background:color-mix(in srgb, var(--color-danger) 16%, transparent);
+    color:var(--color-danger);
+}
+
+.acwr-card-hint{
+
+    margin:0;
+
+    color:var(--text-secondary);
+
+    font-size:.76rem;
+
+    line-height:1.4;
+
+}
+
 .running-empty-filtered{
 
     display:flex;
