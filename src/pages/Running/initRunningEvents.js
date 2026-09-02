@@ -45,8 +45,6 @@ import {
     isCreatingRoute,
     startCreatingRoute,
     cancelCreatingRoute,
-    getNewRouteName,
-    setNewRouteName,
     getRouteMenuOpenId,
     setRouteMenuOpenId,
     toggleRouteSort
@@ -189,9 +187,14 @@ function closeReferenceRouteDetail() {
 
 }
 
+// Lee el nombre directamente del DOM (input sin controlar, mismo patrón
+// que brand/model en save-new-shoe) en vez de un valor guardado tecla a
+// tecla en el store -- ver el comentario junto a creatingRoute en
+// runningStore.js sobre por qué ese segundo enfoque cerraba el teclado
+// del móvil en cada pulsación.
 function saveNewRoute() {
 
-    const name = getNewRouteName().trim();
+    const name = document.querySelector('[data-field="route-name"]')?.value.trim();
     if (!name) return;
 
     createReferenceRoute(name).then(() => {
@@ -940,15 +943,6 @@ export function initRunningEvents() {
 
         button.addEventListener("click", () => {
             cancelCreatingRoute();
-            rerender();
-        });
-
-    });
-
-    document.querySelectorAll('[data-action="set-new-route-name"]').forEach(input => {
-
-        input.addEventListener("input", () => {
-            setNewRouteName(input.value);
             rerender();
         });
 

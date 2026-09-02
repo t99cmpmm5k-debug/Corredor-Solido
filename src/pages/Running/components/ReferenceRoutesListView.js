@@ -5,7 +5,17 @@ import { getWorkouts } from "../../../data/workoutStore.js";
 import { resolveRouteWorkouts } from "../referenceRouteEfficiency.js";
 import { ReferenceRouteCard } from "./ReferenceRouteCard.js";
 
-function CreateRouteForm(name) {
+// Input SIN controlar (mismo patrón que brand/model en el alta de
+// zapatilla, RunningShoeStep.js) -- initRunningEvents.js lee su .value
+// directamente al pulsar "Crear", en vez de guardar cada tecla en el
+// store y volver a pintar. Guardar cada tecla obligaba a rerender() en
+// cada pulsación -- que en esta app reemplaza app.innerHTML entero (ver
+// render.js), remontando el <input> desde cero y cerrando el teclado del
+// móvil en cada letra (bug real reportado). Por eso tampoco hay un botón
+// "Crear" deshabilitado de forma reactiva -- mismo criterio que
+// save-new-shoe: siempre pulsable, y sin nombre simplemente no hace nada
+// (ver el guard en saveNewRoute()).
+function CreateRouteForm() {
 
     return `
 
@@ -13,9 +23,8 @@ function CreateRouteForm(name) {
 
             <input
                 type="text"
-                data-action="set-new-route-name"
+                data-field="route-name"
                 placeholder="Nombre del recorrido (p. ej. 8K referencia)"
-                value="${name}"
                 autofocus
             >
 
@@ -23,7 +32,7 @@ function CreateRouteForm(name) {
 
                 <button class="wizard-secondary-button" data-action="cancel-creating-route">Cancelar</button>
 
-                <button class="wizard-secondary-button" data-action="save-new-route" ${name.trim() ? "" : "disabled"}>Crear</button>
+                <button class="wizard-secondary-button" data-action="save-new-route">Crear</button>
 
             </div>
 
@@ -73,7 +82,7 @@ function RouteCardMenu(route, isMenuOpen) {
 
 }
 
-export function ReferenceRoutesListView(creatingRoute, newRouteName, routeMenuOpenId) {
+export function ReferenceRoutesListView(creatingRoute, routeMenuOpenId) {
 
     const routes = getReferenceRoutes();
     const allWorkouts = getWorkouts();
@@ -100,7 +109,7 @@ export function ReferenceRoutesListView(creatingRoute, newRouteName, routeMenuOp
 
             </p>
 
-            ${creatingRoute ? CreateRouteForm(newRouteName) : `
+            ${creatingRoute ? CreateRouteForm() : `
 
                 <button class="wizard-secondary-button reference-routes-add" data-action="start-creating-route">
 

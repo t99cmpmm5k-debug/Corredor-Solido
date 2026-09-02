@@ -23,13 +23,19 @@ const initial = () => ({
     chartMetricMode: "both",
 
     // Recorridos de referencia (V1) -- detailRouteId: qué recorrido está
-    // abierto en el paso "referenceRouteDetail". creatingRoute/newRouteName:
+    // abierto en el paso "referenceRouteDetail". creatingRoute: si el
     // formulario mínimo de "crear recorrido" (solo nombre, ver
-    // ReferenceRoutesListView.js). routeMenuOpenId: menú "···" de una
-    // tarjeta de recorrido (borrar), mismo patrón que historyMenuOpenId.
+    // ReferenceRoutesListView.js) está abierto -- el propio texto tecleado
+    // NO vive en este store (ver el comentario junto a saveNewRoute() en
+    // initRunningEvents.js: era un <input> "controlado" que llamaba a
+    // rerender() en cada tecla -- bug real, cerraba el teclado del móvil
+    // en cada pulsación porque rerender() reemplaza app.innerHTML entero,
+    // remontando el <input> desde cero. Ahora es un campo normal sin
+    // controlar, leído del DOM tal cual al guardar -- mismo patrón que
+    // brand/model en el alta de zapatilla). routeMenuOpenId: menú "···" de
+    // una tarjeta de recorrido (borrar), mismo patrón que historyMenuOpenId.
     detailRouteId: null,
     creatingRoute: false,
-    newRouteName: "",
     routeMenuOpenId: null
 
 });
@@ -403,32 +409,15 @@ export function isCreatingRoute() {
 
 }
 
-// Abrir el formulario siempre parte de un nombre en blanco -- igual que
-// startCreateSession() en Plan/planStore.js, no arrastra lo que se
-// hubiera escrito la última vez que se abrió.
 export function startCreatingRoute() {
 
     wizard.creatingRoute = true;
-    wizard.newRouteName = "";
 
 }
 
 export function cancelCreatingRoute() {
 
     wizard.creatingRoute = false;
-    wizard.newRouteName = "";
-
-}
-
-export function getNewRouteName() {
-
-    return wizard.newRouteName;
-
-}
-
-export function setNewRouteName(name) {
-
-    wizard.newRouteName = name;
 
 }
 

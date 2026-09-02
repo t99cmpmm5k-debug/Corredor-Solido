@@ -34,7 +34,6 @@ import {
     getChartMetricMode,
     getDetailRouteId,
     isCreatingRoute,
-    getNewRouteName,
     getRouteMenuOpenId,
     getRouteSortColumn,
     getRouteSortDirection
@@ -874,7 +873,7 @@ export function Running() {
 
     } else if (step === "referenceRoutes") {
 
-        content = ReferenceRoutesListView(isCreatingRoute(), getNewRouteName(), getRouteMenuOpenId());
+        content = ReferenceRoutesListView(isCreatingRoute(), getRouteMenuOpenId());
 
     } else if (step === "referenceRouteDetail") {
 
