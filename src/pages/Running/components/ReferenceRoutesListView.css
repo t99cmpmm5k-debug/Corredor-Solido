@@ -91,6 +91,104 @@
 }
 
 /* ==========================
+   SUGERENCIA AUTOMÁTICA DE RECORRIDO PARECIDO
+========================== */
+
+.route-suggestions-list{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:10px;
+
+    margin-bottom:4px;
+
+}
+
+.route-suggestion-card{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:10px;
+
+    padding:14px 16px;
+
+    border-radius:var(--radius-lg);
+
+    background:color-mix(in srgb, var(--color-primary) 10%, var(--card-background));
+
+    border:1px solid color-mix(in srgb, var(--color-primary) 30%, transparent);
+
+}
+
+.route-suggestion-header{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:8px;
+
+    color:var(--color-primary);
+
+    font-size:.8rem;
+
+    font-weight:700;
+
+    text-transform:uppercase;
+
+    letter-spacing:.02em;
+
+}
+
+.route-suggestion-header iconify-icon{
+
+    font-size:18px;
+
+}
+
+.route-suggestion-workouts{
+
+    color:var(--text-secondary);
+
+    font-size:.88rem;
+
+    line-height:1.5;
+
+}
+
+.route-suggestion-workouts strong{
+
+    color:var(--text-primary);
+
+}
+
+.route-suggestion-actions{
+
+    display:flex;
+
+    gap:10px;
+
+}
+
+.route-suggestion-actions button{
+
+    flex:1;
+
+}
+
+.route-suggestion-confirm{
+
+    background:linear-gradient(90deg, var(--color-primary), var(--color-secondary));
+
+    color:var(--button-text);
+
+}
+
+/* ==========================
    LISTA DE TARJETAS
 ========================== */
 

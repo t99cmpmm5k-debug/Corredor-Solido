@@ -2,7 +2,7 @@ import { SEED_RACES } from "./seedRaces.js";
 import { gymDays as DEFAULT_GYM_DAYS } from "./gymData.js";
 
 const DB_NAME = "corredor-solido";
-const DB_VERSION = 10;
+const DB_VERSION = 11;
 
 // Bookkeeping en meta (misma store que lastExportAt, ver backup.js) — se
 // escribe una sola vez, la primera vez que esta instalación pasa por
@@ -106,7 +106,8 @@ export const STORES = {
     gymRoutines: "gymRoutines",
     plannedRaces: "plannedRaces",
     customExercises: "customExercises",
-    referenceRoutes: "referenceRoutes"
+    referenceRoutes: "referenceRoutes",
+    routeSuggestionDismissals: "routeSuggestionDismissals"
 
 };
 
@@ -349,6 +350,18 @@ function upgrade(db, transaction) {
     if (!db.objectStoreNames.contains(STORES.referenceRoutes)) {
 
         db.createObjectStore(STORES.referenceRoutes, { keyPath: "id" });
+
+    }
+
+    // Detección automática de recorridos parecidos (Running): cuando el
+    // usuario descarta una sugerencia de agrupar dos entrenos concretos, se
+    // recuerda para no volver a sugerírsela -- store propia en vez de un
+    // campo en `workouts` o en `referenceRoutes`, mismo criterio que
+    // referenceRoutes arriba (id = par de workoutIds ordenado, ver
+    // routeSuggestionStore.js).
+    if (!db.objectStoreNames.contains(STORES.routeSuggestionDismissals)) {
+
+        db.createObjectStore(STORES.routeSuggestionDismissals, { keyPath: "id" });
 
     }
 

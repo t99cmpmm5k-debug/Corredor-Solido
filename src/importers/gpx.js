@@ -1,5 +1,6 @@
 import { formatISODate } from "../utils/date.js";
 import { inferWorkoutType } from "./classifyWorkoutType.js";
+import { haversineMeters, buildRouteTrace } from "./geoTrace.js";
 
 const TRACKPOINT_EXTENSION_NS = "http://www.garmin.com/xmlschemas/TrackPointExtension/v1";
 
@@ -54,20 +55,6 @@ function nsChildValue(parent, prefix, localName) {
 
     const n = Number(el.textContent?.trim());
     return Number.isFinite(n) ? n : null;
-
-}
-
-function haversineMeters(lat1, lon1, lat2, lon2) {
-
-    const R = 6371000;
-    const toRad = d => d * Math.PI / 180;
-    const dLat = toRad(lat2 - lat1);
-    const dLon = toRad(lon2 - lon1);
-
-    const a = Math.sin(dLat / 2) ** 2
-        + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
-
-    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
 }
 
@@ -317,11 +304,18 @@ export function parseGpxWorkout(xmlText) {
         importWarnings.push("El desnivel calculado por GPS parece muy alto — revisar.");
     }
 
+    // Traza re-muestreada para la detección automática de recorridos
+    // parecidos (referenceRouteGeometry.js) -- fuera de `fields`/fieldMeta
+    // a propósito, igual que `splits`: no es un dato que se revise ni edite
+    // a mano en Revisar-datos.
+    const routeTrace = buildRouteTrace(points);
+
     return {
 
         ...fields,
         type,
         splits,
+        routeTrace,
 
         fieldMeta,
         importWarnings

@@ -36,7 +36,16 @@ const initial = () => ({
     // una tarjeta de recorrido (borrar), mismo patrón que historyMenuOpenId.
     detailRouteId: null,
     creatingRoute: false,
-    routeMenuOpenId: null
+    routeMenuOpenId: null,
+
+    // Sugerencia automática de agrupación (ReferenceRouteSuggestionCard.js)
+    // -- qué par concreto tiene abierto su propio mini-formulario de
+    // "nombrar y agrupar" ahora mismo, aparte de `creatingRoute` a
+    // propósito: son dos flujos de creación distintos (uno genérico, otro
+    // ya con dos entrenos concretos de por medio) y mezclarlos en el mismo
+    // booleano obligaría a decidir de dónde saca el formulario los ids a
+    // asignar. null cuando no hay ninguno abierto.
+    confirmingSuggestion: null
 
 });
 
@@ -430,6 +439,24 @@ export function getRouteMenuOpenId() {
 export function setRouteMenuOpenId(id) {
 
     wizard.routeMenuOpenId = id;
+
+}
+
+export function getConfirmingSuggestion() {
+
+    return wizard.confirmingSuggestion;
+
+}
+
+export function startConfirmingSuggestion(pair) {
+
+    wizard.confirmingSuggestion = pair;
+
+}
+
+export function cancelConfirmingSuggestion() {
+
+    wizard.confirmingSuggestion = null;
 
 }
 

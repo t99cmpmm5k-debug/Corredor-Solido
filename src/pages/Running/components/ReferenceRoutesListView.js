@@ -2,8 +2,11 @@ import "./ReferenceRoutesListView.css";
 
 import { getReferenceRoutes } from "../../../data/referenceRouteStore.js";
 import { getWorkouts } from "../../../data/workoutStore.js";
+import { getDismissedPairKeys, routeSuggestionPairKey } from "../../../data/routeSuggestionStore.js";
 import { resolveRouteWorkouts } from "../referenceRouteEfficiency.js";
+import { findRouteSuggestions } from "../referenceRouteGeometry.js";
 import { ReferenceRouteCard } from "./ReferenceRouteCard.js";
+import { ReferenceRouteSuggestionCard } from "./ReferenceRouteSuggestionCard.js";
 
 // Input SIN controlar (mismo patrón que brand/model en el alta de
 // zapatilla, RunningShoeStep.js) -- initRunningEvents.js lee su .value
@@ -82,10 +85,13 @@ function RouteCardMenu(route, isMenuOpen) {
 
 }
 
-export function ReferenceRoutesListView(creatingRoute, routeMenuOpenId) {
+export function ReferenceRoutesListView(creatingRoute, routeMenuOpenId, confirmingSuggestion) {
 
     const routes = getReferenceRoutes();
     const allWorkouts = getWorkouts();
+
+    const groupedWorkoutIds = new Set(routes.flatMap(r => r.workoutIds));
+    const suggestions = findRouteSuggestions(allWorkouts, groupedWorkoutIds, getDismissedPairKeys(), routeSuggestionPairKey);
 
     return `
 
@@ -108,6 +114,16 @@ export function ReferenceRoutesListView(creatingRoute, routeMenuOpenId) {
                 Agrupa entrenos hechos en el mismo recorrido para comparar su eficiencia aeróbica -- ritmo a FC similar, no solo quién fue más rápido.
 
             </p>
+
+            ${suggestions.length ? `
+
+                <div class="route-suggestions-list">
+
+                    ${suggestions.map(s => ReferenceRouteSuggestionCard(s.workoutA, s.workoutB, confirmingSuggestion)).join("")}
+
+                </div>
+
+            ` : ""}
 
             ${creatingRoute ? CreateRouteForm() : `
 

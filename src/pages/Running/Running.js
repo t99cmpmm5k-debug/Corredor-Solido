@@ -35,6 +35,7 @@ import {
     getDetailRouteId,
     isCreatingRoute,
     getRouteMenuOpenId,
+    getConfirmingSuggestion,
     getRouteSortColumn,
     getRouteSortDirection
 } from "./runningStore.js";
@@ -873,7 +874,7 @@ export function Running() {
 
     } else if (step === "referenceRoutes") {
 
-        content = ReferenceRoutesListView(isCreatingRoute(), getRouteMenuOpenId());
+        content = ReferenceRoutesListView(isCreatingRoute(), getRouteMenuOpenId(), getConfirmingSuggestion());
 
     } else if (step === "referenceRouteDetail") {
 

@@ -1,6 +1,7 @@
 import { rerender } from "../../core/router.js";
 import { addWorkout, addShoe, deleteWorkout, findSimilarWorkout, updateWorkoutType, updateWorkoutShoe, updateWorkoutDayState, retireShoe, updateShoe } from "../../data/workoutStore.js";
 import { createReferenceRoute, deleteReferenceRoute, assignWorkoutToRoute, unassignWorkoutFromReferenceRoutes } from "../../data/referenceRouteStore.js";
+import { dismissRouteSuggestion } from "../../data/routeSuggestionStore.js";
 import { parseGarminScreenshots, warmUpWorker } from "../../importers/garmin-engine/recognize.js";
 import { readShoePhotoAsDataUrl } from "./shoePhoto.js";
 import { importWorkout } from "../../importers/index.js";
@@ -47,7 +48,10 @@ import {
     cancelCreatingRoute,
     getRouteMenuOpenId,
     setRouteMenuOpenId,
-    toggleRouteSort
+    toggleRouteSort,
+    getConfirmingSuggestion,
+    startConfirmingSuggestion,
+    cancelConfirmingSuggestion
 } from "./runningStore.js";
 
 const DETAIL_HISTORY_STATE = { runningDetail: true };
@@ -143,6 +147,7 @@ function openReferenceRoutes() {
 
     cancelCreatingRoute();
     setRouteMenuOpenId(null);
+    cancelConfirmingSuggestion();
     setWizardStep("referenceRoutes");
 
     history.pushState(REFERENCE_ROUTES_HISTORY_STATE, "");
@@ -200,6 +205,37 @@ function saveNewRoute() {
     createReferenceRoute(name).then(() => {
         cancelCreatingRoute();
         rerender();
+    });
+
+}
+
+// Descartar una sugerencia -- se recuerda en IndexedDB (routeSuggestionStore.js)
+// para no volver a proponer ESE par concreto; recomputar la lista de
+// sugerencias en el próximo render ya la excluye sola (findRouteSuggestions()
+// filtra por dismissedPairKeys), sin tocar ningún estado propio aquí.
+function dismissSuggestion(workoutIdA, workoutIdB) {
+
+    dismissRouteSuggestion(workoutIdA, workoutIdB);
+    rerender();
+
+}
+
+// Mismo criterio que saveNewRoute() (input sin controlar, se lee del DOM al
+// guardar) -- pero además de crear el recorrido, asigna directamente los
+// dos entrenos de la sugerencia que se está confirmando.
+function saveSuggestionRoute(workoutIdA, workoutIdB) {
+
+    const name = document.querySelector('[data-field="suggestion-route-name"]')?.value.trim();
+    if (!name) return;
+
+    createReferenceRoute(name).then(route => {
+
+        assignWorkoutToRoute(route.id, workoutIdA);
+        assignWorkoutToRoute(route.id, workoutIdB);
+
+        cancelConfirmingSuggestion();
+        rerender();
+
     });
 
 }
@@ -1007,6 +1043,41 @@ export function initRunningEvents() {
         button.addEventListener("click", event => {
             event.stopPropagation();
             deleteRouteWithConfirm(button.dataset.routeId);
+        });
+
+    });
+
+    // Sugerencia automática de recorrido parecido (ReferenceRouteSuggestionCard.js).
+    document.querySelectorAll('[data-action="dismiss-route-suggestion"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+            dismissSuggestion(button.dataset.workoutA, button.dataset.workoutB);
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="confirm-route-suggestion"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+            startConfirmingSuggestion({ workoutIdA: button.dataset.workoutA, workoutIdB: button.dataset.workoutB });
+            rerender();
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="cancel-confirm-suggestion"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+            cancelConfirmingSuggestion();
+            rerender();
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="save-suggestion-route"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+            saveSuggestionRoute(button.dataset.workoutA, button.dataset.workoutB);
         });
 
     });
