@@ -97,6 +97,28 @@ export function buildGymOnlyDay(date) {
 
 }
 
+// Todos los elementos reales de una fecha -- por defecto la tarjeta de
+// detalle solo enseña UNO (running gana sobre gimnasio, y de haber dos
+// sesiones reales el mismo día tras mover/duplicar sobre un hueco ya
+// ocupado, la de menor slot, ver fillWeekDays() más abajo) -- esto
+// reexpone el resto para que PlanDaySelector.js pueda pintar una pestaña
+// por cada uno y Plan.js decida si hace falta (2+, ver ahí). Recibe
+// `sessions` en vez de leer workoutStore.js directamente (mismo criterio
+// que fillWeekDays(), pura y testeable sin montar el store real) --
+// Plan.js le pasa getPlannedSessions() entero (no la semana en vista) para
+// que también funcione con una sesión seleccionada desde la vista mensual.
+export function getDayItems(date, sessions) {
+
+    const daySessions = sessions
+        .filter(s => s.date === date)
+        .sort((a, b) => (a.slot ?? 0) - (b.slot ?? 0));
+
+    const gymDay = buildGymOnlyDay(date);
+
+    return gymDay ? [...daySessions, gymDay] : daySessions;
+
+}
+
 // Siempre 7 columnas (lunes-domingo), tenga la semana sesiones o no — los
 // días sin sesión real se rellenan con un hueco de "Descanso" (o, si hay
 // un día de gimnasio programado ese día de la semana, con ese día de

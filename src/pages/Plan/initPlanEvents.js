@@ -297,6 +297,38 @@ function selectGymOnlyDay(date) {
 
 }
 
+// Pestaña de PlanDaySelector.js tocada -- itemId es o bien el id de una
+// sesión real (getSessionById lo resuelve) o el id sintético
+// `gym-${date}` del día "solo gimnasio" (ver attachGymInfo() en
+// PlanTimeline.js), que no vive en workoutStore.js y hay que reconstruir
+// con buildGymOnlyDay() a partir de la fecha codificada en el propio id.
+// Mismo "qué queda mostrado después" que tocar la columna del timeline:
+// pasa a ser selectedWorkout tal cual.
+const GYM_ONLY_ID_PREFIX = "gym-";
+
+function selectDayItem(itemId) {
+
+    setSessionMenuOpenId(null);
+
+    const session = getSessionById(itemId);
+
+    if (session) {
+        setSelectedWorkout(session);
+        rerender();
+        return;
+    }
+
+    if (!itemId.startsWith(GYM_ONLY_ID_PREFIX)) return;
+
+    const date = itemId.slice(GYM_ONLY_ID_PREFIX.length);
+    const gymDay = buildGymOnlyDay(date);
+    if (!gymDay) return;
+
+    setSelectedWorkout(gymDay);
+    rerender();
+
+}
+
 // "Empezar rutina"/"Ver resumen" de PlanGymDayCard.js -- ahí sí hace falta
 // saltar a Gimnasio de verdad (arrancar/retomar una sesión es la vista
 // interactiva completa de Gimnasio, no algo que tenga sentido duplicar
@@ -839,6 +871,14 @@ export function initPlanEvents() {
     });
 
     initTimelineSwipe();
+
+    document.querySelectorAll('[data-action="select-day-item"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+            selectDayItem(button.dataset.itemId);
+        });
+
+    });
 
     document.querySelectorAll('[data-action="toggle-plan-view"]').forEach(button => {
 

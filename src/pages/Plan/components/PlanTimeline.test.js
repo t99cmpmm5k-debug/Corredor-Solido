@@ -12,7 +12,7 @@ vi.mock("../../../data/gymSessionStore.js", () => ({
     getGymSessions: () => gymSessions
 }));
 
-const { fillWeekDays, PlanTimeline, buildGymOnlyDay } = await import("./PlanTimeline.js");
+const { fillWeekDays, PlanTimeline, buildGymOnlyDay, getDayItems } = await import("./PlanTimeline.js");
 const { resolveDayColor } = await import("../planDayColor.js");
 
 const MONDAY = "2026-08-17"; // lunes
@@ -343,6 +343,64 @@ describe("fillWeekDays + gimnasio -- estado 'finalizada' (sesión ya registrada 
         const html = PlanTimeline(null, sessions, MONDAY);
 
         expect(html).toContain('day-gym-badge is-completed');
+
+    });
+
+});
+
+describe("getDayItems -- todos los elementos reales de una fecha, para el selector de pestañas (bug: la sesión que 'pierde' quedaba inaccesible)", () => {
+
+    afterEach(() => {
+        gymRoutines = [];
+        gymSessions = [];
+    });
+
+    it("un día con una sola sesión real y sin gimnasio devuelve un único item", () => {
+
+        const sessions = [{ id: "s1", date: "2026-08-18", slot: 0, type: "z2" }];
+
+        expect(getDayItems("2026-08-18", sessions)).toEqual(sessions);
+
+    });
+
+    it("running + gimnasio el mismo día devuelve los dos, running primero (mismo orden que 'running manda' por defecto)", () => {
+
+        gymRoutines = [{ id: "r1", name: "Torso Completo", days: [{ id: "d1", weekday: "martes", title: "Torso Completo", exercises: [] }] }];
+
+        const sessions = [{ id: "run1", date: "2026-08-18", slot: 0, type: "z2" }]; // martes
+
+        const items = getDayItems("2026-08-18", sessions);
+
+        expect(items).toHaveLength(2);
+        expect(items[0]).toMatchObject({ id: "run1", type: "z2" });
+        expect(items[1]).toMatchObject({ gymOnly: true, gymDayId: "d1" });
+
+    });
+
+    it("dos sesiones reales el mismo día (tras mover una sobre un hueco ya ocupado) devuelve ambas, ordenadas por slot", () => {
+
+        const sessions = [
+            { id: "second", date: "2026-08-18", slot: 1, type: "intervals" },
+            { id: "first", date: "2026-08-18", slot: 0, type: "z2" }
+        ];
+
+        const items = getDayItems("2026-08-18", sessions);
+
+        expect(items.map(i => i.id)).toEqual(["first", "second"]);
+
+    });
+
+    it("sin ninguna sesión real ni gimnasio esa fecha, devuelve un array vacío", () => {
+
+        expect(getDayItems("2026-08-18", [])).toEqual([]);
+
+    });
+
+    it("no cuenta sesiones de OTRA fecha", () => {
+
+        const sessions = [{ id: "s1", date: "2026-08-19", slot: 0, type: "z2" }];
+
+        expect(getDayItems("2026-08-18", sessions)).toEqual([]);
 
     });
 

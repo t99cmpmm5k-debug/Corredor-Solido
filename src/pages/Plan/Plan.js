@@ -1,11 +1,12 @@
 import "./Plan.css";
 
 import { PlanHeader } from "./components/PlanHeader";
-import { PlanTimeline } from "./components/PlanTimeline";
+import { PlanTimeline, getDayItems } from "./components/PlanTimeline";
 import "./components/PlanTimeline.css";
 import { PlanConnector } from "./components/PlanConnector";
 import { PlanWorkoutCard } from "./components/PlanWorkoutCard";
 import { PlanGymDayCard } from "./components/PlanGymDayCard.js";
+import { PlanDaySelector } from "./components/PlanDaySelector.js";
 import { PlanMoveDayPicker } from "./components/PlanMoveDayPicker.js";
 import { PlanGymMoveDayPicker } from "./components/PlanGymMoveDayPicker.js";
 import { PlanMovePanel } from "./components/PlanMovePanel.js";
@@ -165,6 +166,27 @@ export function Plan() {
     const creatingSessionDate = getCreatingSessionDate();
     const editingSessionId = getEditingSessionId();
 
+    // Elementos reales de la fecha seleccionada (running + gimnasio a la
+    // vez, o dos sesiones sobre el mismo hueco) -- solo se calcula fuera de
+    // crear/mover/duplicar (esas tres tarjetas no comparten hueco con
+    // ninguna otra sesión de ese día). getPlannedSessions() entero, no la
+    // semana en vista (`sessions` de arriba), para que también funcione
+    // seleccionando un día desde la vista mensual (otra semana).
+    const dayItems = selectedWorkout && !creatingSessionDate && !movingSession && !duplicatingSession && !movingGymDay
+        ? getDayItems(selectedWorkout.date, getPlannedSessions())
+        : [];
+
+    // Un día "solo gimnasio" (sin running, ver attachGymInfo() en
+    // PlanTimeline.js) guarda su objeto sintético en el mismo
+    // selectedWorkout -- gymOnly decide qué tarjeta pintar aquí, sin añadir
+    // un cuarto estado paralelo al ya existente.
+    const dayCardHtml = selectedWorkout?.gymOnly
+        ? PlanGymDayCard(selectedWorkout)
+        : PlanWorkoutCard(selectedWorkout);
+
+    // La barra de pestañas solo se pinta con 2+ elementos (ver
+    // PlanDaySelector.js) -- un día de un solo elemento se sigue viendo
+    // exactamente igual que siempre, sin ningún selector encima.
     const detailCardHtml = creatingSessionDate
         ? PlanCreateSessionPanel(creatingSessionDate, getNewSessionType(), getNewSessionNotes(), !!editingSessionId)
         : movingSession
@@ -173,13 +195,7 @@ export function Plan() {
                 ? PlanMovePanel(duplicatingSession, "duplicate")
                 : movingGymDay
                     ? PlanMovePanel(movingGymDay, "moveGym")
-                    // Un día "solo gimnasio" (sin running, ver attachGymInfo()
-                    // en PlanTimeline.js) guarda su objeto sintético en el mismo
-                    // selectedWorkout -- gymOnly decide qué tarjeta pintar aquí,
-                    // sin añadir un cuarto estado paralelo al ya existente.
-                    : selectedWorkout?.gymOnly
-                        ? PlanGymDayCard(selectedWorkout)
-                        : PlanWorkoutCard(selectedWorkout);
+                    : `${dayItems.length > 1 ? PlanDaySelector(dayItems, selectedWorkout.id) : ""}${dayCardHtml}`;
 
     // Capa flotante por encima de toda la pantalla (fase 5 del pulido de
     // Plan) -- independiente de qué ocupe el hueco de detalle, así que se

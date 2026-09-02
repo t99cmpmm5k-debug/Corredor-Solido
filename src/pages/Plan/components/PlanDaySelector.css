@@ -1,0 +1,47 @@
+/* Barra de pestañas por encima de la tarjeta de detalle (PlanWorkoutCard/
+   PlanGymDayCard) cuando el día tiene 2+ elementos -- discreta a
+   propósito, la propia tarjeta de abajo sigue siendo el foco visual. */
+.plan-day-selector{
+
+    display:flex;
+    gap:8px;
+
+    margin-bottom:10px;
+
+}
+
+.plan-day-selector-tab{
+
+    flex:1;
+
+    padding:9px 12px;
+
+    border-radius:14px;
+    border:1px solid color-mix(in srgb, var(--color-primary) 30%, transparent);
+
+    background:color-mix(in srgb, var(--card-background) 55%, transparent);
+    color:var(--text-secondary);
+
+    font-size:13px;
+    font-weight:600;
+    font-family:inherit;
+
+    text-align:center;
+    cursor:pointer;
+
+}
+
+.plan-day-selector-tab.is-active{
+
+    border-color:var(--color-primary);
+    background:color-mix(in srgb, var(--color-primary) 22%, transparent);
+    color:var(--text-primary);
+
+}
+
+.plan-day-selector-tab.is-active.is-gym{
+
+    border-color:var(--color-gym);
+    background:color-mix(in srgb, var(--color-gym) 22%, transparent);
+
+}
