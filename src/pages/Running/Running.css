@@ -1718,6 +1718,37 @@
 
 }
 
+/* Contexto vs. la media histórica del mismo tipo (ver
+   runningTypeContext.js) -- una sola línea opcional, mismo lenguaje
+   visual que .history-shoe justo debajo, para no introducir un estilo
+   nuevo por una línea más. Solo se pinta cuando hay contexto real (ver
+   RunningHistoryItem()). */
+.history-context{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:8px;
+
+    color:var(--text-secondary);
+
+    font-size:.82rem;
+
+    min-width:0;
+
+}
+
+.history-context iconify-icon{
+
+    color:var(--color-primary);
+
+    font-size:16px;
+
+    flex-shrink:0;
+
+}
+
 .history-shoe{
 
     display:flex;

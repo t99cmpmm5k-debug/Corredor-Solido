@@ -10,6 +10,7 @@ import { buildTypeProgressInsight, buildProgressMessage, buildPaceComparison, bu
 import { buildTypeSummary } from "./runningSummary.js";
 import { buildListInsight } from "./runningListInsight.js";
 import { buildZ2Evolution } from "./runningEvolution.js";
+import { buildWorkoutTypeContext } from "./runningTypeContext.js";
 import {
     ACWR_CHRONIC_DAYS,
     ACWR_ZONE_THRESHOLDS,
@@ -90,7 +91,7 @@ function workoutTypeBadge(type) {
 // mismo patrón que Plan/Gimnasio (data-session-id reutiliza el mismo
 // nombre de atributo que esos menús, aunque aquí sea un workoutId, para
 // que el mismo tipo de listener sirva sin inventar un atributo nuevo).
-function RunningHistoryItem(workout, shoes, routes) {
+function RunningHistoryItem(workout, shoes, routes, allWorkouts) {
 
     const distance = formatDistance(workout.distanceKm);
     const duration = workout.durationSec != null ? formatSecondsAsClock(workout.durationSec) : "—";
@@ -99,6 +100,12 @@ function RunningHistoryItem(workout, shoes, routes) {
     const temperature = workout.temperatureC != null ? `${workout.temperatureC}°C` : "—";
     const typeBadge = workoutTypeBadge(workout.type);
     const isMenuOpen = getHistoryMenuOpenId() === workout.id;
+    // Contexto vs. la media histórica COMPLETA del mismo tipo (nunca
+    // contra otros tipos) -- ver runningTypeContext.js. Se calcula contra
+    // allWorkouts (el conjunto real completo), no contra `filtered`: el
+    // promedio no debe encogerse solo porque el chip "Rodaje (Z2)" esté
+    // activo en vez de "Todos".
+    const typeContext = buildWorkoutTypeContext(workout, allWorkouts);
 
     return `
 
@@ -198,6 +205,18 @@ function RunningHistoryItem(workout, shoes, routes) {
                 </div>
 
             </div>
+
+            ${typeContext ? `
+
+                <div class="history-context">
+
+                    <iconify-icon icon="${typeContext.kind === "pace" ? "solar:speedometer-bold-duotone" : "solar:heart-pulse-bold-duotone"}"></iconify-icon>
+
+                    <span>${typeContext.text}</span>
+
+                </div>
+
+            ` : ""}
 
             <div class="history-shoe">
 
@@ -1107,7 +1126,7 @@ function RunningIdleView() {
 
                     <div class="running-history">
 
-                        ${filtered.map(workout => RunningHistoryItem(workout, shoes, routes)).join("")}
+                        ${filtered.map(workout => RunningHistoryItem(workout, shoes, routes, workouts)).join("")}
 
                     </div>
 
