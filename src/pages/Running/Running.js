@@ -9,6 +9,7 @@ import { formatSecondsAsClock, formatShoeName } from "../../utils/format.js";
 import { buildTypeProgressInsight, buildProgressMessage, buildPaceComparison, buildComparisonMessage } from "./runningProgress.js";
 import { buildTypeSummary } from "./runningSummary.js";
 import { buildListInsight } from "./runningListInsight.js";
+import { buildZ2Evolution } from "./runningEvolution.js";
 import {
     ACWR_CHRONIC_DAYS,
     ACWR_ZONE_THRESHOLDS,
@@ -433,6 +434,110 @@ function ReferenceRoutesEntryCard(routes) {
             </span>
 
             <iconify-icon icon="solar:alt-arrow-right-bold-duotone"></iconify-icon>
+
+        </div>
+
+    `;
+
+}
+
+// "5:53/km" a partir de segundos/km -- mismo formato que el resto de
+// Running (RunningHistoryItem, RunningTypeSummary...), solo que aquí se
+// usa dos veces por línea (antes → después).
+function formatEvolutionPace(avgPaceSecPerKm) {
+    return `${formatSecondsAsClock(avgPaceSecPerKm)}/km`;
+}
+
+// Evolución Z2 (prioridad 1 de la lista de mejoras de Running, ronda
+// 2026-09-03): compara el primero y el último de los últimos entrenos
+// reales de Rodaje (Z2) -- ver runningEvolution.js para el porqué de
+// "primero vs último" en vez de "media de grupo" (ya existe esa otra
+// comparación, distinta, en TU RESUMEN). Con menos de 2 rodajes reales no
+// hay nada que comparar -- se dice así en vez de ocultar el bloque entero
+// (mismo criterio que el resto de tarjetas "no disponible" de esta
+// pantalla, ver AcwrCard).
+function Z2EvolutionCard(evolution) {
+
+    if (!evolution.available) {
+
+        return `
+
+            <div class="z2-evolution-card">
+
+                <div class="z2-evolution-header">
+
+                    <span class="z2-evolution-icon">
+                        <iconify-icon icon="solar:graph-new-up-bold-duotone"></iconify-icon>
+                    </span>
+
+                    <span class="z2-evolution-label">EVOLUCIÓN Z2</span>
+
+                </div>
+
+                <p class="z2-evolution-message">Necesitas más Rodajes (Z2) con ritmo real para ver tu evolución.</p>
+
+            </div>
+
+        `;
+
+    }
+
+    const { count, first, last, paceDeltaSecPerKm, hrDeltaBpm } = evolution;
+
+    return `
+
+        <div class="z2-evolution-card">
+
+            <div class="z2-evolution-header">
+
+                <span class="z2-evolution-icon">
+                    <iconify-icon icon="solar:graph-new-up-bold-duotone"></iconify-icon>
+                </span>
+
+                <div class="z2-evolution-header-text">
+                    <span class="z2-evolution-label">EVOLUCIÓN Z2</span>
+                    <span class="z2-evolution-sublabel">Últimos ${count} rodaje${count === 1 ? "" : "s"} · ${formatDayMonth(first.date)} → ${formatDayMonth(last.date)}</span>
+                </div>
+
+            </div>
+
+            <div class="z2-evolution-rows">
+
+                <div class="z2-evolution-row">
+
+                    <span class="z2-evolution-row-label">
+                        <iconify-icon icon="solar:speedometer-bold-duotone"></iconify-icon>
+                        Ritmo medio
+                    </span>
+
+                    <span class="z2-evolution-row-value">
+                        ${formatEvolutionPace(first.avgPaceSecPerKm)}
+                        <iconify-icon icon="solar:round-arrow-right-bold-duotone"></iconify-icon>
+                        ${formatEvolutionPace(last.avgPaceSecPerKm)}
+                    </span>
+
+                </div>
+
+                ${first.avgHr != null && last.avgHr != null ? `
+
+                    <div class="z2-evolution-row">
+
+                        <span class="z2-evolution-row-label">
+                            <iconify-icon icon="solar:heart-bold-duotone"></iconify-icon>
+                            FC media
+                        </span>
+
+                        <span class="z2-evolution-row-value">
+                            ${first.avgHr}
+                            <iconify-icon icon="solar:round-arrow-right-bold-duotone"></iconify-icon>
+                            ${last.avgHr} ppm
+                        </span>
+
+                    </div>
+
+                ` : ""}
+
+            </div>
 
         </div>
 
@@ -909,6 +1014,11 @@ function RunningIdleView() {
     // rodajes" o "solo series".
     const acwrInsight = buildAcwrInsight(buildRunningLoadEntries(workouts));
 
+    // Evolución Z2 mira SIEMPRE el conjunto real de entrenos, nunca el
+    // filtrado por tipo -- si no, cambiar a "Series" en los chips la
+    // haría desaparecer aunque siga siendo información sobre Rodaje (Z2).
+    const z2Evolution = buildZ2Evolution(workouts);
+
     const routes = getReferenceRoutes();
 
     return `
@@ -958,6 +1068,8 @@ function RunningIdleView() {
                 ${AcwrCard(acwrInsight)}
 
                 ${ReferenceRoutesEntryCard(routes)}
+
+                ${Z2EvolutionCard(z2Evolution)}
 
                 ${RunningTypeFilters(typeFilter, workouts)}
 

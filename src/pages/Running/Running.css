@@ -982,6 +982,182 @@
 
 }
 
+/* =========================
+   EVOLUCIÓN Z2
+   Solo Rodaje (Z2) por ahora -- ver runningEvolution.js. Mismo lenguaje
+   visual de tarjeta que .acwr-card/.running-list-insight.
+========================= */
+
+.z2-evolution-card{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:14px;
+
+    padding:16px;
+
+    border-radius:var(--radius-lg);
+
+    background:color-mix(in srgb, var(--card-background) 70%, transparent);
+
+    border:1px solid var(--card-border);
+
+}
+
+.z2-evolution-header{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:12px;
+
+}
+
+.z2-evolution-icon{
+
+    flex-shrink:0;
+
+    width:40px;
+
+    height:40px;
+
+    border-radius:50%;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    background:color-mix(in srgb, var(--color-primary) 22%, transparent);
+
+    color:var(--color-primary);
+
+    font-size:20px;
+
+}
+
+.z2-evolution-header-text{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:2px;
+
+    min-width:0;
+
+}
+
+.z2-evolution-label{
+
+    color:var(--text-secondary);
+
+    font-size:.68rem;
+
+    font-weight:700;
+
+    text-transform:uppercase;
+
+    letter-spacing:.06em;
+
+}
+
+.z2-evolution-sublabel{
+
+    color:var(--text-secondary);
+
+    font-size:.76rem;
+
+}
+
+.z2-evolution-message{
+
+    margin:0;
+
+    color:var(--text-secondary);
+
+    font-size:.85rem;
+
+    line-height:1.4;
+
+}
+
+.z2-evolution-rows{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:10px;
+
+    padding-top:14px;
+
+    border-top:1px solid color-mix(in srgb, var(--card-border) 70%, transparent);
+
+}
+
+.z2-evolution-row{
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:space-between;
+
+    gap:12px;
+
+}
+
+.z2-evolution-row-label{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:6px;
+
+    color:var(--text-secondary);
+
+    font-size:.82rem;
+
+}
+
+.z2-evolution-row-label iconify-icon{
+
+    color:var(--color-primary);
+
+    font-size:16px;
+
+}
+
+.z2-evolution-row-value{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:6px;
+
+    color:var(--text-primary);
+
+    font-size:.95rem;
+
+    font-weight:800;
+
+}
+
+.z2-evolution-row-value iconify-icon{
+
+    color:var(--text-secondary);
+
+    font-size:14px;
+
+}
+
 .running-empty-filtered{
 
     display:flex;
