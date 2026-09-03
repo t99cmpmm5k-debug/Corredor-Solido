@@ -25,6 +25,19 @@ function numberOf(parent, tagName) {
 
 }
 
+// Bug real (2026-09-04, mismo patrón ya arreglado en gpx.js): distanceKm/
+// durationSec salen de SUMAR el <DistanceMeters>/<TotalTimeSeconds> de
+// cada Lap (ver parseTcxWorkout) -- sumar floats como 1000.0 + 1000.0 +
+// 222.47 + ... arrastra ruido de punto flotante ("4257.719999999999" en
+// vez de "4257.72"), visible en toda la UI que no vuelve a redondear por
+// su cuenta (el input numérico de Revisar-datos, por ejemplo). No pasaba
+// con un solo Lap (antes de sumar varios) porque ese único valor ya venía
+// limpio de la fuente. El ritmo medio se calcula ANTES de este redondeo,
+// sobre los valores completos, así que no pierde precisión por este paso.
+function round2(n) {
+    return n != null ? Math.round(n * 100) / 100 : null;
+}
+
 // Bloques tipo <AverageHeartRateBpm><Value>131</Value></AverageHeartRateBpm>
 // — la etiqueta interna siempre es "Value", tanto a nivel Lap como Trackpoint.
 function nestedValueOf(parent, tagName) {
@@ -301,8 +314,8 @@ export function parseTcxWorkout(xmlText) {
         date: startDate ? formatISODate(startDate) : null,
         time: startDate ? `${startDate.getHours()}:${String(startDate.getMinutes()).padStart(2, "0")}` : null,
         title,
-        distanceKm,
-        durationSec,
+        distanceKm: round2(distanceKm),
+        durationSec: durationSec != null ? Math.round(durationSec) : null,
         avgPaceSecPerKm,
         avgHr,
         maxHr,

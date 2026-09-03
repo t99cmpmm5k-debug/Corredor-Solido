@@ -167,21 +167,26 @@ function buildRealMultiLapTcx() {
 
 describe("parseTcxWorkout — regresión: TCX real con 6 Laps irregulares (paradas de semáforo)", () => {
 
-    it("suma la distancia de TODOS los Laps -- 4,26 km reales, no 1 km (ni los 2 km que mostraba la app)", () => {
+    it("suma la distancia de TODOS los Laps -- 4,26 km limpios, no 1 km (ni los 2 km que mostraba la app) ni ruido de punto flotante", () => {
 
         const workout = parseTcxWorkout(buildRealMultiLapTcx());
 
-        // 1000 + 1000 + 222.47 + 1000 + 1000 + 35.25 = 4257.72m, exacto.
-        expect(workout.distanceKm).toBeCloseTo(4.25772, 5);
+        // 1000 + 1000 + 222.47 + 1000 + 1000 + 35.25 = 4257.72m exacto, pero
+        // sumar esos floats da 4257.719999999999 sin redondear (verificado
+        // contra el archivo real) -- round2() debe dejarlo en 4.26 limpio,
+        // no un valor "cercano".
+        expect(workout.distanceKm).toBe(4.26);
 
     });
 
-    it("suma la duración de TODOS los Laps, no solo el primero", () => {
+    it("suma la duración de TODOS los Laps, no solo el primero -- redondeada a segundos enteros", () => {
 
         const workout = parseTcxWorkout(buildRealMultiLapTcx());
 
-        // 282.37 + 281.637 + 120 + 281.161 + 280.574 + 24.029 = 1269.771s.
-        expect(workout.durationSec).toBeCloseTo(1269.771, 3);
+        // 282.37 + 281.637 + 120 + 281.161 + 280.574 + 24.029 = 1269.771s,
+        // redondeado a 1270 (mismo criterio que gpx.js). El ritmo medio se
+        // calcula ANTES de este redondeo, sobre los valores completos.
+        expect(workout.durationSec).toBe(1270);
         expect(workout.avgPaceSecPerKm).toBe(298);
 
     });
@@ -218,6 +223,29 @@ describe("parseTcxWorkout — regresión: TCX real con 6 Laps irregulares (parad
     it("calcula splits sobre los puntos de todos los Laps sin lanzar -- no representativos del ritmo real por la baja densidad de puntos de este fixture reducido, solo se comprueba que no rompe", () => {
 
         expect(() => parseTcxWorkout(buildRealMultiLapTcx())).not.toThrow();
+
+    });
+
+    // Bug real (2026-09-04, mismo patrón ya arreglado en gpx.js): sumar el
+    // <DistanceMeters>/<TotalTimeSeconds> de varios Laps arrastra ruido de
+    // punto flotante ("4257.719999999999" en vez de "4257.72") que antes se
+    // colaba tal cual en Revisar-datos y en el detalle del entreno -- no
+    // pasaba con un solo Lap porque ese único valor ya venía limpio de la
+    // fuente.
+    it("redondea distanceKm a 2 decimales aunque la suma de los Laps no salga limpia", () => {
+
+        const workout = parseTcxWorkout(buildRealMultiLapTcx());
+        const decimals = String(workout.distanceKm).split(".")[1] ?? "";
+
+        expect(decimals.length).toBeLessThanOrEqual(2);
+
+    });
+
+    it("redondea durationSec a segundos enteros", () => {
+
+        const workout = parseTcxWorkout(buildRealMultiLapTcx());
+
+        expect(Number.isInteger(workout.durationSec)).toBe(true);
 
     });
 
