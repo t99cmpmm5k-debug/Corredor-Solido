@@ -42,6 +42,12 @@ function nestedValueOf(parent, tagName) {
 // Garmin como Zepp por compartir el mismo esquema — con un fallback manual
 // por namespace URI real, no el método nativo, por si algún exportador
 // usara otro alias de prefijo.
+//
+// Bug real (2026-09-04): un archivo real trae <ns3:MaxRunCadence> (M
+// mayúscula) mientras el resto del código pedía "maxRunCadence" -- ambas
+// coexisten según el exportador/versión de Zepp, así que la comparación de
+// localName es insensible a mayúsculas/minúsculas (el prefijo "ns3:" en sí
+// nunca cambia de caja, solo el nombre local).
 function nsTagValue(parent, localName) {
 
     if (!parent) return null;
@@ -49,14 +55,40 @@ function nsTagValue(parent, localName) {
     let el = parent.getElementsByTagName(`ns3:${localName}`)[0];
 
     if (!el) {
+        const target = localName.toLowerCase();
         el = [...parent.getElementsByTagName("*")]
-            .find(node => node.localName === localName && node.namespaceURI === ACTIVITY_EXTENSION_NS);
+            .find(node => node.localName?.toLowerCase() === target && node.namespaceURI === ACTIVITY_EXTENSION_NS);
     }
 
     if (!el) return null;
 
     const n = Number(el.textContent?.trim());
     return Number.isFinite(n) ? n : null;
+
+}
+
+// Media ponderada por duración de un campo agregado que cada <Lap> ya trae
+// calculado por el propio dispositivo (AverageHeartRateBpm, AvgRunCadence)
+// -- una media de medias sin ponderar pesaría igual un Lap de 282s que uno
+// de 24s. Los Laps sin el campo (p. ej. cadencia ausente en algún archivo)
+// se ignoran del todo, ni cuentan como 0 ni aportan su peso -- mismo
+// criterio de "nunca inventar" que el resto del importador.
+function weightedAverage(entries) {
+
+    const withValue = entries.filter(e => e.value != null && e.weight > 0);
+    if (!withValue.length) return null;
+
+    const totalWeight = withValue.reduce((sum, e) => sum + e.weight, 0);
+    const weightedSum = withValue.reduce((sum, e) => sum + e.value * e.weight, 0);
+
+    return Math.round(weightedSum / totalWeight);
+
+}
+
+function maxOf(values) {
+
+    const real = values.filter(v => v != null);
+    return real.length ? Math.max(...real) : null;
 
 }
 
@@ -195,18 +227,31 @@ export function parseTcxWorkout(xmlText) {
     }
 
     const activityEl = doc.getElementsByTagName("Activity")[0];
-    const lapEl = doc.getElementsByTagName("Lap")[0];
+    // Bug real (2026-09-04): una actividad puede venir partida en VARIOS
+    // <Lap> — cada parón real (semáforo, pausa manual...) cierra uno y abre
+    // el siguiente, con duración/distancia irregulares entre sí (un Lap de
+    // 1000m tan real como uno de 222m o 35m). Antes solo se leía
+    // `getElementsByTagName("Lap")[0]`, así que un archivo con 6 Laps se
+    // importaba como si solo existiera el primero -- verificado contra un
+    // TCX real de 4,26km repartido en 6 Laps que se importaba como 1,00km.
+    // Ningún Lap se descarta por corto o irregular que sea.
+    const lapEls = [...doc.getElementsByTagName("Lap")];
 
-    if (!activityEl || !lapEl) {
+    if (!activityEl || lapEls.length === 0) {
         throw new Error("El archivo TCX no tiene ninguna actividad reconocible.");
     }
 
-    const startIso = textOf(activityEl, "Id") || lapEl.getAttribute("StartTime");
+    const startIso = textOf(activityEl, "Id") || lapEls[0].getAttribute("StartTime");
     const startDate = startIso ? new Date(startIso) : null;
 
-    const distanceMeters = numberOf(lapEl, "DistanceMeters");
+    // Distancia/duración/calorías: suma directa de lo que cada Lap ya trae
+    // calculado por el propio dispositivo -- estos tres son aditivos sin
+    // matices (a diferencia de FC/cadencia, que son medias y no se pueden
+    // simplemente sumar).
+    const distanceMeters = lapEls.reduce((sum, lap) => sum + (numberOf(lap, "DistanceMeters") ?? 0), 0) || null;
     const distanceKm = distanceMeters != null ? distanceMeters / 1000 : null;
-    const durationSec = numberOf(lapEl, "TotalTimeSeconds");
+    const durationSec = lapEls.reduce((sum, lap) => sum + (numberOf(lap, "TotalTimeSeconds") ?? 0), 0) || null;
+    const calories = lapEls.reduce((sum, lap) => sum + (numberOf(lap, "Calories") ?? 0), 0) || null;
 
     // El ritmo NO sale de <ns3:AvgSpeed> — verificado contra un archivo
     // real que ese campo no cuadra con la distancia/duración del propio
@@ -216,7 +261,31 @@ export function parseTcxWorkout(xmlText) {
         ? Math.round(durationSec / distanceKm)
         : null;
 
-    const points = parseTrackpoints(lapEl);
+    // FC media y cadencia media: cada Lap ya trae su propia media calculada
+    // por el dispositivo -- combinarlas exige ponderar por duración (ver
+    // weightedAverage()), nunca una media de medias sin pesos ni tampoco
+    // recalcularlas desde cero a partir de los Trackpoints sueltos (que
+    // pueden traer huecos de FC/cadencia el dispositivo ya tuvo en cuenta).
+    // FC máxima/cadencia máxima sí son directamente el máximo entre Laps.
+    const avgHr = weightedAverage(lapEls.map(lap => ({
+        value: nestedValueOf(lap, "AverageHeartRateBpm"),
+        weight: numberOf(lap, "TotalTimeSeconds") ?? 0
+    })));
+    const maxHr = maxOf(lapEls.map(lap => nestedValueOf(lap, "MaximumHeartRateBpm")));
+
+    // Ya vienen en SPM real (dobladas) a nivel de Lap — verificado
+    // contra el archivo real, solo los valores por Trackpoint van por
+    // pierna (ver parseTrackpoints).
+    const avgCadence = weightedAverage(lapEls.map(lap => ({
+        value: nsTagValue(lap, "AvgRunCadence"),
+        weight: numberOf(lap, "TotalTimeSeconds") ?? 0
+    })));
+    const maxCadence = maxOf(lapEls.map(lap => nsTagValue(lap, "maxRunCadence")));
+
+    // Puntos GPS de TODOS los Laps, en orden -- de aquí salen elevación,
+    // splits y la traza de recorrido de la actividad completa, no solo del
+    // primer Lap.
+    const points = lapEls.flatMap(lap => parseTrackpoints(lap));
     const firstFix = points.find(p => p.lat != null && p.lon != null);
 
     // Notes de Zepp no es un título descriptivo como el que capturan las
@@ -235,14 +304,11 @@ export function parseTcxWorkout(xmlText) {
         distanceKm,
         durationSec,
         avgPaceSecPerKm,
-        avgHr: nestedValueOf(lapEl, "AverageHeartRateBpm"),
-        maxHr: nestedValueOf(lapEl, "MaximumHeartRateBpm"),
-        calories: numberOf(lapEl, "Calories"),
-        // Ya vienen en SPM real (dobladas) a nivel de Lap — verificado
-        // contra el archivo real, solo los valores por Trackpoint van por
-        // pierna (ver parseTrackpoints).
-        avgCadence: nsTagValue(lapEl, "AvgRunCadence"),
-        maxCadence: nsTagValue(lapEl, "maxRunCadence"),
+        avgHr,
+        maxHr,
+        calories,
+        avgCadence,
+        maxCadence,
         elevationGainM: computeElevationGain(points),
         // No existe ningún campo de temperatura en TCX de Zepp/Amazfit.
         temperatureC: null,
