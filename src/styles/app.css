@@ -37,7 +37,17 @@ body{
 
     background:#061226;
 
-    overflow-x:hidden;
+    /* overflow-x:hidden aquí rompía position:sticky en Safari/iOS (bug real
+       confirmado, no visible en Chrome): cualquier overflow != visible en
+       un antepasado del elemento sticky lo convierte en su "ancestro de
+       scroll", y en iOS Safari (a diferencia de Chrome) ese ancestro NO se
+       propaga de forma fiable al viewport, así que el sticky queda anclado
+       a la caja de <body> en vez de a la ventana real. `clip` recorta el
+       desbordamiento horizontal igual que `hidden` (mismo motivo original:
+       evitar el rebote lateral en iOS) pero no crea ese contexto de scroll,
+       así que no interfiere con el sticky de .type-filter-list (Running.css).
+       Soportado en iOS Safari desde la 16 (2022). */
+    overflow-x:clip;
 
     -webkit-font-smoothing:antialiased;
 
