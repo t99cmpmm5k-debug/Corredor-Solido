@@ -5,12 +5,13 @@ import { getReferenceRoutes, getReferenceRouteById } from "../../data/referenceR
 import { resolveRouteWorkouts } from "./referenceRouteEfficiency.js";
 import { RUNNING_WORKOUT_TYPES } from "../../data/runningWorkoutTypes.js";
 import { formatDayMonth } from "../../utils/date.js";
-import { formatSecondsAsClock, formatShoeName } from "../../utils/format.js";
+import { formatSecondsAsClock, formatShoeName, formatKm as formatGroupKm } from "../../utils/format.js";
 import { buildTypeProgressInsight, buildProgressMessage, buildPaceComparison, buildComparisonMessage } from "./runningProgress.js";
 import { buildTypeSummary } from "./runningSummary.js";
 import { buildListInsight } from "./runningListInsight.js";
 import { buildZ2Evolution } from "./runningEvolution.js";
 import { buildWorkoutTypeContext } from "./runningTypeContext.js";
+import { buildHistoryGroups } from "./runningHistoryGrouping.js";
 import {
     ACWR_CHRONIC_DAYS,
     ACWR_ZONE_THRESHOLDS,
@@ -40,6 +41,7 @@ import {
     getSortColumn,
     getSortDirection,
     getHistoryMenuOpenId,
+    getHistoryGroupOverrides,
     getWarningsExpanded,
     getChartMetricMode,
     getDetailRouteId,
@@ -227,6 +229,67 @@ function RunningHistoryItem(workout, shoes, routes, allWorkouts) {
             </div>
 
         </article>
+
+    `;
+
+}
+
+// "3 entrenos · 24,4 km · 5:48/km" -- km y ritmo solo si hay algo real que
+// mostrar (un grupo puede tener entrenos sin distancia/duración todavía,
+// ver buildHistoryGroups()), nunca un "0,0 km" o un ritmo inventado.
+function groupSummaryText(summary) {
+
+    const parts = [`${summary.count} entreno${summary.count === 1 ? "" : "s"}`];
+
+    if (summary.totalKm > 0) parts.push(`${formatGroupKm(summary.totalKm)} km`);
+    if (summary.avgPaceSecPerKm != null) parts.push(`${formatSecondsAsClock(summary.avgPaceSecPerKm)}/km`);
+
+    return parts.join(" · ");
+
+}
+
+// Cabecera plegable de un grupo (semana/mes) del historial -- plegar/
+// desplegar es puramente visual (isOpen decide si se pintan las tarjetas
+// de dentro), el estado en sí vive en runningStore.js (getHistoryGroupOverrides)
+// para sobrevivir a un rerender. El resumen numérico ya viene calculado
+// sobre el conjunto YA filtrado por tipo (ver RunningIdleView) -- cambiar
+// de chip recalcula los grupos enteros, incluido este resumen.
+function RunningHistoryGroup(group, isOpen, shoes, routes, allWorkouts) {
+
+    return `
+
+        <div class="history-group">
+
+            <button
+                class="history-group-header"
+                data-action="toggle-history-group"
+                data-group-key="${group.key}"
+                aria-expanded="${isOpen}"
+            >
+
+                <span class="history-group-title">
+
+                    <iconify-icon icon="solar:alt-arrow-down-bold-duotone" class="history-group-chevron ${isOpen ? "" : "is-collapsed"}"></iconify-icon>
+
+                    ${group.label}
+
+                </span>
+
+                <span class="history-group-summary">${groupSummaryText(group.summary)}</span>
+
+            </button>
+
+            ${isOpen ? `
+
+                <div class="history-group-body">
+
+                    ${group.workouts.map(workout => RunningHistoryItem(workout, shoes, routes, allWorkouts)).join("")}
+
+                </div>
+
+            ` : ""}
+
+        </div>
 
     `;
 
@@ -1023,6 +1086,14 @@ function RunningIdleView() {
     // nada.
     const paceComparison = typeFilter && typeSummary ? buildPaceComparison(filtered, typeSummary.avgPaceSecPerKm) : null;
 
+    // Grupos semana/mes del historial (prioridad 3 de la lista de mejoras)
+    // -- sobre `filtered`, no sobre `workouts`: al cambiar de chip los
+    // grupos (y sus resúmenes de km/ritmo) deben reflejar solo lo
+    // filtrado, no el total real de esa semana/mes. `filtered` ya viene
+    // ordenado de más reciente a más antiguo (ver `sorted` arriba), orden
+    // del que depende buildHistoryGroups() para ordenar los grupos entre sí.
+    const historyGroups = buildHistoryGroups(filtered);
+
     // Insight rotatorio sobre la lista (ver runningListInsight.js) --
     // sobre el conjunto YA filtrado (mismo que se ve debajo), salvo el %
     // de zapatilla, que siempre mira el total real de todos los entrenos.
@@ -1124,9 +1195,16 @@ function RunningIdleView() {
 
                     </div>
 
-                    <div class="running-history">
+                    <div class="history-groups">
 
-                        ${filtered.map(workout => RunningHistoryItem(workout, shoes, routes, workouts)).join("")}
+                        ${historyGroups.map(group => {
+
+                            const overrides = getHistoryGroupOverrides();
+                            const isOpen = overrides[group.key] ?? group.defaultOpen;
+
+                            return RunningHistoryGroup(group, isOpen, shoes, routes, workouts);
+
+                        }).join("")}
 
                     </div>
 

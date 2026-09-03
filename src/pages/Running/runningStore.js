@@ -151,6 +151,30 @@ export function setHistoryMenuOpenId(id) {
 
 }
 
+// Plegado/desplegado de las cabeceras de grupo del historial (semana/mes,
+// ver runningHistoryGrouping.js) -- solo se guarda aquí el ESTADO QUE EL
+// USUARIO HA TOCADO, no el estado por defecto de cada grupo (eso lo decide
+// buildHistoryGroups() según sea "esta semana"/"semana pasada"/mes). Un
+// grupo sin entrada aquí usa su defaultOpen tal cual. Aparte de `wizard`
+// por el mismo motivo que typeFilter/historyMenuOpenId: no debe borrarse
+// solo por importar un entreno nuevo o abrir/cerrar otra pantalla. Las
+// claves de grupo (this-week/last-week/month-YYYY-M) son estables entre
+// renders, así que el plegado sobrevive a cambiar el filtro de tipo --
+// intencionado, ver alcance de la mejora.
+let historyGroupOverrides = {};
+
+export function getHistoryGroupOverrides() {
+
+    return historyGroupOverrides;
+
+}
+
+export function toggleHistoryGroup(key, currentlyOpen) {
+
+    historyGroupOverrides = { ...historyGroupOverrides, [key]: !currentlyOpen };
+
+}
+
 export function getWizardStep() {
 
     return wizard.step;

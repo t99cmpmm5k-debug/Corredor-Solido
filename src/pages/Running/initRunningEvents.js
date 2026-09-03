@@ -38,6 +38,7 @@ import {
     toggleSort,
     getHistoryMenuOpenId,
     setHistoryMenuOpenId,
+    toggleHistoryGroup,
     getWarningsExpanded,
     setWarningsExpanded,
     setChartMetricMode,
@@ -819,6 +820,23 @@ export function initRunningEvents() {
 
         row.addEventListener("click", event => {
             event.stopPropagation();
+        });
+
+    });
+
+    // Cabecera plegable de un grupo semana/mes del historial (ver
+    // RunningHistoryGroup en Running.js) -- "currently open" viene ya
+    // resuelto en aria-expanded (isOpen real que se pintó, no solo el
+    // defaultOpen del grupo), así que toggleHistoryGroup() solo tiene que
+    // invertirlo.
+    document.querySelectorAll('[data-action="toggle-history-group"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+
+            const currentlyOpen = button.getAttribute("aria-expanded") === "true";
+            toggleHistoryGroup(button.dataset.groupKey, currentlyOpen);
+            rerender();
+
         });
 
     });

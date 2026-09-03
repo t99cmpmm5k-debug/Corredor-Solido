@@ -1353,7 +1353,97 @@
 
 }
 
-.running-history{
+.history-groups{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:20px;
+
+}
+
+.history-group{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:10px;
+
+}
+
+.history-group-header{
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:space-between;
+
+    gap:10px;
+
+    width:100%;
+
+    padding:0 2px 8px;
+
+    background:transparent;
+
+    border:none;
+
+    border-bottom:1px solid var(--card-border);
+
+    cursor:pointer;
+
+    text-align:left;
+
+}
+
+.history-group-title{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:6px;
+
+    color:var(--color-primary);
+
+    font-size:.8rem;
+
+    font-weight:800;
+
+    letter-spacing:.03em;
+
+    text-transform:uppercase;
+
+}
+
+.history-group-chevron{
+
+    font-size:16px;
+
+    transition:transform .2s ease;
+
+}
+
+.history-group-chevron.is-collapsed{
+
+    transform:rotate(-90deg);
+
+}
+
+.history-group-summary{
+
+    color:var(--text-secondary);
+
+    font-size:.76rem;
+
+    white-space:nowrap;
+
+}
+
+.history-group-body{
 
     display:flex;
 
