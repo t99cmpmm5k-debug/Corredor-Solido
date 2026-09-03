@@ -91,9 +91,19 @@
 /* Sticky (retoque de jerarquía): se queda fija arriba al hacer scroll por
    la lista de entrenos, para poder cambiar de filtro sin tener que subir
    del todo. top con safe-area -- si no, en un iPhone con notch se pega
-   justo detrás de la isla dinámica al llegar arriba del todo. Fondo sólido
-   propio (no heredado) -- sin él, la lista de tarjetas se vería pasar por
-   detrás con la franja transparente. */
+   justo detrás de la isla dinámica al llegar arriba del todo. Fondo
+   translúcido + blur propio (no heredado) -- mismo criterio que
+   .bottom-nav (BottomNavigation.css) y el resto de barras fijas de la app:
+   sin blur, un fondo sólido a secas ya evita que el texto de las tarjetas
+   se mezcle, pero no se lee como "cristal esmerilado" igual que el resto
+   de la app -- con blur real detrás sigue evitando la mezcla Y encaja
+   visualmente con el resto (retoque de cierre 2026-09-04, la fijación en
+   sí ya estaba hecha desde la fase 2/6 de Running -- este es solo el
+   acabado visual pendiente).
+   Se aplica siempre, no solo mientras está "pegada" -- no hay forma nativa
+   fiable de detectar ese momento exacto sin JS, y aplicado siempre no se
+   nota ninguna diferencia mientras la barra vive en su posición normal
+   (no hay nada debajo que desenfocar todavía en ese punto del scroll). */
 .type-filter-list{
 
     position:sticky;
@@ -111,7 +121,9 @@
 
     padding:8px 0;
 
-    background:var(--color-background);
+    background:color-mix(in srgb, var(--color-background) 88%, transparent);
+    backdrop-filter:blur(18px);
+    -webkit-backdrop-filter:blur(18px);
 
     /* Scroll deslizable sin barra visible, mismo look que el mockup. */
     scrollbar-width:none;
