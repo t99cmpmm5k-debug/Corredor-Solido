@@ -1270,4 +1270,45 @@ export function initRunningEvents() {
 
     });
 
+    initTypeFilterStickyGuard();
+
+}
+
+// Detecta si .type-filter-list está realmente pegada arriba (no solo "se
+// podría", ver el porqué en el comentario de .type-filter-list en
+// Running.css) para añadir/quitar .is-stuck -- top:0 puro no deja hueco por
+// encima nunca, pero tampoco separa los chips del notch/isla dinámica por sí
+// solo, así que hace falta saber el momento exacto para meter ese padding
+// solo entonces (metido siempre dejaría un hueco enorme en la vista normal
+// sin scroll, ver memoria del bug). rect.top<=0 es la propia condición de
+// "está pegada" con top:0 -- no hace falta leer ningún valor de CSS aparte.
+// render() llama a initRunningEvents() en cada re-render (toda otra página
+// también, ver core/render.js) -- por eso se limpia el listener anterior
+// cada vez, en vez de acumular uno nuevo por cada visita a Running.
+let typeFilterStickyGuardHandler = null;
+
+function initTypeFilterStickyGuard() {
+
+    if (typeFilterStickyGuardHandler) {
+        window.removeEventListener("scroll", typeFilterStickyGuardHandler);
+        typeFilterStickyGuardHandler = null;
+    }
+
+    if (!document.querySelector(".type-filter-list")) return;
+
+    typeFilterStickyGuardHandler = () => {
+
+        const el = document.querySelector(".type-filter-list");
+        if (!el) return;
+
+        el.classList.toggle("is-stuck", el.getBoundingClientRect().top <= 0);
+
+    };
+
+    window.addEventListener("scroll", typeFilterStickyGuardHandler, { passive: true });
+
+    // Estado correcto sin esperar al primer scroll -- p. ej. al volver de la
+    // ficha de detalle de un entreno con la posición de scroll ya avanzada.
+    typeFilterStickyGuardHandler();
+
 }

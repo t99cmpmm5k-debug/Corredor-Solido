@@ -106,8 +106,22 @@
    (no hay nada debajo que desenfocar todavía en ese punto del scroll). */
 .type-filter-list{
 
+    /* top:0 puro (no +10px/+safe-area) a propósito -- así el borde/fondo
+       propio de la barra SIEMPRE queda pegado al borde real de la pantalla
+       en cuanto se fija, sin dejar hueco por encima donde asome la tarjeta
+       anterior (bug real visto en iPhone: un fragmento de tarjeta se colaba
+       entre el borde de la pantalla y los chips). `top` nunca afecta la
+       posición en flujo normal (solo el punto donde se fija), así que este
+       cambio no mueve nada mientras la barra vive en su sitio de siempre.
+       La separación visual de la isla dinámica/notch se consigue con
+       padding-top, no con top -- pero SOLO al estar realmente fijada
+       (.is-stuck, ver initTypeFilterStickyGuard() en initRunningEvents.js):
+       si ese padding extra estuviera siempre puesto (no solo al fijarse)
+       añadiría un hueco enorme y permanente encima de los chips en la vista
+       normal sin hacer scroll -- probado y descartado, ver
+       project_running_sticky_filter_body_overflow.md. */
     position:sticky;
-    top:calc(10px + env(safe-area-inset-top));
+    top:0;
     z-index:20;
 
     display:flex;
@@ -127,6 +141,16 @@
 
     /* Scroll deslizable sin barra visible, mismo look que el mockup. */
     scrollbar-width:none;
+
+}
+
+/* Solo mientras está realmente pegada arriba (JS decide el momento exacto
+   comprobando su propia posición real, ver initTypeFilterStickyGuard()) --
+   empuja el contenido (los chips) lejos del notch/isla dinámica sin mover
+   el borde superior de la barra, que ya está fijo en top:0 de por sí. */
+.type-filter-list.is-stuck{
+
+    padding-top:calc(18px + env(safe-area-inset-top));
 
 }
 

@@ -58,3 +58,37 @@ describe("Running -- fila de chips de filtro (.type-filter-list) sticky con blur
     });
 
 });
+
+// Regresión (2026-09-04, ronda 3): con top:calc(10px + safe-area) quedaba un
+// hueco real entre el borde de la pantalla y los chips al fijarse -- se veía
+// la tarjeta anterior asomando por ahí (confirmado en iPhone real). Solo un
+// text-match de CSS no puede probar que el hueco desaparece de verdad (ver
+// project_running_sticky_filter_body_overflow.md -- por eso el fix en sí se
+// verificó con Playwright + WebKit real, no solo con este test), pero sí
+// sirve de red mínima contra que alguien revierta por accidente cualquiera
+// de las dos mitades del fix: top:0 (el fondo debe llegar al borde real) +
+// el padding extra solo en .is-stuck (nunca en la regla base, o volvería el
+// hueco permanente en la vista normal sin scroll -- probado y descartado).
+describe("Running -- .type-filter-list sin hueco al fijarse (top:0 + padding solo en .is-stuck)", () => {
+
+    const css = readFileSync(resolve(here, "Running.css"), "utf8");
+    const baseBody = extractRuleBody(css, ".type-filter-list");
+    const stuckBody = extractRuleBody(css, ".type-filter-list.is-stuck");
+
+    it("el fondo llega al borde real de la pantalla (top:0, no un offset con hueco)", () => {
+
+        expect(baseBody).toMatch(/top\s*:\s*0\s*;/);
+
+    });
+
+    it("la separación del notch/isla dinámica solo se aplica al estar realmente pegada (.is-stuck)", () => {
+
+        expect(stuckBody).not.toBeNull();
+        expect(stuckBody).toMatch(/padding-top\s*:.*safe-area-inset-top/);
+        // La regla base NO debe llevar ese padding-top propio -- si lo
+        // llevara siempre, sería el hueco permanente que ya se descartó.
+        expect(baseBody).not.toMatch(/padding-top\s*:.*safe-area-inset-top/);
+
+    });
+
+});
