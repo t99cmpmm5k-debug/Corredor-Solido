@@ -459,35 +459,87 @@ function RunningHistoryTable(filtered, typeFilter, sortColumn, sortDirection) {
 
 }
 
+// "104,01 km / 700,00 km" + "12% de uso" (bar != null) o solo el km real
+// sin fracción/% inventados si la zapatilla no tiene km objetivo -- mismo
+// criterio que shoeBarPercent() (RunningShoesScreen.js). Antes esta fila
+// mostraba "104,01 km · 12%" sin decir de qué era ese % ni cuál era el
+// objetivo real -- extraída para poder testear el texto sin renderizar el
+// HTML entero de ShoeMileageRow().
+export function buildShoeMileageText(bar, shoe, km) {
+
+    if (!bar) return { fraction: formatKm(km), percentLabel: null };
+
+    return {
+        fraction: `${formatKm(km)} / ${formatKm(shoe.lifetimeKm)}`,
+        percentLabel: `${Math.round(bar.percent)}% de uso`
+    };
+
+}
+
 // Fila compacta de solo lectura — reutiliza ShoePhoto/shoeBarPercent de
 // RunningShoesScreen.js para no duplicar ni la foto ni el umbral de aviso
 // de vida útil. Gestionar (añadir/retirar/foto/vida útil) sigue siendo
 // exclusivo de esa pantalla completa; aquí solo se enseña el kilometraje
 // de un vistazo -- el % solo se añade si de verdad hay vida útil
 // configurada (bar != null), nunca inventado, mismo criterio que el resto
-// de la app.
+// de la app. Aviso sutil (icono + color, sin línea de texto aparte) para
+// "warning"/"danger" -- mismos umbrales que ya usa shoeBarPercent (80%/
+// 100%), no uno nuevo inventado para este bloque.
+//
+// 2 líneas (nombre arriba, barra+km debajo) en vez de una sola fila
+// horizontal -- con todo en una fila, "104,01 km / 700,00 km" + "12% de
+// uso" no cabía junto al nombre y la barra: el track (flex:1, min-width:0)
+// y hasta la flecha acababan a 0px de ancho (bug real encontrado al
+// verificar en el navegador con una zapatilla con km objetivo real, ver
+// commit). Con la barra en su propia línea a ancho completo, ese
+// desbordamiento no puede pasar.
 function ShoeMileageRow(shoe, km) {
 
     const bar = shoeBarPercent(shoe, km);
-    const kmText = bar ? `${formatKm(km)} · ${Math.round(bar.percent)}%` : formatKm(km);
+    const { fraction, percentLabel } = buildShoeMileageText(bar, shoe, km);
+    const isNearingEnd = bar && bar.tier !== "normal";
 
     return `
 
         <div class="shoe-mileage-row">
 
-            ${ShoePhoto(shoe.photo)}
+            <div class="shoe-mileage-row-top">
 
-            <span class="shoe-mileage-name">${formatShoeName(shoe)}</span>
+                ${ShoePhoto(shoe.photo)}
 
-            <div class="shoe-mileage-bar-track">
+                <span class="shoe-mileage-name">${formatShoeName(shoe)}</span>
 
-                <div class="shoe-mileage-bar-fill ${bar ? `shoe-mileage-bar-fill--${bar.tier}` : ""}" style="--progress:${bar ? bar.fillPercent : 0}%"></div>
+                <iconify-icon icon="solar:alt-arrow-right-bold-duotone" class="history-table-chevron"></iconify-icon>
 
             </div>
 
-            <span class="shoe-mileage-km">${kmText}</span>
+            <div class="shoe-mileage-row-bottom">
 
-            <iconify-icon icon="solar:alt-arrow-right-bold-duotone" class="history-table-chevron"></iconify-icon>
+                <div class="shoe-mileage-bar-track">
+
+                    <div class="shoe-mileage-bar-fill ${bar ? `shoe-mileage-bar-fill--${bar.tier}` : ""}" style="--progress:${bar ? bar.fillPercent : 0}%"></div>
+
+                </div>
+
+                <div class="shoe-mileage-km">
+
+                    <span class="shoe-mileage-km-fraction">${fraction}</span>
+
+                    ${percentLabel ? `
+
+                        <span class="shoe-mileage-km-percent ${isNearingEnd ? `shoe-mileage-km-percent--${bar.tier}` : ""}">
+
+                            ${isNearingEnd ? `<iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon>` : ""}
+
+                            ${percentLabel}
+
+                        </span>
+
+                    ` : ""}
+
+                </div>
+
+            </div>
 
         </div>
 

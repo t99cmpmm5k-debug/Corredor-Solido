@@ -2303,7 +2303,23 @@
 
 }
 
+/* Nombre arriba, barra+km debajo -- no todo en una sola fila horizontal.
+   Con "104,01 km / 700,00 km" + "12% de uso" al lado del nombre y la
+   barra, el track (flex:1, min-width:0) y hasta la flecha llegaban a
+   colapsar a 0px de ancho en un móvil real (ver ShoeMileageRow en
+   Running.js) -- con la barra en su propia línea a ancho completo ese
+   desbordamiento no puede pasar. */
 .shoe-mileage-row{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:8px;
+
+}
+
+.shoe-mileage-row-top{
 
     display:flex;
 
@@ -2321,14 +2337,11 @@
 
 }
 
-/* 2 líneas reales en vez de cortar con "…" (retoque de cierre) -- un
-   nombre real de marca+modelo largo ("Asics Gel-Nimbus 28") se leía
-   partido a media palabra en un solo renglón de 88px. */
 .shoe-mileage-name{
 
-    flex-shrink:0;
+    flex:1;
 
-    width:88px;
+    min-width:0;
 
     color:var(--text-primary);
 
@@ -2336,12 +2349,21 @@
 
     font-weight:600;
 
-    line-height:1.25;
-
-    display:-webkit-box;
-    -webkit-box-orient:vertical;
-    -webkit-line-clamp:2;
+    white-space:nowrap;
     overflow:hidden;
+    text-overflow:ellipsis;
+
+}
+
+.shoe-mileage-row-bottom{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+
+    padding-left:52px; /* alinea con el nombre, no con la foto (40px + gap 12px de la fila de arriba) */
 
 }
 
@@ -2389,6 +2411,18 @@
 
     flex-shrink:0;
 
+    display:flex;
+
+    flex-direction:column;
+
+    align-items:flex-end;
+
+    gap:2px;
+
+}
+
+.shoe-mileage-km-fraction{
+
     color:var(--text-primary);
 
     font-size:.8rem;
@@ -2396,6 +2430,48 @@
     font-weight:700;
 
     white-space:nowrap;
+
+}
+
+/* "12% de uso" -- sin vida útil configurada este span no se pinta (ver
+   ShoeMileageRow), nunca un % a medias. */
+.shoe-mileage-km-percent{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:3px;
+
+    color:var(--text-secondary);
+
+    font-size:.68rem;
+
+    font-weight:600;
+
+    white-space:nowrap;
+
+}
+
+/* Aviso sutil (icono + color, sin alarmar) al acercarse/superar la vida
+   útil configurada -- mismos umbrales de shoeBarPercent (80%/100%), mismos
+   colores que ya usa la barra (.shoe-mileage-bar-fill--warning/--danger),
+   nunca un tono nuevo para el mismo umbral. */
+.shoe-mileage-km-percent--warning{
+
+    color:var(--color-warning);
+
+}
+
+.shoe-mileage-km-percent--danger{
+
+    color:var(--color-danger);
+
+}
+
+.shoe-mileage-km-percent iconify-icon{
+
+    font-size:.78rem;
 
 }
 
