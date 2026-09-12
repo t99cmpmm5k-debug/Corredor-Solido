@@ -1,0 +1,312 @@
+/* Mismo lenguaje visual que .z2-evolution-card (cabecera) y
+   .route-evolution-chart (barras + línea superpuesta), pero clases
+   propias (weekly-progress-*) porque este bloque vive en Running.js, no
+   dentro de Recorridos de referencia. */
+
+.weekly-progress-card{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:14px;
+
+    padding:16px;
+
+    border-radius:var(--radius-lg);
+
+    background:color-mix(in srgb, var(--card-background) 70%, transparent);
+
+    border:1px solid var(--card-border);
+
+}
+
+.weekly-progress-header{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:12px;
+
+}
+
+.weekly-progress-icon{
+
+    flex-shrink:0;
+
+    width:40px;
+
+    height:40px;
+
+    border-radius:50%;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    background:color-mix(in srgb, var(--color-primary) 22%, transparent);
+
+    color:var(--color-primary);
+
+    font-size:20px;
+
+}
+
+.weekly-progress-header-text{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:2px;
+
+    min-width:0;
+
+}
+
+.weekly-progress-label{
+
+    color:var(--text-secondary);
+
+    font-size:.68rem;
+
+    font-weight:700;
+
+    text-transform:uppercase;
+
+    letter-spacing:.06em;
+
+}
+
+.weekly-progress-sublabel{
+
+    color:var(--text-secondary);
+
+    font-size:.76rem;
+
+}
+
+.weekly-progress-message{
+
+    margin:0;
+
+    color:var(--text-secondary);
+
+    font-size:.85rem;
+
+    line-height:1.4;
+
+}
+
+.weekly-progress-track{
+
+    position:relative;
+
+    height:170px;
+
+}
+
+.weekly-progress-bars{
+
+    position:relative;
+
+    height:100%;
+
+    display:flex;
+
+    align-items:flex-end;
+
+    gap:10px;
+
+}
+
+.weekly-progress-column{
+
+    flex:1 1 0;
+
+    min-width:0;
+
+    height:100%;
+
+    display:flex;
+
+    flex-direction:column;
+
+    align-items:center;
+
+    justify-content:flex-end;
+
+    gap:4px;
+
+}
+
+.weekly-progress-km-value{
+
+    color:var(--text-secondary);
+
+    font-size:.68rem;
+
+    font-weight:700;
+
+    white-space:nowrap;
+
+}
+
+.weekly-progress-bar{
+
+    width:100%;
+
+    max-width:36px;
+
+    border-radius:6px 6px 3px 3px;
+
+    background:var(--color-primary);
+
+    transition:.25s;
+
+}
+
+/* Semana real sin ningún entreno -- barra a altura mínima con un
+   tratamiento visual distinto (rayado sutil) para que se lea como "sin
+   actividad", no como un valor bajo real. */
+.weekly-progress-bar--empty{
+
+    background:repeating-linear-gradient(
+        45deg,
+        color-mix(in srgb, var(--text-secondary) 25%, transparent),
+        color-mix(in srgb, var(--text-secondary) 25%, transparent) 3px,
+        transparent 3px,
+        transparent 6px
+    );
+
+}
+
+.weekly-progress-week-label{
+
+    color:var(--color-text-muted);
+
+    font-size:.66rem;
+
+    font-weight:700;
+
+}
+
+/*==========================
+     Ritmo medio (overlay)
+==========================*/
+
+.weekly-progress-pace-overlay{
+
+    position:absolute;
+
+    left:0;
+    right:0;
+
+    z-index:2;
+
+    pointer-events:none;
+
+}
+
+.weekly-progress-pace-lines{
+
+    position:absolute;
+
+    inset:0;
+
+    width:100%;
+
+    height:100%;
+
+    overflow:visible;
+
+}
+
+.weekly-progress-pace-line{
+
+    fill:none;
+
+    stroke:var(--color-warning);
+
+    stroke-width:2;
+
+    vector-effect:non-scaling-stroke;
+
+    stroke-linecap:round;
+
+    stroke-linejoin:round;
+
+}
+
+.weekly-progress-pace-dot{
+
+    position:absolute;
+
+    width:6px;
+
+    height:6px;
+
+    border-radius:50%;
+
+    background:var(--color-warning);
+
+    box-shadow:0 0 6px color-mix(in srgb, var(--color-warning) 60%, transparent);
+
+    transform:translate(-50%, 50%);
+
+}
+
+/*==========================
+     Leyenda
+==========================*/
+
+.weekly-progress-legend{
+
+    display:flex;
+
+    gap:16px;
+
+}
+
+.weekly-progress-legend-item{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:6px;
+
+    color:var(--text-secondary);
+
+    font-size:.72rem;
+
+    font-weight:600;
+
+}
+
+.weekly-progress-legend-swatch{
+
+    width:10px;
+
+    height:10px;
+
+    border-radius:3px;
+
+}
+
+.weekly-progress-legend-swatch--km{
+
+    background:var(--color-primary);
+
+}
+
+.weekly-progress-legend-swatch--pace{
+
+    background:var(--color-warning);
+
+    border-radius:50%;
+
+}

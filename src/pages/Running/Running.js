@@ -10,6 +10,7 @@ import { buildTypeProgressInsight, buildProgressMessage, buildPaceComparison, bu
 import { buildTypeSummary } from "./runningSummary.js";
 import { buildListInsight } from "./runningListInsight.js";
 import { buildZ2Evolution } from "./runningEvolution.js";
+import { buildWeeklyProgress } from "./runningWeeklyProgress.js";
 import { buildWorkoutTypeContext } from "./runningTypeContext.js";
 import { buildHistoryGroups } from "./runningHistoryGrouping.js";
 import {
@@ -61,6 +62,7 @@ import { RunningHeader } from "./components/RunningHeader.js";
 import { routeSelector } from "./components/ReferenceRouteSelector.js";
 import { ReferenceRoutesListView } from "./components/ReferenceRoutesListView.js";
 import { ReferenceRouteDetailView } from "./components/ReferenceRouteDetailView.js";
+import { WeeklyProgressChart } from "./components/WeeklyProgressChart.js";
 
 function shoeLabel(shoeId, shoes) {
 
@@ -1109,6 +1111,14 @@ function RunningIdleView() {
     // haría desaparecer aunque siga siendo información sobre Rodaje (Z2).
     const z2Evolution = buildZ2Evolution(workouts);
 
+    // Progreso semanal (Capa 2) -- volumen + ritmo medio de las últimas 4
+    // semanas, también sobre el conjunto real completo (nunca el filtrado
+    // por tipo): es una vista agregada de "cuánto y cómo de rápido has
+    // corrido cada semana", no debe encogerse porque el chip activo sea
+    // "Series". Ver runningWeeklyProgress.js para el porqué de estas 2
+    // métricas y no las otras candidatas.
+    const weeklyProgress = buildWeeklyProgress(workouts);
+
     const routes = getReferenceRoutes();
 
     return `
@@ -1158,6 +1168,8 @@ function RunningIdleView() {
                 ${AcwrCard(acwrInsight)}
 
                 ${ReferenceRoutesEntryCard(routes)}
+
+                ${WeeklyProgressChart(weeklyProgress)}
 
                 ${Z2EvolutionCard(z2Evolution)}
 
