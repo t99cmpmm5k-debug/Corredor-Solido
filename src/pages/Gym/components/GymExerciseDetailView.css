@@ -4,7 +4,7 @@
 
     padding-top:calc(24px + env(safe-area-inset-top));
 
-    padding-bottom:calc(110px + env(safe-area-inset-bottom));
+    padding-bottom:calc(var(--bottom-nav-clearance) + env(safe-area-inset-bottom));
 
     display:flex;
 
@@ -369,7 +369,7 @@
 
     border:none;
 
-    border-radius:var(--radius-md, 12px);
+    border-radius:var(--radius-md, 16px);
 
     background:color-mix(in srgb, var(--color-danger) 10%, transparent);
 

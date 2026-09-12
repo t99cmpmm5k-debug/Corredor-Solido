@@ -362,7 +362,7 @@
 
     padding:10px 12px;
 
-    border-radius:var(--radius-md, 12px);
+    border-radius:var(--radius-md, 16px);
 
     background:color-mix(in srgb, var(--card-background) 60%, transparent);
 

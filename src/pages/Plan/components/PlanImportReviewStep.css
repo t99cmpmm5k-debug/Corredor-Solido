@@ -42,7 +42,7 @@
 
     padding:16px;
 
-    border-radius:var(--radius-lg, 16px);
+    border-radius:var(--radius-lg, 22px);
 
     background:color-mix(in srgb, var(--card-background) 45%, transparent);
 

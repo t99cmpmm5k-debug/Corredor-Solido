@@ -38,6 +38,20 @@
     --radius-sm: 12px;
 
     /* =====================================================
+       LAYOUT
+    ===================================================== */
+
+    /* Colchón inferior que reservan las pantallas de nivel superior para que
+       .bottom-nav (position:fixed, ver BottomNavigation.css) nunca tape el
+       final del contenido -- la píldora mide 58px de alto + 20px de
+       separación del borde = 78px de huella real, así que este valor deja
+       margen real ante overscroll/rebote de iOS Safari o una tarjeta más
+       alta de lo previsto (mismo bug de solape ya corregido una vez en
+       Home, ver Home.css). Usar siempre junto a env(safe-area-inset-bottom):
+       calc(var(--bottom-nav-clearance) + env(safe-area-inset-bottom)). */
+    --bottom-nav-clearance: 140px;
+
+    /* =====================================================
        ESPACIADOS
     ===================================================== */
 

@@ -5,7 +5,7 @@
     min-height:100vh;
     min-height:100dvh;
 
-    padding-bottom:calc(110px + env(safe-area-inset-bottom));
+    padding-bottom:calc(var(--bottom-nav-clearance) + env(safe-area-inset-bottom));
 
 }
 
@@ -494,7 +494,13 @@
 
     background:color-mix(in srgb, var(--card-background) 70%, transparent);
 
-    border:1px solid var(--card-border);
+    /* Bloque único (no una fila repetida de lista) -- mismo borde con
+       tinte de color + sombra que las tarjetas destacadas de Inicio
+       (NextGoalWidget/MonthlyKmWidget/WeekSummary/HourlyWeather, ver
+       NextGoalWidget.css), no la receta plana de los items de historial. */
+    border:1px solid color-mix(in srgb, var(--color-primary) 18%, transparent);
+
+    box-shadow:0 8px 20px rgba(0,0,0,.18);
 
 }
 
@@ -1319,7 +1325,12 @@
 
     background:color-mix(in srgb, var(--card-background) 70%, transparent);
 
-    border:1px solid var(--card-border);
+    /* Bloque único (no una fila repetida de lista) -- mismo borde con
+       tinte de color + sombra que las tarjetas destacadas de Inicio, ver
+       comentario igual en .acwr-card más arriba. */
+    border:1px solid color-mix(in srgb, var(--color-primary) 18%, transparent);
+
+    box-shadow:0 8px 20px rgba(0,0,0,.18);
 
 }
 
