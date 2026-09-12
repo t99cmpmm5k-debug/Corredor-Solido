@@ -8,10 +8,14 @@ import { HourlyWeather } from "./components/HourlyWeather.js";
 import { MonthlyKmWidget } from "./components/MonthlyKmWidget.js";
 import { NextGoalWidget } from "./components/NextGoalWidget.js";
 import { PlanComplianceWidget } from "./components/PlanComplianceWidget.js";
-import { getCurrentWeekSessions, getWeekVolume, getWorkouts } from "../../data/workoutStore.js";
+import { RunnerStatusWidget } from "./components/RunnerStatusWidget.js";
+import { getCurrentWeekSessions, getWeekVolume, getWorkouts, getUpcomingPlannedRaces } from "../../data/workoutStore.js";
 import { buildWeekInsight } from "../../utils/weekInsight.js";
 import { buildMonthlyKmStats } from "../../utils/monthlyKm.js";
 import { buildPlanCompliance } from "../../utils/planCompliance.js";
+import { buildRunnerStatusIndicators } from "../../utils/runnerStatus.js";
+import { buildAcwrInsight, buildRunningLoadEntries } from "../../utils/acwr.js";
+import { buildZ2Evolution } from "../Running/runningEvolution.js";
 import { getHourlyWeatherState } from "./homeWeatherStore.js";
 import { getGymDayForDate } from "../Plan/gymTimelineBridge.js";
 import { formatISODate } from "../../utils/date.js";
@@ -44,6 +48,20 @@ export function Home(){
     // esté navegando en Plan). Solo running: ver buildPlanCompliance().
     const planCompliance = buildPlanCompliance(week, workouts);
     const planComplianceHtml = PlanComplianceWidget(planCompliance);
+
+    // "Estado del corredor" (Capa 2) -- 4 indicadores compactos, cada uno
+    // leyendo un cálculo YA EXISTENTE en otra pantalla (nunca uno nuevo,
+    // ver buildRunnerStatusIndicators()): la misma carga ACWR y evolución
+    // Z2 que ya muestra Running (mismos workouts), el mismo % de
+    // cumplimiento semanal de arriba, y la misma carrera/prioridad que ya
+    // usa NextGoalWidget.
+    const runnerStatusIndicators = buildRunnerStatusIndicators({
+        acwrInsight: buildAcwrInsight(buildRunningLoadEntries(workouts)),
+        z2Evolution: buildZ2Evolution(workouts),
+        planCompliance,
+        upcomingRaces: getUpcomingPlannedRaces()
+    });
+    const runnerStatusHtml = RunnerStatusWidget(runnerStatusIndicators);
 
     // El pronóstico se pide una sola vez desde main.js (boot) y se cachea
     // en homeWeatherStore -- Home() solo lee el estado ya resuelto, nunca
@@ -102,6 +120,16 @@ export function Home(){
                     <section class="plan-compliance-card">
 
                         ${planComplianceHtml}
+
+                    </section>
+
+                ` : ""}
+
+                ${runnerStatusHtml ? `
+
+                    <section class="runner-status-card">
+
+                        ${runnerStatusHtml}
 
                     </section>
 

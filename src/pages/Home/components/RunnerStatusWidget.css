@@ -1,0 +1,106 @@
+/* Mismo padding/radio/borde/sombra que el resto de tarjetas secundarias
+   de Inicio (MonthlyKmWidget/NextGoalWidget/PlanComplianceWidget/
+   WeekSummary) -- ver RunnerStatusWidget.js. */
+.runner-status-widget{
+
+    padding:16px 20px;
+
+    border-radius:22px;
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:10px;
+
+    background:color-mix(in srgb, var(--card-background) 82%, transparent);
+
+    backdrop-filter:blur(20px);
+    -webkit-backdrop-filter:blur(20px);
+
+    border:1px solid color-mix(in srgb, var(--color-primary) 18%, transparent);
+
+    box-shadow:0 8px 20px rgba(0,0,0,.18);
+
+}
+
+.runner-status-label{
+
+    color:var(--text-secondary);
+
+    font-size:.7rem;
+
+    font-weight:800;
+
+    letter-spacing:.1em;
+
+    text-transform:uppercase;
+
+}
+
+/* Misma fila de estadísticas compactas con divisores verticales que
+   .running-summary-stats/.running-summary-item en Running.css -- aquí
+   sin border-top propio (no hay nada por encima de lo que separarse
+   dentro de esta tarjeta) y con 1 a 4 columnas según cuántos
+   indicadores lleguen disponibles (ver buildRunnerStatusIndicators()). */
+.runner-status-grid{
+
+    display:flex;
+
+}
+
+.runner-status-item{
+
+    flex:1;
+
+    min-width:0;
+
+    display:flex;
+
+    flex-direction:column;
+
+    align-items:center;
+
+    gap:4px;
+
+    border-right:1px solid color-mix(in srgb, var(--card-border) 70%, transparent);
+
+}
+
+.runner-status-item:last-child{
+
+    border-right:none;
+
+}
+
+.runner-status-item iconify-icon{
+
+    font-size:18px;
+
+    color:var(--color-primary);
+
+}
+
+.runner-status-value{
+
+    color:var(--text-primary);
+
+    font-size:1.05rem;
+
+    font-weight:800;
+
+    text-align:center;
+
+}
+
+.runner-status-item-label{
+
+    color:var(--text-secondary);
+
+    font-size:.7rem;
+
+    font-weight:600;
+
+    text-align:center;
+
+}
