@@ -7,9 +7,11 @@ import { WeekSummary } from "../../components/WeekSummary/WeekSummary.js";
 import { HourlyWeather } from "./components/HourlyWeather.js";
 import { MonthlyKmWidget } from "./components/MonthlyKmWidget.js";
 import { NextGoalWidget } from "./components/NextGoalWidget.js";
+import { PlanComplianceWidget } from "./components/PlanComplianceWidget.js";
 import { getCurrentWeekSessions, getWeekVolume, getWorkouts } from "../../data/workoutStore.js";
 import { buildWeekInsight } from "../../utils/weekInsight.js";
 import { buildMonthlyKmStats } from "../../utils/monthlyKm.js";
+import { buildPlanCompliance } from "../../utils/planCompliance.js";
 import { getHourlyWeatherState } from "./homeWeatherStore.js";
 import { getGymDayForDate } from "../Plan/gymTimelineBridge.js";
 import { formatISODate } from "../../utils/date.js";
@@ -34,7 +36,14 @@ export function Home(){
 
     // Solo entrenos reales (getWorkouts(), nunca sesiones planificadas) --
     // ver buildMonthlyKmStats() para qué se degrada cuando falta historial.
-    const monthlyKm = buildMonthlyKmStats(getWorkouts());
+    const workouts = getWorkouts();
+    const monthlyKm = buildMonthlyKmStats(workouts);
+
+    // "Cumplimiento del plan" (Capa 2) -- planificado vs. realizado de
+    // running para la semana real actual (`week`, nunca la semana que se
+    // esté navegando en Plan). Solo running: ver buildPlanCompliance().
+    const planCompliance = buildPlanCompliance(week, workouts);
+    const planComplianceHtml = PlanComplianceWidget(planCompliance);
 
     // El pronóstico se pide una sola vez desde main.js (boot) y se cachea
     // en homeWeatherStore -- Home() solo lee el estado ya resuelto, nunca
@@ -87,6 +96,16 @@ export function Home(){
                     </div>
 
                 ` : weekSummaryHtml}
+
+                ${planComplianceHtml ? `
+
+                    <section class="plan-compliance-card">
+
+                        ${planComplianceHtml}
+
+                    </section>
+
+                ` : ""}
 
                 <section class="monthly-km-card">
 

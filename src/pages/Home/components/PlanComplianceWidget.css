@@ -1,0 +1,75 @@
+/* Mismo padding/radio/borde/sombra que el resto de tarjetas secundarias
+   de Inicio (MonthlyKmWidget/NextGoalWidget/WeekSummary/HourlyWeather,
+   ronda de cierre del rediseño) -- ver PlanComplianceWidget.js. */
+.plan-compliance-widget{
+
+    padding:16px 20px;
+
+    border-radius:22px;
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:6px;
+
+    background:color-mix(in srgb, var(--card-background) 82%, transparent);
+
+    backdrop-filter:blur(20px);
+    -webkit-backdrop-filter:blur(20px);
+
+    border:1px solid color-mix(in srgb, var(--color-primary) 18%, transparent);
+
+    box-shadow:0 8px 20px rgba(0,0,0,.18);
+
+}
+
+.plan-compliance-label{
+
+    color:var(--text-secondary);
+
+    font-size:.7rem;
+
+    font-weight:800;
+
+    letter-spacing:.1em;
+
+    text-transform:uppercase;
+
+}
+
+.plan-compliance-km{
+
+    color:var(--text-primary);
+
+    font-size:.85rem;
+
+    font-weight:600;
+
+    line-height:1.4;
+
+}
+
+.plan-compliance-km strong{
+
+    font-weight:800;
+
+}
+
+.plan-compliance-percent{
+
+    font-weight:800;
+
+    color:var(--color-primary);
+
+}
+
+.plan-compliance-sessions{
+
+    color:var(--text-secondary);
+
+    font-size:.82rem;
+
+    font-weight:600;
+
+}
