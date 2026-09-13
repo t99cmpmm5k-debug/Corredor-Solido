@@ -114,3 +114,54 @@ export function buildEfficiencyTrend(lastWorkout, bestWorkout) {
     };
 
 }
+
+// Diferencia de temperatura a partir de la cual merece la pena mencionarla
+// como posible explicación de un ritmo/FC distintos -- no es un umbral
+// físico exacto, es "suficiente para notarse corriendo" (un día de 29°C
+// frente a uno de 18°C no es la misma carrera). Solo se usa como contexto
+// informativo, nunca para decidir si el par es comparable (eso lo decide
+// solo la FC, ver isHrSimilar).
+export const FIRST_LAST_TEMP_NOTE_THRESHOLD_C = 5;
+
+// Comparación cronológica PRIMERA vez vs ÚLTIMA vez en un recorrido de
+// referencia -- distinta de buildEfficiencyTrend() (que compara el
+// ÚLTIMO entreno contra el de MEJOR eficiencia, no el primero). El
+// objetivo aquí es literal: "¿cómo me fue la primera vez que corrí esto
+// frente a la más reciente?", en lenguaje natural, reutilizando el mismo
+// umbral de FC similar que el resto del motor (FC_SIMILAR_THRESHOLD_PPM)
+// para no forzar un veredicto de mejora/empeoramiento cuando el esfuerzo
+// cardíaco no fue comparable entre ambos días.
+//
+// Con menos de 2 entrenos reales con fecha, o si el primero y el último
+// acaban siendo el mismo entreno (mismo id), no hay "primera vs última"
+// que comparar -- null, no una comparación de un solo dato consigo mismo.
+export function buildFirstLastComparison(workouts) {
+
+    const chronological = [...workouts]
+        .filter(w => w.date)
+        .sort((a, b) => a.date.localeCompare(b.date));
+
+    if (chronological.length < 2) return null;
+
+    const first = chronological[0];
+    const last = chronological[chronological.length - 1];
+
+    if (first.id === last.id) return null;
+
+    const comparison = compareEfficiency(first, last);
+
+    if (!comparison.comparable) {
+        return { comparable: false, reason: comparison.reason, first, last };
+    }
+
+    const deltaSecPerKm = first.avgPaceSecPerKm - last.avgPaceSecPerKm; // positivo = más rápido ahora que la primera vez
+
+    return {
+        comparable: true,
+        verdict: deltaSecPerKm > 0 ? "improved" : deltaSecPerKm < 0 ? "worsened" : "unchanged",
+        deltaSecPerKm,
+        first,
+        last
+    };
+
+}

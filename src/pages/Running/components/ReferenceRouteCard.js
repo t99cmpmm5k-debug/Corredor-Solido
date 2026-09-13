@@ -1,6 +1,6 @@
 import { formatSecondsAsClock } from "../../../utils/format.js";
 import { buildCardiacDrift } from "../../../utils/cardiacDrift.js";
-import { findBestEfficiencyWorkout, buildEfficiencyTrend } from "../referenceRouteEfficiency.js";
+import { findBestEfficiencyWorkout, buildEfficiencyTrend, buildFirstLastComparison, FIRST_LAST_TEMP_NOTE_THRESHOLD_C } from "../referenceRouteEfficiency.js";
 
 // Tarjeta resumen de un recorrido de referencia -- mismo formato pedido
 // en la especificación:
@@ -102,12 +102,70 @@ function trendLine(trend) {
 
 }
 
+// "5:49/km @151 ppm" -- mismo formato pedido en la especificación de esta
+// mejora (con "@" antes de la FC, distinto del " · " que separa el resto
+// de partes de una línea porque aquí ambos valores describen EL MISMO
+// punto, no dos datos independientes).
+function paceAtHr(workout) {
+
+    const pace = formatPace(workout.avgPaceSecPerKm);
+    if (!pace) return null;
+
+    return workout.avgHr != null ? `${pace} @${Math.round(workout.avgHr)} ppm` : pace;
+
+}
+
+const FIRST_LAST_VERDICT = {
+    improved: { trend: "up", label: "Mejora real" },
+    worsened: { trend: "down", label: "Ligero empeoramiento" },
+    unchanged: { trend: "flat", label: "Sin cambios" }
+};
+
+// Primera vez vs última vez en este recorrido -- distinta de trendLine()
+// (que compara el ÚLTIMO contra el de MEJOR eficiencia, no el primero).
+// Reutiliza el mismo criterio de FC similar que el resto de esta tarjeta
+// (ver referenceRouteEfficiency.js): con FC muy distinta entre ambos
+// extremos NO se declara "mejora"/"empeoramiento" -- se muestran los dos
+// datos con su temperatura si difiere mucho (posible explicación real) y
+// una frase neutra, dejando que el usuario lo interprete él mismo.
+function firstLastLine(comparison) {
+
+    if (!comparison) return "";
+
+    const headline = `${paceAtHr(comparison.first)} → ${paceAtHr(comparison.last)}`;
+
+    if (!comparison.comparable) {
+
+        if (comparison.reason !== "hr-too-different") return "";
+
+        const { first, last } = comparison;
+        const bigTempSwing = first.temperatureC != null && last.temperatureC != null
+            && Math.abs(last.temperatureC - first.temperatureC) >= FIRST_LAST_TEMP_NOTE_THRESHOLD_C;
+
+        const tempNote = bigTempSwing ? ` (${first.temperatureC}°C → ${last.temperatureC}°C)` : "";
+
+        return `<p class="reference-route-line reference-route-line--muted">Primera vez → última vez: ${headline}${tempNote} — condiciones distintas, compara con cautela.</p>`;
+
+    }
+
+    const { trend, label } = FIRST_LAST_VERDICT[comparison.verdict];
+
+    return `<p class="reference-route-line">Primera vez → última vez: <strong>${headline}</strong> · <span class="reference-route-drift-label reference-route-drift-label--${trend}">${label}</span></p>`;
+
+}
+
 export function ReferenceRouteCard(route, workouts, { linkToDetail = false, actionsHtml = "" } = {}) {
 
     const sorted = [...workouts].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
     const last = sorted[0] ?? null;
     const best = findBestEfficiencyWorkout(sorted);
     const trend = buildEfficiencyTrend(last, best);
+
+    // Solo en el detalle propio del recorrido (linkToDetail:false, ver
+    // ReferenceRouteDetailView.js) -- la tarjeta resumen de la lista
+    // (linkToDetail:true) ya está pensada como un resumen compacto, no el
+    // sitio para una segunda comparación además de "Tendencia".
+    const firstLast = linkToDetail ? null : buildFirstLastComparison(sorted);
 
     return `
 
@@ -139,6 +197,8 @@ export function ReferenceRouteCard(route, workouts, { linkToDetail = false, acti
                 ${driftLine(best)}
 
                 ${trendLine(trend)}
+
+                ${firstLastLine(firstLast)}
 
             `}
 

@@ -130,3 +130,67 @@ describe("ReferenceRouteCard -- tarjeta resumen de un recorrido de referencia", 
     });
 
 });
+
+describe("ReferenceRouteCard -- 'Primera vez → última vez' (Capa 3, solo en el detalle propio)", () => {
+
+    it("con un solo entreno, no hay comparación primera/última que mostrar", () => {
+
+        const w = workout({ avgPaceSecPerKm: 349, avgHr: 151 });
+        const html = ReferenceRouteCard({ id: "r1", name: "8K referencia" }, [w]);
+
+        expect(html).not.toContain("Primera vez");
+
+    });
+
+    it("FC similar y ritmo empeorado: muestra la fracción pedida en la especificación y 'Ligero empeoramiento', sin alarmismo", () => {
+
+        const first = workout({ id: "first", date: "2026-07-01", avgPaceSecPerKm: 349, avgHr: 151 }); // 5:49/km
+        const last = workout({ id: "last", date: "2026-08-20", avgPaceSecPerKm: 363, avgHr: 152 }); // 6:03/km
+
+        const html = ReferenceRouteCard({ id: "r1", name: "8K referencia" }, [first, last]);
+
+        expect(html).toContain("Primera vez → última vez: <strong>5:49/km @151 ppm → 6:03/km @152 ppm</strong>");
+        expect(html).toContain("reference-route-drift-label--down");
+        expect(html).toContain("Ligero empeoramiento");
+
+    });
+
+    it("FC similar y ritmo mejorado: 'Mejora real'", () => {
+
+        const first = workout({ id: "first", date: "2026-07-01", avgPaceSecPerKm: 363, avgHr: 151 });
+        const last = workout({ id: "last", date: "2026-08-20", avgPaceSecPerKm: 333, avgHr: 152 });
+
+        const html = ReferenceRouteCard({ id: "r1", name: "8K referencia" }, [first, last]);
+
+        expect(html).toContain("reference-route-drift-label--up");
+        expect(html).toContain("Mejora real");
+
+    });
+
+    it("FC muy distinta entre la primera y la última: no fuerza un veredicto, frase neutra con temperatura de contexto", () => {
+
+        const first = workout({ id: "first", date: "2026-07-01", avgPaceSecPerKm: 349, avgHr: 151, temperatureC: 15 });
+        const last = workout({ id: "last", date: "2026-08-20", avgPaceSecPerKm: 320, avgHr: 175, temperatureC: 30 });
+
+        const html = ReferenceRouteCard({ id: "r1", name: "8K referencia" }, [first, last]);
+
+        expect(html).toContain("Primera vez → última vez:");
+        expect(html).toContain("condiciones distintas, compara con cautela");
+        expect(html).toContain("15°C → 30°C");
+        expect(html).not.toContain("Mejora real");
+        expect(html).not.toContain("Ligero empeoramiento");
+
+    });
+
+    it("no se muestra en la tarjeta resumen de la lista (linkToDetail:true), solo en el detalle propio", () => {
+
+        const first = workout({ id: "first", date: "2026-07-01", avgPaceSecPerKm: 349, avgHr: 151 });
+        const last = workout({ id: "last", date: "2026-08-20", avgPaceSecPerKm: 333, avgHr: 152 });
+
+        const html = ReferenceRouteCard({ id: "r1", name: "8K referencia" }, [first, last], { linkToDetail: true });
+
+        expect(html).not.toContain("Primera vez");
+
+    });
+
+});

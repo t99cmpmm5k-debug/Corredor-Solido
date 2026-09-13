@@ -1,8 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { FC_SIMILAR_THRESHOLD_PPM, isHrSimilar, compareEfficiency, findBestEfficiencyWorkout, buildEfficiencyTrend, resolveRouteWorkouts } from "./referenceRouteEfficiency.js";
+import { FC_SIMILAR_THRESHOLD_PPM, isHrSimilar, compareEfficiency, findBestEfficiencyWorkout, buildEfficiencyTrend, buildFirstLastComparison, resolveRouteWorkouts } from "./referenceRouteEfficiency.js";
 
-function workout(id, { avgPaceSecPerKm, avgHr } = {}) {
-    return { id, avgPaceSecPerKm, avgHr };
+function workout(id, { avgPaceSecPerKm, avgHr, date, temperatureC } = {}) {
+    return { id, avgPaceSecPerKm, avgHr, date, temperatureC };
 }
 
 describe("isHrSimilar — umbral fijo FC_SIMILAR_THRESHOLD_PPM", () => {
@@ -203,6 +203,100 @@ describe("buildEfficiencyTrend — tendencia del último entreno frente al de me
 
         const last = workout("last", { avgPaceSecPerKm: 333, avgHr: 150 });
         expect(buildEfficiencyTrend(last, null)).toBeNull();
+
+    });
+
+});
+
+describe("buildFirstLastComparison — primera vez vs última vez en un recorrido (distinto de 'último vs mejor')", () => {
+
+    it("con menos de 2 entrenos con fecha, no hay comparación", () => {
+
+        expect(buildFirstLastComparison([])).toBeNull();
+        expect(buildFirstLastComparison([workout("a", { date: "2026-08-01", avgPaceSecPerKm: 349, avgHr: 151 })])).toBeNull();
+
+    });
+
+    it("FC similar y ritmo mejorado (más rápido la última vez): veredicto 'improved'", () => {
+
+        const first = workout("first", { date: "2026-07-01", avgPaceSecPerKm: 349, avgHr: 151 }); // 5:49/km
+        const improving = workout("improving", { date: "2026-08-20", avgPaceSecPerKm: 333, avgHr: 152 }); // 5:33/km, más rápido
+
+        const result = buildFirstLastComparison([first, improving]);
+
+        expect(result.comparable).toBe(true);
+        expect(result.verdict).toBe("improved");
+        expect(result.deltaSecPerKm).toBe(16); // 349 - 333
+        expect(result.first.id).toBe("first");
+        expect(result.last.id).toBe("improving");
+
+    });
+
+    it("FC similar y ritmo empeorado (más lento la última vez): veredicto 'worsened', sin alarmismo", () => {
+
+        // Ejemplo literal de la especificación: "5:49/km @151 ppm -> 6:03/km @152 ppm".
+        const first = workout("first", { date: "2026-07-01", avgPaceSecPerKm: 349, avgHr: 151 });
+        const last = workout("last", { date: "2026-08-20", avgPaceSecPerKm: 363, avgHr: 152 });
+
+        const result = buildFirstLastComparison([first, last]);
+
+        expect(result.comparable).toBe(true);
+        expect(result.verdict).toBe("worsened");
+        expect(result.deltaSecPerKm).toBe(-14); // 349 - 363
+
+    });
+
+    it("mismo ritmo exacto con FC similar: 'unchanged', ni mejora ni empeoramiento forzado", () => {
+
+        const first = workout("first", { date: "2026-07-01", avgPaceSecPerKm: 349, avgHr: 151 });
+        const last = workout("last", { date: "2026-08-20", avgPaceSecPerKm: 349, avgHr: 153 });
+
+        const result = buildFirstLastComparison([first, last]);
+
+        expect(result.comparable).toBe(true);
+        expect(result.verdict).toBe("unchanged");
+        expect(result.deltaSecPerKm).toBe(0);
+
+    });
+
+    it("FC muy distinta entre la primera y la última: NO fuerza un veredicto de mejora/empeoramiento", () => {
+
+        const first = workout("first", { date: "2026-07-01", avgPaceSecPerKm: 349, avgHr: 151, temperatureC: 18 });
+        const last = workout("last", { date: "2026-08-20", avgPaceSecPerKm: 320, avgHr: 175, temperatureC: 29 }); // día mucho más duro/caluroso
+
+        const result = buildFirstLastComparison([first, last]);
+
+        expect(result.comparable).toBe(false);
+        expect(result.reason).toBe("hr-too-different");
+        expect(result.verdict).toBeUndefined();
+        expect(result.first.temperatureC).toBe(18);
+        expect(result.last.temperatureC).toBe(29);
+
+    });
+
+    it("usa el primero y el último por FECHA real, no por el orden en que llegan en el array", () => {
+
+        const middle = workout("middle", { date: "2026-07-15", avgPaceSecPerKm: 340, avgHr: 151 });
+        const last = workout("last", { date: "2026-08-20", avgPaceSecPerKm: 333, avgHr: 150 });
+        const first = workout("first", { date: "2026-07-01", avgPaceSecPerKm: 349, avgHr: 151 });
+
+        // Llegan desordenados a propósito.
+        const result = buildFirstLastComparison([last, first, middle]);
+
+        expect(result.first.id).toBe("first");
+        expect(result.last.id).toBe("last");
+
+    });
+
+    it("con datos incompletos (falta ritmo o FC), no hay comparación que forzar", () => {
+
+        const first = workout("first", { date: "2026-07-01", avgPaceSecPerKm: 349, avgHr: null });
+        const last = workout("last", { date: "2026-08-20", avgPaceSecPerKm: 333, avgHr: 150 });
+
+        const result = buildFirstLastComparison([first, last]);
+
+        expect(result.comparable).toBe(false);
+        expect(result.reason).toBe("missing-data");
 
     });
 
