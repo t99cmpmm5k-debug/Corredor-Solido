@@ -108,7 +108,7 @@ export function Home(){
 
                 ${Hero()}
 
-                ${MasterCard()}
+                ${MasterCard(planCompliance)}
 
                 ${nextGoalHtml ? `
 

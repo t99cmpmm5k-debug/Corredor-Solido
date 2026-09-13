@@ -44,18 +44,23 @@
 
 /* Sin la muesca/cristal recortado por sessionCardOutline.js a propósito
    — es un estado sin datos, no la tarjeta de sesión real, no necesita el
-   mismo tratamiento visual elaborado. */
+   mismo tratamiento visual elaborado.
+   min-height bajado de 140px (Capa 3, punto 3 del documento de mejoras):
+   antes el mensaje era una frase corta y centrada ("No hay ninguna sesión
+   planificada para hoy."), 140px de alto dejaba un hueco desproporcionado
+   debajo. El mensaje con contexto real (Cumplimiento del plan, ver
+   MasterCard.js) puede ocupar 1-2 frases -- texto normal alineado a la
+   izquierda, como el resto de tarjetas de texto de la app, ya no una
+   frase corta centrada. */
 .session-card--empty{
 
     display:flex;
 
     align-items:center;
 
-    justify-content:center;
+    min-height:76px;
 
-    min-height:140px;
-
-    padding:24px;
+    padding:20px 22px;
 
     border-radius:26px;
 
@@ -66,7 +71,7 @@
 
     color:var(--text-secondary);
 
-    text-align:center;
+    line-height:1.4;
 
 }
 

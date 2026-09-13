@@ -6,14 +6,44 @@ import { getTodaySession } from "../../data/workoutStore.js";
 import { getState } from "../../core/state.js";
 import { getGymDayForDate } from "../../pages/Plan/gymTimelineBridge.js";
 import { formatISODate } from "../../utils/date.js";
+import { PLAN_NEAR_COMPLETE_THRESHOLD_PERCENT } from "../../utils/runnerStatus.js";
 
-function EmptySessionCard() {
+// Día sin running planificado (Capa 3, punto 3 del documento de mejoras) --
+// antes era un hueco sin contexto ("No hay ninguna sesión planificada para
+// hoy."). `planCompliance` es el mismo cálculo YA EXISTENTE de "Cumplimiento
+// del plan" (utils/planCompliance.js, ver Home.js) -- nunca se calcula nada
+// nuevo aquí, solo se reutiliza.
+//
+// Sin plan importado esta semana (hasPlan:false, ningún running planificado
+// en absoluto) no hay ningún número real que dar -- mensaje neutro, igual
+// que antes. Con plan, se usan sessionsCompleted/sessionsPlanned reales
+// (nunca inventados) y, si además la semana está cerca de completarse
+// (mismo umbral que la frase-resumen de "Estado del corredor",
+// PLAN_NEAR_COMPLETE_THRESHOLD_PERCENT), se añade un refuerzo -- nunca al
+// revés (no se refuerza si está lejos de completarse).
+function buildEmptySessionMessage(planCompliance) {
+
+    if (!planCompliance?.hasPlan) return "Sin sesión planificada para hoy.";
+
+    const { sessionsCompleted, sessionsPlanned, kmPercent } = planCompliance;
+
+    let message = `Día de recuperación. Llevas ${sessionsCompleted}/${sessionsPlanned} sesiones completadas esta semana.`;
+
+    if (kmPercent != null && kmPercent >= PLAN_NEAR_COMPLETE_THRESHOLD_PERCENT) {
+        message += " Hoy no necesitas sumar más carga.";
+    }
+
+    return message;
+
+}
+
+function EmptySessionCard(planCompliance) {
 
     return `
 
         <section class="session-card session-card--empty">
 
-            <p>No hay ninguna sesión planificada para hoy.</p>
+            <p>${buildEmptySessionMessage(planCompliance)}</p>
 
         </section>
 
@@ -27,7 +57,7 @@ function EmptySessionCard() {
 // como si el otro no existiera. Las dos tarjetas se apilan (reutilizando
 // tal cual el formato ya construido de cada una, sin diseño híbrido
 // nuevo) en vez de fusionarse en una sola.
-export function MasterCard(){
+export function MasterCard(planCompliance = null){
 
     // homeSelectedWorkout (propio de Inicio, ver core/state.js) en vez de
     // planStore.getSelectedWorkout()/state.selectedWorkout: ese es el
@@ -53,7 +83,7 @@ export function MasterCard(){
     if (gymMatch) cards.push(GymTodayCard(gymMatch));
 
     if (cards.length === 0) {
-        return `<section class="master-card">${EmptySessionCard()}</section>`;
+        return `<section class="master-card">${EmptySessionCard(planCompliance)}</section>`;
     }
 
     return `<section class="master-card">${cards.join("")}</section>`;
