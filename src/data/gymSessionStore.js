@@ -41,6 +41,16 @@ export function getGymSessions() {
 
 }
 
+// Restauración desde backup (conserva el id original del registro) --
+// mismo patrón que restoreWorkout()/restoreShoe() en workoutStore.js.
+// upsertInto() ya hace put-por-id (inserta o reemplaza), así que
+// reimportar el mismo backup dos veces no duplica nada.
+export function restoreGymSession(session) {
+
+    return upsertInto(session);
+
+}
+
 // Duración media REAL (segundos) de las últimas `limit` sesiones ya
 // terminadas de ese dayId concreto -- para GymTodayCard.js, que necesita
 // mostrar "~45 min" en un día que todavía no se ha empezado hoy. Nunca

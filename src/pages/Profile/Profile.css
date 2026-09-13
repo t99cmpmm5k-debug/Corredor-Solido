@@ -127,11 +127,138 @@
 
 }
 
+/* Aviso de solo-local (LocalOnlyNotice) -- tono informativo, no una
+   alerta: paleta neutra de --color-primary, nunca el amber de
+   .profile-banner-warning (eso es para "hace falta que actúes ya", esto
+   es contexto permanente sobre cómo funciona el almacenamiento). */
+.profile-banner-info{
+
+    background:color-mix(in srgb, var(--color-primary) 12%, transparent);
+
+    border:1px solid color-mix(in srgb, var(--color-primary) 30%, transparent);
+
+    color:var(--text-primary);
+
+}
+
+.profile-banner-info iconify-icon{
+
+    color:var(--color-primary);
+
+}
+
 .profile-banner iconify-icon{
 
     font-size:20px;
 
     flex-shrink:0;
+
+}
+
+/*==========================
+    RESUMEN DE DATOS
+==========================*/
+
+/* Mismo lenguaje visual de tarjeta que .profile-backup-card (glass +
+   borde sutil), pero sin el borde/glow de --color-primary reforzado --
+   esa tarjeta es la acción principal de la pantalla, esta es solo
+   información de lectura. */
+.profile-summary-card{
+
+    padding:20px;
+
+    border-radius:26px;
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:14px;
+
+    background:color-mix(in srgb, var(--card-background) 80%, transparent);
+
+    backdrop-filter:blur(16px);
+    -webkit-backdrop-filter:blur(16px);
+
+    border:1px solid var(--card-border);
+
+}
+
+.profile-summary-card h3{
+
+    margin:0;
+
+    color:var(--text-primary);
+
+    font-size:1rem;
+
+    font-weight:800;
+
+}
+
+.profile-summary-list{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:10px;
+
+}
+
+.profile-summary-row{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:12px;
+
+    padding-bottom:10px;
+
+    border-bottom:1px solid color-mix(in srgb, var(--card-border) 60%, transparent);
+
+}
+
+.profile-summary-row:last-child{
+
+    padding-bottom:0;
+
+    border-bottom:none;
+
+}
+
+.profile-summary-row iconify-icon{
+
+    flex-shrink:0;
+
+    font-size:20px;
+
+    color:var(--color-primary);
+
+}
+
+.profile-summary-label{
+
+    flex:1;
+
+    min-width:0;
+
+    color:var(--text-secondary);
+
+    font-size:.85rem;
+
+}
+
+.profile-summary-value{
+
+    flex-shrink:0;
+
+    color:var(--text-primary);
+
+    font-size:1rem;
+
+    font-weight:800;
 
 }
 

@@ -1,7 +1,7 @@
 import "./Profile.css";
 
 import { BottomNavigation } from "../../components/Navigation/BottomNavigation.js";
-import { getBackupStatus } from "../../utils/backup.js";
+import { getBackupStatus, getDataSummary } from "../../utils/backup.js";
 import { getFeedback } from "./profileStore.js";
 import { BUILD_ID } from "../../utils/buildInfo.js";
 
@@ -22,6 +22,84 @@ function BackupReminder(status) {
             <span>${text} Exporta una copia para no perderlos si cambias de móvil o desinstalas la app.</span>
 
         </div>
+
+    `;
+
+}
+
+// Aviso de solo-local (Perfil, Capa 3) -- siempre visible, tono
+// informativo (icono/color neutros, NUNCA el amber de BackupReminder) --
+// no es una alerta de algo que ya ha ido mal, es contexto permanente sobre
+// cómo funciona el almacenamiento de la app (ver CLAUDE.md: IndexedDB,
+// sin sincronización en la nube).
+function LocalOnlyNotice() {
+
+    return `
+
+        <div class="profile-banner profile-banner-info">
+
+            <iconify-icon icon="solar:smartphone-bold-duotone"></iconify-icon>
+
+            <span>Tus datos viven solo en este dispositivo y este navegador -- no hay copia en la nube. Si pierdes el móvil, cambias de navegador o desinstalas la app sin haber exportado antes, se pierden para siempre.</span>
+
+        </div>
+
+    `;
+
+}
+
+// Fila de "TUS DATOS" -- icono/etiqueta/número, misma lectura que
+// .running-summary-item o .shoe-mileage-row, pero en lista vertical (no en
+// fila) porque aquí son 5 valores, no 3-4, y una fila los dejaría
+// demasiado apretados en un móvil estrecho.
+function DataSummaryRow(icon, label, count) {
+
+    return `
+
+        <div class="profile-summary-row">
+
+            <iconify-icon icon="${icon}"></iconify-icon>
+
+            <span class="profile-summary-label">${label}</span>
+
+            <span class="profile-summary-value">${count}</span>
+
+        </div>
+
+    `;
+
+}
+
+// Resumen de solo lectura de lo que hay guardado en IndexedDB (Perfil,
+// Capa 3) -- ningún cálculo, `summary` ya viene contado por
+// getDataSummary() (backup.js), un store real = una fila. Mismos 5 stores
+// que ahora entran en el backup completo (ver el fix de gymSessions en
+// backup.js) -- si mañana se añade un store nuevo con datos propios del
+// usuario, debería sumarse aquí Y a exportData()/importData() a la vez,
+// nunca solo a uno de los dos.
+function DataSummaryCard(summary) {
+
+    return `
+
+        <section class="profile-summary-card">
+
+            <h3>Tus datos</h3>
+
+            <div class="profile-summary-list">
+
+                ${DataSummaryRow("solar:running-bold-duotone", "Entrenos de running", summary.workouts)}
+
+                ${DataSummaryRow("solar:dumbbell-large-bold-duotone", "Sesiones de gimnasio", summary.gymSessions)}
+
+                ${DataSummaryRow("solar:map-point-bold-duotone", "Recorridos de referencia", summary.referenceRoutes)}
+
+                ${DataSummaryRow("solar:running-round-bold-duotone", "Zapatillas", summary.shoes)}
+
+                ${DataSummaryRow("solar:calendar-bold-duotone", "Sesiones planificadas (Plan)", summary.plannedSessions)}
+
+            </div>
+
+        </section>
 
     `;
 
@@ -62,6 +140,7 @@ export function Profile() {
 
     const status = getBackupStatus();
     const feedback = getFeedback();
+    const summary = getDataSummary();
 
     return `
 
@@ -77,9 +156,13 @@ export function Profile() {
 
                 <p class="profile-placeholder-note">
 
-                    Todavía no hay una pantalla de perfil de verdad — de momento aquí solo vive la copia de seguridad.
+                    Todavía no hay una pantalla de perfil completa (ajustes, tema...) — de momento aquí vive un resumen de tus datos y la copia de seguridad.
 
                 </p>
+
+                ${DataSummaryCard(summary)}
+
+                ${LocalOnlyNotice()}
 
                 ${BackupReminder(status)}
 
