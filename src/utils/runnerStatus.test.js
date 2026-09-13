@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildRunnerStatusIndicators } from "./runnerStatus.js";
+import { buildRunnerStatusIndicators, buildRunnerStatusSummary } from "./runnerStatus.js";
 
 const REFERENCE = new Date(2026, 8, 10); // jueves 10 sept 2026
 
@@ -111,6 +111,155 @@ describe("buildRunnerStatusIndicators", () => {
         }, REFERENCE);
 
         expect(result[0].value).toBe("Hoy");
+
+    });
+
+});
+
+describe("buildRunnerStatusSummary -- frase-resumen priorizada (Capa 3)", () => {
+
+    it("sin ninguna fuente disponible, no hay frase (null)", () => {
+
+        const result = buildRunnerStatusSummary({
+            acwrInsight: UNAVAILABLE_ACWR,
+            z2Evolution: UNAVAILABLE_Z2,
+            planCompliance: NO_PLAN,
+            upcomingRaces: []
+        }, REFERENCE);
+
+        expect(result).toBeNull();
+
+    });
+
+    it("regla (a): carrera a <=3 días gana SIEMPRE, aunque el resto de reglas también aplicarían", () => {
+
+        const result = buildRunnerStatusSummary({
+            acwrInsight: acwr(1.8, "highRisk", "Muy alta"), // también aplicaría la regla (b)
+            z2Evolution: z2(353, 342),
+            planCompliance: planCompliance(100), // también aplicaría la (c)
+            upcomingRaces: [{ id: "r1", date: "2026-09-12", isGoal: false }] // 2 días vista
+        }, REFERENCE);
+
+        expect(result).toBe("Carrera en 2 días — llega descansado.");
+
+    });
+
+    it("carrera hoy y mañana usan 'hoy'/'mañana', no '0 días'/'1 días'", () => {
+
+        expect(buildRunnerStatusSummary({
+            acwrInsight: UNAVAILABLE_ACWR, z2Evolution: UNAVAILABLE_Z2, planCompliance: NO_PLAN,
+            upcomingRaces: [{ id: "r1", date: "2026-09-10", isGoal: false }]
+        }, REFERENCE)).toBe("Carrera hoy — llega descansado.");
+
+        expect(buildRunnerStatusSummary({
+            acwrInsight: UNAVAILABLE_ACWR, z2Evolution: UNAVAILABLE_Z2, planCompliance: NO_PLAN,
+            upcomingRaces: [{ id: "r1", date: "2026-09-11", isGoal: false }]
+        }, REFERENCE)).toBe("Carrera mañana — llega descansado.");
+
+    });
+
+    it("una carrera a más de 3 días NO dispara la regla (a) -- cae a la siguiente que aplique", () => {
+
+        const result = buildRunnerStatusSummary({
+            acwrInsight: acwr(1.6, "highRisk", "Muy alta"),
+            z2Evolution: UNAVAILABLE_Z2,
+            planCompliance: NO_PLAN,
+            upcomingRaces: [{ id: "r1", date: "2026-09-14", isGoal: false }] // 4 días vista
+        }, REFERENCE);
+
+        expect(result).toBe("Carga muy alta esta semana — prioriza el descanso.");
+
+    });
+
+    it("regla (b): carga alta/muy alta, con vocabulario sin alarmismo ('carga', nunca 'riesgo')", () => {
+
+        const moderate = buildRunnerStatusSummary({
+            acwrInsight: acwr(1.4, "moderateRisk", "Alta"),
+            z2Evolution: UNAVAILABLE_Z2, planCompliance: NO_PLAN, upcomingRaces: []
+        }, REFERENCE);
+
+        expect(moderate).toBe("Carga alta esta semana — no fuerces más de la cuenta.");
+        expect(moderate).not.toMatch(/riesgo/i);
+
+        const high = buildRunnerStatusSummary({
+            acwrInsight: acwr(1.8, "highRisk", "Muy alta"),
+            z2Evolution: UNAVAILABLE_Z2, planCompliance: NO_PLAN, upcomingRaces: []
+        }, REFERENCE);
+
+        expect(high).toBe("Carga muy alta esta semana — prioriza el descanso.");
+        expect(high).not.toMatch(/riesgo/i);
+
+    });
+
+    it("carga óptima/baja NO dispara la regla (b) -- cae a la siguiente que aplique", () => {
+
+        const result = buildRunnerStatusSummary({
+            acwrInsight: acwr(1.1, "optimal", "Óptima"),
+            z2Evolution: UNAVAILABLE_Z2,
+            planCompliance: planCompliance(95),
+            upcomingRaces: []
+        }, REFERENCE);
+
+        expect(result).toBe("Casi completas la semana — buen ritmo de trabajo.");
+
+    });
+
+    it("regla (c): semana completada (>=100%) frente a casi completada (90-99%)", () => {
+
+        expect(buildRunnerStatusSummary({
+            acwrInsight: acwr(1.1, "optimal", "Óptima"), z2Evolution: UNAVAILABLE_Z2,
+            planCompliance: planCompliance(145), upcomingRaces: []
+        }, REFERENCE)).toBe("Semana completada. Buen ritmo de trabajo.");
+
+        expect(buildRunnerStatusSummary({
+            acwrInsight: acwr(1.1, "optimal", "Óptima"), z2Evolution: UNAVAILABLE_Z2,
+            planCompliance: planCompliance(90), upcomingRaces: []
+        }, REFERENCE)).toBe("Casi completas la semana — buen ritmo de trabajo.");
+
+    });
+
+    it("cumplimiento por debajo del 90% NO dispara la regla (c) -- cae a Z2", () => {
+
+        const result = buildRunnerStatusSummary({
+            acwrInsight: acwr(1.1, "optimal", "Óptima"),
+            z2Evolution: z2(353, 342),
+            planCompliance: planCompliance(77),
+            upcomingRaces: []
+        }, REFERENCE);
+
+        expect(result).toBe("Tu Z2 mejora poco a poco últimamente.");
+
+    });
+
+    it("regla (d): evolución Z2 como dato de fondo -- mejora, empeora ligeramente, y sin cambios", () => {
+
+        const faster = buildRunnerStatusSummary({
+            acwrInsight: UNAVAILABLE_ACWR, z2Evolution: z2(353, 342), planCompliance: NO_PLAN, upcomingRaces: []
+        }, REFERENCE);
+        expect(faster).toBe("Tu Z2 mejora poco a poco últimamente.");
+
+        const slower = buildRunnerStatusSummary({
+            acwrInsight: UNAVAILABLE_ACWR, z2Evolution: z2(342, 353), planCompliance: NO_PLAN, upcomingRaces: []
+        }, REFERENCE);
+        expect(slower).toBe("Tu Z2 va algo más lento últimamente, nada que preocupe.");
+
+        const stable = buildRunnerStatusSummary({
+            acwrInsight: UNAVAILABLE_ACWR, z2Evolution: z2(350, 350), planCompliance: NO_PLAN, upcomingRaces: []
+        }, REFERENCE);
+        expect(stable).toBe("Tu Z2 se mantiene estable últimamente.");
+
+    });
+
+    it("escenario real con las 4 fuentes disponibles pero ninguna urgente: cae hasta Z2 (fondo)", () => {
+
+        const result = buildRunnerStatusSummary({
+            acwrInsight: acwr(1.1, "optimal", "Óptima"),
+            z2Evolution: z2(353, 342),
+            planCompliance: planCompliance(77),
+            upcomingRaces: [{ id: "r1", date: "2026-09-22", isGoal: false }] // 12 días, no urgente
+        }, REFERENCE);
+
+        expect(result).toBe("Tu Z2 mejora poco a poco últimamente.");
 
     });
 

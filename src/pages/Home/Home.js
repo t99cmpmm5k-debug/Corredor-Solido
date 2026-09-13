@@ -13,7 +13,7 @@ import { getCurrentWeekSessions, getWeekVolume, getWorkouts, getUpcomingPlannedR
 import { buildWeekInsight } from "../../utils/weekInsight.js";
 import { buildMonthlyKmStats } from "../../utils/monthlyKm.js";
 import { buildPlanCompliance } from "../../utils/planCompliance.js";
-import { buildRunnerStatusIndicators } from "../../utils/runnerStatus.js";
+import { buildRunnerStatusIndicators, buildRunnerStatusSummary } from "../../utils/runnerStatus.js";
 import { buildAcwrInsight, buildRunningLoadEntries } from "../../utils/acwr.js";
 import { buildZ2Evolution } from "../Running/runningEvolution.js";
 import { getHourlyWeatherState } from "./homeWeatherStore.js";
@@ -55,13 +55,20 @@ export function Home(){
     // Z2 que ya muestra Running (mismos workouts), el mismo % de
     // cumplimiento semanal de arriba, y la misma carrera/prioridad que ya
     // usa NextGoalWidget.
-    const runnerStatusIndicators = buildRunnerStatusIndicators({
+    const runnerStatusInputs = {
         acwrInsight: buildAcwrInsight(buildRunningLoadEntries(workouts)),
         z2Evolution: buildZ2Evolution(workouts),
         planCompliance,
         upcomingRaces: getUpcomingPlannedRaces()
-    });
-    const runnerStatusHtml = RunnerStatusWidget(runnerStatusIndicators);
+    };
+    const runnerStatusIndicators = buildRunnerStatusIndicators(runnerStatusInputs);
+
+    // Frase-resumen (Capa 3) -- misma entrada que los indicadores de
+    // arriba, una sola interpretación priorizada (carrera inminente >
+    // carga alta > semana completada > Z2 de fondo), ver
+    // buildRunnerStatusSummary() para el porqué del orden.
+    const runnerStatusSummary = buildRunnerStatusSummary(runnerStatusInputs);
+    const runnerStatusHtml = RunnerStatusWidget(runnerStatusIndicators, runnerStatusSummary);
 
     // El pronóstico se pide una sola vez desde main.js (boot) y se cachea
     // en homeWeatherStore -- Home() solo lee el estado ya resuelto, nunca

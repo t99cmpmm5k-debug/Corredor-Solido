@@ -104,3 +104,26 @@
     text-align:center;
 
 }
+
+/* Frase-resumen (Capa 3) -- texto plano bajo la fila de indicadores, con
+   su propio borde superior para separarla visualmente de los números,
+   mismo criterio que .running-summary-stats (borde superior) en
+   Running.css. Sin icono ni color propio -- es un dato de fondo, no una
+   alerta ni un logro destacado. */
+.runner-status-summary{
+
+    margin:0;
+
+    padding-top:10px;
+
+    border-top:1px solid color-mix(in srgb, var(--card-border) 70%, transparent);
+
+    color:var(--text-secondary);
+
+    font-size:.82rem;
+
+    line-height:1.4;
+
+    text-align:center;
+
+}

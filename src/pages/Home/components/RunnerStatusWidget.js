@@ -10,7 +10,13 @@ import "./RunnerStatusWidget.css";
 // indicadores, el grid se reparte el ancho entre los que haya (ver
 // .runner-status-item en el CSS, flex:1 igual que .running-summary-item
 // en Running.css) -- nunca huecos vacíos reservados para uno que falte.
-export function RunnerStatusWidget(indicators) {
+//
+// `summary` (buildRunnerStatusSummary(), utils/runnerStatus.js) es la
+// frase-resumen de Capa 3 -- null si ninguna de sus reglas aplica, nunca
+// un texto de relleno. Por construcción, si `indicators` está vacío
+// `summary` también es null (miran las mismas 4 fuentes), pero igualmente
+// esta función corta antes de llegar ahí -- doble seguro, no un supuesto.
+export function RunnerStatusWidget(indicators, summary = null) {
 
     if (!indicators.length) return "";
 
@@ -37,6 +43,8 @@ export function RunnerStatusWidget(indicators) {
                 `).join("")}
 
             </div>
+
+            ${summary ? `<p class="runner-status-summary">${summary}</p>` : ""}
 
         </section>
 

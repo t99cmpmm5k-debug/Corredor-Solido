@@ -39,4 +39,32 @@ describe("RunnerStatusWidget", () => {
 
     });
 
+    it("con frase-resumen, la pinta debajo de los indicadores", () => {
+
+        const html = RunnerStatusWidget(
+            [{ key: "acwr", icon: "solar:chart-2-bold-duotone", label: "Carga", value: "Óptima" }],
+            "Carrera en 2 días — llega descansado."
+        );
+
+        expect(html).toContain('<p class="runner-status-summary">Carrera en 2 días — llega descansado.</p>');
+
+    });
+
+    it("sin frase-resumen (null), no pinta el párrafo", () => {
+
+        const html = RunnerStatusWidget(
+            [{ key: "acwr", icon: "solar:chart-2-bold-duotone", label: "Carga", value: "Óptima" }],
+            null
+        );
+
+        expect(html).not.toContain("runner-status-summary");
+
+    });
+
+    it("sin ningún indicador, no pinta nada aunque llegue una frase-resumen", () => {
+
+        expect(RunnerStatusWidget([], "Esto no debería aparecer nunca.")).toBe("");
+
+    });
+
 });
