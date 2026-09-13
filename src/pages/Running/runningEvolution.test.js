@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildZ2Evolution } from "./runningEvolution.js";
+import { buildZ2Evolution, buildTypeEvolution } from "./runningEvolution.js";
 
 function workout(id, date, type, avgPaceSecPerKm, avgHr = null) {
     return { id, date, type, avgPaceSecPerKm, avgHr };
@@ -97,6 +97,75 @@ describe("buildZ2Evolution", () => {
         expect(result.hrDeltaBpm).toBeNull();
         expect(result.first.avgHr).toBeNull();
         expect(result.last.avgHr).toBe(147);
+
+    });
+
+});
+
+describe("buildTypeEvolution -- motor generalizado (Series/Tempo, Capa 3), buildZ2Evolution es un alias del mismo", () => {
+
+    it("buildZ2Evolution y buildTypeEvolution son literalmente la misma función", () => {
+
+        expect(buildZ2Evolution).toBe(buildTypeEvolution);
+
+    });
+
+    it("Series con groupSize:3 -- usa SOLO los últimos 3, no los 5 de Z2", () => {
+
+        const workouts = [
+            workout("s1", "2026-08-01", "series", 330),
+            workout("s2", "2026-08-05", "series", 325),
+            workout("s3", "2026-08-09", "series", 320),
+            workout("s4", "2026-08-13", "series", 315)
+        ];
+
+        const result = buildTypeEvolution(workouts, { type: "series", groupSize: 3 });
+
+        expect(result.available).toBe(true);
+        expect(result.count).toBe(3);
+        expect(result.groupSize).toBe(3);
+        expect(result.first.date).toBe("2026-08-05"); // s1 queda fuera de los últimos 3
+        expect(result.last.date).toBe("2026-08-13");
+
+    });
+
+    it("Tempo con groupSize:3 y solo 2 reales -- disponible igual (mínimo sigue siendo 2, no 3)", () => {
+
+        const workouts = [
+            workout("t1", "2026-08-01", "tempo", 300),
+            workout("t2", "2026-08-10", "tempo", 290)
+        ];
+
+        const result = buildTypeEvolution(workouts, { type: "tempo", groupSize: 3 });
+
+        expect(result.available).toBe(true);
+        expect(result.count).toBe(2);
+
+    });
+
+    it("Tempo con 1 solo entreno real -- no disponible, igual que Z2", () => {
+
+        const workouts = [workout("t1", "2026-08-01", "tempo", 300)];
+        const result = buildTypeEvolution(workouts, { type: "tempo", groupSize: 3 });
+
+        expect(result).toEqual({ available: false, count: 1 });
+
+    });
+
+    it("distintos tipos no se mezclan entre sí -- Series no ve entrenos de Tempo ni de Z2", () => {
+
+        const workouts = [
+            workout("e1", "2026-08-01", "easy", 340),
+            workout("t1", "2026-08-02", "tempo", 300),
+            workout("s1", "2026-08-03", "series", 320),
+            workout("s2", "2026-08-04", "series", 315)
+        ];
+
+        const seriesEvolution = buildTypeEvolution(workouts, { type: "series", groupSize: 3 });
+
+        expect(seriesEvolution.count).toBe(2);
+        expect(seriesEvolution.first.date).toBe("2026-08-03");
+        expect(seriesEvolution.last.date).toBe("2026-08-04");
 
     });
 

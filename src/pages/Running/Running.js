@@ -9,7 +9,7 @@ import { formatSecondsAsClock, formatShoeName, formatKm as formatGroupKm } from 
 import { buildTypeProgressInsight, buildProgressMessage, buildPaceComparison, buildComparisonMessage } from "./runningProgress.js";
 import { buildTypeSummary } from "./runningSummary.js";
 import { buildListInsight } from "./runningListInsight.js";
-import { buildZ2Evolution } from "./runningEvolution.js";
+import { buildZ2Evolution, buildTypeEvolution, EVOLUTION_GROUP_SIZE } from "./runningEvolution.js";
 import { buildWeeklyProgress } from "./runningWeeklyProgress.js";
 import { buildWorkoutTypeContext } from "./runningTypeContext.js";
 import { buildHistoryGroups } from "./runningHistoryGrouping.js";
@@ -584,15 +584,65 @@ function formatEvolutionPace(avgPaceSecPerKm) {
     return `${formatSecondsAsClock(avgPaceSecPerKm)}/km`;
 }
 
-// Evolución Z2 (prioridad 1 de la lista de mejoras de Running, ronda
-// 2026-09-03): compara el primero y el último de los últimos entrenos
-// reales de Rodaje (Z2) -- ver runningEvolution.js para el porqué de
-// "primero vs último" en vez de "media de grupo" (ya existe esa otra
-// comparación, distinta, en TU RESUMEN). Con menos de 2 rodajes reales no
-// hay nada que comparar -- se dice así en vez de ocultar el bloque entero
-// (mismo criterio que el resto de tarjetas "no disponible" de esta
-// pantalla, ver AcwrCard).
-function Z2EvolutionCard(evolution) {
+// Config por tipo de "Evolución" rastreable -- nació con Z2 (prioridad 1
+// de la lista de mejoras de Running, ronda 2026-09-03) y se generalizó
+// para Series/Tempo (Capa 3, cierre del documento de 35 propuestas), mismo
+// motor (buildTypeEvolution(), runningEvolution.js). groupSize más corto
+// para Series/Tempo (3, no 5) porque previsiblemente hay bastante menos
+// volumen acumulado de esos dos tipos que de Z2. "Tirada larga" y
+// "Carrera" quedan fuera a propósito: su ritmo varía mucho con la
+// distancia de cada sesión/carrera concreta -- un "primero vs último"
+// entre dos de longitud muy distinta compararía esfuerzos que no son
+// comparables entre sí, el mismo motivo por el que Z2 siempre se limitó a
+// un único tipo de esfuerzo homogéneo.
+//
+// EVOLUTION_TYPE_CONFIG.easy es literalmente el texto que ya existía --
+// Z2EvolutionCard() sigue llamando a TypeEvolutionCard() con esta misma
+// config, mismo aspecto y comportamiento que antes de generalizar.
+const EVOLUTION_TYPE_CONFIG = {
+
+    easy: {
+        groupSize: EVOLUTION_GROUP_SIZE,
+        cardTitle: "EVOLUCIÓN Z2",
+        lastWord: "Últimos", // "rodaje/rodajes" es masculino
+        unitSingular: "rodaje",
+        unitPlural: "rodajes",
+        unavailableMessage: "Necesitas más Rodajes (Z2) con ritmo real para ver tu evolución."
+    },
+
+    series: {
+        groupSize: 3,
+        cardTitle: "EVOLUCIÓN SERIES",
+        lastWord: "Últimas", // "sesión/sesiones" es femenino
+        unitSingular: "sesión de Series",
+        unitPlural: "sesiones de Series",
+        unavailableMessage: "Necesitas más sesiones de Series con ritmo real para ver tu evolución."
+    },
+
+    tempo: {
+        groupSize: 3,
+        cardTitle: "EVOLUCIÓN TEMPO",
+        lastWord: "Últimas", // "sesión/sesiones" es femenino
+        unitSingular: "sesión de Tempo",
+        unitPlural: "sesiones de Tempo",
+        unavailableMessage: "Necesitas más sesiones de Tempo con ritmo real para ver tu evolución."
+    }
+
+};
+
+// Series y Tempo se ocultan por completo sin historial suficiente (en vez
+// de mostrar su mensaje "Necesitas más...", ver RunningIdleView) para no
+// saturar la pantalla con varios bloques casi vacíos a la vez -- Z2 es la
+// excepción deliberada (ver Z2EvolutionCard): es el tipo con más volumen
+// esperado y el más consolidado de los tres, así que se mantiene siempre
+// visible tal cual estaba antes de esta generalización.
+const EXTRA_EVOLUTION_TYPES = ["series", "tempo"];
+
+// Compara el primero y el último de los últimos entrenos reales de un
+// mismo tipo -- ver runningEvolution.js para el porqué de "primero vs
+// último" en vez de "media de grupo" (ya existe esa otra comparación,
+// distinta, en TU RESUMEN).
+function TypeEvolutionCard(evolution, config) {
 
     if (!evolution.available) {
 
@@ -606,11 +656,11 @@ function Z2EvolutionCard(evolution) {
                         <iconify-icon icon="solar:graph-new-up-bold-duotone"></iconify-icon>
                     </span>
 
-                    <span class="z2-evolution-label">EVOLUCIÓN Z2</span>
+                    <span class="z2-evolution-label">${config.cardTitle}</span>
 
                 </div>
 
-                <p class="z2-evolution-message">Necesitas más Rodajes (Z2) con ritmo real para ver tu evolución.</p>
+                <p class="z2-evolution-message">${config.unavailableMessage}</p>
 
             </div>
 
@@ -618,7 +668,8 @@ function Z2EvolutionCard(evolution) {
 
     }
 
-    const { count, first, last, paceDeltaSecPerKm, hrDeltaBpm } = evolution;
+    const { count, first, last } = evolution;
+    const unitLabel = count === 1 ? config.unitSingular : config.unitPlural;
 
     return `
 
@@ -631,8 +682,8 @@ function Z2EvolutionCard(evolution) {
                 </span>
 
                 <div class="z2-evolution-header-text">
-                    <span class="z2-evolution-label">EVOLUCIÓN Z2</span>
-                    <span class="z2-evolution-sublabel">Últimos ${count} rodaje${count === 1 ? "" : "s"} · ${formatDayMonth(first.date)} → ${formatDayMonth(last.date)}</span>
+                    <span class="z2-evolution-label">${config.cardTitle}</span>
+                    <span class="z2-evolution-sublabel">${config.lastWord} ${count} ${unitLabel} · ${formatDayMonth(first.date)} → ${formatDayMonth(last.date)}</span>
                 </div>
 
             </div>
@@ -679,6 +730,15 @@ function Z2EvolutionCard(evolution) {
 
     `;
 
+}
+
+// Con menos de 2 Rodajes (Z2) reales no hay nada que comparar -- se dice
+// así en vez de ocultar el bloque entero (mismo criterio que el resto de
+// tarjetas "no disponible" de esta pantalla, ver AcwrCard). A diferencia
+// de Series/Tempo (ver EXTRA_EVOLUTION_TYPES), Z2 nunca se oculta -- sin
+// cambios respecto a como estaba antes de generalizar el motor.
+function Z2EvolutionCard(evolution) {
+    return TypeEvolutionCard(evolution, EVOLUTION_TYPE_CONFIG.easy);
 }
 
 // Resumen de kilometraje embebido en Running, debajo de la lista de
@@ -1163,6 +1223,16 @@ function RunningIdleView() {
     // haría desaparecer aunque siga siendo información sobre Rodaje (Z2).
     const z2Evolution = buildZ2Evolution(workouts);
 
+    // Evolución de Series/Tempo (Capa 3) -- mismo criterio que Z2 arriba
+    // (conjunto real completo, nunca el filtrado por chip). A diferencia
+    // de Z2, que se muestra siempre (incluso con su mensaje "Necesitas
+    // más..."), estas se OCULTAN por completo sin al menos 2 entrenos
+    // reales de ese tipo -- con 2-3 bloques de evolución a la vez, varios
+    // mensajes casi vacíos saturarían la pantalla (ver EXTRA_EVOLUTION_TYPES).
+    const extraEvolutions = EXTRA_EVOLUTION_TYPES
+        .map(type => ({ type, evolution: buildTypeEvolution(workouts, { type, groupSize: EVOLUTION_TYPE_CONFIG[type].groupSize }) }))
+        .filter(({ evolution }) => evolution.available);
+
     // Progreso semanal (Capa 2) -- volumen + ritmo medio de las últimas 4
     // semanas, también sobre el conjunto real completo (nunca el filtrado
     // por tipo): es una vista agregada de "cuánto y cómo de rápido has
@@ -1224,6 +1294,8 @@ function RunningIdleView() {
                 ${WeeklyProgressChart(weeklyProgress)}
 
                 ${Z2EvolutionCard(z2Evolution)}
+
+                ${extraEvolutions.map(({ type, evolution }) => TypeEvolutionCard(evolution, EVOLUTION_TYPE_CONFIG[type])).join("")}
 
                 ${RunningTypeFilters(typeFilter, workouts)}
 
