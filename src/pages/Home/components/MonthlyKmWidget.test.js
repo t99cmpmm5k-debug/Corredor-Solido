@@ -1,13 +1,15 @@
 import { describe, it, expect } from "vitest";
 import { MonthlyKmWidget } from "./MonthlyKmWidget.js";
 
-function stats({ chartMonths = null, currentMonthCount = 9 } = {}) {
+function stats({ chartMonths = null, currentMonthCount = 9, comparisonPercent = 12, comparisonDays = 13, projectedKm = null } = {}) {
     return {
         currentMonthKey: "2026-08",
         currentMonthKm: 52.7,
         currentMonthCount,
         previousMonthKey: "2026-07",
-        comparisonPercent: 12,
+        comparisonPercent,
+        comparisonDays,
+        projectedKm,
         chartMonths
     };
 }
@@ -162,6 +164,62 @@ describe("MonthlyKmWidget", () => {
         const height = Number(html.slice(idx - 200, idx).match(/height:(\d+)px/)[1]);
 
         expect(height).toBeGreaterThan(0);
+
+    });
+
+    // Comparación justa (Capa 3, punto 2): el texto deja explícito que se
+    // compara el mismo nº de días en ambos meses, nunca "vs Julio" a
+    // secas (que sugeriría el mes completo, justo el bug que se corrige).
+    describe("comparación justa -- etiqueta con el nº de días comparados", () => {
+
+        it("incluye el nº de días comparados en el propio texto ('vs Julio (13d)'), no solo el nombre del mes", () => {
+
+            const html = MonthlyKmWidget(stats({ chartMonths: CHART_MONTHS, comparisonPercent: 12, comparisonDays: 13 }));
+
+            expect(html).toContain("+12% vs Julio (13d)");
+
+        });
+
+        it("sin comparación disponible (comparisonPercent null), no muestra ningún '% vs'", () => {
+
+            const html = MonthlyKmWidget(stats({ chartMonths: CHART_MONTHS, comparisonPercent: null, comparisonDays: null }));
+
+            expect(html).not.toContain("% vs");
+
+        });
+
+    });
+
+    // Proyección mensual (Capa 3, punto 2): solo tiene sentido para el mes
+    // EN CURSO -- nunca al mirar el detalle de un mes pasado (proyectar el
+    // "futuro" de un mes que ya terminó no significa nada).
+    describe("proyección mensual", () => {
+
+        it("se muestra en la línea de resumen del mes en curso, junto al resto de datos", () => {
+
+            const html = MonthlyKmWidget(stats({ chartMonths: CHART_MONTHS, projectedKm: 80.77 }));
+
+            expect(html).toContain("Proyección: 80,8 km");
+            expect(html).toContain("9 entrenamientos · 5,9 km/sesión · Proyección: 80,8 km");
+
+        });
+
+        it("sin proyección disponible (projectedKm null), no aparece esa parte de la línea", () => {
+
+            const html = MonthlyKmWidget(stats({ chartMonths: CHART_MONTHS, projectedKm: null }));
+
+            expect(html).not.toContain("Proyección");
+
+        });
+
+        it("al tocar un mes PASADO, no se muestra la proyección (no tiene sentido proyectar un mes ya terminado)", () => {
+
+            const html = MonthlyKmWidget(stats({ chartMonths: CHART_MONTHS, projectedKm: 80.77 }), "2026-07");
+
+            expect(html).not.toContain("Proyección");
+            expect(html).toContain("Julio");
+
+        });
 
     });
 

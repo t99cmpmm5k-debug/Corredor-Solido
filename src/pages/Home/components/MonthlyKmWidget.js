@@ -76,12 +76,19 @@ function barHeight(km, months) {
 // de Inicio -- selectedMonthKey vive en core/state.js (propio de este
 // widget), lo lee y lo pasa Home.js igual que homeSelectedWorkout. La
 // línea inferior nunca queda vacía sin selección: por defecto muestra el
-// resumen del propio mes en curso ("9 entrenamientos · 5,8 km/sesión",
-// ver summaryLine), así que tocar la barra del mes actual no cambia
-// nada (ya es lo que se ve por defecto).
+// resumen del propio mes en curso ("9 entrenamientos · 5,8 km/sesión ·
+// Proyección: 82 km", ver summaryLine), así que tocar la barra del mes
+// actual no cambia nada (ya es lo que se ve por defecto).
+//
+// Comparación justa (2026-09-14, Capa 3 punto 2): antes "+50% vs julio"
+// comparaba el mes en curso (a medias) contra julio COMPLETO -- caída
+// falsa garantizada a mitad de mes. Ahora el propio texto lo deja claro
+// ("+12% vs Ago (13d)"): son los mismos 13 días de calendario en ambos
+// meses, nunca el mes anterior entero contra uno a medias (ver
+// buildMonthlyKmStats() en utils/monthlyKm.js).
 export function MonthlyKmWidget(stats, selectedMonthKey = null) {
 
-    const { currentMonthKey, currentMonthKm, currentMonthCount, previousMonthKey, comparisonPercent, chartMonths } = stats;
+    const { currentMonthKey, currentMonthKm, currentMonthCount, previousMonthKey, comparisonPercent, comparisonDays, projectedKm, chartMonths } = stats;
 
     const isUp = comparisonPercent != null && comparisonPercent >= 0;
 
@@ -89,14 +96,25 @@ export function MonthlyKmWidget(stats, selectedMonthKey = null) {
         ? chartMonths.find(m => m.key === selectedMonthKey) ?? null
         : null;
 
+    // "Proyección: 82 km" (Capa 3, punto 2) -- solo tiene sentido para el
+    // mes EN CURSO, nunca para un mes pasado que se esté mirando por tap
+    // (proyectar el futuro de un mes que ya terminó no significa nada).
+    const projectionText = (!selected && projectedKm != null)
+        ? `Proyección: ${formatKm(projectedKm)} km`
+        : null;
+
     // Línea de resumen inferior: el detalle de un mes tocado (si lo hay)
     // o, por defecto, el propio mes en curso -- "9 entrenamientos · 5,8
-    // km/sesión", siempre con datos reales (nunca al dividir entre 0
-    // entrenos, ver guarda de abajo).
+    // km/sesión · Proyección: 82 km", siempre con datos reales (nunca al
+    // dividir entre 0 entrenos, ver guarda de abajo).
     const summaryLine = selected
         ? `${monthName(selected.key)} · ${formatKm(selected.km)} km · ${selected.count} entrenamiento${selected.count === 1 ? "" : "s"}`
         : (currentMonthCount > 0
-            ? `${currentMonthCount} entrenamiento${currentMonthCount === 1 ? "" : "s"} · ${formatKm(currentMonthKm / currentMonthCount)} km/sesión`
+            ? [
+                `${currentMonthCount} entrenamiento${currentMonthCount === 1 ? "" : "s"}`,
+                `${formatKm(currentMonthKm / currentMonthCount)} km/sesión`,
+                projectionText
+            ].filter(Boolean).join(" · ")
             : null);
 
     return `
@@ -119,9 +137,9 @@ export function MonthlyKmWidget(stats, selectedMonthKey = null) {
 
                 ${comparisonPercent != null ? `
 
-                    <span class="monthly-km-comparison ${isUp ? "is-up" : "is-down"}">
+                    <span class="monthly-km-comparison ${isUp ? "is-up" : "is-down"}" title="Compara los mismos ${comparisonDays} días de calendario en ambos meses, no el mes anterior completo.">
 
-                        · ${isUp ? "+" : ""}${comparisonPercent}% vs ${monthName(previousMonthKey)}
+                        · ${isUp ? "+" : ""}${comparisonPercent}% vs ${monthName(previousMonthKey)} (${comparisonDays}d)
 
                     </span>
 
