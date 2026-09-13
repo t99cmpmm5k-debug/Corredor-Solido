@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildPlanCompliance } from "./planCompliance.js";
+import { buildPlanCompliance, classifyPlanOverage, PLAN_OVER_TARGET_MODERATE_MAX_PERCENT } from "./planCompliance.js";
 
 // Lunes 7 sept 2026 -- domingo 13 sept 2026 es la semana ISO de esta
 // fecha (ver getWeekStartDate() en utils/date.js).
@@ -102,6 +102,38 @@ describe("buildPlanCompliance", () => {
         expect(result.hasPlan).toBe(true);
         expect(result.plannedKm).toBe(0);
         expect(result.kmPercent).toBeNull();
+
+    });
+
+});
+
+// Distinguir cumplimiento de carga (Capa 3, punto 4 del documento de
+// mejoras): cumplir de más no es automáticamente "mejor" cuanto más alto
+// sea el %, mismo criterio que ya se aplica en ACWR -- nunca un veredicto
+// de "bueno"/"malo", solo clasifica el dato real.
+describe("classifyPlanOverage", () => {
+
+    it("sin exceso (kmPercent nulo o <=100%), no hay nada que clasificar", () => {
+
+        expect(classifyPlanOverage(null)).toBeNull();
+        expect(classifyPlanOverage(0)).toBeNull();
+        expect(classifyPlanOverage(77)).toBeNull();
+        expect(classifyPlanOverage(100)).toBeNull();
+
+    });
+
+    it(`exceso moderado hasta ${PLAN_OVER_TARGET_MODERATE_MAX_PERCENT}% inclusive`, () => {
+
+        expect(classifyPlanOverage(101)).toBe("moderate");
+        expect(classifyPlanOverage(114)).toBe("moderate");
+        expect(classifyPlanOverage(PLAN_OVER_TARGET_MODERATE_MAX_PERCENT)).toBe("moderate");
+
+    });
+
+    it(`exceso alto por encima de ${PLAN_OVER_TARGET_MODERATE_MAX_PERCENT}%`, () => {
+
+        expect(classifyPlanOverage(PLAN_OVER_TARGET_MODERATE_MAX_PERCENT + 1)).toBe("high");
+        expect(classifyPlanOverage(145)).toBe("high");
 
     });
 

@@ -1,4 +1,5 @@
 import { parseISODate, formatISODate } from "./date.js";
+import { classifyPlanOverage } from "./planCompliance.js";
 
 // Mismo cálculo que daysUntil() en NextGoalWidget.js (diff de fecha real,
 // nunca estimado) -- se duplica aquí a propósito en vez de compartirse
@@ -76,6 +77,13 @@ export function buildRunnerStatusIndicators({ acwrInsight, z2Evolution, planComp
 
     }
 
+    // Revisado (Capa 3, punto 4): a diferencia de PlanComplianceWidget.js y
+    // de la frase-resumen (planSummarySentence más abajo), este indicador
+    // se queda deliberadamente como número simple aunque supere el 100% --
+    // es una celda compacta de icono+valor+etiqueta en una fila junto a
+    // otras 3, sin sitio para una nota de contexto sin romper el formato.
+    // El matiz de "cumplir de más no es automáticamente mejor" sigue
+    // presente en la propia app (widget y frase-resumen), solo no aquí.
     if (planCompliance.hasPlan && planCompliance.kmPercent != null) {
 
         indicators.push({
@@ -137,11 +145,19 @@ function acwrSummarySentence(zoneId) {
 
 }
 
+// Distinguir cumplimiento de carga (Capa 3, punto 4): cumplir de más no es
+// automáticamente "mejor" cuanto más alto sea el %, mismo criterio que ya
+// se aplica en ACWR -- classifyPlanOverage() (utils/planCompliance.js,
+// misma clasificación y mismo umbral que ya usa PlanComplianceWidget.js,
+// no uno nuevo) decide si el exceso es "alto"; solo entonces se cambia el
+// refuerzo incondicional por una frase informativa sin veredicto.
 function planSummarySentence(kmPercent) {
 
-    return kmPercent >= 100
-        ? "Semana completada. Buen ritmo de trabajo."
-        : "Casi completas la semana — buen ritmo de trabajo.";
+    if (kmPercent < 100) return "Casi completas la semana — buen ritmo de trabajo.";
+
+    return classifyPlanOverage(kmPercent) === "high"
+        ? "Volumen por encima de lo previsto esta semana."
+        : "Semana completada. Buen ritmo de trabajo.";
 
 }
 

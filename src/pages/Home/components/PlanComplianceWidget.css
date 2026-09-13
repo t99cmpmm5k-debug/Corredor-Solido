@@ -64,6 +64,20 @@
 
 }
 
+/* Nota de contexto para un exceso >100% (Capa 3, punto 4) -- tono
+   informativo, no una alerta: mismo color secundario neutro que el resto
+   de texto de apoyo del widget, nunca el color de aviso (ese es para
+   "hace falta que actúes", esto no lo es en ningún caso). */
+.plan-compliance-overage-note{
+
+    color:var(--text-secondary);
+
+    font-size:.78rem;
+
+    line-height:1.4;
+
+}
+
 .plan-compliance-sessions{
 
     color:var(--text-secondary);

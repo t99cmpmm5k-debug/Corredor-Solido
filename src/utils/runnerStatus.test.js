@@ -204,17 +204,35 @@ describe("buildRunnerStatusSummary -- frase-resumen priorizada (Capa 3)", () => 
 
     });
 
-    it("regla (c): semana completada (>=100%) frente a casi completada (90-99%)", () => {
+    it("regla (c): semana completada (100%, sin exceso) frente a casi completada (90-99%)", () => {
 
         expect(buildRunnerStatusSummary({
             acwrInsight: acwr(1.1, "optimal", "Óptima"), z2Evolution: UNAVAILABLE_Z2,
-            planCompliance: planCompliance(145), upcomingRaces: []
+            planCompliance: planCompliance(100), upcomingRaces: []
         }, REFERENCE)).toBe("Semana completada. Buen ritmo de trabajo.");
 
         expect(buildRunnerStatusSummary({
             acwrInsight: acwr(1.1, "optimal", "Óptima"), z2Evolution: UNAVAILABLE_Z2,
             planCompliance: planCompliance(90), upcomingRaces: []
         }, REFERENCE)).toBe("Casi completas la semana — buen ritmo de trabajo.");
+
+    });
+
+    // Distinguir cumplimiento de carga (Capa 3, punto 4): cumplir de más NO
+    // es automáticamente "mejor" cuanto más alto sea el % -- mismo criterio
+    // que ACWR, mismo umbral que PlanComplianceWidget.js
+    // (classifyPlanOverage(), utils/planCompliance.js).
+    it("regla (c): exceso MODERADO (hasta 120%) sigue siendo refuerzo positivo, exceso ALTO (>120%) pasa a frase informativa sin veredicto", () => {
+
+        expect(buildRunnerStatusSummary({
+            acwrInsight: acwr(1.1, "optimal", "Óptima"), z2Evolution: UNAVAILABLE_Z2,
+            planCompliance: planCompliance(120), upcomingRaces: []
+        }, REFERENCE)).toBe("Semana completada. Buen ritmo de trabajo.");
+
+        expect(buildRunnerStatusSummary({
+            acwrInsight: acwr(1.1, "optimal", "Óptima"), z2Evolution: UNAVAILABLE_Z2,
+            planCompliance: planCompliance(145), upcomingRaces: []
+        }, REFERENCE)).toBe("Volumen por encima de lo previsto esta semana.");
 
     });
 

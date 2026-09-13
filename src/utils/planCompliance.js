@@ -59,3 +59,25 @@ export function buildPlanCompliance(weekSessions, workouts, referenceDate = new 
     };
 
 }
+
+// Hasta qué % por encima del 100% se considera un exceso "moderado" --
+// mismo criterio que ya se aplica en ACWR (utils/acwr.js): cumplir de más
+// no es automáticamente "mejor" sin más contexto, así que un kmPercent
+// por encima de 100% no debe leerse implícitamente como un logro mayor
+// cuanto más alto sea. 120% es el extremo superior del rango "hasta
+// 15-20% por encima" que se pidió como referencia -- una primera
+// aproximación razonable, no una cifra clínica; se puede ajustar si el
+// uso real muestra que el corte queda mal puesto.
+export const PLAN_OVER_TARGET_MODERATE_MAX_PERCENT = 120;
+
+// null si no hay exceso (kmPercent nulo o <=100%) -- "moderate" hasta
+// PLAN_OVER_TARGET_MODERATE_MAX_PERCENT inclusive, "high" por encima.
+// Nunca decide si eso es "bueno" o "malo" -- solo clasifica el dato real
+// para que quien lo muestre añada contexto en vez de un veredicto.
+export function classifyPlanOverage(kmPercent) {
+
+    if (kmPercent == null || kmPercent <= 100) return null;
+
+    return kmPercent <= PLAN_OVER_TARGET_MODERATE_MAX_PERCENT ? "moderate" : "high";
+
+}
