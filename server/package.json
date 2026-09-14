@@ -1,0 +1,23 @@
+{
+  "name": "corredor-solido-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Backend de sincronización para Corredor Sólido (auth + sync por usuario, reutiliza el formato de backup.js del cliente).",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2",
+    "mysql2": "^3.11.0"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.10"
+  }
+}

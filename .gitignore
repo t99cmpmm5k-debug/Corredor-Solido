@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# Backend (server/) -- credenciales reales de base de datos y JWT, nunca al repo.
+server/.env
+server/*.pem
+
 # Datos reales de entrenamiento (GPS/salud de terceros) usados como
 # referencia durante el desarrollo — nunca a un repo público.
 *.tcx
