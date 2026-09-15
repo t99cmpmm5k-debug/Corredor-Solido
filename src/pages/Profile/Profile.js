@@ -3,6 +3,7 @@ import "./Profile.css";
 import { BottomNavigation } from "../../components/Navigation/BottomNavigation.js";
 import { getBackupStatus, getDataSummary } from "../../utils/backup.js";
 import { getFeedback } from "./profileStore.js";
+import { isLoggedIn } from "../../data/authStore.js";
 import { BUILD_ID } from "../../utils/buildInfo.js";
 
 function BackupReminder(status) {
@@ -136,6 +137,44 @@ function lastExportLabel(daysSinceExport) {
 
 }
 
+// Sube el histórico local al servidor bajo demanda -- el único momento
+// automático (justo tras verificar la cuenta, ver initVerifyAccount() en
+// pages/Auth/initAuthEvents.js) puede acabar disparándose desde un
+// contexto de almacenamiento distinto (Safari normal vs. la PWA
+// instalada -- iOS aísla el storage entre los dos) y subir un histórico
+// vacío sin que quien lo sufre tenga forma de saberlo ni de reintentarlo.
+// Este botón es ese reintento manual: solo tiene sentido con sesión
+// iniciada (pushSync() necesita token).
+function SyncCard() {
+
+    if (!isLoggedIn()) return "";
+
+    return `
+
+        <section class="profile-backup-card">
+
+            <h3>Sincronización</h3>
+
+            <p class="profile-backup-note">
+
+                Sube una copia de tus datos locales al servidor de tu cuenta.
+
+            </p>
+
+            <button class="profile-button profile-button-secondary" data-action="push-sync">
+
+                <iconify-icon icon="solar:cloud-upload-bold-duotone"></iconify-icon>
+
+                Subir mi historial ahora
+
+            </button>
+
+        </section>
+
+    `;
+
+}
+
 export function Profile() {
 
     const status = getBackupStatus();
@@ -211,6 +250,8 @@ export function Profile() {
                     </p>
 
                 </section>
+
+                ${SyncCard()}
 
                 <section class="profile-backup-card">
 

@@ -1,7 +1,8 @@
 import { navigate, rerender } from "../../core/router.js";
-import { exportData, importDataFromFile } from "../../utils/backup.js";
+import { exportData, importDataFromFile, getSyncableData } from "../../utils/backup.js";
 import { setFeedback } from "./profileStore.js";
-import { clearToken } from "../../data/authStore.js";
+import { clearToken, getToken } from "../../data/authStore.js";
+import { pushSync } from "../../data/syncApi.js";
 import { Login } from "../Auth/Auth.js";
 
 function handleExport() {
@@ -32,7 +33,33 @@ function handleImportFile(file) {
 
 }
 
+function handlePushSync() {
+
+    const token = getToken();
+    if (!token) return;
+
+    setFeedback(null);
+    rerender();
+
+    pushSync(getSyncableData(), token)
+        .then(() => {
+            setFeedback({ type: "success", text: "Historial subido correctamente." });
+            rerender();
+        })
+        .catch(err => {
+            setFeedback({ type: "error", text: err.message || "No se pudo subir el historial." });
+            rerender();
+        });
+
+}
+
 export function initProfileEvents() {
+
+    const pushSyncButton = document.querySelector('[data-action="push-sync"]');
+
+    if (pushSyncButton) {
+        pushSyncButton.addEventListener("click", handlePushSync);
+    }
 
     const logoutButton = document.querySelector('[data-action="logout"]');
 
