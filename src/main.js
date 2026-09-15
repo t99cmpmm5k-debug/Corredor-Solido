@@ -29,6 +29,7 @@ import { hydrate as hydrateCustomExercises } from "./data/customExerciseStore.js
 import { hydrate as hydrateReferenceRoutes } from "./data/referenceRouteStore.js";
 import { hydrate as hydrateRouteSuggestionDismissals } from "./data/routeSuggestionStore.js";
 import { hydrateBackupMeta } from "./utils/backup.js";
+import { hydrateSyncMeta, initContinuousSync } from "./data/syncManager.js";
 import { loadHourlyWeather } from "./pages/Home/homeWeatherStore.js";
 import { initUpdateNotifier } from "./pwa/updateNotifier.js";
 
@@ -43,7 +44,7 @@ function boot() {
 
     let readyBeforeTimeout = false;
 
-    const ready = Promise.all([hydrate(), hydrateGymSessions(), hydrateGymRoutine(), hydrateCustomExercises(), hydrateReferenceRoutes(), hydrateRouteSuggestionDismissals(), hydrateBackupMeta()])
+    const ready = Promise.all([hydrate(), hydrateGymSessions(), hydrateGymRoutine(), hydrateCustomExercises(), hydrateReferenceRoutes(), hydrateRouteSuggestionDismissals(), hydrateBackupMeta(), hydrateSyncMeta()])
         .then(() => { readyBeforeTimeout = true; });
 
     const timedOut = new Promise(resolve => setTimeout(resolve, HYDRATE_TIMEOUT_MS));
@@ -88,6 +89,13 @@ function boot() {
         // "sin ubicación" solo por una carrera contra el reloj. No bloquea
         // el primer render de Inicio: start(Home) ya se hizo arriba.
         ready.then(() => loadHourlyWeather());
+
+        // Igual que loadHourlyWeather() arriba: espera a que hydrate()
+        // termine de verdad antes del primer push -- lanzarlo antes leería
+        // getSyncableData() con los stores todavía vacíos y subiría un
+        // snapshot en blanco (inofensivo -- el push es upsert, nunca borra
+        // -- pero inútil).
+        ready.then(() => initContinuousSync());
 
         // Desactivado a propósito mientras se usa la app en real esta semana
         // (probando el tema automático por hora) — con el selector delante

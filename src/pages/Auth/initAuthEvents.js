@@ -2,9 +2,8 @@ import { navigate, rerender } from "../../core/router.js";
 import { Home } from "../Home/Home.js";
 import { Login, Registro, RevisaTuEmail, VerificarCuenta, RecuperarPassword, NuevaPassword } from "./Auth.js";
 import { login, registro, verificar, reenviarVerificacion, recuperar, restablecer } from "../../data/authApi.js";
-import { pushSync } from "../../data/syncApi.js";
+import { runSync } from "../../data/syncManager.js";
 import { setToken } from "../../data/authStore.js";
-import { getSyncableData } from "../../utils/backup.js";
 import { hydrate } from "../../data/workoutStore.js";
 import { hydrate as hydrateGymSessions } from "../../data/gymSessionStore.js";
 import { hydrate as hydrateReferenceRoutes } from "../../data/referenceRouteStore.js";
@@ -65,15 +64,16 @@ function handleLoginOrRegistroSubmit(mode) {
 
             setToken(data.token);
             setAuthFeedback(null);
-
-            // Un login normal (cuenta ya verificada antes) NO dispara la
-            // subida inicial -- esa es cosa de justo-tras-verificar (ver
-            // initVerifyAccount() más abajo), un momento único que solo
-            // pasa una vez por cuenta. Si este login es en un dispositivo
-            // con histórico local propio Y la cuenta ya tiene datos en el
-            // servidor, hace falta FUSIONAR en las dos direcciones, no
-            // subir sin más -- eso es Fase 6 (pendiente), no esto.
             navigate(Home);
+
+            // Un login a mitad de sesión (sin recargar la app) no pasa por
+            // initContinuousSync() -- ese solo arranca una vez en el boot
+            // (ver main.js). Sin este runSync() explícito, nada bajaría lo
+            // que ya hubiera en el servidor de otro dispositivo hasta el
+            // próximo primer plano o el botón manual. runSync() ya hace
+            // push-antes-de-pull (ver syncManager.js), así que esto también
+            // fusiona con seguridad histórico local propio del dispositivo.
+            runSync("post-login");
 
         })
         .catch(err => {
@@ -263,78 +263,34 @@ function initVerifyAccount() {
         .then(data => {
 
             setToken(data.token);
+            setAuthLoadingText("Subiendo tu historial...");
+            rerender();
 
-            // Bug real encontrado en pruebas: getSyncableData() lee cachés
-            // en memoria que solo están pobladas cuando su hydrate() ha
-            // terminado. main.js arranca la hidratación en paralelo al
-            // resto del boot con un timeout de 1.5s para no bloquear el
-            // primer render (ver HYDRATE_TIMEOUT_MS) -- con un histórico
-            // real grande, es perfectamente posible llegar aquí (desde un
-            // enlace de email, arranque en frío) ANTES de que termine de
-            // verdad, y entonces getSyncableData() ve los 5 stores vacíos
-            // aunque sí haya datos. hydrate() está memoizada (ver
+            // getSyncableData() (dentro de runSync(), ver syncManager.js)
+            // lee cachés en memoria que solo están pobladas cuando su
+            // hydrate() ha terminado. main.js arranca la hidratación en
+            // paralelo al resto del boot con un timeout de 1.5s para no
+            // bloquear el primer render (ver HYDRATE_TIMEOUT_MS) -- con un
+            // histórico real grande, es perfectamente posible llegar aquí
+            // (desde un enlace de email, arranque en frío) ANTES de que
+            // termine de verdad. hydrate() está memoizada (ver
             // workoutStore.js/gymSessionStore.js/referenceRouteStore.js),
             // así que esperarla aquí de nuevo es gratis si ya terminó, y
-            // espera de verdad si no -- a diferencia de main.js, aquí SÍ
-            // interesa esperar de verdad: el único propósito de este paso
-            // es leer esos datos.
+            // espera de verdad si no.
             return Promise.all([hydrate(), hydrateGymSessions(), hydrateReferenceRoutes()])
-                .then(() => {
+                .then(() => runSync("post-verify"));
 
-                    // Único momento en que tiene sentido una subida "de
-                    // golpe": la cuenta acaba de existir de verdad (JWT
-                    // recién emitido), así que el servidor está vacío para
-                    // ella -- ningún dato que fusionar, solo subir lo que ya
-                    // había en local antes de tener cuenta (confirmado con
-                    // el usuario, ver plan acordado).
-                    const payload = getSyncableData();
-                    const hasLocalData = Object.values(payload).some(records => records.length > 0);
+        })
+        .then(() => {
 
-                    console.info(
-                        "[Fase 3] Historial local tras hidratar:",
-                        Object.fromEntries(Object.entries(payload).map(([key, records]) => [key, records.length]))
-                    );
-
-                    if (!hasLocalData) {
-                        setAuthSubmitting(false);
-                        navigate(Home);
-                        return;
-                    }
-
-                    setAuthLoadingText("Subiendo tu historial...");
-                    rerender();
-
-                    // Mismo nivel "info" que el log de arriba (no "log" ni
-                    // "debug") a propósito -- si éste tampoco apareciera en
-                    // consola, descarta de raíz que sea el filtro de nivel
-                    // de DevTools y confirma que el problema es anterior a
-                    // esta línea, no en pushSync() en sí.
-                    console.info("[Fase 3] Llamando a POST /api/sync con", Object.fromEntries(Object.entries(payload).map(([key, records]) => [key, records.length])));
-
-                    return pushSync(payload, data.token)
-                        .then(() => {
-
-                            console.info("[Fase 3] POST /api/sync respondió con éxito.");
-                            setAuthSubmitting(false);
-                            navigate(Home);
-
-                        })
-                        .catch(err => {
-
-                            // La cuenta YA está verificada y con token
-                            // válido -- un fallo al subir el histórico (red,
-                            // servidor caído...) no debe dejar a alguien
-                            // fuera de su propia app. Los datos siguen
-                            // intactos en IndexedDB; el reintento real queda
-                            // para la Fase 4 (sincronización continua: sync
-                            // al arrancar si hay conexión), no aquí.
-                            console.warn("No se pudo subir el histórico inicial -- se reintentará más adelante.", err);
-                            setAuthSubmitting(false);
-                            navigate(Home);
-
-                        });
-
-                });
+            // La cuenta YA está verificada y con token válido en este punto
+            // -- un fallo al sincronizar (red, servidor caído...) no debe
+            // dejar a alguien fuera de su propia app. runSync() ya se traga
+            // sus propios errores (offline/401/otros, ver syncManager.js) y
+            // no los relanza, así que llegar aquí siempre significa
+            // "verificación completada", sincronizada o no.
+            setAuthSubmitting(false);
+            navigate(Home);
 
         })
         .catch(err => {

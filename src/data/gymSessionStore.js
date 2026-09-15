@@ -2,6 +2,7 @@ import { STORES, getAll, put, remove } from "./db.js";
 import { generateId } from "../utils/id.js";
 import { formatISODate } from "../utils/date.js";
 import { getGymDay } from "./gymRoutineStore.js";
+import { notifyDataChanged } from "./changeEvents.js";
 
 const sessions = [];
 
@@ -134,6 +135,7 @@ export function startSession(dayId) {
     };
 
     upsertInto(session);
+    notifyDataChanged();
 
     return session;
 
@@ -153,6 +155,7 @@ export function deleteSession(id) {
     sessions.splice(index, 1);
 
     remove(STORES.gymSessions, id).catch(() => {});
+    notifyDataChanged();
 
 }
 
@@ -167,6 +170,7 @@ export function updateSet(sessionId, exerciseId, setIndex, patch) {
     Object.assign(exercise.sets[setIndex], patch);
 
     upsertInto(session);
+    notifyDataChanged();
 
     return session;
 
@@ -183,6 +187,7 @@ export function updateExerciseNotes(sessionId, exerciseId, notes) {
     exercise.notes = notes;
 
     upsertInto(session);
+    notifyDataChanged();
 
     return session;
 
@@ -227,6 +232,7 @@ export function finishSession(sessionId) {
     session.durationUnreliable = durationUnreliable;
 
     upsertInto(session);
+    notifyDataChanged();
 
     return session;
 

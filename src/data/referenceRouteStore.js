@@ -14,6 +14,7 @@
 // desasignar primero.
 import { STORES, getAll, put, remove } from "./db.js";
 import { generateId } from "../utils/id.js";
+import { notifyDataChanged } from "./changeEvents.js";
 
 const routes = [];
 
@@ -82,7 +83,10 @@ export function createReferenceRoute(name) {
 
     routes.push(route);
 
-    return put(STORES.referenceRoutes, route).then(() => route);
+    return put(STORES.referenceRoutes, route).then(() => {
+        notifyDataChanged();
+        return route;
+    });
 
 }
 
@@ -95,6 +99,7 @@ export function renameReferenceRoute(id, name) {
     route.updatedAt = new Date().toISOString();
 
     upsertInto(route);
+    notifyDataChanged();
 
     return route;
 
@@ -107,6 +112,7 @@ export function deleteReferenceRoute(id) {
 
     routes.splice(index, 1);
     remove(STORES.referenceRoutes, id).catch(() => {});
+    notifyDataChanged();
 
 }
 
@@ -122,6 +128,7 @@ export function unassignWorkoutFromReferenceRoutes(workoutId) {
     current.updatedAt = new Date().toISOString();
 
     upsertInto(current);
+    notifyDataChanged();
 
 }
 
@@ -151,6 +158,7 @@ export function assignWorkoutToRoute(routeId, workoutId) {
     route.updatedAt = new Date().toISOString();
 
     upsertInto(route);
+    notifyDataChanged();
 
     return route;
 

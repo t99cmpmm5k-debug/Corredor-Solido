@@ -1,6 +1,7 @@
 import { STORES, getAll, put, remove } from "./db.js";
 import { parseISODate, formatISODate, getWeekStartDate, getDayAbbreviation } from "../utils/date.js";
 import { generateId } from "../utils/id.js";
+import { notifyDataChanged } from "./changeEvents.js";
 
 const workouts = [];
 const shoes = [];
@@ -290,6 +291,7 @@ export function addWorkout(workoutInput) {
 
     upsertInto(workouts, STORES.workouts, workout);
     markHadData();
+    notifyDataChanged();
 
     return workout;
 
@@ -302,6 +304,7 @@ export function deleteWorkout(id) {
 
     workouts.splice(index, 1);
     remove(STORES.workouts, id).catch(() => {});
+    notifyDataChanged();
 
 }
 
@@ -319,6 +322,7 @@ export function deletePlannedSession(id) {
 
     plannedSessions.splice(index, 1);
     remove(STORES.plannedSessions, id).catch(() => {});
+    notifyDataChanged();
 
     // Cualquier carrera planificada que apuntara a esta sesión ("En mi
     // plan", ver linkPlannedRaceToPlan()) se queda con una referencia
@@ -381,6 +385,7 @@ export function addShoe(shoeInput) {
     };
 
     upsertInto(shoes, STORES.shoes, shoe);
+    notifyDataChanged();
 
     return shoe;
 
@@ -393,6 +398,7 @@ export function updateShoe(id, patch) {
 
     Object.assign(shoe, patch);
     put(STORES.shoes, shoe).catch(() => {});
+    notifyDataChanged();
 
     return shoe;
 
@@ -415,6 +421,7 @@ export function updateWorkoutType(id, type) {
     };
 
     put(STORES.workouts, workout).catch(() => {});
+    notifyDataChanged();
 
     return workout;
 
@@ -435,6 +442,7 @@ export function updateWorkoutShoe(id, shoeId) {
     workout.shoeId = shoeId;
 
     put(STORES.workouts, workout).catch(() => {});
+    notifyDataChanged();
 
     return workout;
 
@@ -459,6 +467,7 @@ export function updateWorkoutDayState(id, patch) {
     workout.dayState = { ...(workout.dayState || {}), ...patch };
 
     put(STORES.workouts, workout).catch(() => {});
+    notifyDataChanged();
 
     return workout;
 
@@ -493,6 +502,7 @@ export function movePlannedSession(id, newDate) {
     session.slot = slot;
 
     put(STORES.plannedSessions, session).catch(() => {});
+    notifyDataChanged();
 
     return session;
 
@@ -603,7 +613,10 @@ export function importPlannedSessions(sessions) {
 
     });
 
-    return Promise.all(writes).then(() => ({ written, skippedFrozen, batchId }));
+    return Promise.all(writes).then(() => {
+        notifyDataChanged();
+        return { written, skippedFrozen, batchId };
+    });
 
 }
 
@@ -633,6 +646,7 @@ export function addPlannedSession({ date, type, description = null }) {
     };
 
     upsertInto(plannedSessions, STORES.plannedSessions, session);
+    notifyDataChanged();
 
     return session;
 
@@ -651,6 +665,7 @@ export function updatePlannedSession(id, { type, description }) {
 
     const updated = { ...session, type, description };
     upsertInto(plannedSessions, STORES.plannedSessions, updated);
+    notifyDataChanged();
 
     return updated;
 
@@ -677,6 +692,7 @@ export function duplicatePlannedSession(id, newDate) {
     };
 
     upsertInto(plannedSessions, STORES.plannedSessions, duplicate);
+    notifyDataChanged();
 
     return duplicate;
 

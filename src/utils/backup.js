@@ -5,6 +5,7 @@ import {
 } from "../data/workoutStore.js";
 import { getGymSessions, restoreGymSession } from "../data/gymSessionStore.js";
 import { getReferenceRoutes, restoreReferenceRoute } from "../data/referenceRouteStore.js";
+import { notifyDataChanged } from "../data/changeEvents.js";
 
 const SCHEMA_VERSION = 1;
 const REMINDER_THRESHOLD_DAYS = 14;
@@ -75,11 +76,14 @@ export function exportData() {
 
 }
 
-export function importData(payload) {
-
-    if (!payload || payload.schemaVersion !== SCHEMA_VERSION) {
-        throw new Error("Archivo de backup con un formato de versión no reconocido.");
-    }
+// Aplica un lote de los 5 stores reales (workouts/shoes/plannedSessions/
+// gymSessions/referenceRoutes) contra los stores en memoria + IndexedDB --
+// compartido entre importData() (backup manual, con schemaVersion) y
+// syncManager.js (merge de un pull, sin ese envoltorio: ver el comentario
+// de getSyncableData() arriba sobre la diferencia de forma). Único sitio
+// con la lista de los 5 stores que participan aquí, para no repetirla en
+// dos módulos que tendrían que recordar mantenerse en sincronía.
+export function applyRestoreBatch(payload) {
 
     (payload.workouts || []).forEach(restoreWorkout);
     (payload.shoes || []).forEach(restoreShoe);
@@ -93,6 +97,22 @@ export function importData(payload) {
 
 }
 
+export function importData(payload) {
+
+    if (!payload || payload.schemaVersion !== SCHEMA_VERSION) {
+        throw new Error("Archivo de backup con un formato de versión no reconocido.");
+    }
+
+    applyRestoreBatch(payload);
+
+    // Para que un backup importado a mano también acabe subido al
+    // servidor por la sincronización continua (Fase 4) -- sin esto, el
+    // mismo agujero de esta sesión (import local que nunca llega al
+    // servidor) seguiría abierto para cualquiera que restaure un backup.
+    notifyDataChanged();
+
+}
+
 export function importDataFromFile(file) {
 
     return file.text().then(text => importData(JSON.parse(text)));
@@ -100,9 +120,8 @@ export function importDataFromFile(file) {
 }
 
 // Antes solo miraba workouts/gymSessions -- extendido a los 5 stores
-// reales (ver getSyncableData()), tanto para el recordatorio de backup
-// como para decidir si hay algo que subir tras verificar una cuenta
-// nueva (ver initVerifyAccount() en pages/Auth/initAuthEvents.js).
+// reales (ver getSyncableData()), para el recordatorio de backup de más
+// abajo.
 export function hasDataWorthBackingUp() {
     return Object.values(getSyncableData()).some(records => records.length > 0);
 }

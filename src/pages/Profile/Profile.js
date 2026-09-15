@@ -4,6 +4,7 @@ import { BottomNavigation } from "../../components/Navigation/BottomNavigation.j
 import { getBackupStatus, getDataSummary } from "../../utils/backup.js";
 import { getFeedback } from "./profileStore.js";
 import { isLoggedIn } from "../../data/authStore.js";
+import { getLastSyncAt, isSyncOffline } from "../../data/syncManager.js";
 import { BUILD_ID } from "../../utils/buildInfo.js";
 
 function BackupReminder(status) {
@@ -34,6 +35,11 @@ function BackupReminder(status) {
 // cómo funciona el almacenamiento de la app (ver CLAUDE.md: IndexedDB,
 // sin sincronización en la nube).
 function LocalOnlyNotice() {
+
+    // Deja de ser cierto en cuanto hay sesión iniciada -- ver SyncCard()
+    // más abajo, que a partir de ahí es quien informa del estado real
+    // (última sincronización / sin conexión).
+    if (isLoggedIn()) return "";
 
     return `
 
@@ -137,14 +143,30 @@ function lastExportLabel(daysSinceExport) {
 
 }
 
-// Sube el histórico local al servidor bajo demanda -- el único momento
-// automático (justo tras verificar la cuenta, ver initVerifyAccount() en
-// pages/Auth/initAuthEvents.js) puede acabar disparándose desde un
-// contexto de almacenamiento distinto (Safari normal vs. la PWA
-// instalada -- iOS aísla el storage entre los dos) y subir un histórico
-// vacío sin que quien lo sufre tenga forma de saberlo ni de reintentarlo.
-// Este botón es ese reintento manual: solo tiene sentido con sesión
-// iniciada (pushSync() necesita token).
+function lastSyncLabel(lastSyncAt) {
+
+    if (lastSyncAt == null) return "Todavía no se ha sincronizado con el servidor.";
+
+    const minutesSince = Math.floor((Date.now() - new Date(lastSyncAt).getTime()) / 60000);
+
+    if (minutesSince < 1) return "Última sincronización: hace un momento.";
+    if (minutesSince < 60) return `Última sincronización: hace ${minutesSince} minuto${minutesSince === 1 ? "" : "s"}.`;
+
+    const hoursSince = Math.floor(minutesSince / 60);
+    if (hoursSince < 24) return `Última sincronización: hace ${hoursSince} hora${hoursSince === 1 ? "" : "s"}.`;
+
+    const daysSince = Math.floor(hoursSince / 24);
+    return `Última sincronización: hace ${daysSince} día${daysSince === 1 ? "" : "s"}.`;
+
+}
+
+// Botón genérico y definitivo de la Fase 4 (sincronización continua) --
+// sustituye al "Subir mi historial ahora" solo-push de esta mañana (aquel
+// era un parche puntual para el caso concreto de un push inicial vacío,
+// ver runSync()/syncManager.js). Este llama a runSync(), que hace
+// push-antes-de-pull, así que también sirve para traer cambios hechos en
+// otro dispositivo, no solo para subir. Solo tiene sentido con sesión
+// iniciada (runSync() no hace nada sin token).
 function SyncCard() {
 
     if (!isLoggedIn()) return "";
@@ -157,15 +179,27 @@ function SyncCard() {
 
             <p class="profile-backup-note">
 
-                Sube una copia de tus datos locales al servidor de tu cuenta.
+                ${lastSyncLabel(getLastSyncAt())}
 
             </p>
 
-            <button class="profile-button profile-button-secondary" data-action="push-sync">
+            ${isSyncOffline() ? `
 
-                <iconify-icon icon="solar:cloud-upload-bold-duotone"></iconify-icon>
+                <div class="profile-banner profile-banner-info">
 
-                Subir mi historial ahora
+                    <iconify-icon icon="solar:wifi-router-minimalistic-bold-duotone"></iconify-icon>
+
+                    <span>Sin conexión con el servidor -- se reintentará más tarde. Mientras tanto, la app sigue funcionando con lo que ya hay en este dispositivo.</span>
+
+                </div>
+
+            ` : ""}
+
+            <button class="profile-button profile-button-secondary" data-action="sync-now">
+
+                <iconify-icon icon="solar:refresh-circle-bold-duotone"></iconify-icon>
+
+                Sincronizar ahora
 
             </button>
 
