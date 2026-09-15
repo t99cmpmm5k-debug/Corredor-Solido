@@ -125,6 +125,14 @@ export function unassignWorkoutFromReferenceRoutes(workoutId) {
 
 }
 
+// Restauración desde backup (conserva el id original) -- mismo patrón que
+// restoreWorkout()/restoreShoe() en workoutStore.js.
+export function restoreReferenceRoute(route) {
+
+    return upsertInto(route);
+
+}
+
 // null routeId == "quitar de cualquier recorrido, sin asignar a ninguno"
 // (equivalente a llamar solo a unassignWorkoutFromReferenceRoutes) -- un
 // único punto de entrada para el <select> del menú "···", que solo conoce

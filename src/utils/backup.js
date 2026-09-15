@@ -4,7 +4,7 @@ import {
     restoreWorkout, restoreShoe, restorePlannedSession
 } from "../data/workoutStore.js";
 import { getGymSessions, restoreGymSession } from "../data/gymSessionStore.js";
-import { getReferenceRoutes } from "../data/referenceRouteStore.js";
+import { getReferenceRoutes, restoreReferenceRoute } from "../data/referenceRouteStore.js";
 
 const SCHEMA_VERSION = 1;
 const REMINDER_THRESHOLD_DAYS = 14;
@@ -41,7 +41,10 @@ export function exportData() {
         // exportData() nunca lo incluía. Sin esto, "exportar mis datos" era
         // engañoso para quien también registra gimnasio: perdía ese
         // histórico entero si perdía el dispositivo sin haberse dado cuenta.
-        gymSessions: getGymSessions()
+        gymSessions: getGymSessions(),
+        // Mismo bug que gymSessions arriba: referenceRouteStore.js tenía el
+        // histórico real pero exportData() nunca lo incluía.
+        referenceRoutes: getReferenceRoutes()
 
     };
 
@@ -71,6 +74,9 @@ export function importData(payload) {
     // "|| []" cubre backups exportados ANTES de este fix -- no traen
     // gymSessions, y no hay nada que restaurar de ese campo, no un error.
     (payload.gymSessions || []).forEach(restoreGymSession);
+    // Mismo "|| []" que gymSessions arriba -- ningún backup anterior a este
+    // cambio trae referenceRoutes.
+    (payload.referenceRoutes || []).forEach(restoreReferenceRoute);
 
 }
 
