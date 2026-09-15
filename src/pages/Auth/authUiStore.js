@@ -11,6 +11,23 @@ let submitting = false;
 // que volver a pedírselo al usuario.
 let pendingVerificationEmail = null;
 
+// Qué frase mostrar mientras "submitting" es true -- VerificarCuenta()
+// pasa por dos sub-pasos con textos distintos (verificando -> subiendo
+// histórico), y ambos comparten el mismo booleano isAuthSubmitting().
+let loadingText = null;
+
+export function getAuthLoadingText() {
+
+    return loadingText;
+
+}
+
+export function setAuthLoadingText(text) {
+
+    loadingText = text;
+
+}
+
 export function getAuthFeedback() {
 
     return feedback;

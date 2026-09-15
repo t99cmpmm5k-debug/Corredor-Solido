@@ -1,6 +1,6 @@
 import "./Auth.css";
 
-import { getAuthFeedback, isAuthSubmitting, getPendingVerificationEmail } from "./authUiStore.js";
+import { getAuthFeedback, isAuthSubmitting, getPendingVerificationEmail, getAuthLoadingText } from "./authUiStore.js";
 
 function AuthBanner(feedback) {
 
@@ -209,7 +209,7 @@ export function VerificarCuenta() {
 
             ${submitting ? `
 
-                <p class="auth-hint">Verificando tu cuenta...</p>
+                <p class="auth-hint">${getAuthLoadingText() || "Verificando tu cuenta..."}</p>
 
             ` : `
 

@@ -27,24 +27,37 @@ function setLastExportAt(iso) {
 
 }
 
+// Los 5 stores reales de la app, sin envoltorio -- misma forma que espera
+// POST /api/sync (server/src/syncTables.js: SYNC_KEYS). exportData()
+// añade schemaVersion/exportedAt encima de esto para el archivo de
+// backup; el sync con el backend usa esto tal cual, sin esos dos campos
+// que el servidor no lee.
+export function getSyncableData() {
+
+    return {
+        workouts: getWorkouts(),
+        shoes: getShoes(),
+        plannedSessions: getPlannedSessions(),
+        // Bug real corregido (Perfil, Capa 3): faltaba desde siempre --
+        // gymSessionStore.js sí tenía el histórico real de gimnasio, pero
+        // esto nunca lo incluía. Sin esto, "exportar mis datos" era
+        // engañoso para quien también registra gimnasio: perdía ese
+        // histórico entero si perdía el dispositivo sin haberse dado cuenta.
+        gymSessions: getGymSessions(),
+        // Mismo bug que gymSessions arriba: referenceRouteStore.js tenía el
+        // histórico real pero esto nunca lo incluía.
+        referenceRoutes: getReferenceRoutes()
+    };
+
+}
+
 export function exportData() {
 
     const payload = {
 
         schemaVersion: SCHEMA_VERSION,
         exportedAt: new Date().toISOString(),
-        workouts: getWorkouts(),
-        shoes: getShoes(),
-        plannedSessions: getPlannedSessions(),
-        // Bug real corregido (Perfil, Capa 3): faltaba desde siempre --
-        // gymSessionStore.js sí tenía el histórico real de gimnasio, pero
-        // exportData() nunca lo incluía. Sin esto, "exportar mis datos" era
-        // engañoso para quien también registra gimnasio: perdía ese
-        // histórico entero si perdía el dispositivo sin haberse dado cuenta.
-        gymSessions: getGymSessions(),
-        // Mismo bug que gymSessions arriba: referenceRouteStore.js tenía el
-        // histórico real pero exportData() nunca lo incluía.
-        referenceRoutes: getReferenceRoutes()
+        ...getSyncableData()
 
     };
 
@@ -86,13 +99,12 @@ export function importDataFromFile(file) {
 
 }
 
-// Antes solo miraba getWorkouts() -- alguien que solo registra gimnasio
-// (sin ningún entreno de running todavía) nunca veía el recordatorio,
-// aunque sí tuviera un histórico real que perder. Con la corrección de
-// gymSessions en exportData()/importData() de arriba, tiene sentido que
-// "hay algo que perder" también mire ese store.
-function hasDataWorthBackingUp() {
-    return getWorkouts().length > 0 || getGymSessions().length > 0;
+// Antes solo miraba workouts/gymSessions -- extendido a los 5 stores
+// reales (ver getSyncableData()), tanto para el recordatorio de backup
+// como para decidir si hay algo que subir tras verificar una cuenta
+// nueva (ver initVerifyAccount() en pages/Auth/initAuthEvents.js).
+export function hasDataWorthBackingUp() {
+    return Object.values(getSyncableData()).some(records => records.length > 0);
 }
 
 export function getBackupStatus() {

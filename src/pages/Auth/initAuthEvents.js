@@ -2,10 +2,16 @@ import { navigate, rerender } from "../../core/router.js";
 import { Home } from "../Home/Home.js";
 import { Login, Registro, RevisaTuEmail, VerificarCuenta, RecuperarPassword, NuevaPassword } from "./Auth.js";
 import { login, registro, verificar, reenviarVerificacion, recuperar, restablecer } from "../../data/authApi.js";
+import { pushSync } from "../../data/syncApi.js";
 import { setToken } from "../../data/authStore.js";
+import { getSyncableData } from "../../utils/backup.js";
+import { hydrate } from "../../data/workoutStore.js";
+import { hydrate as hydrateGymSessions } from "../../data/gymSessionStore.js";
+import { hydrate as hydrateReferenceRoutes } from "../../data/referenceRouteStore.js";
 import {
     setAuthFeedback, isAuthSubmitting, setAuthSubmitting,
-    getPendingVerificationEmail, setPendingVerificationEmail
+    getPendingVerificationEmail, setPendingVerificationEmail,
+    setAuthLoadingText
 } from "./authUiStore.js";
 
 // Se lee del DOM en el momento del submit, no se guarda en ningún store en
@@ -60,11 +66,13 @@ function handleLoginOrRegistroSubmit(mode) {
             setToken(data.token);
             setAuthFeedback(null);
 
-            // PENDIENTE (Fase 3): si hay histórico local, subirlo aquí con
-            // POST /api/sync antes de entrar a Home -- todavía no
-            // implementado, ver plan acordado. (Solo aplica al camino de
-            // login normal de una cuenta ya verificada antes; el registro
-            // nuevo migra tras verificar, no aquí.)
+            // Un login normal (cuenta ya verificada antes) NO dispara la
+            // subida inicial -- esa es cosa de justo-tras-verificar (ver
+            // initVerifyAccount() más abajo), un momento único que solo
+            // pasa una vez por cuenta. Si este login es en un dispositivo
+            // con histórico local propio Y la cuenta ya tiene datos en el
+            // servidor, hace falta FUSIONAR en las dos direcciones, no
+            // subir sin más -- eso es Fase 6 (pendiente), no esto.
             navigate(Home);
 
         })
@@ -248,19 +256,77 @@ function initVerifyAccount() {
 
     setAuthSubmitting(true);
     setAuthFeedback(null);
+    setAuthLoadingText("Verificando tu cuenta...");
     rerender();
 
     verificar(token)
         .then(data => {
 
             setToken(data.token);
-            setAuthSubmitting(false);
 
-            // PENDIENTE (Fase 3): si hay histórico local, subirlo aquí con
-            // POST /api/sync antes de entrar a Home -- todavía no
-            // implementado, ver plan acordado. Este es el punto real
-            // donde debe engancharse (tras verificación, no tras registro).
-            navigate(Home);
+            // Bug real encontrado en pruebas: getSyncableData() lee cachés
+            // en memoria que solo están pobladas cuando su hydrate() ha
+            // terminado. main.js arranca la hidratación en paralelo al
+            // resto del boot con un timeout de 1.5s para no bloquear el
+            // primer render (ver HYDRATE_TIMEOUT_MS) -- con un histórico
+            // real grande, es perfectamente posible llegar aquí (desde un
+            // enlace de email, arranque en frío) ANTES de que termine de
+            // verdad, y entonces getSyncableData() ve los 5 stores vacíos
+            // aunque sí haya datos. hydrate() está memoizada (ver
+            // workoutStore.js/gymSessionStore.js/referenceRouteStore.js),
+            // así que esperarla aquí de nuevo es gratis si ya terminó, y
+            // espera de verdad si no -- a diferencia de main.js, aquí SÍ
+            // interesa esperar de verdad: el único propósito de este paso
+            // es leer esos datos.
+            return Promise.all([hydrate(), hydrateGymSessions(), hydrateReferenceRoutes()])
+                .then(() => {
+
+                    // Único momento en que tiene sentido una subida "de
+                    // golpe": la cuenta acaba de existir de verdad (JWT
+                    // recién emitido), así que el servidor está vacío para
+                    // ella -- ningún dato que fusionar, solo subir lo que ya
+                    // había en local antes de tener cuenta (confirmado con
+                    // el usuario, ver plan acordado).
+                    const payload = getSyncableData();
+                    const hasLocalData = Object.values(payload).some(records => records.length > 0);
+
+                    console.info(
+                        "[Fase 3] Historial local tras hidratar:",
+                        Object.fromEntries(Object.entries(payload).map(([key, records]) => [key, records.length]))
+                    );
+
+                    if (!hasLocalData) {
+                        setAuthSubmitting(false);
+                        navigate(Home);
+                        return;
+                    }
+
+                    setAuthLoadingText("Subiendo tu historial...");
+                    rerender();
+
+                    return pushSync(payload, data.token)
+                        .then(() => {
+
+                            setAuthSubmitting(false);
+                            navigate(Home);
+
+                        })
+                        .catch(err => {
+
+                            // La cuenta YA está verificada y con token
+                            // válido -- un fallo al subir el histórico (red,
+                            // servidor caído...) no debe dejar a alguien
+                            // fuera de su propia app. Los datos siguen
+                            // intactos en IndexedDB; el reintento real queda
+                            // para la Fase 4 (sincronización continua: sync
+                            // al arrancar si hay conexión), no aquí.
+                            console.warn("No se pudo subir el histórico inicial -- se reintentará más adelante.", err);
+                            setAuthSubmitting(false);
+                            navigate(Home);
+
+                        });
+
+                });
 
         })
         .catch(err => {
