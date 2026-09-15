@@ -376,6 +376,16 @@
 
 }
 
+.profile-button-danger{
+
+    background:color-mix(in srgb, var(--color-danger) 14%, transparent);
+
+    border:1px solid color-mix(in srgb, var(--color-danger) 30%, transparent);
+
+    color:var(--color-danger);
+
+}
+
 .profile-backup-hint{
 
     margin:4px 0 0;

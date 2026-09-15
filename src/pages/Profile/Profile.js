@@ -212,6 +212,26 @@ export function Profile() {
 
                 </section>
 
+                <section class="profile-backup-card">
+
+                    <h3>Sesión</h3>
+
+                    <button class="profile-button profile-button-danger" data-action="logout">
+
+                        <iconify-icon icon="solar:logout-2-bold-duotone"></iconify-icon>
+
+                        Cerrar sesión
+
+                    </button>
+
+                    <p class="profile-backup-hint">
+
+                        Solo cierra la sesión de sincronización -- tus datos siguen guardados en este dispositivo.
+
+                    </p>
+
+                </section>
+
                 <p class="profile-build-id">Versión ${BUILD_ID}</p>
 
             </div>

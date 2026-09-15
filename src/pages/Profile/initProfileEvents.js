@@ -1,6 +1,8 @@
-import { rerender } from "../../core/router.js";
+import { navigate, rerender } from "../../core/router.js";
 import { exportData, importDataFromFile } from "../../utils/backup.js";
 import { setFeedback } from "./profileStore.js";
+import { clearToken } from "../../data/authStore.js";
+import { Login } from "../Auth/Auth.js";
 
 function handleExport() {
 
@@ -31,6 +33,15 @@ function handleImportFile(file) {
 }
 
 export function initProfileEvents() {
+
+    const logoutButton = document.querySelector('[data-action="logout"]');
+
+    if (logoutButton) {
+        logoutButton.addEventListener("click", () => {
+            clearToken();
+            navigate(Login);
+        });
+    }
 
     const exportButton = document.querySelector('[data-action="export-backup"]');
 
