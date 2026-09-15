@@ -12,16 +12,36 @@ const { createWorker, OEM } = Tesseract;
 let workerPromise = null;
 let currentProgressHandler = () => {};
 
+// Sin caché de un uso anterior, createWorker() descarga los modelos de
+// idioma (spa/eng) de un CDN externo -- no van empaquetados con la app
+// (ver comentario de más abajo). Bug real encontrado en modo avión: sin
+// este timeout, un fetch que no puede ni resolver DNS se queda colgado
+// para siempre en vez de rechazar rápido, así que el try/catch de quien
+// llama (ver parseGarminScreenshots más abajo / initRunningEvents.js)
+// nunca llega a dispararse -- el wizard se queda pillado sin ningún
+// aviso. 20s es generoso para una descarga de varios MB en datos
+// móviles normales, sin dejar a alguien de verdad sin red esperando
+// indefinidamente.
+const WORKER_STARTUP_TIMEOUT_MS = 20000;
+
 function getWorker() {
 
     if (!workerPromise) {
 
-        workerPromise = createWorker("spa+eng", OEM.LSTM_ONLY, {
+        const startup = createWorker("spa+eng", OEM.LSTM_ONLY, {
             logger: m => {
                 if (typeof m.progress === "number") currentProgressHandler(m.progress, m.status);
             }
-        }).catch(err => {
-            workerPromise = null; // permite reintentar si el arranque falla
+        });
+
+        const timeout = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error(
+                "Necesitas conexión a internet la primera vez que escaneas una captura, para descargar el modelo de reconocimiento de texto. Conéctate y vuelve a intentarlo."
+            )), WORKER_STARTUP_TIMEOUT_MS);
+        });
+
+        workerPromise = Promise.race([startup, timeout]).catch(err => {
+            workerPromise = null; // permite reintentar si el arranque falla o se cuelga
             throw err;
         });
 
