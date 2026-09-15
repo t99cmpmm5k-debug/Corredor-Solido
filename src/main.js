@@ -16,6 +16,8 @@ import "./styles/app.css";
 
 import { Home } from "./pages/Home/Home.js";
 import { Plan } from "./pages/Plan/Plan.js";
+import { Login, VerificarCuenta, NuevaPassword } from "./pages/Auth/Auth.js";
+import { isLoggedIn } from "./data/authStore.js";
 
 import { applyAutomaticTheme, clearManualTheme } from "./theme/timeTheme.js";
 import { start, rerender } from "./core/router.js";
@@ -57,7 +59,28 @@ function boot() {
 
         applyAutomaticTheme();
 
-        start(Home);
+        // Login obligatorio (ver plan de conexión al backend) -- la
+        // hidratación de IndexedDB de arriba ya ha corrido igual, sea cual
+        // sea el resultado: los datos locales siguen siendo la fuente de
+        // verdad y la app debe poder abrirse sin red, esto solo decide qué
+        // pantalla se ve primero.
+        //
+        // Un enlace de email (verificación/recuperación) manda aquí ANTES
+        // que el propio login -- alguien sin sesión tiene que poder
+        // llegar a estas dos pantallas igual, y alguien que sí la tenga
+        // (otro dispositivo ya logueado) no debe saltárselas solo por
+        // tener sesión abierta. El token en sí se lee más abajo, en
+        // initAuthEvents.js (initVerifyAccount()/handleNuevaPasswordSubmit()),
+        // no aquí.
+        const searchParams = new URLSearchParams(location.search);
+
+        if (searchParams.has("verify_token")) {
+            start(VerificarCuenta);
+        } else if (searchParams.has("reset_token")) {
+            start(NuevaPassword);
+        } else {
+            start(isLoggedIn() ? Home : Login);
+        }
 
         // El pronóstico depende de getWorkouts() (ubicación del entreno más
         // reciente) -- se espera a que hydrate() termine de verdad, aunque

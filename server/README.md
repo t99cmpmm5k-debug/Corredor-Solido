@@ -7,21 +7,33 @@ mis datos" en el cliente (`src/utils/backup.js` del frontend).
 ## Puesta en marcha
 
 1. `npm install`
-2. Crea la base de datos y aplica el esquema:
+2. Crea la base de datos y aplica el esquema, en orden:
    ```
    mysql -u TU_USUARIO -p TU_BASE_DE_DATOS < migrations/001_init.sql
+   mysql -u TU_USUARIO -p TU_BASE_DE_DATOS < migrations/002_auth_tokens.sql
    ```
 3. Copia `.env.example` a `.env` y rellena los valores reales (credenciales
-   de la base de datos ya creadas en Hestia, y un `JWT_SECRET` largo y
-   aleatorio — nunca subas `.env` al repo, ya está en `.gitignore`).
+   de la base de datos ya creadas en Hestia, un `JWT_SECRET` largo y
+   aleatorio, y las credenciales de Resend para el envío de emails — nunca
+   subas `.env` al repo, ya está en `.gitignore`).
 4. `npm start` (o `npm run dev` para que se reinicie solo al cambiar código).
 
 ## Endpoints
 
-- `POST /api/auth/registro` — `{ email, password }` → `{ token }`
-- `POST /api/auth/login` — `{ email, password }` → `{ token }`
+- `POST /api/auth/registro` — `{ email, password }` → `{ pendingVerification: true }` (201). No da acceso todavía — envía un email de verificación. Si el email ya existe pero sigue sin verificar, reenvía un enlace nuevo en vez de dar error.
+- `POST /api/auth/login` — `{ email, password }` → `{ token }`. Si la cuenta no está verificada, `403 { error, code: "EMAIL_NOT_VERIFIED" }` en vez de token.
+- `POST /api/auth/verificar` — `{ token }` (el de `?verify_token=` del email) → `{ token }` (JWT de sesión, ahora sí). Marca la cuenta como verificada.
+- `POST /api/auth/reenviar-verificacion` — `{ email }` → `{ ok: true }` siempre (exista la cuenta, esté verificada o no — no revela nada). Reenvía el email de verificación si aplica.
+- `POST /api/auth/recuperar` — `{ email }` → `{ ok: true }` siempre. Envía un email con enlace de recuperación si la cuenta existe.
+- `POST /api/auth/restablecer` — `{ token, nuevaPassword }` (el `token` de `?reset_token=` del email) → `{ ok: true }`. Cambia la contraseña.
 - `GET /api/sync` (header `Authorization: Bearer <token>`) — devuelve todo lo guardado del usuario
 - `POST /api/sync` (mismo header) — recibe `{ workouts, shoes, plannedSessions, gymSessions, referenceRoutes }` (el mismo JSON de "Exportar mis datos") y lo guarda/fusiona por `id`
+
+Los tokens de `verificar`/`restablecer` son opacos de un solo uso (no JWT),
+guardados con hash en `auth_tokens` (`purpose` distingue cuál es cuál) —
+ver `migrations/002_auth_tokens.sql` y `src/tokenUtils.js`. Verificación
+caduca a las 24h, recuperación a la 1h. Reenviar/pedir uno nuevo invalida
+el anterior del mismo tipo.
 
 ## Regla de conflicto (last-write-wins por reloj del servidor)
 
@@ -58,10 +70,12 @@ cliente.
 ## Pendiente (no implementado a propósito en esta primera versión)
 
 - Fusión campo a campo o aviso de conflicto real (ver arriba).
-- Recuperación de contraseña (no hay envío de email configurado todavía).
 - Borrado de cuenta / borrado de datos individuales vía API (hoy el sync
   solo añade/actualiza, nunca borra en el servidor algo que desapareciera
   en local).
+- Revocación de sesión: los JWT no se invalidan en servidor (30 días de
+  vida, ver `authUtils.js`) — restablecer la contraseña no cierra sesiones
+  ya abiertas en otros dispositivos con el token viejo.
 
 ## Vulnerabilidad conocida y aceptada (no corregida a propósito)
 

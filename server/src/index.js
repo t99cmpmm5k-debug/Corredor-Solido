@@ -4,7 +4,7 @@ import cors from "cors";
 import { authRouter } from "./routes/auth.js";
 import { syncRouter } from "./routes/sync.js";
 
-const REQUIRED_ENV_VARS = ["DB_HOST", "DB_NAME", "DB_USER", "DB_PASSWORD", "JWT_SECRET"];
+const REQUIRED_ENV_VARS = ["DB_HOST", "DB_NAME", "DB_USER", "DB_PASSWORD", "JWT_SECRET", "RESEND_API_KEY", "EMAIL_FROM", "FRONTEND_URL"];
 
 // Falla al arrancar, no a mitad de la primera petición real -- un JWT_SECRET
 // vacío, por ejemplo, firmaría tokens con una cadena vacía sin avisar.
@@ -15,6 +15,12 @@ if (missing.length) {
 }
 
 const app = express();
+
+// nginx proxya desde 127.0.0.1 (ver server/nodeapp.stpl) -- sin esto,
+// req.ip vería siempre la IP del proxy, no la del cliente real, y
+// emailRateLimit (middleware/rateLimit.js) limitaría a todo el mundo junto
+// como si fuera una sola IP.
+app.set("trust proxy", "loopback");
 
 app.use(cors({ origin: process.env.CORS_ORIGIN?.split(",") ?? [] }));
 app.use(express.json({ limit: "10mb" })); // límite generoso -- un sync completo incluye histórico entero
