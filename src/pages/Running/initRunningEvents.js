@@ -473,6 +473,42 @@ async function handleSingleNonImageFile(file) {
 
 }
 
+// Bug real de WebKit encontrado en un iPhone real: en la PWA instalada
+// (standalone), elegir varias fotos desde la galería de Fotos (no desde
+// Archivos) a veces no dispara "change" en el input -- el selector nativo
+// se abre y cierra con normalidad, pero la página no se entera. Se lee
+// aquí y se resetea `fileInput.value` de inmediato tras leerlo (no muta
+// la FileList ya capturada) para que una llamada duplicada (p. ej.
+// "change" disparándose tarde después de que este mismo archivo ya se
+// procesara por el fallback de abajo) vea el input vacío y no haga nada
+// dos veces.
+function tryHandleQueuedFile() {
+
+    const fileInput = document.querySelector("#running-file-input");
+    if (!fileInput?.files?.length) return;
+
+    const files = fileInput.files;
+    fileInput.value = "";
+
+    handleFilesSelected(files);
+
+}
+
+// Red de seguridad para el bug de arriba, sin depender de que "change"
+// llegue a dispararse: presentar el selector nativo pone la página en
+// segundo plano un instante, así que al volver a estar visible se
+// comprueba si el input ya tiene un archivo que "change" no anunció.
+// Registrado UNA SOLA VEZ a nivel de módulo -- initRunningEvents() se
+// ejecuta en cada render de CUALQUIER página de la app (ver render.js),
+// así que un addEventListener aquí dentro se acumularía en `document`
+// para siempre en vez de registrarse una vez. tryHandleQueuedFile()
+// vuelve a consultar el input actual cada vez (puede haber sido
+// recreado por un render de por medio) y no hace nada si no hay
+// ninguno en el DOM en ese momento (p. ej. si ya no se está en Running).
+document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") tryHandleQueuedFile();
+});
+
 async function handleFilesSelected(fileList) {
 
     const files = [...(fileList || [])];
@@ -622,27 +658,7 @@ export function initRunningEvents() {
     const fileInput = document.querySelector("#running-file-input");
 
     if (fileInput) {
-
-        fileInput.addEventListener("change", () => {
-
-            const files = fileInput.files;
-
-            // Sin este reset, elegir el MISMO archivo dos veces seguidas
-            // (p. ej. reintentar tras un fallo de OCR) no dispara "change"
-            // -- el navegador no ve ningún cambio en el valor del input, así
-            // que un reintento explícito de "Importar" no hacía
-            // absolutamente nada (ni progreso, ni error), bug real
-            // encontrado probando el timeout de recognize.js en modo avión.
-            // Mismo patrón que #profile-import-input (ver
-            // initProfileEvents.js) -- se lee `files` ANTES de resetear:
-            // resetear .value no muta la FileList ya obtenida, solo hace
-            // que el input apunte a una nueva (vacía) a partir de ahora.
-            fileInput.value = "";
-
-            handleFilesSelected(files);
-
-        });
-
+        fileInput.addEventListener("change", tryHandleQueuedFile);
     }
 
     document.querySelectorAll('[data-action="cancel-wizard"]').forEach(button => {
