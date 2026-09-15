@@ -624,7 +624,23 @@ export function initRunningEvents() {
     if (fileInput) {
 
         fileInput.addEventListener("change", () => {
-            handleFilesSelected(fileInput.files);
+
+            const files = fileInput.files;
+
+            // Sin este reset, elegir el MISMO archivo dos veces seguidas
+            // (p. ej. reintentar tras un fallo de OCR) no dispara "change"
+            // -- el navegador no ve ningún cambio en el valor del input, así
+            // que un reintento explícito de "Importar" no hacía
+            // absolutamente nada (ni progreso, ni error), bug real
+            // encontrado probando el timeout de recognize.js en modo avión.
+            // Mismo patrón que #profile-import-input (ver
+            // initProfileEvents.js) -- se lee `files` ANTES de resetear:
+            // resetear .value no muta la FileList ya obtenida, solo hace
+            // que el input apunte a una nueva (vacía) a partir de ahora.
+            fileInput.value = "";
+
+            handleFilesSelected(files);
+
         });
 
     }
