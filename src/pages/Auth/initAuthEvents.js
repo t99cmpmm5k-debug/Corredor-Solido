@@ -304,9 +304,17 @@ function initVerifyAccount() {
                     setAuthLoadingText("Subiendo tu historial...");
                     rerender();
 
+                    // Mismo nivel "info" que el log de arriba (no "log" ni
+                    // "debug") a propósito -- si éste tampoco apareciera en
+                    // consola, descarta de raíz que sea el filtro de nivel
+                    // de DevTools y confirma que el problema es anterior a
+                    // esta línea, no en pushSync() en sí.
+                    console.info("[Fase 3] Llamando a POST /api/sync con", Object.fromEntries(Object.entries(payload).map(([key, records]) => [key, records.length])));
+
                     return pushSync(payload, data.token)
                         .then(() => {
 
+                            console.info("[Fase 3] POST /api/sync respondió con éxito.");
                             setAuthSubmitting(false);
                             navigate(Home);
 
