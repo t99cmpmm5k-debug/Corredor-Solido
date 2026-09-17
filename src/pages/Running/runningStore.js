@@ -21,6 +21,7 @@ const initial = () => ({
     editingShoeId: null,
     warningsExpanded: false,
     chartMetricMode: "both",
+    showOnlyIntervals: false,
 
     // Recorridos de referencia (V1) -- detailRouteId: qué recorrido está
     // abierto en el paso "referenceRouteDetail". creatingRoute: si el
@@ -377,14 +378,15 @@ export function getDetailWorkoutId() {
 
 }
 
-// Cambiar de entreno reinicia tanto el acordeón de avisos como el modo de
-// métricas del gráfico -- ninguno de los dos debe arrastrarse del entreno
-// anterior al abrir uno distinto.
+// Cambiar de entreno reinicia el acordeón de avisos, el modo de métricas
+// del gráfico y el toggle "Ver solo intervalos" -- ninguno de los tres
+// debe arrastrarse del entreno anterior al abrir uno distinto.
 export function setDetailWorkoutId(id) {
 
     wizard.detailWorkoutId = id;
     wizard.warningsExpanded = false;
     wizard.chartMetricMode = "both";
+    wizard.showOnlyIntervals = false;
 
 }
 
@@ -417,6 +419,22 @@ export function getChartMetricMode() {
 export function setChartMetricMode(mode) {
 
     wizard.chartMetricMode = mode;
+
+}
+
+/*==========================
+   VER SOLO INTERVALOS (ocultar calentamiento/enfriamiento del gráfico)
+==========================*/
+
+export function getShowOnlyIntervals() {
+
+    return wizard.showOnlyIntervals ?? false;
+
+}
+
+export function setShowOnlyIntervals(value) {
+
+    wizard.showOnlyIntervals = value;
 
 }
 

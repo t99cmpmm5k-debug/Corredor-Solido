@@ -7,6 +7,7 @@ import { buildWorkoutComparison, buildWorkoutComparisonMessage } from "../runnin
 import { buildCardiacDrift } from "../../../utils/cardiacDrift.js";
 import { LEGS_FEELING_OPTIONS, FATIGUE_LEVEL_OPTIONS, HEAT_FEELING_OPTIONS, SESSION_RATING_OPTIONS } from "../../../data/dayStateOptions.js";
 import { hasRouteTrace, RouteMapContainer, RouteMapLegend } from "../../../components/RouteMap/RouteMap.js";
+import { detectIntervalRange, filterToIntervalRange } from "../intervalDetection.js";
 
 // Garmin cierra la vuelta en curso al parar el cronómetro, así que la
 // última entrada de splits suele ser un remanente corto (0.01-0.4 km) con
@@ -326,7 +327,30 @@ function buildDetailConclusion(workout, drift) {
 // RunningDetailView.css). Sin línea de FC real (hasHrLine=false) el modo
 // se fuerza a "pace" -- no tiene sentido ofrecer "FC sola"/"Ritmo+FC"
 // cuando no hay ninguna serie de FC por km que alternar.
-function RunningPaceChart(splits, avgPaceRef, avgHrRef, metricMode = "both", workout) {
+function IntervalsOnlyToggle(intervalRange, showOnlyIntervals) {
+
+    if (!intervalRange) return "";
+
+    return `
+
+        <button class="pace-chart-intervals-toggle ${showOnlyIntervals ? "is-active" : ""}" data-action="toggle-intervals-only">
+
+            <iconify-icon icon="solar:round-arrow-right-bold-duotone"></iconify-icon>
+
+            <span>${showOnlyIntervals ? "Ver entreno completo" : "Ver solo intervalos"}</span>
+
+            ${intervalRange.isHeuristic ? `<iconify-icon icon="solar:cloud-bold-duotone" class="pace-chart-intervals-toggle-badge" title="Calentamiento/enfriamiento detectados automáticamente por ritmo -- no es un dato leído del reloj"></iconify-icon>` : ""}
+
+        </button>
+
+    `;
+
+}
+
+// intervalRange/showOnlyIntervals: ver intervalDetection.js -- splits YA
+// llega recortado si el toggle está activo (showOnlyIntervals solo decide
+// si el botón se pinta "activo", el recorte real lo hace quien llama).
+function RunningPaceChart(splits, avgPaceRef, avgHrRef, metricMode = "both", workout, intervalRange = null, showOnlyIntervals = false) {
 
     // Con Recuperación de por medio, "más lento" sería siempre un tramo de
     // descanso — obvio y sin interés. El destacado de más rápido/más lento
@@ -382,6 +406,8 @@ function RunningPaceChart(splits, avgPaceRef, avgHrRef, metricMode = "both", wor
                 </div>
 
             </div>
+
+            ${IntervalsOnlyToggle(intervalRange, showOnlyIntervals)}
 
             ${hasHrLine ? `
 
@@ -740,7 +766,7 @@ function ImportWarningsBanner(warnings, expanded) {
 
 }
 
-export function RunningDetailView(workout, shoes = [], warningsExpanded = false, chartMetricMode = "both", allWorkouts = []) {
+export function RunningDetailView(workout, shoes = [], warningsExpanded = false, chartMetricMode = "both", allWorkouts = [], showOnlyIntervals = false) {
 
     if (!workout) return "";
 
@@ -748,7 +774,15 @@ export function RunningDetailView(workout, shoes = [], warningsExpanded = false,
     const duration = workout.durationSec != null ? formatSecondsAsClock(workout.durationSec) : "—";
     const avgPace = workout.avgPaceSecPerKm != null ? `${formatSecondsAsClock(workout.avgPaceSecPerKm)}/km` : "—";
 
-    const splits = chartSplits(workout);
+    // El mapa (RouteMapContainer/RouteMapLegend) NUNCA se recorta con el
+    // toggle -- solo el gráfico RITMO POR KILÓMETRO y lo que se calcula a
+    // partir de él (medias de referencia, insights, deriva de FC). allSplits
+    // decide si el mapa/leyenda se pintan; splits (recortado o no) es lo
+    // único que ve el gráfico.
+    const allSplits = chartSplits(workout);
+    const intervalRange = detectIntervalRange(allSplits);
+    const splits = showOnlyIntervals ? filterToIntervalRange(allSplits, intervalRange) : allSplits;
+
     const avgPaceRef = averagePace(workout, splits);
     const avgHrRef = averageHr(workout, splits);
     const warnings = workout.importWarnings || [];
@@ -815,9 +849,9 @@ export function RunningDetailView(workout, shoes = [], warningsExpanded = false,
 
             ${hasRouteTrace(workout) ? RouteMapContainer("route-map") : ""}
 
-            ${hasRouteTrace(workout) && splits.length >= MIN_SPLITS_FOR_CHART ? RouteMapLegend() : ""}
+            ${hasRouteTrace(workout) && allSplits.length >= MIN_SPLITS_FOR_CHART ? RouteMapLegend() : ""}
 
-            ${splits.length >= MIN_SPLITS_FOR_CHART ? RunningPaceChart(splits, avgPaceRef, avgHrRef, chartMetricMode, workout) : ""}
+            ${splits.length >= MIN_SPLITS_FOR_CHART ? RunningPaceChart(splits, avgPaceRef, avgHrRef, chartMetricMode, workout, intervalRange, showOnlyIntervals) : ""}
 
             ${workoutComparison ? `
 

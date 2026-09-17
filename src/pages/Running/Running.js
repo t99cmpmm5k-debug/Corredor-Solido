@@ -45,6 +45,7 @@ import {
     getHistoryGroupOverrides,
     getWarningsExpanded,
     getChartMetricMode,
+    getShowOnlyIntervals,
     getDetailRouteId,
     isCreatingRoute,
     getRouteMenuOpenId,
@@ -1446,7 +1447,7 @@ export function Running() {
 
         const workouts = getWorkouts();
         const workout = workouts.find(w => w.id === getDetailWorkoutId());
-        content = RunningDetailView(workout, getShoes(), getWarningsExpanded(), getChartMetricMode(), workouts);
+        content = RunningDetailView(workout, getShoes(), getWarningsExpanded(), getChartMetricMode(), workouts, getShowOnlyIntervals());
 
     } else if (step === "shoes") {
 

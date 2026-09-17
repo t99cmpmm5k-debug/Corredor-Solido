@@ -376,6 +376,56 @@
 
 }
 
+/* "Ver solo intervalos" (ocultar calentamiento/enfriamiento del gráfico,
+   ver intervalDetection.js) -- chip único, no un grupo como
+   .pace-chart-mode-toggle, así que se planta a la izquierda en vez de
+   ocupar el ancho entero. */
+.pace-chart-intervals-toggle{
+
+    display:inline-flex;
+
+    align-items:center;
+
+    gap:6px;
+
+    padding:6px 12px;
+
+    margin-bottom:16px;
+
+    border-radius:999px;
+
+    border:1px solid var(--card-border);
+
+    background:transparent;
+
+    color:var(--text-secondary);
+
+    font-size:.75rem;
+
+    font-weight:700;
+
+    cursor:pointer;
+
+}
+
+.pace-chart-intervals-toggle.is-active{
+
+    background:color-mix(in srgb, var(--color-primary) 20%, transparent);
+
+    border-color:var(--color-primary);
+
+    color:var(--text-primary);
+
+}
+
+.pace-chart-intervals-toggle-badge{
+
+    color:var(--text-secondary);
+
+    font-size:.85rem;
+
+}
+
 .pace-chart--mode-pace .pace-chart-hr-overlay,
 .pace-chart--mode-pace .pace-chart-legend .pace-chart-legend-item:last-child{
 

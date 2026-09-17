@@ -1000,3 +1000,71 @@ describe("RunningDetailView — \"Estado del día\" (Recorridos de referencia, V
     });
 
 });
+
+describe("Ver solo intervalos (toggle, ver intervalDetection.js)", () => {
+
+    it("sin calentamiento/enfriamiento detectable, no muestra el toggle", () => {
+
+        const html = RunningDetailView(workout());
+        expect(html).not.toContain('data-action="toggle-intervals-only"');
+
+    });
+
+    it("con segmentType real (work/rest de la pantalla Intervalos de Garmin), muestra el toggle sin la insignia de 'estimado'", () => {
+
+        const splits = [
+            { lap: 1, paceSecPerKm: 400 },
+            { lap: 2, paceSecPerKm: 300, segmentType: "work" },
+            { lap: 3, paceSecPerKm: 480, segmentType: "rest" },
+            { lap: 4, paceSecPerKm: 298, segmentType: "work" },
+            { lap: 5, paceSecPerKm: 410 }
+        ];
+
+        const html = RunningDetailView(workout({ splits }));
+
+        expect(html).toContain('data-action="toggle-intervals-only"');
+        expect(html).toContain("Ver solo intervalos");
+        expect(html).not.toContain("pace-chart-intervals-toggle-badge");
+
+    });
+
+    it("con detección heurística (sin segmentType), muestra el toggle CON la insignia de 'estimado'", () => {
+
+        const splits = [400, 300, 305, 298, 302, 410].map((p, i) => ({ lap: i + 1, paceSecPerKm: p }));
+
+        const html = RunningDetailView(workout({ splits }));
+
+        expect(html).toContain('data-action="toggle-intervals-only"');
+        expect(html).toContain("pace-chart-intervals-toggle-badge");
+
+    });
+
+    it("activado (showOnlyIntervals=true), el gráfico solo pinta los splits del tramo detectado", () => {
+
+        const splits = [400, 300, 305, 298, 302, 410].map((p, i) => ({ lap: i + 1, paceSecPerKm: p }));
+
+        const html = RunningDetailView(workout({ splits }), [], false, "both", [], true);
+
+        // Los 4 splits del "medio" (lap 2-5) siguen presentes...
+        expect(html).toContain('<span class="pace-chart-lap">2</span>');
+        expect(html).toContain('<span class="pace-chart-lap">5</span>');
+        // ...pero el calentamiento (lap 1) y el enfriamiento (lap 6) ya no.
+        expect(html).not.toContain('<span class="pace-chart-lap">1</span>');
+        expect(html).not.toContain('<span class="pace-chart-lap">6</span>');
+        expect(html).toContain("Ver entreno completo");
+
+    });
+
+    it("desactivado (por defecto), el gráfico sigue mostrando el entreno completo aunque haya un tramo detectable", () => {
+
+        const splits = [400, 300, 305, 298, 302, 410].map((p, i) => ({ lap: i + 1, paceSecPerKm: p }));
+
+        const html = RunningDetailView(workout({ splits }));
+
+        expect(html).toContain('<span class="pace-chart-lap">1</span>');
+        expect(html).toContain('<span class="pace-chart-lap">6</span>');
+        expect(html).toContain("Ver solo intervalos");
+
+    });
+
+});

@@ -46,6 +46,8 @@ import {
     getWarningsExpanded,
     setWarningsExpanded,
     setChartMetricMode,
+    getShowOnlyIntervals,
+    setShowOnlyIntervals,
     getDetailWorkoutId,
     getDetailRouteId,
     setDetailRouteId,
@@ -873,6 +875,15 @@ export function initRunningEvents() {
 
         button.addEventListener("click", () => {
             setChartMetricMode(button.dataset.mode);
+            rerender();
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="toggle-intervals-only"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+            setShowOnlyIntervals(!getShowOnlyIntervals());
             rerender();
         });
 
