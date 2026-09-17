@@ -34,11 +34,26 @@
 
 }
 
+/* white-space:normal (Leaflet trae nowrap por defecto) -- con el ancho
+   real de esta tarjeta en móvil, la atribución completa (Stadia + Stamen +
+   OpenMapTiles + OSM) no cabe en una sola línea sin envolver; con nowrap se
+   quedaba cortada por el overflow:hidden de .route-map en vez de leerse
+   entera en 2 líneas. */
 .route-map .leaflet-control-attribution{
 
-    font-size:9px;
+    max-width:calc(100% - 12px);
 
-    background:rgba(8,17,29,.72);
+    padding:3px 6px;
+
+    font-size:10.5px;
+
+    line-height:1.4;
+
+    white-space:normal;
+
+    text-align:right;
+
+    background:rgba(8,17,29,.78);
 
     color:var(--text-secondary);
 

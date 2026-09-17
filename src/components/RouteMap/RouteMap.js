@@ -53,7 +53,12 @@ export async function mountRouteMap(container, routeTrace) {
     // "Fotografía" fija del recorrido, no un mapa de consulta (especificación
     // de cierre, punto 1) -- toda interacción de navegación desactivada;
     // solo queda el control de atribución, obligatorio por licencia de los
-    // tiles (Stadia/Stamen/OpenMapTiles/OSM).
+    // tiles (Stadia/Stamen/OpenMapTiles/OSM). attributionControl:false aquí
+    // + control propio justo debajo con prefix:false -- el control por
+    // defecto de Leaflet antepone su propio banderín/enlace a "Leaflet"
+    // (cortesía del proyecto, no una obligación de licencia) delante de nuestra
+    // atribución real, y con el poco ancho de esta tarjeta era lo primero
+    // que se veía cortado.
     const map = L.map(container, {
         zoomControl: false,
         dragging: false,
@@ -63,8 +68,10 @@ export async function mountRouteMap(container, routeTrace) {
         boxZoom: false,
         keyboard: false,
         tap: false,
-        attributionControl: true
+        attributionControl: false
     });
+
+    L.control.attribution({ position: "bottomright", prefix: false }).addTo(map);
 
     // detectRetina: la plantilla de Stadia lleva {r} para servir tiles @2x
     // en pantallas de alta densidad (iPhone) -- más nitidez sin coste
