@@ -3,6 +3,7 @@ import "./ReferenceRoutesListView.css";
 import { ReferenceRouteCard } from "./ReferenceRouteCard.js";
 import { ReferenceRouteEvolutionChart } from "./ReferenceRouteEvolutionChart.js";
 import { ReferenceRouteWorkoutTable } from "./ReferenceRouteWorkoutTable.js";
+import { hasRouteTrace, RouteMapContainer } from "../../../components/RouteMap/RouteMap.js";
 
 // Vista de detalle de un recorrido de referencia -- tarjeta resumen
 // (ReferenceRouteCard.js) + gráfico de evolución (ritmo/FC por fecha,
@@ -34,6 +35,8 @@ export function ReferenceRouteDetailView(route, workouts, sortColumn, sortDirect
                 <h2>${route.name}</h2>
 
             </header>
+
+            ${sorted.some(hasRouteTrace) ? RouteMapContainer("route-map") : ""}
 
             ${ReferenceRouteCard(route, sorted)}
 

@@ -1,12 +1,14 @@
 import { rerender } from "../../core/router.js";
-import { addWorkout, addShoe, deleteWorkout, findSimilarWorkout, updateWorkoutType, updateWorkoutShoe, updateWorkoutDayState, retireShoe, updateShoe } from "../../data/workoutStore.js";
-import { createReferenceRoute, deleteReferenceRoute, assignWorkoutToRoute, unassignWorkoutFromReferenceRoutes } from "../../data/referenceRouteStore.js";
+import { addWorkout, addShoe, deleteWorkout, findSimilarWorkout, updateWorkoutType, updateWorkoutShoe, updateWorkoutDayState, retireShoe, updateShoe, getWorkouts } from "../../data/workoutStore.js";
+import { createReferenceRoute, deleteReferenceRoute, assignWorkoutToRoute, unassignWorkoutFromReferenceRoutes, getReferenceRouteById } from "../../data/referenceRouteStore.js";
 import { dismissRouteSuggestion } from "../../data/routeSuggestionStore.js";
+import { resolveRouteWorkouts } from "./referenceRouteEfficiency.js";
 import { parseGarminScreenshots, warmUpWorker } from "../../importers/garmin-engine/recognize.js";
 import { readShoePhotoAsDataUrl } from "./shoePhoto.js";
 import { importWorkout } from "../../importers/index.js";
 import { REVIEW_FIELDS, parseFieldValue } from "./components/RunningReviewStep.js";
 import { estimateTemperature } from "../../services/weatherEstimate.js";
+import { hasRouteTrace, mountRouteMap, unmountRouteMap } from "../../components/RouteMap/RouteMap.js";
 
 import {
     resetWizard,
@@ -42,6 +44,7 @@ import {
     getWarningsExpanded,
     setWarningsExpanded,
     setChartMetricMode,
+    getDetailWorkoutId,
     getDetailRouteId,
     setDetailRouteId,
     isCreatingRoute,
@@ -1272,6 +1275,8 @@ export function initRunningEvents() {
 
     initTypeFilterStickyGuard();
 
+    initRouteMap();
+
 }
 
 // Detecta si .type-filter-list está realmente pegada arriba (no solo "se
@@ -1310,5 +1315,58 @@ function initTypeFilterStickyGuard() {
     // Estado correcto sin esperar al primer scroll -- p. ej. al volver de la
     // ficha de detalle de un entreno con la posición de scroll ya avanzada.
     typeFilterStickyGuardHandler();
+
+}
+
+// Mapa Leaflet del recorrido GPS (ficha de un entreno / Recorrido de
+// referencia) -- mismo motivo que typeFilterStickyGuardHandler arriba: hay
+// que destruir la instancia anterior en cada re-render (render() reemplaza
+// todo app.innerHTML, así que el contenedor DOM viejo ya no existe, pero el
+// objeto L.Map en sí seguiría vivo -- con sus listeners de window/resize
+// colgados -- si no se llama a su remove() explícitamente).
+let activeRouteMap = null;
+
+function initRouteMap() {
+
+    if (activeRouteMap) {
+        unmountRouteMap(activeRouteMap);
+        activeRouteMap = null;
+    }
+
+    const container = document.getElementById("route-map");
+    if (!container) return;
+
+    const step = getWizardStep();
+    let routeTrace = null;
+
+    if (step === "detail") {
+
+        const workout = getWorkouts().find(w => w.id === getDetailWorkoutId());
+        if (hasRouteTrace(workout)) routeTrace = workout.routeTrace;
+
+    } else if (step === "referenceRouteDetail") {
+
+        const route = getReferenceRouteById(getDetailRouteId());
+        const workouts = route ? resolveRouteWorkouts(route, getWorkouts()) : [];
+        const withTrace = workouts.find(hasRouteTrace);
+        if (withTrace) routeTrace = withTrace.routeTrace;
+
+    }
+
+    if (!routeTrace) return;
+
+    // El import() de leaflet es asíncrono -- si el usuario navega fuera de
+    // la ficha antes de que resuelva (rerender ya reemplazó app.innerHTML),
+    // container queda desconectado del documento real y no debe montarse
+    // ningún mapa sobre él.
+    mountRouteMap(container, routeTrace).then(map => {
+
+        if (document.body.contains(container)) {
+            activeRouteMap = map;
+        } else {
+            unmountRouteMap(map);
+        }
+
+    });
 
 }

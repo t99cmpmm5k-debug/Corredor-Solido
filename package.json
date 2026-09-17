@@ -19,6 +19,7 @@
     "@fontsource/inter": "^5.3.0",
     "@fontsource/plus-jakarta-sans": "^5.3.0",
     "iconify-icon": "^3.0.2",
+    "leaflet": "^1.9.4",
     "lucide": "^1.27.0",
     "lucide-static": "^1.27.0",
     "pdfjs-dist": "^6.2.108",

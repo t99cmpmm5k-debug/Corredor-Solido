@@ -1,0 +1,44 @@
+/* Misma altura de referencia que .pace-chart-track (RunningDetailView.css)
+   -- un mapa más bajo se lee mal, más alto compite demasiado con el resto
+   de tarjetas del detalle. */
+.route-map{
+
+    height:220px;
+
+    border-radius:var(--radius-lg);
+
+    overflow:hidden;
+
+    border:1px solid var(--card-border);
+
+    box-shadow:0 8px 20px rgba(0,0,0,.18);
+
+    background:var(--card-background);
+
+}
+
+/* Los tiles de OpenStreetMap son claros de por sí -- sin este fondo, el
+   hueco visible mientras cargan (o si algún tile falla) mostraría lo que
+   haya detrás en vez de un placeholder neutro consistente con el resto de
+   tarjetas oscuras de la app. */
+.route-map .leaflet-container{
+
+    background:var(--card-background);
+
+}
+
+.route-map .leaflet-control-attribution{
+
+    font-size:9px;
+
+    background:rgba(8,17,29,.72);
+
+    color:var(--text-secondary);
+
+}
+
+.route-map .leaflet-control-attribution a{
+
+    color:var(--text-secondary);
+
+}

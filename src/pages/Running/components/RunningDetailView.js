@@ -6,6 +6,7 @@ import { RUNNING_WORKOUT_TYPES } from "../../../data/runningWorkoutTypes.js";
 import { buildWorkoutComparison, buildWorkoutComparisonMessage } from "../runningProgress.js";
 import { buildCardiacDrift } from "../../../utils/cardiacDrift.js";
 import { LEGS_FEELING_OPTIONS, FATIGUE_LEVEL_OPTIONS, HEAT_FEELING_OPTIONS, SESSION_RATING_OPTIONS } from "../../../data/dayStateOptions.js";
+import { hasRouteTrace, RouteMapContainer } from "../../../components/RouteMap/RouteMap.js";
 
 // Garmin cierra la vuelta en curso al parar el cronómetro, así que la
 // última entrada de splits suele ser un remanente corto (0.01-0.4 km) con
@@ -799,6 +800,8 @@ export function RunningDetailView(workout, shoes = [], warningsExpanded = false,
                 </div>
 
             </div>
+
+            ${hasRouteTrace(workout) ? RouteMapContainer("route-map") : ""}
 
             ${splits.length >= MIN_SPLITS_FOR_CHART ? RunningPaceChart(splits, avgPaceRef, avgHrRef, chartMetricMode, workout) : ""}
 
