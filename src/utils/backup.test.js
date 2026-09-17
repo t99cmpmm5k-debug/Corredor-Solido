@@ -90,6 +90,104 @@ describe("backup.js -- gymSessions en export/import (bug real corregido, Perfil 
 
 });
 
+describe("applyRestoreBatch() -- tombstones (bug real corregido: borrado que resucitaba tras un pull)", () => {
+
+    beforeEach(() => {
+
+        resetFakeIndexedDB();
+        vi.resetModules();
+
+    });
+
+    it("un pull que trae de vuelta un workout ya borrado localmente no lo resucita si su tombstone también llega", async () => {
+
+        const { hydrate, restoreWorkout, deleteWorkout, getWorkouts } = await import("../data/workoutStore.js");
+        const { hydrate: hydrateTombstones, getTombstones } = await import("../data/tombstoneStore.js");
+        const { applyRestoreBatch } = await import("./backup.js");
+
+        await hydrate();
+        await hydrateTombstones();
+
+        // Simula un workout que ya se había subido al servidor antes de
+        // borrarlo (por eso el servidor todavía lo devuelve en el pull).
+        restoreWorkout({ id: "w1", date: "2026-09-01", type: "easy" });
+        deleteWorkout("w1");
+
+        const [tombstone] = getTombstones();
+        expect(tombstone.storeKey).toBe("workouts");
+
+        applyRestoreBatch({
+            workouts: [{ id: "w1", date: "2026-09-01", type: "easy" }],
+            tombstones: [tombstone]
+        });
+
+        expect(getWorkouts().map(w => w.id)).not.toContain("w1");
+
+    });
+
+    it("una tombstone que llega de OTRO dispositivo borra un workout que este dispositivo todavía tenía", async () => {
+
+        const { hydrate, restoreWorkout, getWorkouts } = await import("../data/workoutStore.js");
+        const { hydrate: hydrateTombstones } = await import("../data/tombstoneStore.js");
+        const { applyRestoreBatch } = await import("./backup.js");
+
+        await hydrate();
+        await hydrateTombstones();
+
+        restoreWorkout({ id: "w2", date: "2026-09-02", type: "long" });
+        expect(getWorkouts().map(w => w.id)).toContain("w2");
+
+        applyRestoreBatch({
+            workouts: [],
+            tombstones: [{ id: "workouts:w2", storeKey: "workouts", recordId: "w2", deletedAt: "2026-09-03T00:00:00.000Z" }]
+        });
+
+        expect(getWorkouts().map(w => w.id)).not.toContain("w2");
+
+    });
+
+    it("aplicar la misma tombstone dos veces (dos pulls) es un no-op limpio, no un error", async () => {
+
+        const { hydrate, restoreWorkout, getWorkouts } = await import("../data/workoutStore.js");
+        const { hydrate: hydrateTombstones } = await import("../data/tombstoneStore.js");
+        const { applyRestoreBatch } = await import("./backup.js");
+
+        await hydrate();
+        await hydrateTombstones();
+
+        restoreWorkout({ id: "w3", date: "2026-09-04", type: "easy" });
+
+        const tombstone = { id: "workouts:w3", storeKey: "workouts", recordId: "w3", deletedAt: "2026-09-05T00:00:00.000Z" };
+
+        expect(() => {
+            applyRestoreBatch({ workouts: [], tombstones: [tombstone] });
+            applyRestoreBatch({ workouts: [], tombstones: [tombstone] });
+        }).not.toThrow();
+
+        expect(getWorkouts().map(w => w.id)).not.toContain("w3");
+
+    });
+
+    it("hasDataWorthBackingUp() no cuenta las tombstones como datos -- borrar todo no debe disparar el aviso de backup", async () => {
+
+        const { hydrate, restoreWorkout, deleteWorkout } = await import("../data/workoutStore.js");
+        const { hydrate: hydrateGym } = await import("../data/gymSessionStore.js");
+        const { hydrate: hydrateTombstones } = await import("../data/tombstoneStore.js");
+        const { hasDataWorthBackingUp } = await import("./backup.js");
+
+        await hydrate();
+        await hydrateGym();
+        await hydrateTombstones();
+
+        restoreWorkout({ id: "w4", date: "2026-09-06", type: "easy" });
+        deleteWorkout("w4");
+
+        expect(hasDataWorthBackingUp()).toBe(false);
+
+    });
+
+});
+
 describe("getDataSummary() -- resumen de solo lectura para Perfil", () => {
 
     beforeEach(() => {

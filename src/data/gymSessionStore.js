@@ -3,6 +3,7 @@ import { generateId } from "../utils/id.js";
 import { formatISODate } from "../utils/date.js";
 import { getGymDay } from "./gymRoutineStore.js";
 import { notifyDataChanged } from "./changeEvents.js";
+import { recordTombstone } from "./tombstoneStore.js";
 
 const sessions = [];
 
@@ -155,6 +156,7 @@ export function deleteSession(id) {
     sessions.splice(index, 1);
 
     remove(STORES.gymSessions, id).catch(() => {});
+    recordTombstone("gymSessions", id);
     notifyDataChanged();
 
 }

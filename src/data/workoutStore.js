@@ -2,6 +2,7 @@ import { STORES, getAll, put, remove } from "./db.js";
 import { parseISODate, formatISODate, getWeekStartDate, getDayAbbreviation } from "../utils/date.js";
 import { generateId } from "../utils/id.js";
 import { notifyDataChanged } from "./changeEvents.js";
+import { recordTombstone } from "./tombstoneStore.js";
 
 const workouts = [];
 const shoes = [];
@@ -304,6 +305,7 @@ export function deleteWorkout(id) {
 
     workouts.splice(index, 1);
     remove(STORES.workouts, id).catch(() => {});
+    recordTombstone("workouts", id);
     notifyDataChanged();
 
 }
@@ -322,6 +324,7 @@ export function deletePlannedSession(id) {
 
     plannedSessions.splice(index, 1);
     remove(STORES.plannedSessions, id).catch(() => {});
+    recordTombstone("plannedSessions", id);
     notifyDataChanged();
 
     // Cualquier carrera planificada que apuntara a esta sesión ("En mi

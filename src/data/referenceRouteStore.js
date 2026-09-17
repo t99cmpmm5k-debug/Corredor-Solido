@@ -13,6 +13,7 @@
 // nuevo, para que esa regla no dependa de que quien llame se acuerde de
 // desasignar primero.
 import { STORES, getAll, put, remove } from "./db.js";
+import { recordTombstone } from "./tombstoneStore.js";
 import { generateId } from "../utils/id.js";
 import { notifyDataChanged } from "./changeEvents.js";
 
@@ -112,6 +113,7 @@ export function deleteReferenceRoute(id) {
 
     routes.splice(index, 1);
     remove(STORES.referenceRoutes, id).catch(() => {});
+    recordTombstone("referenceRoutes", id);
     notifyDataChanged();
 
 }

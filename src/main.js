@@ -28,6 +28,7 @@ import { hydrate as hydrateGymRoutine } from "./data/gymRoutineStore.js";
 import { hydrate as hydrateCustomExercises } from "./data/customExerciseStore.js";
 import { hydrate as hydrateReferenceRoutes } from "./data/referenceRouteStore.js";
 import { hydrate as hydrateRouteSuggestionDismissals } from "./data/routeSuggestionStore.js";
+import { hydrate as hydrateTombstones } from "./data/tombstoneStore.js";
 import { hydrateBackupMeta } from "./utils/backup.js";
 import { hydrateSyncMeta, initContinuousSync } from "./data/syncManager.js";
 import { loadHourlyWeather } from "./pages/Home/homeWeatherStore.js";
@@ -44,7 +45,7 @@ function boot() {
 
     let readyBeforeTimeout = false;
 
-    const ready = Promise.all([hydrate(), hydrateGymSessions(), hydrateGymRoutine(), hydrateCustomExercises(), hydrateReferenceRoutes(), hydrateRouteSuggestionDismissals(), hydrateBackupMeta(), hydrateSyncMeta()])
+    const ready = Promise.all([hydrate(), hydrateGymSessions(), hydrateGymRoutine(), hydrateCustomExercises(), hydrateReferenceRoutes(), hydrateRouteSuggestionDismissals(), hydrateTombstones(), hydrateBackupMeta(), hydrateSyncMeta()])
         .then(() => { readyBeforeTimeout = true; });
 
     const timedOut = new Promise(resolve => setTimeout(resolve, HYDRATE_TIMEOUT_MS));

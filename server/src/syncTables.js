@@ -9,7 +9,14 @@ export const SYNC_TABLES = {
     shoes: "shoes",
     plannedSessions: "planned_sessions",
     gymSessions: "gym_sessions",
-    referenceRoutes: "reference_routes"
+    referenceRoutes: "reference_routes",
+    // No es un store de datos reales -- son los borrados pendientes de
+    // propagar (ver src/data/tombstoneStore.js del cliente). Se guarda con
+    // el mismo pipeline genérico de arriba, pero además dispara un DELETE
+    // real sobre su tabla de origen (ver routes/sync.js POST) -- sin eso,
+    // el push seguiría siendo puramente aditivo y un borrado ya
+    // sincronizado antes resucitaría en el próximo pull.
+    tombstones: "deleted_records"
 };
 
 export const SYNC_KEYS = Object.keys(SYNC_TABLES);

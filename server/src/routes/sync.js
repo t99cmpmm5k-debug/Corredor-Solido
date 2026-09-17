@@ -71,6 +71,27 @@ syncRouter.post("/", async (req, res) => {
 
     }
 
+    // Las tombstones no solo se guardan como un registro más (bucle
+    // genérico de arriba, tabla deleted_records) -- disparan además el
+    // borrado REAL de la fila referenciada en su tabla de origen. Sin este
+    // paso el push seguiría siendo puramente aditivo y el borrado nunca se
+    // propagaría (ver migrations/003_tombstones.sql para el porqué).
+    const tombstones = Array.isArray(body.tombstones) ? body.tombstones : [];
+
+    for (const tombstone of tombstones) {
+
+        if (!tombstone || typeof tombstone.recordId !== "string") continue;
+
+        const targetTable = SYNC_TABLES[tombstone.storeKey];
+        if (!targetTable) continue;
+
+        await pool.execute(
+            `DELETE FROM ${targetTable} WHERE user_id = ? AND id = ?`,
+            [req.userId, tombstone.recordId]
+        );
+
+    }
+
     res.json({ saved: savedCounts });
 
 });

@@ -2,7 +2,7 @@ import { SEED_RACES } from "./seedRaces.js";
 import { gymDays as DEFAULT_GYM_DAYS } from "./gymData.js";
 
 const DB_NAME = "corredor-solido";
-const DB_VERSION = 11;
+const DB_VERSION = 12;
 
 // Bookkeeping en meta (misma store que lastExportAt, ver backup.js) — se
 // escribe una sola vez, la primera vez que esta instalación pasa por
@@ -107,7 +107,8 @@ export const STORES = {
     plannedRaces: "plannedRaces",
     customExercises: "customExercises",
     referenceRoutes: "referenceRoutes",
-    routeSuggestionDismissals: "routeSuggestionDismissals"
+    routeSuggestionDismissals: "routeSuggestionDismissals",
+    tombstones: "tombstones"
 
 };
 
@@ -362,6 +363,19 @@ function upgrade(db, transaction) {
     if (!db.objectStoreNames.contains(STORES.routeSuggestionDismissals)) {
 
         db.createObjectStore(STORES.routeSuggestionDismissals, { keyPath: "id" });
+
+    }
+
+    // Registro de borrados reales (workouts/plannedSessions/gymSessions/
+    // referenceRoutes -- los 4 stores que se pueden borrar Y participan en
+    // el sync) para que el push deje de ser puramente aditivo -- sin esto,
+    // un registro ya subido al servidor antes de borrarlo localmente
+    // resucitaba en el próximo pull (bug real, ver tombstoneStore.js).
+    // `id` es compuesto ("storeKey:recordId"), no el id del registro
+    // original, para poder convivir todos en la misma store.
+    if (!db.objectStoreNames.contains(STORES.tombstones)) {
+
+        db.createObjectStore(STORES.tombstones, { keyPath: "id" });
 
     }
 
