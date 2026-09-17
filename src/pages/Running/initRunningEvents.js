@@ -9,7 +9,7 @@ import { importWorkout } from "../../importers/index.js";
 import { REVIEW_FIELDS, parseFieldValue } from "./components/RunningReviewStep.js";
 import { estimateTemperature } from "../../services/weatherEstimate.js";
 import { hasRouteTrace, mountRouteMap, unmountRouteMap } from "../../components/RouteMap/RouteMap.js";
-import { chartSplits, averagePace, MIN_SPLITS_FOR_CHART } from "./components/RunningDetailView.js";
+import { chartSplits, MIN_SPLITS_FOR_CHART } from "./components/RunningDetailView.js";
 import { buildPaceColorSegments, buildKmMarkers, ROUTE_COLOR_NORMAL } from "./routeMapPaceColoring.js";
 
 import {
@@ -1357,14 +1357,17 @@ function initRouteMap() {
             // representativo elegido solo por su forma, y colorear por SU
             // ritmo concreto se leería como si fuera "el ritmo del
             // recorrido" en general, cuando eso ya lo cuenta el gráfico de
-            // evolución. Mismo recorte/media que RunningDetailView.js usa
-            // para el propio gráfico (chartSplits/averagePace), para que el
-            // mapa y el gráfico de abajo nunca se contradigan entre sí.
+            // evolución. Mismo recorte que RunningDetailView.js usa para el
+            // propio gráfico (chartSplits) -- la media de referencia para el
+            // COLOR la calcula buildPaceColorSegments() internamente sobre
+            // estos mismos splits, a propósito NO averagePace() (ver el
+            // comentario junto a meanPaceSecPerKm en routeMapPaceColoring.js
+            // -- bug real ya corregido: usar el ritmo medio del entreno
+            // completo podía dejar el mapa entero en un solo color).
             const splits = chartSplits(workout);
-            const avgPaceRef = averagePace(workout, splits);
 
             segments = splits.length >= MIN_SPLITS_FOR_CHART
-                ? buildPaceColorSegments(routeTrace, splits, avgPaceRef)
+                ? buildPaceColorSegments(routeTrace, splits)
                 : [{ latlngs: routeTrace.map(p => [p.lat, p.lon]), color: ROUTE_COLOR_NORMAL }];
 
             markers = buildKmMarkers(routeTrace);

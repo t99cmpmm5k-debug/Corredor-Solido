@@ -48,6 +48,35 @@ export function cumulativeDistancesMeters(routeTrace) {
 
 }
 
+// Media de referencia para el coloreado -- deliberadamente NO es
+// averagePace()/workout.avgPaceSecPerKm (RunningDetailView.js), que sale de
+// distancia/tiempo TOTALES del entreno. Esa cifra y el paceSecPerKm de cada
+// split individual vienen de dos cálculos independientes (uno agregado,
+// otro integrando GPS punto a punto) que no cuadran exactamente entre sí
+// (mismo tipo de desajuste ya documentado en tcx.js) -- usarla como
+// referencia podía desplazar sistemáticamente TODOS los splits hacia un
+// mismo lado del umbral, dejando el mapa entero en un solo color (bug real
+// verificado: un entreno de 8,01km/6:04min/km salía siempre naranja, nunca
+// verde). Calculando la media aquí mismo, sobre los propios splits que se
+// van a colorear, queda centrada por construcción -- no puede sesgarse
+// entera hacia un lado. No toca averagePace(): el badge "X/km medio" y la
+// línea de referencia del gráfico siguen mostrando exactamente lo mismo
+// que antes.
+function meanPaceSecPerKm(splits) {
+
+    // Intervalos: mismo criterio que averagePace() -- el ritmo real del
+    // esfuerzo son los tramos de Carrera, nunca mezclado con Recuperación.
+    const workSplits = splits.filter(s => s.segmentType === "work");
+    const relevant = workSplits.length
+        ? workSplits
+        : splits.filter(s => s.segmentType !== "rest" && s.paceSecPerKm != null);
+
+    if (!relevant.length) return null;
+
+    return relevant.reduce((sum, s) => sum + s.paceSecPerKm, 0) / relevant.length;
+
+}
+
 // Recuperación (Intervalos) siempre gris, nunca "lento" -- mismo criterio ya
 // documentado en RunningDetailView.js: un tramo de descanso "más lento" no
 // dice nada real sobre el esfuerzo.
@@ -89,12 +118,13 @@ function splitIndexForDistance(distanceM, limits) {
 // vez que el color cambia entre dos puntos se corta el segmento ahí,
 // repitiendo el punto de frontera en ambos lados para que no quede un hueco
 // visual entre dos colores distintos.
-export function buildPaceColorSegments(routeTrace, splits, avgPaceRef) {
+export function buildPaceColorSegments(routeTrace, splits) {
 
     if (!splits.length) {
         return [{ latlngs: routeTrace.map(p => [p.lat, p.lon]), color: ROUTE_COLOR_NORMAL }];
     }
 
+    const avgPaceRef = meanPaceSecPerKm(splits);
     const distances = cumulativeDistancesMeters(routeTrace);
     const limits = splitDistanceLimits(splits);
     const colorBySplit = splits.map(s => paceColorFor(s, avgPaceRef));

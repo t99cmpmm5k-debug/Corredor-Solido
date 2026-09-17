@@ -74,10 +74,13 @@ export function chartSplits(workout) {
 
 }
 
-// Exportada -- misma referencia de "ritmo medio de este entreno" que usa
-// routeMapPaceColoring.js para decidir qué tramos del mapa son notablemente
-// más rápidos/lentos, en vez de recalcular una media distinta por su cuenta.
-export function averagePace(workout, splits) {
+// routeMapPaceColoring.js NO la usa a propósito -- calcula su propia media
+// internamente sobre los splits que colorea (ver meanPaceSecPerKm ahí):
+// usar esta habría podido sesgar el color de todo el mapa hacia un solo
+// lado (bug real ya corregido), porque esta media sale de distancia/tiempo
+// TOTALES del entreno (workout.avgPaceSecPerKm), un cálculo independiente
+// del de cada split individual que no cuadra exactamente con él.
+function averagePace(workout, splits) {
 
     // Un entreno de Intervalos mezcla ritmos de Carrera y Recuperación muy
     // distintos entre sí — el ritmo medio de Resumen (workout.avgPaceSecPerKm)

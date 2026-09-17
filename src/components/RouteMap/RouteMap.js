@@ -19,6 +19,46 @@ const ROUTE_LINE_CASING_COLOR = "#FFFFFF";
 const TERRAIN_TILE_URL = "https://tiles.stadiamaps.com/tiles/stamen_terrain/{z}/{x}/{y}{r}.png";
 const TERRAIN_ATTRIBUTION = '&copy; <a href="https://stadiamaps.com/attribution/" target="_blank" rel="noopener">Stadia Maps</a> &copy; <a href="https://stamen.com/" target="_blank" rel="noopener">Stamen Design</a> &copy; <a href="https://openmaptiles.org/" target="_blank" rel="noopener">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>';
 
+// Tamaño real del círculo de marca de km -- debe coincidir EXACTO con
+// .route-map-km-marker (RouteMap.css, box-sizing:border-box) para que
+// iconAnchor centre bien el círculo sobre su coordenada.
+const KM_MARKER_SIZE_PX = 18;
+
+// Separación mínima en PÍXELES DE PANTALLA (no metros de recorrido) entre
+// dos marcas de km ya colocadas -- un recorrido con giros o ida-y-vuelta
+// puede traer dos kilómetros distintos muy cerca EN EL MAPA aunque estén
+// lejos en la ruta real (bug real reportado: km 1/5 y km 2/4 casi
+// solapados). Comprobar la distancia sobre el propio mapa ya encuadrado
+// (en vez de una distancia fija en metros) es lo único que funciona igual
+// de bien a cualquier zoom, porque el zoom final depende de la extensión
+// real de cada recorrido y varía de un entreno a otro.
+const MIN_KM_MARKER_SPACING_PX = KM_MARKER_SIZE_PX + 6;
+
+// Descarta marcas demasiado cerca de otra ya colocada, en el orden en que
+// llegan (kilómetro más bajo gana el hueco) -- greedy simple, no busca el
+// reparto "óptimo", solo garantiza que nunca queden dos pegadas. Exportada
+// para poder testearla sin Leaflet/DOM de por medio (recibe puntos en
+// espacio de píxeles ya resueltos, no coordenadas geográficas).
+export function declutterMarkers(points, minSpacingPx) {
+
+    const keptIndices = [];
+    const keptPoints = [];
+
+    points.forEach((point, i) => {
+
+        const overlaps = keptPoints.some(p => Math.hypot(p.x - point.x, p.y - point.y) < minSpacingPx);
+
+        if (!overlaps) {
+            keptPoints.push(point);
+            keptIndices.push(i);
+        }
+
+    });
+
+    return keptIndices;
+
+}
+
 // Único criterio de "este entreno tiene GPS real" en toda la app -- mismo
 // umbral (>=2 puntos) que ya usa referenceRouteGeometry.js para agrupar
 // Recorridos de referencia. Entrenos manuales y de OCR de Garmin nunca
@@ -111,26 +151,42 @@ export async function mountRouteMap(container, segments, markers = []) {
 
     });
 
+    const bounds = L.latLngBounds(segments.flatMap(segment => segment.latlngs));
+
+    // animate:false -- fitBounds necesita haber fijado ya el zoom/centro
+    // definitivos de verdad (no a medias, en pleno vuelo de una animación)
+    // antes de poder convertir lat/lon de las marcas a píxeles de pantalla
+    // más abajo. El mapa no es interactivo (especificación del Paso 1), así
+    // que tampoco hay ninguna transición que "se note" al quitarla.
+    map.fitBounds(bounds, { padding: [24, 24], animate: false });
+
     // Sin popup/tooltip ni interacción -- solo el número, especificación de
     // cierre del Paso 2 ("el detalle de ritmo ya vive en el gráfico de
-    // abajo, no queremos duplicar información aquí").
-    markers.forEach(marker => {
+    // abajo, no queremos duplicar información aquí"). declutterMarkers
+    // trabaja en píxeles de pantalla (no metros de recorrido) -- un
+    // recorrido con giros o ida-y-vuelta puede traer dos km distintos muy
+    // cerca EN EL MAPA aunque estén lejos en la ruta real; comprobarlo
+    // sobre el mapa ya encuadrado es lo único que funciona igual a
+    // cualquier zoom (bug real reportado: km 1/5 y 2/4 casi solapados).
+    const markerPoints = markers.map(m => map.latLngToContainerPoint([m.lat, m.lon]));
+    const keptIndices = declutterMarkers(markerPoints, MIN_KM_MARKER_SPACING_PX);
+
+    keptIndices.forEach(i => {
+
+        const marker = markers[i];
 
         L.marker([marker.lat, marker.lon], {
             icon: L.divIcon({
                 className: "route-map-km-marker",
                 html: `<span>${marker.km}</span>`,
-                iconSize: [22, 22],
-                iconAnchor: [11, 11]
+                iconSize: [KM_MARKER_SIZE_PX, KM_MARKER_SIZE_PX],
+                iconAnchor: [KM_MARKER_SIZE_PX / 2, KM_MARKER_SIZE_PX / 2]
             }),
             interactive: false,
             keyboard: false
         }).addTo(map);
 
     });
-
-    const bounds = L.latLngBounds(segments.flatMap(segment => segment.latlngs));
-    map.fitBounds(bounds, { padding: [24, 24] });
 
     return map;
 

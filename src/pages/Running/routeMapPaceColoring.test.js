@@ -78,7 +78,7 @@ describe("buildPaceColorSegments", () => {
     it("sin splits, devuelve un único segmento con el color normal", () => {
 
         const trace = straightTrace(200);
-        const segments = buildPaceColorSegments(trace, [], null);
+        const segments = buildPaceColorSegments(trace, []);
 
         expect(segments).toHaveLength(1);
         expect(segments[0].color).toBe(ROUTE_COLOR_NORMAL);
@@ -90,16 +90,41 @@ describe("buildPaceColorSegments", () => {
 
         const trace = straightTrace(2000);
         const splits = [
-            { lap: 1, distanceKm: 1, paceSecPerKm: 250 }, // 50s más rápido que la media
-            { lap: 2, distanceKm: 1, paceSecPerKm: 350 }  // 50s más lento que la media
+            { lap: 1, distanceKm: 1, paceSecPerKm: 250 }, // media de los dos: 300
+            { lap: 2, distanceKm: 1, paceSecPerKm: 350 }
         ];
-        const avgPaceRef = 300;
 
-        const segments = buildPaceColorSegments(trace, splits, avgPaceRef);
+        const segments = buildPaceColorSegments(trace, splits);
         const colors = segments.map(s => s.color);
 
         expect(colors[0]).toBe(ROUTE_COLOR_FAST);
         expect(colors[colors.length - 1]).toBe(ROUTE_COLOR_SLOW);
+
+    });
+
+    // Bug real ya corregido: con la media del entreno COMPLETO como
+    // referencia (en vez de la media de estos mismos splits), un desajuste
+    // entre esa cifra agregada y el ritmo por split calculado aparte podía
+    // dejar el mapa entero en un solo color (todo naranja, nunca verde) --
+    // ver el comentario junto a meanPaceSecPerKm en routeMapPaceColoring.js.
+    // Con 4 splits de verdad repartidos alrededor de su propia media (370),
+    // deben aparecer los tres colores a la vez, no solo uno.
+    it("con variación real entre splits, aparecen a la vez tramos rápidos, normales y lentos", () => {
+
+        const trace = straightTrace(4000);
+        const splits = [
+            { lap: 1, distanceKm: 1, paceSecPerKm: 340 },
+            { lap: 2, distanceKm: 1, paceSecPerKm: 360 },
+            { lap: 3, distanceKm: 1, paceSecPerKm: 380 },
+            { lap: 4, distanceKm: 1, paceSecPerKm: 400 }
+        ];
+
+        const segments = buildPaceColorSegments(trace, splits);
+        const colors = new Set(segments.map(s => s.color));
+
+        expect(colors.has(ROUTE_COLOR_FAST)).toBe(true);
+        expect(colors.has(ROUTE_COLOR_NORMAL)).toBe(true);
+        expect(colors.has(ROUTE_COLOR_SLOW)).toBe(true);
 
     });
 
@@ -110,18 +135,22 @@ describe("buildPaceColorSegments", () => {
             { lap: 1, distanceKm: 1, paceSecPerKm: 600, segmentType: "rest" }
         ];
 
-        const segments = buildPaceColorSegments(trace, splits, 300);
+        const segments = buildPaceColorSegments(trace, splits);
 
         expect(segments.every(s => s.color === ROUTE_COLOR_REST)).toBe(true);
 
     });
 
-    it("un ritmo dentro del margen de la media se queda en el color normal", () => {
+    it("splits muy cercanos entre sí (variación normal de carrera) se quedan en el color normal", () => {
 
-        const trace = straightTrace(1000);
-        const splits = [{ lap: 1, distanceKm: 1, paceSecPerKm: 305 }];
+        const trace = straightTrace(3000);
+        const splits = [
+            { lap: 1, distanceKm: 1, paceSecPerKm: 295 },
+            { lap: 2, distanceKm: 1, paceSecPerKm: 300 },
+            { lap: 3, distanceKm: 1, paceSecPerKm: 305 }
+        ];
 
-        const segments = buildPaceColorSegments(trace, splits, 300);
+        const segments = buildPaceColorSegments(trace, splits);
 
         expect(segments.every(s => s.color === ROUTE_COLOR_NORMAL)).toBe(true);
 

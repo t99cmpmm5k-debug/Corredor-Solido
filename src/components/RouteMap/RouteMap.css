@@ -68,8 +68,14 @@
 /* Marca de km completo (Paso 2) -- solo el número, sin popup ni tooltip
    (el detalle de ritmo por km ya vive en .pace-chart, justo debajo). Fondo
    oscuro sólido (no un color de la paleta de ritmo) para que se lea igual
-   de bien encima de cualquier tramo, sea cual sea su color. */
+   de bien encima de cualquier tramo, sea cual sea su color.
+   18px (antes 22px, retoque de acabado: "demasiado grande") -- debe
+   coincidir EXACTO con KM_MARKER_SIZE_PX en RouteMap.js, box-sizing:
+   border-box para que el borde no infle el tamaño real más allá de eso
+   (si no, iconAnchor centraría mal el círculo sobre su coordenada). */
 .route-map-km-marker{
+
+    box-sizing:border-box;
 
     display:flex;
 
@@ -77,20 +83,26 @@
 
     justify-content:center;
 
-    width:22px;
+    width:18px;
 
-    height:22px;
+    height:18px;
 
     border-radius:50%;
 
-    background:rgba(8,17,29,.85);
+    background:rgba(8,17,29,.9);
 
-    border:2px solid #FFFFFF;
+    border:1.5px solid #FFFFFF;
+
+    box-shadow:0 1px 3px rgba(0,0,0,.5);
 
     color:#FFFFFF;
 
-    font-size:.68rem;
+    font-size:.58rem;
 
     font-weight:800;
+
+    line-height:1;
+
+    letter-spacing:-.02em;
 
 }
