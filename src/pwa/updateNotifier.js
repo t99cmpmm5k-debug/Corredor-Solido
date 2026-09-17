@@ -1,6 +1,16 @@
 import "./updateNotifier.css";
+import { fetchReleaseNotes } from "./releaseNotes.js";
 
 const BANNER_CLASS = "update-banner";
+
+function escapeHtml(text) {
+
+    return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+
+}
 
 function showUpdateBanner() {
 
@@ -11,13 +21,17 @@ function showUpdateBanner() {
 
     banner.innerHTML = `
 
-        <span class="update-banner-text">Hay una versión nueva de la app</span>
+        <div class="update-banner-main">
 
-        <button type="button" class="update-banner-reload">Actualizar</button>
+            <span class="update-banner-text">Hay una versión nueva de la app</span>
 
-        <button type="button" class="update-banner-dismiss" aria-label="Cerrar aviso">
-            <iconify-icon icon="solar:close-circle-bold-duotone"></iconify-icon>
-        </button>
+            <button type="button" class="update-banner-reload">Actualizar</button>
+
+            <button type="button" class="update-banner-dismiss" aria-label="Cerrar aviso">
+                <iconify-icon icon="solar:close-circle-bold-duotone"></iconify-icon>
+            </button>
+
+        </div>
 
     `;
 
@@ -30,6 +44,24 @@ function showUpdateBanner() {
     });
 
     document.body.appendChild(banner);
+
+    // Se rellena aparte y de forma asíncrona (nunca bloquea el aviso ni
+    // los botones Actualizar/Cerrar, que ya funcionan desde el primer
+    // instante) -- si la petición a GitHub falla o no hay red, el aviso se
+    // queda tal cual, sin el resumen, en vez de quedarse a medio pintar.
+    fetchReleaseNotes().then(notes => {
+
+        if (!notes.length || !banner.isConnected) return;
+
+        banner.classList.add(`${BANNER_CLASS}--expanded`);
+
+        const list = document.createElement("ul");
+        list.className = "update-banner-notes";
+        list.innerHTML = notes.map(note => `<li>${escapeHtml(note)}</li>`).join("");
+
+        banner.appendChild(list);
+
+    });
 
 }
 

@@ -9,11 +9,7 @@
 
     z-index:1000;
 
-    display:flex;
-
-    align-items:center;
-
-    gap:10px;
+    width:max-content;
 
     max-width:calc(100vw - 32px);
 
@@ -31,6 +27,58 @@
     box-shadow:
         0 10px 25px rgba(0,0,0,.28),
         0 0 20px color-mix(in srgb, var(--color-glow) 40%, transparent);
+
+}
+
+/* Con resumen de novedades (fetchReleaseNotes(), ver updateNotifier.js) --
+   la píldora de una sola línea se queda corta para una lista, así que pasa
+   a tarjeta redondeada normal, con más ancho para que las líneas de commit
+   no se corten a cada palabra. */
+.update-banner--expanded{
+
+    width:min(360px, calc(100vw - 32px));
+
+    border-radius:20px;
+
+    padding:14px 16px 16px;
+
+}
+
+.update-banner-main{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+
+}
+
+.update-banner--expanded .update-banner-main{
+
+    margin-bottom:10px;
+
+}
+
+.update-banner-notes{
+
+    margin:0;
+
+    padding-left:18px;
+
+    list-style:disc;
+
+    color:var(--text-secondary);
+
+    font-size:.78rem;
+
+    line-height:1.5;
+
+}
+
+.update-banner-notes li + li{
+
+    margin-top:2px;
 
 }
 
