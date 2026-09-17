@@ -9,6 +9,8 @@ import { importWorkout } from "../../importers/index.js";
 import { REVIEW_FIELDS, parseFieldValue } from "./components/RunningReviewStep.js";
 import { estimateTemperature } from "../../services/weatherEstimate.js";
 import { hasRouteTrace, mountRouteMap, unmountRouteMap } from "../../components/RouteMap/RouteMap.js";
+import { chartSplits, averagePace, MIN_SPLITS_FOR_CHART } from "./components/RunningDetailView.js";
+import { buildPaceColorSegments, buildKmMarkers, ROUTE_COLOR_NORMAL } from "./routeMapPaceColoring.js";
 
 import {
     resetWizard,
@@ -1338,18 +1340,47 @@ function initRouteMap() {
 
     const step = getWizardStep();
     let routeTrace = null;
+    let segments = null;
+    let markers = [];
 
     if (step === "detail") {
 
         const workout = getWorkouts().find(w => w.id === getDetailWorkoutId());
-        if (hasRouteTrace(workout)) routeTrace = workout.routeTrace;
+
+        if (hasRouteTrace(workout)) {
+
+            routeTrace = workout.routeTrace;
+
+            // Coloreado por ritmo + marcas de km (Paso 2) -- solo en la
+            // ficha de un entreno individual, nunca en Recorridos de
+            // referencia (ver más abajo): ese mapa muestra un entreno
+            // representativo elegido solo por su forma, y colorear por SU
+            // ritmo concreto se leería como si fuera "el ritmo del
+            // recorrido" en general, cuando eso ya lo cuenta el gráfico de
+            // evolución. Mismo recorte/media que RunningDetailView.js usa
+            // para el propio gráfico (chartSplits/averagePace), para que el
+            // mapa y el gráfico de abajo nunca se contradigan entre sí.
+            const splits = chartSplits(workout);
+            const avgPaceRef = averagePace(workout, splits);
+
+            segments = splits.length >= MIN_SPLITS_FOR_CHART
+                ? buildPaceColorSegments(routeTrace, splits, avgPaceRef)
+                : [{ latlngs: routeTrace.map(p => [p.lat, p.lon]), color: ROUTE_COLOR_NORMAL }];
+
+            markers = buildKmMarkers(routeTrace);
+
+        }
 
     } else if (step === "referenceRouteDetail") {
 
         const route = getReferenceRouteById(getDetailRouteId());
         const workouts = route ? resolveRouteWorkouts(route, getWorkouts()) : [];
         const withTrace = workouts.find(hasRouteTrace);
-        if (withTrace) routeTrace = withTrace.routeTrace;
+
+        if (withTrace) {
+            routeTrace = withTrace.routeTrace;
+            segments = [{ latlngs: routeTrace.map(p => [p.lat, p.lon]), color: ROUTE_COLOR_NORMAL }];
+        }
 
     }
 
@@ -1359,7 +1390,7 @@ function initRouteMap() {
     // la ficha antes de que resuelva (rerender ya reemplazó app.innerHTML),
     // container queda desconectado del documento real y no debe montarse
     // ningún mapa sobre él.
-    mountRouteMap(container, routeTrace).then(map => {
+    mountRouteMap(container, segments, markers).then(map => {
 
         if (document.body.contains(container)) {
             activeRouteMap = map;

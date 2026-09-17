@@ -13,8 +13,11 @@ import { hasRouteTrace, RouteMapContainer } from "../../../components/RouteMap/R
 // un ritmo poco representativo — se descarta del gráfico si es así.
 const RESIDUAL_LAP_THRESHOLD_KM = 0.3;
 
-// Un solo split no dice nada sobre si hubo positivo/negativo split.
-const MIN_SPLITS_FOR_CHART = 2;
+// Un solo split no dice nada sobre si hubo positivo/negativo split. También
+// la usa routeMapPaceColoring.js (vía initRunningEvents.js) -- el mapa no
+// colorea por ritmo con menos splits reales de los que ya exige el propio
+// gráfico, mismo umbral, una sola fuente de verdad.
+export const MIN_SPLITS_FOR_CHART = 2;
 
 // Escala fija alrededor del ritmo medio (no del propio rango min/max de la
 // carrera) — si no, una carrera regular y una irregular se verían igual de
@@ -50,7 +53,10 @@ function capitalize(text) {
 
 }
 
-function chartSplits(workout) {
+// Exportada -- routeMapPaceColoring.js reutiliza el mismo recorte del
+// remanente final que ya aplica el gráfico, para que el mapa y el gráfico
+// coincidan siempre en qué splits cuentan como "reales".
+export function chartSplits(workout) {
 
     const splits = (workout.splits || []).filter(s => s.paceSecPerKm != null);
     if (!splits.length) return [];
@@ -68,7 +74,10 @@ function chartSplits(workout) {
 
 }
 
-function averagePace(workout, splits) {
+// Exportada -- misma referencia de "ritmo medio de este entreno" que usa
+// routeMapPaceColoring.js para decidir qué tramos del mapa son notablemente
+// más rápidos/lentos, en vez de recalcular una media distinta por su cuenta.
+export function averagePace(workout, splits) {
 
     // Un entreno de Intervalos mezcla ritmos de Carrera y Recuperación muy
     // distintos entre sí — el ritmo medio de Resumen (workout.avgPaceSecPerKm)

@@ -64,3 +64,33 @@
     color:var(--text-secondary);
 
 }
+
+/* Marca de km completo (Paso 2) -- solo el número, sin popup ni tooltip
+   (el detalle de ritmo por km ya vive en .pace-chart, justo debajo). Fondo
+   oscuro sólido (no un color de la paleta de ritmo) para que se lea igual
+   de bien encima de cualquier tramo, sea cual sea su color. */
+.route-map-km-marker{
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    width:22px;
+
+    height:22px;
+
+    border-radius:50%;
+
+    background:rgba(8,17,29,.85);
+
+    border:2px solid #FFFFFF;
+
+    color:#FFFFFF;
+
+    font-size:.68rem;
+
+    font-weight:800;
+
+}

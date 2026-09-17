@@ -1,11 +1,5 @@
 import "./RouteMap.css";
 
-// Mismo azul que --color-primary (variables.css) -- Leaflet no puede leer
-// variables CSS del documento en sus opciones de estilo (color/weight son
-// valores de Canvas/SVG, no propiedades CSS del elemento), así que se
-// repite el valor literal aquí.
-const ROUTE_LINE_COLOR = "#2EA8FF";
-
 // Contorno blanco debajo de la línea de color -- sobre un mapa de terreno
 // (verdes/marrones variables según la zona) una línea plana puede perder
 // contraste en algunos tramos; el "casing" es la técnica estándar de
@@ -43,7 +37,14 @@ export function RouteMapContainer(id = "route-map") {
 // nada en el bundle principal ni se descarga en pantallas sin mapa. Solo se
 // llama cuando initRunningEvents.js encuentra un .route-map real en el DOM
 // tras el render (ver ese archivo).
-export async function mountRouteMap(container, routeTrace) {
+//
+// segments: array de {latlngs:[[lat,lon],...], color} -- este componente no
+// sabe nada de "ritmo" ni "splits", solo dibuja lo que le den (esa lógica
+// vive en routeMapPaceColoring.js, propio de Running). El caso sin
+// coloreado (Paso 1, o Recorridos de referencia) simplemente pasa un único
+// segmento con todo el trazado.
+// markers: array opcional de {lat, lon, km} -- marcas de km completo.
+export async function mountRouteMap(container, segments, markers = []) {
 
     const [{ default: L }] = await Promise.all([
         import("leaflet"),
@@ -82,25 +83,54 @@ export async function mountRouteMap(container, routeTrace) {
         detectRetina: true
     }).addTo(map);
 
-    const latlngs = routeTrace.map(point => [point.lat, point.lon]);
+    // Todos los "casing" (contorno blanco) primero y todas las líneas de
+    // color después -- si no, el casing de un segmento posterior taparía
+    // parte de la línea de color del segmento anterior justo en el punto de
+    // frontera que ambos comparten.
+    segments.forEach(segment => {
 
-    L.polyline(latlngs, {
-        color: ROUTE_LINE_CASING_COLOR,
-        weight: 8,
-        opacity: 0.85,
-        lineCap: "round",
-        lineJoin: "round"
-    }).addTo(map);
+        L.polyline(segment.latlngs, {
+            color: ROUTE_LINE_CASING_COLOR,
+            weight: 8,
+            opacity: 0.85,
+            lineCap: "round",
+            lineJoin: "round"
+        }).addTo(map);
 
-    const line = L.polyline(latlngs, {
-        color: ROUTE_LINE_COLOR,
-        weight: 5,
-        opacity: 1,
-        lineCap: "round",
-        lineJoin: "round"
-    }).addTo(map);
+    });
 
-    map.fitBounds(line.getBounds(), { padding: [24, 24] });
+    segments.forEach(segment => {
+
+        L.polyline(segment.latlngs, {
+            color: segment.color,
+            weight: 5,
+            opacity: 1,
+            lineCap: "round",
+            lineJoin: "round"
+        }).addTo(map);
+
+    });
+
+    // Sin popup/tooltip ni interacción -- solo el número, especificación de
+    // cierre del Paso 2 ("el detalle de ritmo ya vive en el gráfico de
+    // abajo, no queremos duplicar información aquí").
+    markers.forEach(marker => {
+
+        L.marker([marker.lat, marker.lon], {
+            icon: L.divIcon({
+                className: "route-map-km-marker",
+                html: `<span>${marker.km}</span>`,
+                iconSize: [22, 22],
+                iconAnchor: [11, 11]
+            }),
+            interactive: false,
+            keyboard: false
+        }).addTo(map);
+
+    });
+
+    const bounds = L.latLngBounds(segments.flatMap(segment => segment.latlngs));
+    map.fitBounds(bounds, { padding: [24, 24] });
 
     return map;
 
