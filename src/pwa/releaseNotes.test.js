@@ -63,9 +63,9 @@ describe("fetchReleaseNotes() -- resumen automático de commits para el aviso de
 
     });
 
-    it("limita a un máximo fijo aunque haya más commits (hoy 50, excepción temporal del despliegue 2026-09-18 -- ver comentario junto a MAX_COMMITS_SHOWN)", async () => {
+    it("limita a los 6 más recientes aunque haya más commits", async () => {
 
-        const commits = Array.from({ length: 60 }, (_, i) => ({ commit: { message: `Commit real ${i}` } }));
+        const commits = Array.from({ length: 10 }, (_, i) => ({ commit: { message: `Commit real ${i}` } }));
 
         vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
             ok: true,
@@ -75,7 +75,7 @@ describe("fetchReleaseNotes() -- resumen automático de commits para el aviso de
         const { fetchReleaseNotes } = await import("./releaseNotes.js");
         const notes = await fetchReleaseNotes();
 
-        expect(notes).toHaveLength(50);
+        expect(notes).toHaveLength(6);
 
     });
 
