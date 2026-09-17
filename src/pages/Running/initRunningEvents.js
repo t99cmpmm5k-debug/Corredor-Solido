@@ -1370,7 +1370,12 @@ function initRouteMap() {
                 ? buildPaceColorSegments(routeTrace, splits)
                 : [{ latlngs: routeTrace.map(p => [p.lat, p.lon]), color: ROUTE_COLOR_NORMAL }];
 
-            markers = buildKmMarkers(routeTrace);
+            // splits (no filtrados por MIN_SPLITS_FOR_CHART): un popup por
+            // km es útil incluso en un entreno corto con un único split real
+            // -- ese umbral solo decide si el GRÁFICO completo merece la
+            // pena mostrarse, no si un marcador individual tiene dato que
+            // enseñar.
+            markers = buildKmMarkers(routeTrace, splits);
 
         }
 

@@ -67,11 +67,23 @@
 
 /* Leaflet pone fondo/borde blanco por defecto a cualquier .leaflet-div-icon
    -- este className (el que va en el elemento que Leaflet SÍ posiciona,
-   ver mountRouteMap) solo anula ese estilo de fábrica. El círculo visible
-   de verdad vive en .route-map-km-marker, un <span> interno aparte (para
-   poder desplazarlo con su propio transform sin pisar el transform de
-   posicionamiento de Leaflet, ver el comentario en mountRouteMap). */
+   ver mountRouteMap) anula ese estilo de fábrica. Este wrapper es
+   deliberadamente más grande (32px, KM_MARKER_TAP_SIZE_PX en RouteMap.js)
+   que el círculo que se ve (14px) -- zona de TOQUE real más generosa que el
+   dibujo, mismo patrón que usan las apps nativas para no obligar a acertar
+   con el dedo sobre un punto minúsculo, sin que el círculo en sí se vea más
+   grande de lo que se pidió. El círculo visible de verdad vive en
+   .route-map-km-marker, un <span> interno aparte centrado aquí por flex
+   (y desplazado con su propio transform cuando hace falta separarlo de
+   otro marcador cercano, sin pisar el transform de posicionamiento de
+   Leaflet -- ver el comentario en mountRouteMap). */
 .route-map-km-marker-wrap{
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
 
     background:none;
 
@@ -79,11 +91,15 @@
 
 }
 
-/* Marca de km completo (Paso 2) -- solo el número, sin popup ni tooltip
-   (el detalle de ritmo por km ya vive en .pace-chart, justo debajo). Fondo
-   oscuro sólido (no un color de la paleta de ritmo) para que se lea igual
-   de bien encima de cualquier tramo, sea cual sea su color.
-   18px (antes 22px, retoque de acabado: "demasiado grande") -- debe
+/* Marca de km completo (Paso 2) -- toca para ver su ritmo/FC en un popup
+   (route-map-popup, más abajo), el círculo en sí solo lleva el número. Fondo
+   claro sólido -- ni negro (retoque de acabado: "no me gusta ese color",
+   además de leerse mal como "punto muerto" sobre un mapa oscuro) ni ningún
+   tono de la paleta de ritmo (azul/menta/naranja/gris, routeMapPaceColoring.js
+   -- confundiría "esto es una marca de km" con "esto es parte del trazado
+   coloreado"), así que destaca igual de bien sobre cualquier tramo sea cual
+   sea su color. 18px -> 14px, texto más fino (800 -> 700, sin letter-spacing
+   negativo) -- "demasiado grandes, ocupan mucho espacio visual". Debe
    coincidir EXACTO con KM_MARKER_SIZE_PX en RouteMap.js, box-sizing:
    border-box para que el borde no infle el tamaño real más allá de eso
    (si no, iconAnchor centraría mal el círculo sobre su coordenada). */
@@ -97,27 +113,87 @@
 
     justify-content:center;
 
-    width:18px;
+    width:14px;
 
-    height:18px;
+    height:14px;
 
     border-radius:50%;
 
-    background:rgba(8,17,29,.9);
+    background:rgba(255,255,255,.92);
 
-    border:1.5px solid #FFFFFF;
+    border:1px solid rgba(8,17,29,.35);
 
-    box-shadow:0 1px 3px rgba(0,0,0,.5);
+    box-shadow:0 1px 2px rgba(0,0,0,.4);
 
-    color:#FFFFFF;
+    color:#08111D;
 
-    font-size:.58rem;
+    font-size:.5rem;
 
-    font-weight:800;
+    font-weight:700;
 
     line-height:1;
 
-    letter-spacing:-.02em;
+    cursor:pointer;
+
+}
+
+/* Popup de ritmo/FC al pulsar una marca de km (Paso 2) -- reskin oscuro del
+   popup de Leaflet (blanco/con flecha por defecto) para que combine con el
+   resto de tarjetas de esta pantalla, mismo tratamiento que ya se le dio al
+   control de atribución. Sin flecha/tip (::before por defecto de Leaflet) ni
+   botón de cerrar (closeButton:false en mountRouteMap) -- toca fuera para
+   cerrar, más limpio para un dato tan pequeño. */
+.route-map-popup .leaflet-popup-content-wrapper{
+
+    border-radius:var(--radius-sm);
+
+    background:rgba(8,17,29,.92);
+
+    box-shadow:0 4px 14px rgba(0,0,0,.4);
+
+}
+
+.route-map-popup .leaflet-popup-content{
+
+    margin:8px 10px;
+
+}
+
+.route-map-popup .leaflet-popup-tip{
+
+    background:rgba(8,17,29,.92);
+
+}
+
+.route-map-popup-content{
+
+    display:flex;
+
+    align-items:baseline;
+
+    gap:8px;
+
+    white-space:nowrap;
+
+}
+
+.route-map-popup-content strong{
+
+    color:var(--color-primary);
+
+    font-size:.78rem;
+
+    font-weight:800;
+
+}
+
+.route-map-popup-content span{
+
+    color:#FFFFFF;
+
+    font-size:.75rem;
+
+    font-weight:600;
 
 }
 

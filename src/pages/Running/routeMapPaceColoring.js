@@ -190,7 +190,24 @@ export function buildPaceColorSegments(routeTrace, splits) {
 // exponen para que RouteMap.js pueda calcular la dirección local real del
 // recorrido en ese punto (perpendicular a la línea, para desplazar marcas
 // que quedan demasiado juntas EN PANTALLA, ver mountRouteMap).
-export function buildKmMarkers(routeTrace) {
+//
+// Numera SIEMPRE en el orden cronológico real de routeTrace (nunca por
+// cercanía geográfica) -- en una ruta que pasa dos veces cerca del mismo
+// sitio (ida y vuelta que retoma casi el punto de partida y continúa por
+// otro camino hasta meta, caso real verificado), el marcador de un km
+// avanzado puede caer físicamente junto al inicio sin que eso sea un error
+// de orden: es la traza recorriéndose dos veces por el mismo sitio en
+// momentos distintos. Ver el test "orden cronológico en recorridos que
+// pasan cerca de sí mismos".
+//
+// `splits` (chartSplits(workout), ver RunningDetailView.js) es opcional --
+// si se pasa, cada marcador se enriquece con el ritmo/FC real de SU propio
+// km (splits[km-1], misma correspondencia 1:1 que ya asume el resto del
+// pipeline: cada split cubre ~1km salvo el remanente final, que nunca
+// genera marcador de km completo) para el popup al pulsar (RouteMap.js) --
+// mismo dato que ya muestra el gráfico "Ritmo por kilómetro", nunca uno
+// recalculado aparte.
+export function buildKmMarkers(routeTrace, splits = []) {
 
     const distances = cumulativeDistancesMeters(routeTrace);
     const total = distances[distances.length - 1];
@@ -214,13 +231,16 @@ export function buildKmMarkers(routeTrace) {
         const prevDist = distances[i - 1], currDist = distances[i];
         const ratio = currDist > prevDist ? (target - prevDist) / (currDist - prevDist) : 0;
         const prev = routeTrace[i - 1], curr = routeTrace[i];
+        const split = splits[km - 1];
 
         markers.push({
             km,
             lat: prev.lat + (curr.lat - prev.lat) * ratio,
             lon: prev.lon + (curr.lon - prev.lon) * ratio,
             dirA: { lat: prev.lat, lon: prev.lon },
-            dirB: { lat: curr.lat, lon: curr.lon }
+            dirB: { lat: curr.lat, lon: curr.lon },
+            paceSecPerKm: split?.paceSecPerKm ?? null,
+            avgHr: split?.avgHr ?? null
         });
 
     }

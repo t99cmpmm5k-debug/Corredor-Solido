@@ -9,11 +9,15 @@ import {
     ROUTE_COLOR_REST
 } from "./routeMapPaceColoring.js";
 
-// ~111320m por grado de latitud -- suficiente para que dos puntos
-// consecutivos generados así queden a ~stepMeters de distancia haversine
-// real (no hace falta exactitud perfecta, solo puntos "a ~20m entre sí"
-// como los que produce buildRouteTrace en geoTrace.js).
-const METERS_PER_DEGREE_LAT = 111320;
+// Metros por grado de latitud que usa la propia fórmula haversine de
+// geoTrace.js (R=6371000, arco = R * ángulo en radianes) -- antes era una
+// aproximación suelta (111320) que no coincidía exactamente con lo que
+// cumulativeDistancesMeters() recalcula, y esa diferencia (~0,1%) bastaba
+// para que un total "de 2000m" generado aquí resultase en ~1997m reales al
+// recalcularlo -- suficiente para perder un marcador de km entero justo en
+// el límite (bug de la propia fixture, no del código real, pero rompía
+// tests que pedían un total exacto).
+const METERS_PER_DEGREE_LAT = (Math.PI / 180) * 6371000;
 
 function straightTrace(totalMeters, stepMeters = 20) {
 
@@ -81,6 +85,42 @@ describe("buildKmMarkers", () => {
         // dirA/dirB son dos puntos DISTINTOS de la traza (si no, no habría
         // ninguna dirección real que calcular).
         expect(marker.dirA).not.toEqual(marker.dirB);
+
+    });
+
+    it("sin splits, cada marcador sale sin ritmo/FC (nunca un dato inventado)", () => {
+
+        const trace = straightTrace(2000);
+        const markers = buildKmMarkers(trace);
+
+        expect(markers.every(m => m.paceSecPerKm === null && m.avgHr === null)).toBe(true);
+
+    });
+
+    it("con splits, cada marcador trae el ritmo/FC de SU propio km (splits[km-1]) -- mismo dato que el gráfico de abajo", () => {
+
+        const trace = straightTrace(2000);
+        const splits = [
+            { lap: 1, distanceKm: 1, paceSecPerKm: 340, avgHr: 145 },
+            { lap: 2, distanceKm: 1, paceSecPerKm: 355, avgHr: 150 }
+        ];
+
+        const markers = buildKmMarkers(trace, splits);
+
+        expect(markers[0]).toMatchObject({ km: 1, paceSecPerKm: 340, avgHr: 145 });
+        expect(markers[1]).toMatchObject({ km: 2, paceSecPerKm: 355, avgHr: 150 });
+
+    });
+
+    it("un split sin FC deja avgHr en null, sin inventar un valor", () => {
+
+        const trace = straightTrace(1200); // no 1000 exactos, ver nota más arriba
+        const splits = [{ lap: 1, distanceKm: 1, paceSecPerKm: 340 }];
+
+        const [marker] = buildKmMarkers(trace, splits);
+
+        expect(marker.paceSecPerKm).toBe(340);
+        expect(marker.avgHr).toBeNull();
 
     });
 
@@ -184,6 +224,74 @@ describe("buildPaceColorSegments", () => {
         const segments = buildPaceColorSegments(trace, splits);
 
         expect(segments.every(s => s.color === ROUTE_COLOR_NORMAL)).toBe(true);
+
+    });
+
+});
+
+// Caso real reportado: un entreno de ida y vuelta que NO retrocede por el
+// mismo camino de principio a fin -- va hacia el sur, da la vuelta, vuelve
+// hacia el norte pasando otra vez muy cerca del punto de inicio (~6km) y
+// CONTINÚA desde ahí por un camino distinto hasta la meta real (~8km). El
+// marcador de km6 cae entonces, correctamente, casi encima del punto de
+// inicio -- no es un bug de orden, es la consecuencia física normal de una
+// ruta que se cruza consigo misma. Se verifica aquí que buildKmMarkers()
+// numera siempre en el orden CRONOLÓGICO real de la traza (nunca reordena
+// por cercanía geográfica) construyendo ese mismo patrón con coordenadas
+// controladas.
+describe("orden cronológico en recorridos que pasan cerca de sí mismos", () => {
+
+    it("una ruta de ida y vuelta + tramo final por otro camino numera en orden temporal, no por proximidad geográfica", () => {
+
+        const METERS_PER_DEGREE = (Math.PI / 180) * 6371000;
+        const START = { lat: 37.60, lon: -1.73 };
+
+        const trace = [];
+
+        // 1) Hacia el sur, 3000m (aleja del inicio).
+        for (let d = 0; d <= 3000; d += 20) {
+            trace.push({ lat: START.lat - d / METERS_PER_DEGREE, lon: START.lon });
+        }
+
+        const turnaround = trace[trace.length - 1];
+
+        // 2) De vuelta hacia el norte, otros 3000m -- MISMO camino que 1),
+        // así que al llegar aquí (km real ~6) se está otra vez justo donde
+        // empezó el entreno.
+        for (let d = 20; d <= 3000; d += 20) {
+            trace.push({ lat: turnaround.lat + d / METERS_PER_DEGREE, lon: START.lon });
+        }
+
+        // 3) Desde el punto de inicio, tramo final de 2000m por un camino
+        // DISTINTO (hacia el este) hasta la meta real.
+        const backAtStart = trace[trace.length - 1];
+        for (let d = 20; d <= 2000; d += 20) {
+            trace.push({ lat: backAtStart.lat, lon: backAtStart.lon + d / METERS_PER_DEGREE });
+        }
+
+        const markers = buildKmMarkers(trace);
+        expect(markers.map(m => m.km)).toEqual([1, 2, 3, 4, 5, 6, 7]);
+
+        const km6 = markers.find(m => m.km === 6);
+        const km3 = markers.find(m => m.km === 3);
+        const km7 = markers.find(m => m.km === 7);
+
+        // km6 (vuelta pasando de nuevo por el inicio) cae físicamente junto
+        // al punto de partida -- a menos de 50m, muchísimo más cerca que del
+        // punto de giro (km3) o del tramo final (km7), que están en
+        // direcciones opuestas.
+        const distTo = (a, b) => Math.hypot((a.lat - b.lat) * METERS_PER_DEGREE, (a.lon - b.lon) * METERS_PER_DEGREE);
+
+        expect(distTo(km6, START)).toBeLessThan(50);
+        expect(distTo(km6, START)).toBeLessThan(distTo(km3, START));
+        expect(distTo(km6, START)).toBeLessThan(distTo(km7, START));
+
+        // Pese a estar geográficamente pegado al inicio, km6 NO es el
+        // primero cronológicamente -- km3 (el punto más lejano, el giro) y
+        // km7 (ya en el tramo final, hacia el este) deben seguir en su
+        // propio orden numérico real.
+        expect(km3.lon).toBeCloseTo(START.lon, 5); // el giro está al sur, misma longitud
+        expect(km7.lon).toBeGreaterThan(START.lon); // el tramo final se desvía hacia el este
 
     });
 

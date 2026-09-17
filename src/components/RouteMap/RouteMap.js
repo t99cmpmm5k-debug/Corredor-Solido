@@ -1,5 +1,7 @@
 import "./RouteMap.css";
 
+import { formatSecondsAsClock } from "../../utils/format.js";
+
 // Contorno blanco debajo de la línea de color -- sobre un mapa de terreno
 // (verdes/marrones variables según la zona) una línea plana puede perder
 // contraste en algunos tramos; el "casing" es la técnica estándar de
@@ -19,10 +21,19 @@ const ROUTE_LINE_CASING_COLOR = "#FFFFFF";
 const TERRAIN_TILE_URL = "https://tiles.stadiamaps.com/tiles/stamen_terrain/{z}/{x}/{y}{r}.png";
 const TERRAIN_ATTRIBUTION = '&copy; <a href="https://stadiamaps.com/attribution/" target="_blank" rel="noopener">Stadia Maps</a> &copy; <a href="https://stamen.com/" target="_blank" rel="noopener">Stamen Design</a> &copy; <a href="https://openmaptiles.org/" target="_blank" rel="noopener">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>';
 
-// Tamaño real del círculo de marca de km -- debe coincidir EXACTO con
-// .route-map-km-marker (RouteMap.css, box-sizing:border-box) para que
-// iconAnchor centre bien el círculo sobre su coordenada.
-const KM_MARKER_SIZE_PX = 18;
+// Tamaño real del círculo VISIBLE de marca de km -- debe coincidir EXACTO
+// con .route-map-km-marker (RouteMap.css, box-sizing:border-box) para que
+// el centrado cuadre con su coordenada. 18px -> 14px (retoque de acabado:
+// "demasiado grandes/ocupan mucho espacio").
+const KM_MARKER_SIZE_PX = 14;
+
+// Zona de TOQUE real del icono de Leaflet -- más grande que el círculo
+// visible a propósito (mismo patrón que usan las apps nativas: un objetivo
+// táctil de 14px es demasiado pequeño para un dedo en iPhone, aunque el
+// dibujo en sí deba verse pequeño y discreto). .route-map-km-marker-wrap
+// centra el círculo pequeño dentro de esta caja invisible más grande vía
+// flex, ver RouteMap.css.
+const KM_MARKER_TAP_SIZE_PX = 32;
 
 // Separación mínima en PÍXELES DE PANTALLA (no metros de recorrido) entre
 // dos marcas de km ya colocadas -- un recorrido con giros o ida-y-vuelta
@@ -111,6 +122,30 @@ export function resolveMarkerOffsets(points, directions, spacingPx) {
 
 }
 
+// Contenido del popup al pulsar una marca de km -- mismo ritmo/FC que ya
+// muestra "Ritmo por kilómetro" (RunningDetailView.js le pasa ese mismo
+// split vía buildKmMarkers(routeTrace, splits) en routeMapPaceColoring.js),
+// nunca un dato recalculado aparte. Sin FC si ese split no la trae (OCR de
+// Garmin sin tabla de Vueltas con FC, o TCX/GPX sin sensor) -- "—" o un
+// guion inventado no, mismo criterio que el resto de la app.
+function buildKmPopupHtml(marker) {
+
+    return `
+
+        <div class="route-map-popup-content">
+
+            <strong>Km ${marker.km}</strong>
+
+            <span>${formatSecondsAsClock(marker.paceSecPerKm)}/km</span>
+
+            ${marker.avgHr != null ? `<span>${Math.round(marker.avgHr)} ppm</span>` : ""}
+
+        </div>
+
+    `;
+
+}
+
 // Leyenda "Más lento <- degradado -> Más rápido" (especificación de cierre
 // del Paso 2) -- HTML plano, no un control de Leaflet: siempre legible a
 // cualquier zoom/tamaño de mapa, sin competir por espacio con la
@@ -176,6 +211,12 @@ export async function mountRouteMap(container, segments, markers = []) {
     // (cortesía del proyecto, no una obligación de licencia) delante de nuestra
     // atribución real, y con el poco ancho de esta tarjeta era lo primero
     // que se veía cortado.
+    //
+    // tap: true (no false) a propósito -- aunque el mapa en sí sigue sin
+    // pan/zoom, las marcas de km SÍ son interactivas (tocar muestra su
+    // ritmo/FC, ver más abajo) y ese handler de Leaflet es el que hace
+    // fiable el tap-a-click en iOS Safari. dragging/zoomControl/etc. siguen
+    // desactivados aparte, así que esto no reactiva ningún paneo/zoom.
     const map = L.map(container, {
         zoomControl: false,
         dragging: false,
@@ -184,7 +225,7 @@ export async function mountRouteMap(container, segments, markers = []) {
         doubleClickZoom: false,
         boxZoom: false,
         keyboard: false,
-        tap: false,
+        tap: true,
         attributionControl: false
     });
 
@@ -202,12 +243,13 @@ export async function mountRouteMap(container, segments, markers = []) {
     // Todos los "casing" (contorno blanco) primero y todas las líneas de
     // color después -- si no, el casing de un segmento posterior taparía
     // parte de la línea de color del segmento anterior justo en el punto de
-    // frontera que ambos comparten.
+    // frontera que ambos comparten. Pesos más finos que en el primer
+    // acabado (8/5 -> 5/3, retoque de acabado: "se ve demasiado grueso").
     segments.forEach(segment => {
 
         L.polyline(segment.latlngs, {
             color: ROUTE_LINE_CASING_COLOR,
-            weight: 8,
+            weight: 5,
             opacity: 0.85,
             lineCap: "round",
             lineJoin: "round"
@@ -219,7 +261,7 @@ export async function mountRouteMap(container, segments, markers = []) {
 
         L.polyline(segment.latlngs, {
             color: segment.color,
-            weight: 5,
+            weight: 3,
             opacity: 1,
             lineCap: "round",
             lineJoin: "round"
@@ -236,14 +278,16 @@ export async function mountRouteMap(container, segments, markers = []) {
     // que tampoco hay ninguna transición que "se note" al quitarla.
     map.fitBounds(bounds, { padding: [24, 24], animate: false });
 
-    // Sin popup/tooltip ni interacción -- solo el número, especificación de
-    // cierre del Paso 2 ("el detalle de ritmo ya vive en el gráfico de
-    // abajo, no queremos duplicar información aquí"). resolveMarkerOffsets
-    // trabaja en píxeles de pantalla (no metros de recorrido) -- un
-    // recorrido con giros o ida-y-vuelta puede traer dos km distintos muy
-    // cerca EN EL MAPA aunque estén lejos en la ruta real; comprobarlo
-    // sobre el mapa ya encuadrado es lo único que funciona igual a
-    // cualquier zoom (bug real reportado: km 1/5 y 2/4 casi solapados).
+    // El círculo solo muestra el número (especificación de cierre del Paso
+    // 2: "no queremos duplicar el detalle del gráfico de abajo a la
+    // vista") -- el ritmo/FC de ese km concreto vive en un popup al pulsar
+    // (ver buildKmPopupHtml), no permanentemente en el mapa.
+    //
+    // resolveMarkerOffsets trabaja en píxeles de pantalla (no metros de
+    // recorrido) -- un recorrido con giros o ida-y-vuelta puede traer dos km
+    // distintos muy cerca EN EL MAPA aunque estén lejos en la ruta real;
+    // comprobarlo sobre el mapa ya encuadrado es lo único que funciona igual
+    // a cualquier zoom (bug real reportado: km 1/5 y 2/4 casi solapados).
     const markerPoints = markers.map(m => map.latLngToContainerPoint([m.lat, m.lon]));
 
     // Dirección local del recorrido en cada marca, calculada EN PÍXELES
@@ -275,16 +319,26 @@ export async function mountRouteMap(container, segments, markers = []) {
         // Leaflet aplica su propia transformación de posicionamiento ahí,
         // y una transform CSS propia en el mismo elemento se la pisaría por
         // completo, no solo la desplazaría.
-        L.marker([marker.lat, marker.lon], {
+        const leafletMarker = L.marker([marker.lat, marker.lon], {
             icon: L.divIcon({
                 className: "route-map-km-marker-wrap",
                 html: `<span class="route-map-km-marker" style="transform:translate(${x}px, ${y}px)">${marker.km}</span>`,
-                iconSize: [KM_MARKER_SIZE_PX, KM_MARKER_SIZE_PX],
-                iconAnchor: [KM_MARKER_SIZE_PX / 2, KM_MARKER_SIZE_PX / 2]
+                iconSize: [KM_MARKER_TAP_SIZE_PX, KM_MARKER_TAP_SIZE_PX],
+                iconAnchor: [KM_MARKER_TAP_SIZE_PX / 2, KM_MARKER_TAP_SIZE_PX / 2]
             }),
-            interactive: false,
+            // interactive:true -- especificación de cierre del Paso 2: al
+            // pulsar un km debe verse su ritmo/FC real. keyboard:false
+            // porque este mapa no tiene foco de teclado (no es navegable).
+            interactive: true,
             keyboard: false
         }).addTo(map);
+
+        // Sin dato real que enseñar (entreno demasiado corto para tener
+        // splits, ver initRunningEvents.js) -- nunca un popup con guiones,
+        // mismo criterio de "nunca inventar" del resto de la app.
+        if (marker.paceSecPerKm != null) {
+            leafletMarker.bindPopup(buildKmPopupHtml(marker), { closeButton: false, className: "route-map-popup" });
+        }
 
     });
 
