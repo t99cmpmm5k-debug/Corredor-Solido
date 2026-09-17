@@ -64,6 +64,26 @@ describe("buildKmMarkers", () => {
 
     });
 
+    it("cada marcador trae dirA/dirB (los puntos en bruto que lo rodean, para calcular dirección perpendicular en RouteMap.js)", () => {
+
+        // 1200m, no 1000m exactos -- straightTrace() aproxima grados a
+        // metros con una constante que no coincide al milímetro con la
+        // fórmula haversine real que usa cumulativeDistancesMeters(), así
+        // que una distancia justo en el límite de 1km es frágil por un
+        // motivo de la propia fixture del test, no del código real.
+        const trace = straightTrace(1200);
+        const [marker] = buildKmMarkers(trace);
+
+        expect(marker.dirA).toHaveProperty("lat");
+        expect(marker.dirA).toHaveProperty("lon");
+        expect(marker.dirB).toHaveProperty("lat");
+        expect(marker.dirB).toHaveProperty("lon");
+        // dirA/dirB son dos puntos DISTINTOS de la traza (si no, no habría
+        // ninguna dirección real que calcular).
+        expect(marker.dirA).not.toEqual(marker.dirB);
+
+    });
+
     it("no coloca ningún marcador si el recorrido no llega a 1km", () => {
 
         const trace = straightTrace(800);
@@ -102,29 +122,36 @@ describe("buildPaceColorSegments", () => {
 
     });
 
-    // Bug real ya corregido: con la media del entreno COMPLETO como
-    // referencia (en vez de la media de estos mismos splits), un desajuste
-    // entre esa cifra agregada y el ritmo por split calculado aparte podía
-    // dejar el mapa entero en un solo color (todo naranja, nunca verde) --
-    // ver el comentario junto a meanPaceSecPerKm en routeMapPaceColoring.js.
-    // Con 4 splits de verdad repartidos alrededor de su propia media (370),
-    // deben aparecer los tres colores a la vez, no solo uno.
-    it("con variación real entre splits, aparecen a la vez tramos rápidos, normales y lentos", () => {
+    // Bug real ya corregido dos veces: 1) usar la media del entreno COMPLETO
+    // como referencia (en vez del rango real de estos mismos splits) podía
+    // dejar el mapa entero en un solo color; 2) un umbral FIJO sobre una
+    // media también podía dejarlo casi entero en el color normal si la
+    // variación real del entreno era más sutil que ese umbral, aunque
+    // hubiera un km claramente más rápido y otro más lento dentro de ESE
+    // entreno. El degradado continuo (anclado al propio min/max del
+    // entreno, ver paceColorFor) garantiza que el km más rápido de estos 4
+    // sea SIEMPRE el color más rápido posible, y el más lento el más lento
+    // posible, con variación real y visible entre medias.
+    it("con variación real entre splits, el más rápido y el más lento anclan los extremos del degradado", () => {
 
         const trace = straightTrace(4000);
         const splits = [
-            { lap: 1, distanceKm: 1, paceSecPerKm: 340 },
+            { lap: 1, distanceKm: 1, paceSecPerKm: 340 }, // el más rápido de los 4
             { lap: 2, distanceKm: 1, paceSecPerKm: 360 },
             { lap: 3, distanceKm: 1, paceSecPerKm: 380 },
-            { lap: 4, distanceKm: 1, paceSecPerKm: 400 }
+            { lap: 4, distanceKm: 1, paceSecPerKm: 400 }  // el más lento de los 4
         ];
 
         const segments = buildPaceColorSegments(trace, splits);
-        const colors = new Set(segments.map(s => s.color));
+        const colors = segments.map(s => s.color);
 
-        expect(colors.has(ROUTE_COLOR_FAST)).toBe(true);
-        expect(colors.has(ROUTE_COLOR_NORMAL)).toBe(true);
-        expect(colors.has(ROUTE_COLOR_SLOW)).toBe(true);
+        expect(colors[0]).toBe(ROUTE_COLOR_FAST);
+        expect(colors[colors.length - 1]).toBe(ROUTE_COLOR_SLOW);
+
+        // Los dos intermedios deben ser colores REALMENTE distintos entre sí
+        // y de los extremos -- un degradado de verdad, no 3 bloques planos.
+        const uniqueColors = new Set(colors);
+        expect(uniqueColors.size).toBeGreaterThanOrEqual(4);
 
     });
 
@@ -141,7 +168,11 @@ describe("buildPaceColorSegments", () => {
 
     });
 
-    it("splits muy cercanos entre sí (variación normal de carrera) se quedan en el color normal", () => {
+    // MIN_PACE_RANGE_SEC (suelo de 20s): sin esto, un entreno muy uniforme
+    // se pintaría con el degradado a tope de saturación (verde/naranja
+    // puros) por una diferencia de solo 2-3 segundos entre kms, exagerando
+    // una variación insignificante como si fuera real.
+    it("con un rango de ritmo por debajo del suelo (variación normal de carrera), todo se queda en el color normal", () => {
 
         const trace = straightTrace(3000);
         const splits = [

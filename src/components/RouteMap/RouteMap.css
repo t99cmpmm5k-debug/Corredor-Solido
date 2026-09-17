@@ -65,6 +65,20 @@
 
 }
 
+/* Leaflet pone fondo/borde blanco por defecto a cualquier .leaflet-div-icon
+   -- este className (el que va en el elemento que Leaflet SÍ posiciona,
+   ver mountRouteMap) solo anula ese estilo de fábrica. El círculo visible
+   de verdad vive en .route-map-km-marker, un <span> interno aparte (para
+   poder desplazarlo con su propio transform sin pisar el transform de
+   posicionamiento de Leaflet, ver el comentario en mountRouteMap). */
+.route-map-km-marker-wrap{
+
+    background:none;
+
+    border:none;
+
+}
+
 /* Marca de km completo (Paso 2) -- solo el número, sin popup ni tooltip
    (el detalle de ritmo por km ya vive en .pace-chart, justo debajo). Fondo
    oscuro sólido (no un color de la paleta de ritmo) para que se lea igual
@@ -104,5 +118,55 @@
     line-height:1;
 
     letter-spacing:-.02em;
+
+}
+
+/* Leyenda "Más lento <- degradado -> Más rápido" (especificación de cierre
+   del Paso 2) -- misma forma de píldora que la referencia visual de
+   Garmin/Strava, reskinada al estilo oscuro del resto de tarjetas de esta
+   pantalla (.detail-summary/.pace-chart) en vez de copiar su píldora
+   blanca, que desentonaría con el tema oscuro de toda la app. */
+.route-map-legend{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+
+    padding:8px 14px;
+
+    border-radius:999px;
+
+    background:color-mix(in srgb, var(--card-background) 75%, transparent);
+
+    border:1px solid var(--card-border);
+
+}
+
+.route-map-legend-label{
+
+    flex-shrink:0;
+
+    color:var(--text-secondary);
+
+    font-size:.7rem;
+
+    font-weight:700;
+
+}
+
+/* Mismo orden de colores que el degradado real que pinta el mapa
+   (routeMapPaceColoring.js: rápido -> normal -> lento), para que la
+   leyenda no sea decorativa -- describe exactamente lo que se ve. */
+.route-map-legend-bar{
+
+    flex:1;
+
+    height:6px;
+
+    border-radius:999px;
+
+    background:linear-gradient(to right, #FFB020, #2EA8FF, #1FE6B3);
 
 }

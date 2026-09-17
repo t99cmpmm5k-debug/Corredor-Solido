@@ -34,28 +34,104 @@ const KM_MARKER_SIZE_PX = 18;
 // real de cada recorrido y varía de un entreno a otro.
 const MIN_KM_MARKER_SPACING_PX = KM_MARKER_SIZE_PX + 6;
 
-// Descarta marcas demasiado cerca de otra ya colocada, en el orden en que
-// llegan (kilómetro más bajo gana el hueco) -- greedy simple, no busca el
-// reparto "óptimo", solo garantiza que nunca queden dos pegadas. Exportada
-// para poder testearla sin Leaflet/DOM de por medio (recibe puntos en
-// espacio de píxeles ya resueltos, no coordenadas geográficas).
-export function declutterMarkers(points, minSpacingPx) {
+// Agrupa marcadores cuya posición en pantalla (píxeles, no metros de
+// recorrido) cae a menos de spacingPx entre sí -- transitivo (si A está
+// cerca de B y B cerca de C, los tres entran en el mismo grupo), no solo
+// por pares consecutivos. Un recorrido con giros/vueltas cerca de sí mismo
+// puede juntar más de dos marcas en el mismo sitio.
+function clusterByProximity(points, spacingPx) {
 
-    const keptIndices = [];
-    const keptPoints = [];
+    const parent = points.map((_, i) => i);
 
-    points.forEach((point, i) => {
+    function find(x) {
+        while (parent[x] !== x) { parent[x] = parent[parent[x]]; x = parent[x]; }
+        return x;
+    }
 
-        const overlaps = keptPoints.some(p => Math.hypot(p.x - point.x, p.y - point.y) < minSpacingPx);
+    for (let i = 0; i < points.length; i++) {
+        for (let j = i + 1; j < points.length; j++) {
 
-        if (!overlaps) {
-            keptPoints.push(point);
-            keptIndices.push(i);
+            if (Math.hypot(points[i].x - points[j].x, points[i].y - points[j].y) < spacingPx) {
+                const ri = find(i), rj = find(j);
+                if (ri !== rj) parent[ri] = rj;
+            }
+
         }
+    }
+
+    const groups = new Map();
+
+    points.forEach((_, i) => {
+        const root = find(i);
+        if (!groups.has(root)) groups.set(root, []);
+        groups.get(root).push(i);
+    });
+
+    return [...groups.values()];
+
+}
+
+// Cuando dos o más marcas de km quedan a menos de spacingPx en pantalla
+// (recorrido con giros o ida-y-vuelta cerca de sí mismo -- ver bug real
+// reportado: km 1/5 y 2/4 casi encima), las reparte en una pequeña fila
+// perpendicular a la línea del recorrido en ese punto, en vez de ocultar o
+// simplemente encoger ninguna -- mismo criterio visual que usan Garmin
+// Connect/Strava. `directions[i]` es el vector unitario perpendicular al
+// recorrido en el punto i (ver perpendicularUnitVector en mountRouteMap).
+// Devuelve un desplazamiento {x,y} en píxeles por marcador (0,0 si no
+// coincide con nadie). Pura -- trabaja en espacio de píxeles ya resuelto,
+// sin Leaflet/DOM, para poder testearla sola.
+export function resolveMarkerOffsets(points, directions, spacingPx) {
+
+    const offsets = points.map(() => ({ x: 0, y: 0 }));
+    const clusters = clusterByProximity(points, spacingPx);
+
+    clusters.forEach(indices => {
+
+        if (indices.length < 2) return;
+
+        // Eje común de todo el grupo (el del primer miembro, ya en orden de
+        // km ascendente -- ver el comentario de buildKmMarkers) para que se
+        // apilen en línea recta en vez de zigzaguear si cada uno tomara su
+        // propia dirección local, ligeramente distinta entre sí.
+        const axis = directions[indices[0]];
+
+        indices.forEach((pointIndex, rank) => {
+
+            const centeredRank = rank - (indices.length - 1) / 2;
+            const offset = centeredRank * spacingPx;
+
+            offsets[pointIndex] = { x: axis.x * offset, y: axis.y * offset };
+
+        });
 
     });
 
-    return keptIndices;
+    return offsets;
+
+}
+
+// Leyenda "Más lento <- degradado -> Más rápido" (especificación de cierre
+// del Paso 2) -- HTML plano, no un control de Leaflet: siempre legible a
+// cualquier zoom/tamaño de mapa, sin competir por espacio con la
+// atribución. La llama RunningDetailView.js justo debajo del contenedor del
+// mapa, solo cuando de verdad hay coloreado por ritmo (no en Recorridos de
+// referencia ni con menos de MIN_SPLITS_FOR_CHART splits reales).
+export function RouteMapLegend() {
+
+    return `
+
+        <div class="route-map-legend">
+
+            <span class="route-map-legend-label">Más lento</span>
+
+            <span class="route-map-legend-bar"></span>
+
+            <span class="route-map-legend-label">Más rápido</span>
+
+        </div>
+
+    `;
 
 }
 
@@ -162,23 +238,47 @@ export async function mountRouteMap(container, segments, markers = []) {
 
     // Sin popup/tooltip ni interacción -- solo el número, especificación de
     // cierre del Paso 2 ("el detalle de ritmo ya vive en el gráfico de
-    // abajo, no queremos duplicar información aquí"). declutterMarkers
+    // abajo, no queremos duplicar información aquí"). resolveMarkerOffsets
     // trabaja en píxeles de pantalla (no metros de recorrido) -- un
     // recorrido con giros o ida-y-vuelta puede traer dos km distintos muy
     // cerca EN EL MAPA aunque estén lejos en la ruta real; comprobarlo
     // sobre el mapa ya encuadrado es lo único que funciona igual a
     // cualquier zoom (bug real reportado: km 1/5 y 2/4 casi solapados).
     const markerPoints = markers.map(m => map.latLngToContainerPoint([m.lat, m.lon]));
-    const keptIndices = declutterMarkers(markerPoints, MIN_KM_MARKER_SPACING_PX);
 
-    keptIndices.forEach(i => {
+    // Dirección local del recorrido en cada marca, calculada EN PÍXELES
+    // (no en lat/lon) convirtiendo los dos puntos "en bruto" que la rodean
+    // (dirA/dirB, ver buildKmMarkers) -- así el desplazamiento perpendicular
+    // es correcto sea cual sea la proyección/rotación real del mapa en
+    // pantalla, no una aproximación geográfica.
+    const markerDirections = markers.map(marker => {
 
-        const marker = markers[i];
+        const from = map.latLngToContainerPoint([marker.dirA.lat, marker.dirA.lon]);
+        const to = map.latLngToContainerPoint([marker.dirB.lat, marker.dirB.lon]);
 
+        const dx = to.x - from.x, dy = to.y - from.y;
+        const len = Math.hypot(dx, dy) || 1;
+
+        // Perpendicular (rotación 90°) al vector de avance del recorrido.
+        return { x: -dy / len, y: dx / len };
+
+    });
+
+    const offsets = resolveMarkerOffsets(markerPoints, markerDirections, MIN_KM_MARKER_SPACING_PX);
+
+    markers.forEach((marker, i) => {
+
+        const { x, y } = offsets[i];
+
+        // El desplazamiento va en un <span> INTERNO (route-map-km-marker),
+        // nunca en el elemento que Leaflet posiciona (el de className) --
+        // Leaflet aplica su propia transformación de posicionamiento ahí,
+        // y una transform CSS propia en el mismo elemento se la pisaría por
+        // completo, no solo la desplazaría.
         L.marker([marker.lat, marker.lon], {
             icon: L.divIcon({
-                className: "route-map-km-marker",
-                html: `<span>${marker.km}</span>`,
+                className: "route-map-km-marker-wrap",
+                html: `<span class="route-map-km-marker" style="transform:translate(${x}px, ${y}px)">${marker.km}</span>`,
                 iconSize: [KM_MARKER_SIZE_PX, KM_MARKER_SIZE_PX],
                 iconAnchor: [KM_MARKER_SIZE_PX / 2, KM_MARKER_SIZE_PX / 2]
             }),
