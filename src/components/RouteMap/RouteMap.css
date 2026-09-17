@@ -1,11 +1,13 @@
-/* Misma altura de referencia que .pace-chart-track (RunningDetailView.css)
-   -- un mapa más bajo se lee mal, más alto compite demasiado con el resto
-   de tarjetas del detalle. */
+/* 220px -> 340px (especificación de cierre, punto 2: "notablemente más
+   grande") -- es la tarjeta más grande del detalle a propósito, tratada
+   como la "fotografía" del entreno. border-radius:26px en vez de
+   var(--radius-lg) (22px) para igualar exactamente a .pace-chart
+   (RunningDetailView.css), su vecino visual directo en la misma pantalla. */
 .route-map{
 
-    height:220px;
+    height:340px;
 
-    border-radius:var(--radius-lg);
+    border-radius:26px;
 
     overflow:hidden;
 
@@ -17,11 +19,16 @@
 
 }
 
-/* Los tiles de OpenStreetMap son claros de por sí -- sin este fondo, el
-   hueco visible mientras cargan (o si algún tile falla) mostraría lo que
-   haya detrás en vez de un placeholder neutro consistente con el resto de
-   tarjetas oscuras de la app. */
+/* cursor:default -- "fotografía" fija, no un mapa de consulta; con
+   zoomControl:false/dragging:false (mountRouteMap) el cursor grab/grabbing
+   de Leaflet ya no debería aplicar solo, pero se fuerza explícito por si
+   acaso cambia de versión. background -- los tiles de terreno son claros
+   de por sí, así que sin esto el hueco visible mientras cargan (o si algún
+   tile falla) mostraría lo que haya detrás en vez de un placeholder neutro
+   consistente con el resto de tarjetas oscuras de la app. */
 .route-map .leaflet-container{
+
+    cursor:default;
 
     background:var(--card-background);
 

@@ -6,8 +6,24 @@ import "./RouteMap.css";
 // repite el valor literal aquí.
 const ROUTE_LINE_COLOR = "#2EA8FF";
 
-const OSM_TILE_URL = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
-const OSM_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>';
+// Contorno blanco debajo de la línea de color -- sobre un mapa de terreno
+// (verdes/marrones variables según la zona) una línea plana puede perder
+// contraste en algunos tramos; el "casing" es la técnica estándar de
+// Garmin/Strava para que el trazado se lea igual de bien en cualquier
+// fondo, no un adorno.
+const ROUTE_LINE_CASING_COLOR = "#FFFFFF";
+
+// Terreno con relieve/vegetación (Stamen Terrain, servido hoy por Stadia
+// Maps) en vez del estilo "calles" plano de OSM estándar -- pedido
+// explícito de diseño (especificación de cierre del mapa, punto 3):
+// visualmente más atractivo y con más sentido temático para running/trail.
+// En localhost funciona sin ninguna configuración (autenticación por
+// dominio de Stadia deja pasar localhost/127.0.0.1 siempre); en producción
+// hace falta dar de alta una cuenta gratuita en stadiamaps.com y añadir el
+// dominio real (el de GitHub Pages) a la lista blanca de esa cuenta -- sin
+// eso, los tiles no cargan en producción aunque el código esté bien.
+const TERRAIN_TILE_URL = "https://tiles.stadiamaps.com/tiles/stamen_terrain/{z}/{x}/{y}{r}.png";
+const TERRAIN_ATTRIBUTION = '&copy; <a href="https://stadiamaps.com/attribution/" target="_blank" rel="noopener">Stadia Maps</a> &copy; <a href="https://stamen.com/" target="_blank" rel="noopener">Stamen Design</a> &copy; <a href="https://openmaptiles.org/" target="_blank" rel="noopener">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>';
 
 // Único criterio de "este entreno tiene GPS real" en toda la app -- mismo
 // umbral (>=2 puntos) que ya usa referenceRouteGeometry.js para agrupar
@@ -34,12 +50,48 @@ export async function mountRouteMap(container, routeTrace) {
         import("leaflet/dist/leaflet.css")
     ]);
 
-    const map = L.map(container, { attributionControl: true });
+    // "Fotografía" fija del recorrido, no un mapa de consulta (especificación
+    // de cierre, punto 1) -- toda interacción de navegación desactivada;
+    // solo queda el control de atribución, obligatorio por licencia de los
+    // tiles (Stadia/Stamen/OpenMapTiles/OSM).
+    const map = L.map(container, {
+        zoomControl: false,
+        dragging: false,
+        touchZoom: false,
+        scrollWheelZoom: false,
+        doubleClickZoom: false,
+        boxZoom: false,
+        keyboard: false,
+        tap: false,
+        attributionControl: true
+    });
 
-    L.tileLayer(OSM_TILE_URL, { attribution: OSM_ATTRIBUTION, maxZoom: 19 }).addTo(map);
+    // detectRetina: la plantilla de Stadia lleva {r} para servir tiles @2x
+    // en pantallas de alta densidad (iPhone) -- más nitidez sin coste
+    // adicional de implementación.
+    L.tileLayer(TERRAIN_TILE_URL, {
+        attribution: TERRAIN_ATTRIBUTION,
+        maxZoom: 18,
+        detectRetina: true
+    }).addTo(map);
 
     const latlngs = routeTrace.map(point => [point.lat, point.lon]);
-    const line = L.polyline(latlngs, { color: ROUTE_LINE_COLOR, weight: 4, opacity: 0.9 }).addTo(map);
+
+    L.polyline(latlngs, {
+        color: ROUTE_LINE_CASING_COLOR,
+        weight: 8,
+        opacity: 0.85,
+        lineCap: "round",
+        lineJoin: "round"
+    }).addTo(map);
+
+    const line = L.polyline(latlngs, {
+        color: ROUTE_LINE_COLOR,
+        weight: 5,
+        opacity: 1,
+        lineCap: "round",
+        lineJoin: "round"
+    }).addTo(map);
 
     map.fitBounds(line.getBounds(), { padding: [24, 24] });
 
