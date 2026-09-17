@@ -1,6 +1,6 @@
 import { formatISODate } from "../utils/date.js";
 import { inferWorkoutType } from "./classifyWorkoutType.js";
-import { haversineMeters, buildRouteTrace } from "./geoTrace.js";
+import { haversineMeters, buildRouteTrace, sortPointsByTimeStable } from "./geoTrace.js";
 
 const TRACKPOINT_EXTENSION_NS = "http://www.garmin.com/xmlschemas/TrackPointExtension/v1";
 
@@ -231,11 +231,15 @@ export function parseGpxWorkout(xmlText) {
     }
 
     const trkEl = doc.getElementsByTagName("trk")[0];
-    const points = trkEl ? parseTrackpoints(trkEl) : [];
+    const rawPoints = trkEl ? parseTrackpoints(trkEl) : [];
 
-    if (!trkEl || !points.length) {
+    if (!trkEl || !rawPoints.length) {
         throw new Error("El archivo GPX no tiene ningún recorrido reconocible.");
     }
+
+    // Por <time> real, no por orden de aparición en el archivo -- ver el
+    // comentario junto a sortPointsByTimeStable en geoTrace.js.
+    const points = sortPointsByTimeStable(rawPoints);
 
     const metadataEl = doc.getElementsByTagName("metadata")[0];
     const metaTime = textOf(metadataEl, "time");

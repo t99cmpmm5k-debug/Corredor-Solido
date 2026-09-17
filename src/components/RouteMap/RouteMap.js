@@ -194,8 +194,12 @@ export function RouteMapContainer(id = "route-map") {
 // vive en routeMapPaceColoring.js, propio de Running). El caso sin
 // coloreado (Paso 1, o Recorridos de referencia) simplemente pasa un único
 // segmento con todo el trazado.
-// markers: array opcional de {lat, lon, km} -- marcas de km completo.
-export async function mountRouteMap(container, segments, markers = []) {
+// markers: array opcional de {lat, lon, km, dirA, dirB, paceSecPerKm, avgHr}
+// -- marcas de km completo.
+// arrows: array opcional de {lat, lon, dirA, dirB} -- flechas de sentido a
+// lo largo del trazado (ayudan a confirmar visualmente en qué dirección se
+// corrió, especialmente en rutas de ida y vuelta).
+export async function mountRouteMap(container, segments, markers = [], arrows = []) {
 
     const [{ default: L }] = await Promise.all([
         import("leaflet"),
@@ -277,6 +281,32 @@ export async function mountRouteMap(container, segments, markers = []) {
     // más abajo. El mapa no es interactivo (especificación del Paso 1), así
     // que tampoco hay ninguna transición que "se note" al quitarla.
     map.fitBounds(bounds, { padding: [24, 24], animate: false });
+
+    // Flechas de sentido -- ángulo calculado EN PÍXELES de pantalla (no en
+    // lat/lon), convirtiendo los dos puntos "en bruto" que rodean cada
+    // flecha (dirA/dirB, ver buildDirectionArrows) con la misma técnica que
+    // ya usa el desplazamiento de marcas de km más abajo -- correcto sea
+    // cual sea la proyección real del mapa en pantalla. atan2(dy,dx) da 0°
+    // apuntando a la derecha, que es la orientación "de fábrica" del
+    // triángulo CSS (.route-map-direction-arrow, ver RouteMap.css), así que
+    // el ángulo se aplica tal cual, sin ningún offset de +90°.
+    arrows.forEach(arrow => {
+
+        const from = map.latLngToContainerPoint([arrow.dirA.lat, arrow.dirA.lon]);
+        const to = map.latLngToContainerPoint([arrow.dirB.lat, arrow.dirB.lon]);
+        const angleDeg = Math.atan2(to.y - from.y, to.x - from.x) * 180 / Math.PI;
+
+        L.marker([arrow.lat, arrow.lon], {
+            icon: L.divIcon({
+                className: "route-map-direction-arrow-wrap",
+                html: `<span class="route-map-direction-arrow" style="transform:translate(-50%, -50%) rotate(${angleDeg}deg)"></span>`,
+                iconSize: [0, 0]
+            }),
+            interactive: false,
+            keyboard: false
+        }).addTo(map);
+
+    });
 
     // El círculo solo muestra el número (especificación de cierre del Paso
     // 2: "no queremos duplicar el detalle del gráfico de abajo a la

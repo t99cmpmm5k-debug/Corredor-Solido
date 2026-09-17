@@ -1,5 +1,50 @@
 import { describe, it, expect } from "vitest";
-import { haversineMeters, buildRouteTrace, ROUTE_TRACE_STEP_METERS } from "./geoTrace.js";
+import { haversineMeters, buildRouteTrace, sortPointsByTimeStable, ROUTE_TRACE_STEP_METERS } from "./geoTrace.js";
+
+describe("sortPointsByTimeStable", () => {
+
+    it("reordena puntos con <time> real que aparecen fuera de orden en el archivo", () => {
+
+        const points = [
+            { time: new Date("2026-09-15T08:02:00Z"), lat: 2 },
+            { time: new Date("2026-09-15T08:00:00Z"), lat: 0 },
+            { time: new Date("2026-09-15T08:01:00Z"), lat: 1 }
+        ];
+
+        const sorted = sortPointsByTimeStable(points);
+
+        expect(sorted.map(p => p.lat)).toEqual([0, 1, 2]);
+
+    });
+
+    it("no reordena nada si ya vienen en orden cronológico (caso normal)", () => {
+
+        const points = [
+            { time: new Date("2026-09-15T08:00:00Z"), lat: 0 },
+            { time: new Date("2026-09-15T08:01:00Z"), lat: 1 },
+            { time: new Date("2026-09-15T08:02:00Z"), lat: 2 }
+        ];
+
+        expect(sortPointsByTimeStable(points).map(p => p.lat)).toEqual([0, 1, 2]);
+
+    });
+
+    it("deja los puntos sin <time> exactamente donde estaban, sin inventar un orden", () => {
+
+        const points = [
+            { time: new Date("2026-09-15T08:01:00Z"), lat: 1 },
+            { time: null, lat: "sin-tiempo" },
+            { time: new Date("2026-09-15T08:00:00Z"), lat: 0 }
+        ];
+
+        // El de en medio (sin <time>) no se mueve -- ni hacia delante ni
+        // hacia atrás -- aunque los otros dos sí se reordenen entre sí.
+        const sorted = sortPointsByTimeStable(points);
+        expect(sorted[1].lat).toBe("sin-tiempo");
+
+    });
+
+});
 
 describe("haversineMeters", () => {
 

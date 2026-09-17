@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
     cumulativeDistancesMeters,
     buildKmMarkers,
+    buildDirectionArrows,
     buildPaceColorSegments,
     ROUTE_COLOR_NORMAL,
     ROUTE_COLOR_FAST,
@@ -128,6 +129,38 @@ describe("buildKmMarkers", () => {
 
         const trace = straightTrace(800);
         expect(buildKmMarkers(trace)).toEqual([]);
+
+    });
+
+});
+
+describe("buildDirectionArrows", () => {
+
+    it("coloca una flecha cada ~500m, desfasada de las marcas de km", () => {
+
+        const trace = straightTrace(2000);
+        const arrows = buildDirectionArrows(trace);
+
+        // 4 flechas esperadas: ~250m, ~750m, ~1250m, ~1750m.
+        expect(arrows).toHaveLength(4);
+
+    });
+
+    it("cada flecha trae dirA/dirB para poder calcular su ángulo real en RouteMap.js", () => {
+
+        const trace = straightTrace(2000);
+        const [arrow] = buildDirectionArrows(trace);
+
+        expect(arrow.dirA).toHaveProperty("lat");
+        expect(arrow.dirB).toHaveProperty("lat");
+        expect(arrow.dirA).not.toEqual(arrow.dirB);
+
+    });
+
+    it("sin recorrido suficiente para ni una sola flecha, devuelve un array vacío", () => {
+
+        const trace = straightTrace(200);
+        expect(buildDirectionArrows(trace)).toEqual([]);
 
     });
 

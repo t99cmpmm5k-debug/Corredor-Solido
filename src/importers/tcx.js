@@ -1,6 +1,6 @@
 import { formatISODate } from "../utils/date.js";
 import { inferWorkoutType } from "./classifyWorkoutType.js";
-import { haversineMeters, buildRouteTrace } from "./geoTrace.js";
+import { haversineMeters, buildRouteTrace, sortPointsByTimeStable } from "./geoTrace.js";
 
 const ACTIVITY_EXTENSION_NS = "http://www.garmin.com/xmlschemas/ActivityExtension/v2";
 
@@ -295,10 +295,13 @@ export function parseTcxWorkout(xmlText) {
     })));
     const maxCadence = maxOf(lapEls.map(lap => nsTagValue(lap, "maxRunCadence")));
 
-    // Puntos GPS de TODOS los Laps, en orden -- de aquí salen elevación,
-    // splits y la traza de recorrido de la actividad completa, no solo del
-    // primer Lap.
-    const points = lapEls.flatMap(lap => parseTrackpoints(lap));
+    // Puntos GPS de TODOS los Laps -- de aquí salen elevación, splits y la
+    // traza de recorrido de la actividad completa, no solo del primer Lap.
+    // Reordenados por <Time> real, no por el orden de aparición de los
+    // propios Laps/Trackpoints en el archivo -- ver el comentario junto a
+    // sortPointsByTimeStable en geoTrace.js.
+    const rawPoints = lapEls.flatMap(lap => parseTrackpoints(lap));
+    const points = sortPointsByTimeStable(rawPoints);
     const firstFix = points.find(p => p.lat != null && p.lon != null);
 
     // Notes de Zepp no es un título descriptivo como el que capturan las

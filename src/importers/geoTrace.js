@@ -4,6 +4,29 @@
 // tcx.js y gpx.js -- con un tercer consumidor (la comparación de
 // recorridos) tocaba juntarlo en un solo sitio.
 
+// Endurecimiento defensivo (bug reportado sobre el orden/posición de las
+// marcas de km en un entreno de ida y vuelta): gpx.js/tcx.js asumían que el
+// orden de APARICIÓN de los <trkpt>/<Trackpoint> en el archivo coincide con
+// el orden CRONOLÓGICO real de grabación -- cierto en la inmensa mayoría de
+// exportadores, pero no garantizado por el formato en sí (un archivo con
+// puntos escritos fuera de orden, por el motivo que sea del lado del
+// reloj/app de origen, se procesaría igual de "correcto" en apariencia sin
+// que nada lo detectara). Se reordena explícitamente por el propio
+// <time>/<Time> de cada punto antes de calcular nada (distancia, splits,
+// routeTrace) -- nunca por su orden de aparición en el archivo. Un
+// comparador que trata cualquier punto SIN timestamp como "igual" (0) dejo
+// esos puntos exactamente donde ya estaban (sort estable) en vez de
+// moverlos con una comparación inventada, así que nunca empeora un archivo
+// que no traiga <time> en todos sus puntos.
+export function sortPointsByTimeStable(points) {
+
+    return [...points].sort((a, b) => {
+        if (!a.time || !b.time) return 0;
+        return a.time.getTime() - b.time.getTime();
+    });
+
+}
+
 export function haversineMeters(lat1, lon1, lat2, lon2) {
 
     const R = 6371000;
