@@ -270,7 +270,13 @@ export function buildKmMarkers(routeTrace, splits = []) {
 // visualmente el sentido real del recorrido). Una cada ARROW_STEP_METERS,
 // desfasadas medio paso desde el inicio para que nunca coincidan
 // exactamente con una marca de km (que cae en múltiplos de 1000m).
-const ARROW_STEP_METERS = 500;
+// 500 -> 1000 (retoque de acabado real, verificado con "Puerto Lumbreras -
+// 8k zona dos": a 500m salían demasiadas flechas para el tamaño real de la
+// tarjeta del mapa, y en los tramos con curva llegaban a cruzarse entre
+// sí -- con una cada km de separación (desfasada 500m del inicio, así
+// nunca cae justo sobre una marca de km) queda un rastro de sentido claro
+// sin amontonarse.
+const ARROW_STEP_METERS = 1000;
 
 export function buildDirectionArrows(routeTrace) {
 

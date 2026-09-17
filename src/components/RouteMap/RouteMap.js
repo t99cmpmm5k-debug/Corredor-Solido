@@ -84,14 +84,24 @@ function clusterByProximity(points, spacingPx) {
 
 // Cuando dos o más marcas de km quedan a menos de spacingPx en pantalla
 // (recorrido con giros o ida-y-vuelta cerca de sí mismo -- ver bug real
-// reportado: km 1/5 y 2/4 casi encima), las reparte en una pequeña fila
-// perpendicular a la línea del recorrido en ese punto, en vez de ocultar o
-// simplemente encoger ninguna -- mismo criterio visual que usan Garmin
-// Connect/Strava. `directions[i]` es el vector unitario perpendicular al
-// recorrido en el punto i (ver perpendicularUnitVector en mountRouteMap).
-// Devuelve un desplazamiento {x,y} en píxeles por marcador (0,0 si no
-// coincide con nadie). Pura -- trabaja en espacio de píxeles ya resuelto,
-// sin Leaflet/DOM, para poder testearla sola.
+// reportado: km 1/5 y 2/4 casi encima), se reparten a lados opuestos de la
+// línea en vez de ocultar o simplemente encoger ninguna -- mismo criterio
+// visual que usan Garmin Connect/Strava. `directions[i]` es el vector
+// unitario perpendicular al recorrido EN EL PUNTO i (ver
+// perpendicularUnitVector en mountRouteMap) -- cada marcador usa siempre
+// SU PROPIA dirección local, nunca la de otro miembro del grupo: en un
+// recorrido que pasa cerca de sí mismo (ida y vuelta por la misma zona,
+// caso real verificado) el rumbo real en el km lejano suele ir en sentido
+// contrario al del km cercano, así que imponer un único eje "prestado"
+// desplazaba la marca en un ángulo que no correspondía a la línea real
+// bajo ella. Regla fija y predecible, sin comparar geometrías entre sí
+// caso por caso: dentro de cada grupo (ya en orden cronológico real, ver
+// el comentario de buildKmMarkers), los miembros alternan de lado -- rank
+// par a un lado, impar al opuesto -- y cada pareja adicional se aleja un
+// paso más para no solaparse entre sí en grupos de más de 2. Devuelve un
+// desplazamiento {x,y} en píxeles por marcador (0,0 si no coincide con
+// nadie). Pura -- trabaja en espacio de píxeles ya resuelto, sin
+// Leaflet/DOM, para poder testearla sola.
 export function resolveMarkerOffsets(points, directions, spacingPx) {
 
     const offsets = points.map(() => ({ x: 0, y: 0 }));
@@ -101,18 +111,13 @@ export function resolveMarkerOffsets(points, directions, spacingPx) {
 
         if (indices.length < 2) return;
 
-        // Eje común de todo el grupo (el del primer miembro, ya en orden de
-        // km ascendente -- ver el comentario de buildKmMarkers) para que se
-        // apilen en línea recta en vez de zigzaguear si cada uno tomara su
-        // propia dirección local, ligeramente distinta entre sí.
-        const axis = directions[indices[0]];
-
         indices.forEach((pointIndex, rank) => {
 
-            const centeredRank = rank - (indices.length - 1) / 2;
-            const offset = centeredRank * spacingPx;
+            const side = rank % 2 === 0 ? 1 : -1;
+            const magnitude = (Math.floor(rank / 2) + 0.5) * spacingPx;
+            const axis = directions[pointIndex];
 
-            offsets[pointIndex] = { x: axis.x * offset, y: axis.y * offset };
+            offsets[pointIndex] = { x: axis.x * side * magnitude, y: axis.y * side * magnitude };
 
         });
 

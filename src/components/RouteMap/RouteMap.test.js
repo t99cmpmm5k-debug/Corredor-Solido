@@ -55,7 +55,7 @@ describe("resolveMarkerOffsets", () => {
 
     });
 
-    it("agrupa transitivamente 3 puntos encadenados en un único grupo apilado", () => {
+    it("agrupa transitivamente 3 puntos encadenados en un único grupo, alternando de lado", () => {
 
         // A cerca de B, B cerca de C, pero A y C no están cerca directamente
         // entre sí -- deben entrar igualmente en el mismo grupo de 3.
@@ -64,11 +64,34 @@ describe("resolveMarkerOffsets", () => {
 
         const offsets = resolveMarkerOffsets(points, directions, 20);
 
-        // El del medio (rank central) no se desplaza; los de los extremos
-        // del grupo sí, en sentidos opuestos.
-        expect(offsets[1]).toEqual({ x: 0, y: 0 });
-        expect(offsets[0].y).toBe(-offsets[2].y);
+        // Los 3 se desplazan (ninguno se queda quieto); A y C (rank par)
+        // van al mismo lado, B (rank impar) al opuesto.
         expect(offsets[0].y).not.toBe(0);
+        expect(offsets[1].y).not.toBe(0);
+        expect(offsets[2].y).not.toBe(0);
+        expect(Math.sign(offsets[0].y)).toBe(Math.sign(offsets[2].y));
+        expect(Math.sign(offsets[1].y)).toBe(-Math.sign(offsets[0].y));
+
+    });
+
+    it("cada marcador usa SU PROPIA dirección local, no la de otro miembro del grupo -- caso real de ida y vuelta por la misma zona", () => {
+
+        // km 1 (yendo) y km 4 (volviendo) casi encima en pantalla, pero el
+        // recorrido va en sentidos opuestos en cada uno -- la perpendicular
+        // real de cada punto también es opuesta. Con un eje compartido
+        // (el algoritmo anterior) ambos se habrían desplazado a lo largo del
+        // eje de km 1, ignorando el rumbo real bajo km 4.
+        const points = [{ x: 0, y: 0 }, { x: 1, y: 1 }];
+        const directions = [{ x: 0, y: 1 }, { x: 0, y: -1 }];
+
+        const offsets = resolveMarkerOffsets(points, directions, 20);
+
+        // km 1 se desplaza sobre SU propio eje (0,1); km 4 sobre el suyo
+        // (0,-1) -- nunca el prestado del otro miembro del grupo.
+        expect(offsets[0].x).toBeCloseTo(0);
+        expect(offsets[1].x).toBeCloseTo(0);
+        expect(offsets[0].y).not.toBe(0);
+        expect(offsets[1].y).not.toBe(0);
 
     });
 

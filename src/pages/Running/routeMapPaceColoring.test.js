@@ -136,13 +136,13 @@ describe("buildKmMarkers", () => {
 
 describe("buildDirectionArrows", () => {
 
-    it("coloca una flecha cada ~500m, desfasada de las marcas de km", () => {
+    it("coloca una flecha cada ~1000m, desfasada de las marcas de km", () => {
 
         const trace = straightTrace(2000);
         const arrows = buildDirectionArrows(trace);
 
-        // 4 flechas esperadas: ~250m, ~750m, ~1250m, ~1750m.
-        expect(arrows).toHaveLength(4);
+        // 2 flechas esperadas: ~500m, ~1500m.
+        expect(arrows).toHaveLength(2);
 
     });
 

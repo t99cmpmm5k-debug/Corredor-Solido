@@ -9,7 +9,14 @@ const REPO = "t99cmpmm5k-debug/Corredor-Solido";
 
 // Suficiente para dar una idea real de qué trae la versión nueva sin que
 // el aviso se convierta en un log crudo de git.
-const MAX_COMMITS_SHOWN = 6;
+//
+// EXCEPCIÓN TEMPORAL (despliegue del 2026-09-18): subido a 50 solo para
+// que el aviso de esta tanda de despliegues cubra TODOS los commits de la
+// sesión de tombstones/intervalos/changelog/mapa -- ha sido una sesión
+// grande y se pidió verlos reflejados de una vez. Bajar a 6 en un commit
+// aparte en cuanto ese aviso ya se haya visto -- no dejar esto así de
+// manera permanente, 6 es el valor real para el día a día.
+const MAX_COMMITS_SHOWN = 50;
 
 // Mensajes puramente técnicos (de desarrollo, no relevantes para quien usa
 // la app) -- se descarta la línea entera si empieza así, en vez de
