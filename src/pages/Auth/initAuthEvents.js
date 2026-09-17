@@ -73,7 +73,17 @@ function handleLoginOrRegistroSubmit(mode) {
             // próximo primer plano o el botón manual. runSync() ya hace
             // push-antes-de-pull (ver syncManager.js), así que esto también
             // fusiona con seguridad histórico local propio del dispositivo.
-            runSync("post-login");
+            //
+            // Se espera a que las cachés en memoria estén realmente
+            // pobladas antes de sincronizar -- igual que initVerifyAccount()
+            // más abajo. Sin esto, si main.js todavía está hidratando
+            // (venció el timeout de 1.5s, ver HYDRATE_TIMEOUT_MS) y el
+            // login llega rápido (autofill), getSyncableData() leería los
+            // stores todavía vacíos y ese historial local no subiría en
+            // esta ronda. hydrate() está memoizada, así que esperarla aquí
+            // es gratis si ya terminó. No bloquea navigate(Home) de arriba.
+            Promise.all([hydrate(), hydrateGymSessions(), hydrateReferenceRoutes()])
+                .then(() => runSync("post-login"));
 
         })
         .catch(err => {
