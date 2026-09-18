@@ -172,6 +172,19 @@
 
 }
 
+/* Bug real corregido: en el mapa pequeño calc(100% - 12px) es el ancho real
+   de la tarjeta (~300-340px) y la atribución envuelta a 2 líneas se queda
+   contenida ahí sin más. En pantalla completa ese mismo cálculo es el ANCHO
+   DEL DISPOSITIVO ENTERO -- la atribución podía estirarse casi de punta a
+   punta y solapar con la leyenda, centrada en la misma franja inferior. Un
+   ancho fijo más modesto la mantiene pegada a su esquina real (abajo a la
+   derecha), lejos del centro donde vive la leyenda. */
+.route-map-fullscreen-map .leaflet-control-attribution{
+
+    max-width:200px;
+
+}
+
 .route-map .leaflet-control-attribution a,
 .route-map-fullscreen-map .leaflet-control-attribution a{
 
@@ -402,6 +415,18 @@
 
     z-index:1000;
 
+    /* Bug real corregido: sin un ancho propio, un elemento position:absolute
+       se ajusta a su contenido (shrink-to-fit) -- y .route-map-legend-bar
+       (flex:1, flex-basis 0% real del shorthand) no aporta NADA a ese
+       cálculo por ser un <span> vacío sin ancho propio, así que el
+       contenedor terminaba tan estrecho como el texto de las dos etiquetas
+       y la barra de color quedaba comprimida a 0px -- invisible, solo se
+       veía la píldora con el texto. Un ancho fijo le da a flex:1 espacio
+       real donde crecer.
+       max-width por si el propio dispositivo fuera más estrecho que esto. */
+    width:220px;
+    max-width:calc(100% - 32px);
+
     display:flex;
 
     align-items:center;
@@ -427,9 +452,15 @@
    -- respeta el área segura inferior (notch/home indicator), a diferencia
    del mapa pequeño, que ya vive dentro de una tarjeta con su propio margen
    respecto al borde de la pantalla. */
+/* 16px -> 60px de margen -- bug real corregido: la atribución (esquina
+   inferior derecha, ver más arriba) puede envolver a 2-3 líneas cortas; a
+   16px del borde, en pantallas más estrechas, su zona horizontal llegaba a
+   solaparse con esta píldora centrada. Con este hueco de sobra por encima,
+   quedan claramente separadas pase lo que pase con el ancho real del
+   dispositivo. */
 .route-map-fullscreen-overlay .route-map-legend{
 
-    bottom:calc(16px + env(safe-area-inset-bottom));
+    bottom:calc(60px + env(safe-area-inset-bottom));
 
 }
 
