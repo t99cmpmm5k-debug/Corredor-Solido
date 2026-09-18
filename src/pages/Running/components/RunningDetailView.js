@@ -802,6 +802,18 @@ export function RunningDetailView(workout, shoes = [], warningsExpanded = false,
     // entreno con FC media conocida pero sin la vista estándar de Vueltas
     // (solo Resumen/Estadísticas + la tabla con FC) se quedaba sin ningún
     // sitio donde mostrar ese dato.
+    //
+    // Bug real corregido: el mapa pequeño y el overlay de pantalla completa
+    // son MUTUAMENTE EXCLUYENTES (!fullscreenMapOpen en el primero) -- antes
+    // se pintaban los dos a la vez (el overlay tapa visualmente al pequeño,
+    // pero este seguía existiendo Y montando su propia instancia real de
+    // Leaflet debajo, con su propia leyenda y atribución). La leyenda del
+    // mapa pequeño (z-index alto a propósito para ganarle a los panes
+    // internos de Leaflet) se colaba por encima del propio overlay al no
+    // tener .route-map-fullscreen-overlay ningún hijo intermedio que
+    // contuviera ese z-index dentro de su propio contexto de apilamiento --
+    // de ahí la leyenda "duplicada" y mal colocada, y de paso el botón de
+    // cerrar tapado.
     return `
 
         <section class="running-detail">
@@ -847,7 +859,7 @@ export function RunningDetailView(workout, shoes = [], warningsExpanded = false,
 
             </div>
 
-            ${hasRouteTrace(workout) ? RouteMapTapTarget("route-map", allSplits.length >= MIN_SPLITS_FOR_CHART ? RouteMapLegend() : "") : ""}
+            ${hasRouteTrace(workout) && !fullscreenMapOpen ? RouteMapTapTarget("route-map", allSplits.length >= MIN_SPLITS_FOR_CHART ? RouteMapLegend() : "") : ""}
 
             ${hasRouteTrace(workout) && fullscreenMapOpen ? RouteMapFullscreenOverlay("route-map-fullscreen", allSplits.length >= MIN_SPLITS_FOR_CHART ? RouteMapLegend() : "") : ""}
 

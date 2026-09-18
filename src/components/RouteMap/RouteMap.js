@@ -293,6 +293,16 @@ export async function mountRouteMap(container, segments, markers = [], routeTrac
 
     });
 
+    // invalidateSize() defensivo antes de encuadrar -- el contenedor puede
+    // no tener todavía su tamaño real definitivo en el momento exacto en
+    // que Leaflet se inicializa (el overlay de pantalla completa se acaba
+    // de insertar en el DOM en este mismo ciclo de render), y un tamaño
+    // erróneo en ese instante desincroniza todo lo que Leaflet calcula
+    // después a partir de él (encuadre, zoom, posición de sus propios
+    // controles). Práctica estándar recomendada por Leaflet para mapas
+    // montados en contenedores recién insertados/mostrados.
+    map.invalidateSize();
+
     const bounds = L.latLngBounds(segments.flatMap(segment => segment.latlngs));
 
     // animate:false -- fitBounds necesita haber fijado ya el zoom/centro

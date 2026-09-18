@@ -63,6 +63,17 @@
 
 }
 
+/* La atribución (control propio de Leaflet, esquina inferior derecha) vive
+   pegada al borde REAL del dispositivo aquí -- a diferencia del mapa
+   pequeño, que ya está dentro de una tarjeta con su propio margen. Sin
+   esto, en un iPhone con home indicator quedaba demasiado pegada a esa
+   zona. */
+.route-map-fullscreen-map .leaflet-bottom{
+
+    margin-bottom:env(safe-area-inset-bottom);
+
+}
+
 .route-map-fullscreen-close{
 
     position:absolute;
@@ -109,13 +120,13 @@
 
 }
 
-/* cursor:default -- "fotografía" fija, no un mapa de consulta; con
-   zoomControl:false/dragging:false (mountRouteMap) el cursor grab/grabbing
-   de Leaflet ya no debería aplicar solo, pero se fuerza explícito por si
-   acaso cambia de versión. background -- los tiles de terreno son claros
-   de por sí, así que sin esto el hueco visible mientras cargan (o si algún
-   tile falla) mostraría lo que haya detrás en vez de un placeholder neutro
-   consistente con el resto de tarjetas oscuras de la app. */
+/* cursor:default -- "fotografía" fija, no un mapa de consulta (mapa
+   pequeño); en pantalla completa (.route-map-fullscreen-map) sí hay
+   arrastre real, así que ahí se deja el cursor grab/grabbing normal de
+   Leaflet en vez de forzar default. background -- los tiles de terreno son
+   claros de por sí, así que sin esto el hueco visible mientras cargan (o
+   si algún tile falla) mostraría lo que haya detrás en vez de un
+   placeholder neutro consistente con el resto de la app. */
 .route-map .leaflet-container{
 
     cursor:default;
@@ -124,12 +135,24 @@
 
 }
 
+.route-map-fullscreen-map .leaflet-container{
+
+    background:var(--card-background);
+
+}
+
 /* white-space:normal (Leaflet trae nowrap por defecto) -- con el ancho
-   real de esta tarjeta en móvil, la atribución completa (Stadia + Stamen +
-   OpenMapTiles + OSM) no cabe en una sola línea sin envolver; con nowrap se
-   quedaba cortada por el overflow:hidden de .route-map en vez de leerse
-   entera en 2 líneas. */
-.route-map .leaflet-control-attribution{
+   real de la tarjeta pequeña en móvil, la atribución completa (Stadia +
+   Stamen + OpenMapTiles + OSM) no cabe en una sola línea sin envolver; con
+   nowrap se quedaba cortada por el overflow:hidden de .route-map en vez de
+   leerse entera en 2 líneas. Bug real corregido: esta regla solo cubría
+   .route-map (el mapa pequeño) -- la de pantalla completa (.route-map-
+   fullscreen-map) nunca la heredaba y se quedaba con el estilo de fábrica
+   de Leaflet (caja blanca, texto oscuro), fuera de sitio sobre el tema
+   oscuro de toda la app. Selector combinado para que ambas compartan
+   exactamente el mismo aspecto. */
+.route-map .leaflet-control-attribution,
+.route-map-fullscreen-map .leaflet-control-attribution{
 
     max-width:calc(100% - 12px);
 
@@ -149,7 +172,8 @@
 
 }
 
-.route-map .leaflet-control-attribution a{
+.route-map .leaflet-control-attribution a,
+.route-map-fullscreen-map .leaflet-control-attribution a{
 
     color:var(--text-secondary);
 

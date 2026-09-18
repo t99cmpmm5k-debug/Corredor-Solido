@@ -99,4 +99,14 @@ describe("ReferenceRouteDetailView -- pantalla de detalle de un recorrido", () =
 
     });
 
+    it("bug real corregido: fullscreenMapOpen=true NUNCA pinta el mapa pequeño a la vez", () => {
+
+        const withTrace = workout({ routeTrace: [{ lat: 37.5, lon: -1.7 }, { lat: 37.51, lon: -1.71 }] });
+        const html = ReferenceRouteDetailView({ id: "r1", name: "8K referencia" }, [withTrace], "date", "desc", true);
+
+        expect(html).not.toContain('data-action="open-route-map-fullscreen"');
+        expect(html).not.toContain('id="route-map"');
+
+    });
+
 });

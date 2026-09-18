@@ -21,6 +21,11 @@ export function ReferenceRouteDetailView(route, workouts, sortColumn, sortDirect
     const sorted = [...workouts].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
     const hasTrace = sorted.some(hasRouteTrace);
 
+    // Bug real corregido (ver el mismo comentario en RunningDetailView.js):
+    // mapa pequeño y overlay de pantalla completa son MUTUAMENTE
+    // EXCLUYENTES -- pintar los dos a la vez dejaba el pequeño montando su
+    // propia instancia de Leaflet debajo del overlay, colándose por encima
+    // de él (leyenda/atribución duplicadas, botón de cerrar tapado).
     return `
 
         <section class="running-wizard running-step-reference-route-detail">
@@ -37,7 +42,7 @@ export function ReferenceRouteDetailView(route, workouts, sortColumn, sortDirect
 
             </header>
 
-            ${hasTrace ? RouteMapTapTarget("route-map") : ""}
+            ${hasTrace && !fullscreenMapOpen ? RouteMapTapTarget("route-map") : ""}
 
             ${hasTrace && fullscreenMapOpen ? RouteMapFullscreenOverlay("route-map-fullscreen") : ""}
 

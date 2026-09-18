@@ -1131,4 +1131,20 @@ describe("Mapa a pantalla completa (RouteMapTapTarget/RouteMapFullscreenOverlay)
 
     });
 
+    it("bug real corregido: fullscreenMapOpen=true NUNCA pinta el mapa pequeño a la vez -- antes coexistían y el pequeño (con su propia leyenda/atribución) se colaba por encima del overlay", () => {
+
+        const html = RunningDetailView(workout({ routeTrace: routeTraceFixture() }), [], false, "both", [], false, true);
+
+        expect(html).not.toContain('data-action="open-route-map-fullscreen"');
+        expect(html).not.toContain('id="route-map"');
+
+        // Solo debe existir UNA leyenda (la del overlay), nunca dos --
+        // class="route-map-legend" exacto para no contar de más los
+        // sub-elementos .route-map-legend-label/-bar, que contienen el
+        // mismo texto como subcadena.
+        const legendCount = html.split('class="route-map-legend"').length - 1;
+        expect(legendCount).toBe(1);
+
+    });
+
 });
