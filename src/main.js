@@ -32,6 +32,7 @@ import { hydrate as hydrateTombstones } from "./data/tombstoneStore.js";
 import { hydrateBackupMeta } from "./utils/backup.js";
 import { hydrateSyncMeta, initContinuousSync } from "./data/syncManager.js";
 import { loadHourlyWeather } from "./pages/Home/homeWeatherStore.js";
+import { loadCurrentWeather } from "./pages/Home/currentWeatherStore.js";
 import { initUpdateNotifier } from "./pwa/updateNotifier.js";
 
 // TEMPORAL - QUITAR ANTES DE PRODUCCIÓN
@@ -90,6 +91,13 @@ function boot() {
         // "sin ubicación" solo por una carrera contra el reloj. No bloquea
         // el primer render de Inicio: start(Home) ya se hizo arriba.
         ready.then(() => loadHourlyWeather());
+
+        // Tiempo en vivo por geolocalización real (badge de MasterCard,
+        // Fase 1) -- a diferencia de loadHourlyWeather() de arriba, no
+        // depende de ningún dato de IndexedDB (getWorkouts()), así que no
+        // hace falta esperar a `ready`: se lanza ya mismo, justo después
+        // del primer render.
+        loadCurrentWeather();
 
         // Igual que loadHourlyWeather() arriba: espera a que hydrate()
         // termine de verdad antes del primer push -- lanzarlo antes leería

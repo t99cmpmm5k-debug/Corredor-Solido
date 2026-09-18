@@ -7,6 +7,8 @@ import { getState } from "../../core/state.js";
 import { getGymDayForDate } from "../../pages/Plan/gymTimelineBridge.js";
 import { formatISODate } from "../../utils/date.js";
 import { PLAN_NEAR_COMPLETE_THRESHOLD_PERCENT } from "../../utils/runnerStatus.js";
+import { getCurrentWeatherState } from "../../pages/Home/currentWeatherStore.js";
+import { weatherIconName } from "../../services/hourlyForecast.js";
 
 // Día sin running planificado (Capa 3, punto 3 del documento de mejoras) --
 // antes era un hueco sin contexto ("No hay ninguna sesión planificada para
@@ -51,6 +53,32 @@ function EmptySessionCard(planCompliance) {
 
 }
 
+// Tiempo EN VIVO por geolocalización real del dispositivo (Fase 1 de 3,
+// ver currentWeatherStore.js/services/currentWeather.js) -- distinto del
+// widget "Hoy" más abajo en Inicio (HourlyWeather.js), que usa la
+// ubicación del entreno más reciente, no el GPS real de ahora mismo.
+// Oculto entero mientras no haya un dato real que mostrar (permiso
+// denegado, sin geolocalización, sin red, todavía cargando) -- nunca un
+// valor fabricado ni un placeholder que ocupe espacio de más.
+function LiveWeatherBadge() {
+
+    const { status, temp, icon } = getCurrentWeatherState();
+    if (status !== "ready" || temp == null) return "";
+
+    return `
+
+        <div class="master-card-weather">
+
+            <iconify-icon icon="${weatherIconName(icon)}"></iconify-icon>
+
+            <span>${temp}°</span>
+
+        </div>
+
+    `;
+
+}
+
 // Corrección 2026-08-26 (coherencia Plan↔Home): "running siempre manda"
 // (decisión del 25 ago) se descarta -- si Plan tiene programados running
 // Y gimnasio el mismo día, Inicio debe reflejar los dos, no solo uno
@@ -83,9 +111,9 @@ export function MasterCard(planCompliance = null){
     if (gymMatch) cards.push(GymTodayCard(gymMatch));
 
     if (cards.length === 0) {
-        return `<section class="master-card">${EmptySessionCard(planCompliance)}</section>`;
+        return `<section class="master-card">${EmptySessionCard(planCompliance)}${LiveWeatherBadge()}</section>`;
     }
 
-    return `<section class="master-card">${cards.join("")}</section>`;
+    return `<section class="master-card">${cards.join("")}${LiveWeatherBadge()}</section>`;
 
 }

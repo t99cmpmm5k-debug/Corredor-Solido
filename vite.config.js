@@ -18,4 +18,17 @@ export default defineConfig({
   define: {
     __BUILD_ID__: JSON.stringify(buildId),
   },
+  test: {
+    // Bug real corregido: sin esto, "npm run test" (vitest, sin config
+    // propia hasta ahora) descubre CUALQUIER *.test.js del repo entero,
+    // incluido server/ -- un subproyecto totalmente aparte, con su propio
+    // package.json/node_modules/versión de vitest (server usa una más
+    // reciente). Ejecutar los tests de server/ dentro de ESTE proceso de
+    // vitest (versión distinta, sin sus dependencias resueltas de la
+    // misma forma) causaba cuelgues/timeouts intermitentes en tests de
+    // server/ que en su propio "cd server && npm test" pasan bien. Los
+    // tests de server/ siguen corriendo, solo que con su propio comando
+    // (ver server/README.md), nunca mezclados con los del frontend.
+    include: ["src/**/*.test.js"],
+  },
 });

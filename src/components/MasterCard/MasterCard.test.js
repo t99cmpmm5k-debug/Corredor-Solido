@@ -19,6 +19,17 @@ vi.mock("../../data/gymSessionStore.js", () => ({
     getAverageDurationForDay: () => null
 }));
 
+// Tiempo en vivo (Fase 1) -- mockeado aparte para poder controlar su
+// estado sin depender de geolocalización/red reales en los tests. Por
+// defecto "idle" (igual que arranca currentWeatherStore.js de verdad
+// antes de que loadCurrentWeather() resuelva), así que todos los tests de
+// arriba (que no lo mencionan) siguen viendo el badge oculto, como hoy.
+let currentWeatherState = { status: "idle", temp: null, icon: null };
+
+vi.mock("../../pages/Home/currentWeatherStore.js", () => ({
+    getCurrentWeatherState: () => currentWeatherState
+}));
+
 const { MasterCard } = await import("./MasterCard.js");
 
 // Corrección 2026-08-26 (coherencia Plan↔Home): "running siempre manda"
@@ -196,6 +207,80 @@ describe("MasterCard -- mensaje del día vacío con contexto de Cumplimiento del
 
         expect(html).not.toContain("Día de recuperación");
         expect(html).toContain("GIMNASIO DE HOY");
+
+    });
+
+});
+
+// Tiempo en vivo por geolocalización real (Fase 1 de 3, ver
+// currentWeatherStore.js) -- badge discreto dentro de MasterCard, nunca
+// bloquea ni cambia el resto de la tarjeta (sesión/gimnasio/vacío) esté
+// como esté.
+describe("MasterCard -- badge de tiempo en vivo (Fase 1)", () => {
+
+    afterEach(() => {
+        todaySession = null;
+        gymMatch = null;
+        setState("selectedWorkout", null);
+        setState("homeSelectedWorkout", null);
+        currentWeatherState = { status: "idle", temp: null, icon: null };
+    });
+
+    it("status idle (aún sin resolver), no pinta el badge", () => {
+
+        currentWeatherState = { status: "idle", temp: null, icon: null };
+
+        const html = MasterCard();
+
+        expect(html).not.toContain("master-card-weather");
+
+    });
+
+    it("status loading, no pinta el badge -- nunca un placeholder mientras carga", () => {
+
+        currentWeatherState = { status: "loading", temp: null, icon: null };
+
+        const html = MasterCard();
+
+        expect(html).not.toContain("master-card-weather");
+
+    });
+
+    it("status unavailable (permiso denegado, sin geolocalización, o fallo de red), no pinta el badge -- la tarjeta sigue igual que siempre", () => {
+
+        currentWeatherState = { status: "unavailable", temp: null, icon: null };
+        todaySession = { id: "run1", title: "Rodaje", status: "pending" };
+
+        const html = MasterCard();
+
+        expect(html).not.toContain("master-card-weather");
+        expect(html).toContain("RUNNING DE HOY");
+
+    });
+
+    it("status ready con dato real, pinta el badge con la temperatura y el icono real de la categoría", () => {
+
+        currentWeatherState = { status: "ready", temp: 22, icon: "sun" };
+
+        const html = MasterCard();
+
+        expect(html).toContain("master-card-weather");
+        expect(html).toContain("22°");
+        expect(html).toContain("solar:sun-2-bold-duotone");
+
+    });
+
+    it("el badge aparece igual con sesión de hoy, con gimnasio, o con el hueco vacío -- no depende de qué más se muestre", () => {
+
+        currentWeatherState = { status: "ready", temp: 15, icon: "rain" };
+        todaySession = null;
+        gymMatch = null;
+
+        const html = MasterCard();
+
+        expect(html).toContain("session-card--empty");
+        expect(html).toContain("master-card-weather");
+        expect(html).toContain("solar:cloud-rain-bold-duotone");
 
     });
 

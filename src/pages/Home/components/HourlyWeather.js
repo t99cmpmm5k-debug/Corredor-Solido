@@ -1,23 +1,6 @@
 import "./HourlyWeather.css";
 
-import { findBestRunningHour, remainingHours, todayRemainingHours, withinRecommendableWindow, isFavorableHour, isNowWithinHour } from "../../../services/hourlyForecast.js";
-
-// icon (ver weatherIconForCode en services/hourlyForecast.js) -> icono
-// Solar ya usado en el resto de la app (ver WorkoutIcon.js). "cloud" es el
-// fallback de cualquier código sin categoría clara, así que también lo es
-// aquí.
-const ICON_BY_CATEGORY = {
-    sun: "solar:sun-2-bold-duotone",
-    moon: "solar:moon-stars-bold-duotone",
-    cloud: "solar:cloud-bold-duotone",
-    rain: "solar:cloud-rain-bold-duotone",
-    snow: "solar:cloud-snowfall-bold-duotone",
-    storm: "solar:cloud-bolt-bold-duotone"
-};
-
-function weatherIcon(category) {
-    return ICON_BY_CATEGORY[category] || ICON_BY_CATEGORY.cloud;
-}
+import { findBestRunningHour, remainingHours, todayRemainingHours, withinRecommendableWindow, isFavorableHour, isNowWithinHour, weatherIconName as weatherIcon } from "../../../services/hourlyForecast.js";
 
 // isNewDay marca la primera hora de "mañana" dentro de la franja de 24h
 // (ver parseForecastHours() en services/hourlyForecast.js) -- esa hora

@@ -99,6 +99,25 @@ export function weatherIconForCode(code, isDay = true) {
 
 }
 
+// Categoría (weatherIconForCode) -> icono Solar real ya usado en el resto
+// de la app (ver WorkoutIcon.js) -- única fuente de verdad, para que
+// HourlyWeather.js (el widget "Hoy") y el badge de tiempo en vivo de
+// MasterCard (ver services/currentWeather.js) pinten siempre el mismo
+// icono para la misma categoría, en vez de mantener dos mapas iguales por
+// separado. "cloud" es el fallback de cualquier categoría desconocida.
+const ICON_NAME_BY_CATEGORY = {
+    sun: "solar:sun-2-bold-duotone",
+    moon: "solar:moon-stars-bold-duotone",
+    cloud: "solar:cloud-bold-duotone",
+    rain: "solar:cloud-rain-bold-duotone",
+    snow: "solar:cloud-snowfall-bold-duotone",
+    storm: "solar:cloud-bolt-bold-duotone"
+};
+
+export function weatherIconName(category) {
+    return ICON_NAME_BY_CATEGORY[category] || ICON_NAME_BY_CATEGORY.cloud;
+}
+
 // `now` es inyectable para poder testear el recorte de horas de forma
 // determinista, sin depender del reloj real de quien ejecute los tests.
 //
@@ -312,7 +331,11 @@ function parseCurrentConditions(data, hours) {
 
 }
 
-async function fetchOpenMeteoForecast(lat, lon, onLog) {
+// Exportada -- services/currentWeather.js (tiempo en vivo por
+// geolocalización real, MasterCard de Inicio) reutiliza tal cual este
+// mismo cliente de Open-Meteo con OTRA fuente de lat/lon, en vez de
+// duplicar la llamada/parseo de "current" en un cliente aparte.
+export async function fetchOpenMeteoForecast(lat, lon, onLog) {
 
     const params = new URLSearchParams({
         latitude: lat,

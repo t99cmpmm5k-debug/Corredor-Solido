@@ -22,6 +22,51 @@
 
 }
 
+/* Tiempo en vivo por geolocalización real (Fase 1 de 3, ver
+   currentWeatherStore.js) -- chip discreto, propia fila dentro del flujo
+   normal de .master-card (align-self:flex-end en vez de un
+   position:absolute encima de la tarjeta de sesión, para no arriesgar
+   ningún solape con contenido que ya viva en su esquina). Se oculta
+   entera cuando no hay dato real (LiveWeatherBadge() devuelve "").
+   Mismo lenguaje visual "glass" que el resto de chips flotantes de la
+   app (pace-chart-avg-badge, route-map-legend...). */
+.master-card-weather{
+
+    align-self:flex-end;
+
+    display:inline-flex;
+
+    align-items:center;
+
+    gap:6px;
+
+    padding:6px 12px;
+
+    border-radius:999px;
+
+    background:color-mix(in srgb, var(--card-background) 70%, transparent);
+
+    border:1px solid var(--card-border);
+
+    backdrop-filter:blur(14px);
+    -webkit-backdrop-filter:blur(14px);
+
+    color:var(--text-secondary);
+
+    font-size:.8rem;
+
+    font-weight:700;
+
+}
+
+.master-card-weather iconify-icon{
+
+    font-size:1.05rem;
+
+    color:var(--color-primary);
+
+}
+
 /* ==========================================================
    SESSION CARD
 ========================================================== */
