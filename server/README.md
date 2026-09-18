@@ -28,6 +28,7 @@ mis datos" en el cliente (`src/utils/backup.js` del frontend).
 - `POST /api/auth/restablecer` — `{ token, nuevaPassword }` (el `token` de `?reset_token=` del email) → `{ ok: true }`. Cambia la contraseña.
 - `GET /api/sync` (header `Authorization: Bearer <token>`) — devuelve todo lo guardado del usuario
 - `POST /api/sync` (mismo header) — recibe `{ workouts, shoes, plannedSessions, gymSessions, referenceRoutes }` (el mismo JSON de "Exportar mis datos") y lo guarda/fusiona por `id`
+- `GET /api/tiles/satellite/:z/:y/:x` (sin auth — Leaflet la carga como `<img>`, no puede mandar el JWT) — proxy de relay puro hacia Esri World Imagery (`ver src/routes/tiles.js`): guarda `ESRI_API_KEY` solo en este servidor, nunca en el frontend, y no persiste ningún tile en el propio VPS (ver el comentario de esa ruta sobre los términos de Esri). Sin `ESRI_API_KEY` configurada responde `503` en vez de romper el arranque — es una capa visual opcional.
 
 Los tokens de `verificar`/`restablecer` son opacos de un solo uso (no JWT),
 guardados con hash en `auth_tokens` (`purpose` distingue cuál es cuál) —

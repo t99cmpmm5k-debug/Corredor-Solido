@@ -3,6 +3,7 @@ import express from "express";
 import cors from "cors";
 import { authRouter } from "./routes/auth.js";
 import { syncRouter } from "./routes/sync.js";
+import { tilesRouter } from "./routes/tiles.js";
 
 const REQUIRED_ENV_VARS = ["DB_HOST", "DB_NAME", "DB_USER", "DB_PASSWORD", "JWT_SECRET", "RESEND_API_KEY", "EMAIL_FROM", "FRONTEND_URL"];
 
@@ -29,6 +30,7 @@ app.get("/api/health", (req, res) => res.json({ ok: true }));
 
 app.use("/api/auth", authRouter);
 app.use("/api/sync", syncRouter);
+app.use("/api/tiles", tilesRouter);
 
 // Handler de errores al final -- cualquier throw sin capturar en una ruta
 // (fallo de conexión a la BBDD, etc.) cae aquí en vez de tumbar el proceso
