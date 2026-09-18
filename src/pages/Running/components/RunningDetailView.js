@@ -6,7 +6,7 @@ import { RUNNING_WORKOUT_TYPES } from "../../../data/runningWorkoutTypes.js";
 import { buildWorkoutComparison, buildWorkoutComparisonMessage } from "../runningProgress.js";
 import { buildCardiacDrift } from "../../../utils/cardiacDrift.js";
 import { LEGS_FEELING_OPTIONS, FATIGUE_LEVEL_OPTIONS, HEAT_FEELING_OPTIONS, SESSION_RATING_OPTIONS } from "../../../data/dayStateOptions.js";
-import { hasRouteTrace, RouteMapContainer, RouteMapLegend } from "../../../components/RouteMap/RouteMap.js";
+import { hasRouteTrace, RouteMapTapTarget, RouteMapLegend, RouteMapFullscreenOverlay } from "../../../components/RouteMap/RouteMap.js";
 import { detectIntervalRange, filterToIntervalRange } from "../intervalDetection.js";
 
 // Garmin cierra la vuelta en curso al parar el cronómetro, así que la
@@ -766,7 +766,7 @@ function ImportWarningsBanner(warnings, expanded) {
 
 }
 
-export function RunningDetailView(workout, shoes = [], warningsExpanded = false, chartMetricMode = "both", allWorkouts = [], showOnlyIntervals = false) {
+export function RunningDetailView(workout, shoes = [], warningsExpanded = false, chartMetricMode = "both", allWorkouts = [], showOnlyIntervals = false, fullscreenMapOpen = false) {
 
     if (!workout) return "";
 
@@ -847,9 +847,11 @@ export function RunningDetailView(workout, shoes = [], warningsExpanded = false,
 
             </div>
 
-            ${hasRouteTrace(workout) ? RouteMapContainer("route-map") : ""}
+            ${hasRouteTrace(workout) ? RouteMapTapTarget("route-map") : ""}
 
             ${hasRouteTrace(workout) && allSplits.length >= MIN_SPLITS_FOR_CHART ? RouteMapLegend() : ""}
+
+            ${hasRouteTrace(workout) && fullscreenMapOpen ? RouteMapFullscreenOverlay("route-map-fullscreen", allSplits.length >= MIN_SPLITS_FOR_CHART ? RouteMapLegend() : "") : ""}
 
             ${splits.length >= MIN_SPLITS_FOR_CHART ? RunningPaceChart(splits, avgPaceRef, avgHrRef, chartMetricMode, workout, intervalRange, showOnlyIntervals) : ""}
 

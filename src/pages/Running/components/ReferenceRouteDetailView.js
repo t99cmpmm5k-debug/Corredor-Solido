@@ -3,7 +3,7 @@ import "./ReferenceRoutesListView.css";
 import { ReferenceRouteCard } from "./ReferenceRouteCard.js";
 import { ReferenceRouteEvolutionChart } from "./ReferenceRouteEvolutionChart.js";
 import { ReferenceRouteWorkoutTable } from "./ReferenceRouteWorkoutTable.js";
-import { hasRouteTrace, RouteMapContainer } from "../../../components/RouteMap/RouteMap.js";
+import { hasRouteTrace, RouteMapTapTarget, RouteMapFullscreenOverlay } from "../../../components/RouteMap/RouteMap.js";
 
 // Vista de detalle de un recorrido de referencia -- tarjeta resumen
 // (ReferenceRouteCard.js) + gráfico de evolución (ritmo/FC por fecha,
@@ -14,11 +14,12 @@ import { hasRouteTrace, RouteMapContainer } from "../../../components/RouteMap/R
 // listener escanea toda la pantalla en cada render, así que reutilizarlo
 // aquí no necesita wiring nuevo) y permite quitar ese entreno del
 // recorrido sin borrarlo.
-export function ReferenceRouteDetailView(route, workouts, sortColumn, sortDirection) {
+export function ReferenceRouteDetailView(route, workouts, sortColumn, sortDirection, fullscreenMapOpen = false) {
 
     if (!route) return "";
 
     const sorted = [...workouts].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+    const hasTrace = sorted.some(hasRouteTrace);
 
     return `
 
@@ -36,7 +37,9 @@ export function ReferenceRouteDetailView(route, workouts, sortColumn, sortDirect
 
             </header>
 
-            ${sorted.some(hasRouteTrace) ? RouteMapContainer("route-map") : ""}
+            ${hasTrace ? RouteMapTapTarget("route-map") : ""}
+
+            ${hasTrace && fullscreenMapOpen ? RouteMapFullscreenOverlay("route-map-fullscreen") : ""}
 
             ${ReferenceRouteCard(route, sorted)}
 

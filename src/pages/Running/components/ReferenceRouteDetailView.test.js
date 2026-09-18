@@ -70,4 +70,33 @@ describe("ReferenceRouteDetailView -- pantalla de detalle de un recorrido", () =
 
     });
 
+    it("sin ningún entreno con GPS real, no pinta el mapa ni el objetivo táctil de pantalla completa", () => {
+
+        const html = ReferenceRouteDetailView({ id: "r1", name: "8K referencia" }, [workout()], "date", "desc");
+
+        expect(html).not.toContain('data-action="open-route-map-fullscreen"');
+
+    });
+
+    it("con un entreno con GPS real, el mapa pequeño va envuelto en el objetivo táctil que abre pantalla completa", () => {
+
+        const withTrace = workout({ routeTrace: [{ lat: 37.5, lon: -1.7 }, { lat: 37.51, lon: -1.71 }] });
+        const html = ReferenceRouteDetailView({ id: "r1", name: "8K referencia" }, [withTrace], "date", "desc");
+
+        expect(html).toContain('data-action="open-route-map-fullscreen"');
+        expect(html).not.toContain("route-map-fullscreen-overlay");
+
+    });
+
+    it("fullscreenMapOpen=true, pinta el overlay de pantalla completa con su propio contenedor", () => {
+
+        const withTrace = workout({ routeTrace: [{ lat: 37.5, lon: -1.7 }, { lat: 37.51, lon: -1.71 }] });
+        const html = ReferenceRouteDetailView({ id: "r1", name: "8K referencia" }, [withTrace], "date", "desc", true);
+
+        expect(html).toContain("route-map-fullscreen-overlay");
+        expect(html).toContain('id="route-map-fullscreen"');
+        expect(html).toContain('data-action="close-route-map-fullscreen"');
+
+    });
+
 });

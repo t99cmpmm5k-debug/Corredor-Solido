@@ -48,6 +48,7 @@ import {
     setChartMetricMode,
     getShowOnlyIntervals,
     setShowOnlyIntervals,
+    setFullscreenMapOpen,
     getDetailWorkoutId,
     getDetailRouteId,
     setDetailRouteId,
@@ -889,6 +890,24 @@ export function initRunningEvents() {
 
     });
 
+    document.querySelectorAll('[data-action="open-route-map-fullscreen"]').forEach(el => {
+
+        el.addEventListener("click", () => {
+            setFullscreenMapOpen(true);
+            rerender();
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="close-route-map-fullscreen"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+            setFullscreenMapOpen(false);
+            rerender();
+        });
+
+    });
+
     document.querySelectorAll('[data-action="set-workout-type"]').forEach(select => {
 
         select.addEventListener("change", () => {
@@ -1336,8 +1355,13 @@ function initTypeFilterStickyGuard() {
 // que destruir la instancia anterior en cada re-render (render() reemplaza
 // todo app.innerHTML, así que el contenedor DOM viejo ya no existe, pero el
 // objeto L.Map en sí seguiría vivo -- con sus listeners de window/resize
-// colgados -- si no se llama a su remove() explícitamente).
+// colgados -- si no se llama a su remove() explícitamente). Dos instancias
+// posibles a la vez: el mapa pequeño (foto fija, sin interacción) y el de
+// pantalla completa (RouteMapFullscreenOverlay, montado como SEGUNDA
+// instancia de Leaflet solo mientras ese overlay esté abierto -- Leaflet no
+// permite mover un mapa ya montado de un contenedor a otro).
 let activeRouteMap = null;
+let activeFullscreenRouteMap = null;
 
 function initRouteMap() {
 
@@ -1346,8 +1370,10 @@ function initRouteMap() {
         activeRouteMap = null;
     }
 
-    const container = document.getElementById("route-map");
-    if (!container) return;
+    if (activeFullscreenRouteMap) {
+        unmountRouteMap(activeFullscreenRouteMap);
+        activeFullscreenRouteMap = null;
+    }
 
     const step = getWizardStep();
     let routeTrace = null;
@@ -1406,17 +1432,45 @@ function initRouteMap() {
     if (!routeTrace) return;
 
     // El import() de leaflet es asíncrono -- si el usuario navega fuera de
-    // la ficha antes de que resuelva (rerender ya reemplazó app.innerHTML),
-    // container queda desconectado del documento real y no debe montarse
-    // ningún mapa sobre él.
-    mountRouteMap(container, segments, markers, routeTrace).then(map => {
+    // la ficha (o cierra el overlay de pantalla completa) antes de que
+    // resuelva, ese contenedor concreto ya no está en el documento real y
+    // no debe montarse ningún mapa sobre él -- se comprueba cada uno por
+    // separado porque pueden resolver en momentos distintos.
+    const smallContainer = document.getElementById("route-map");
 
-        if (document.body.contains(container)) {
-            activeRouteMap = map;
-        } else {
-            unmountRouteMap(map);
-        }
+    if (smallContainer) {
 
-    });
+        mountRouteMap(smallContainer, segments, markers, routeTrace).then(map => {
+
+            if (document.body.contains(smallContainer)) {
+                activeRouteMap = map;
+            } else {
+                unmountRouteMap(map);
+            }
+
+        });
+
+    }
+
+    // Solo existe en el DOM mientras el overlay de pantalla completa está
+    // abierto (ver getFullscreenMapOpen() en RunningDetailView.js/
+    // ReferenceRouteDetailView.js) -- interactive:true es la única
+    // diferencia real con el mapa pequeño: zoom por pellizco, arrastre y
+    // marcadores de km con popup, ver options.interactive en RouteMap.js.
+    const fullscreenContainer = document.getElementById("route-map-fullscreen");
+
+    if (fullscreenContainer) {
+
+        mountRouteMap(fullscreenContainer, segments, markers, routeTrace, { interactive: true }).then(map => {
+
+            if (document.body.contains(fullscreenContainer)) {
+                activeFullscreenRouteMap = map;
+            } else {
+                unmountRouteMap(map);
+            }
+
+        });
+
+    }
 
 }

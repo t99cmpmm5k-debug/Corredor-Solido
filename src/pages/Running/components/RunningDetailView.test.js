@@ -1068,3 +1068,47 @@ describe("Ver solo intervalos (toggle, ver intervalDetection.js)", () => {
     });
 
 });
+
+function routeTraceFixture() {
+    return [{ lat: 37.5, lon: -1.7 }, { lat: 37.51, lon: -1.71 }];
+}
+
+describe("Mapa a pantalla completa (RouteMapTapTarget/RouteMapFullscreenOverlay)", () => {
+
+    it("sin routeTrace, no pinta ni el mapa pequeño ni el overlay de pantalla completa aunque fullscreenMapOpen sea true", () => {
+
+        const html = RunningDetailView(workout(), [], false, "both", [], false, true);
+
+        expect(html).not.toContain('data-action="open-route-map-fullscreen"');
+        expect(html).not.toContain("route-map-fullscreen-overlay");
+
+    });
+
+    it("con routeTrace, el mapa pequeño va envuelto en el objetivo táctil que abre pantalla completa", () => {
+
+        const html = RunningDetailView(workout({ routeTrace: routeTraceFixture() }));
+
+        expect(html).toContain('data-action="open-route-map-fullscreen"');
+        expect(html).toContain('id="route-map"');
+
+    });
+
+    it("fullscreenMapOpen=false (por defecto), el overlay de pantalla completa no se pinta", () => {
+
+        const html = RunningDetailView(workout({ routeTrace: routeTraceFixture() }));
+
+        expect(html).not.toContain("route-map-fullscreen-overlay");
+
+    });
+
+    it("fullscreenMapOpen=true, pinta el overlay con su propio contenedor de mapa y el botón de cerrar", () => {
+
+        const html = RunningDetailView(workout({ routeTrace: routeTraceFixture() }), [], false, "both", [], false, true);
+
+        expect(html).toContain("route-map-fullscreen-overlay");
+        expect(html).toContain('id="route-map-fullscreen"');
+        expect(html).toContain('data-action="close-route-map-fullscreen"');
+
+    });
+
+});

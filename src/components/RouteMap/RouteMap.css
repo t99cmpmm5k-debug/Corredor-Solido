@@ -19,6 +19,110 @@
 
 }
 
+/* Envoltorio de todo el mapa pequeño (ver RouteMapTapTarget) -- el propio
+   mapa no tiene nada interactivo dentro (options.interactive:false en
+   mountRouteMap), así que esto es lo único que reacciona al toque: abre
+   pantalla completa. Border-radius igual al del propio mapa para que el
+   área de toque no se note visualmente por fuera de la tarjeta. */
+.route-map-tap-target{
+
+    display:block;
+
+    border-radius:26px;
+
+    cursor:pointer;
+
+}
+
+/* Modo pantalla completa ("explorar el recorrido") -- toda la
+   interactividad real vive aquí (ver options.interactive en
+   mountRouteMap). z-index por encima de la barra de navegación inferior
+   (100) y de cualquier bottom-sheet (200) -- tapa la pantalla entera de
+   verdad, sin nada compitiendo por encima. */
+.route-map-fullscreen-overlay{
+
+    position:fixed;
+
+    inset:0;
+
+    z-index:500;
+
+    background:var(--card-background);
+
+}
+
+.route-map-fullscreen-map{
+
+    width:100%;
+
+    height:100%;
+
+}
+
+.route-map-fullscreen-close{
+
+    position:absolute;
+
+    top:calc(16px + env(safe-area-inset-top));
+    right:16px;
+
+    /* 1000, no 1 -- Leaflet usa z-index internos de hasta ~700 para sus
+       propios panes (marcadores, popups): sin esto, un popup de un
+       marcador de km abierto cerca de la esquina podía taparle el botón
+       de cerrar, porque .route-map-fullscreen-map no crea su propio
+       contexto de apilamiento (position:relative sin z-index) -- ambos
+       comparten el mismo contexto que abre .route-map-fullscreen-overlay. */
+    z-index:1000;
+
+    width:44px;
+
+    height:44px;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    border-radius:50%;
+
+    border:1px solid color-mix(in srgb, var(--card-border) 14%, transparent);
+
+    background:color-mix(in srgb, var(--card-background) 70%, transparent);
+
+    backdrop-filter:blur(18px);
+    -webkit-backdrop-filter:blur(18px);
+
+    cursor:pointer;
+
+}
+
+.route-map-fullscreen-close iconify-icon{
+
+    font-size:24px;
+
+    color:var(--text-secondary);
+
+}
+
+/* Misma leyenda que en el mapa pequeño (RouteMapLegend, más abajo) pero
+   flotando sobre el mapa a pantalla completa -- ahí no hay ningún otro
+   elemento de página bajo el que colocarla. */
+.route-map-fullscreen-overlay .route-map-legend{
+
+    position:absolute;
+
+    bottom:calc(16px + env(safe-area-inset-bottom));
+    left:50%;
+
+    transform:translateX(-50%);
+
+    /* Mismo motivo que .route-map-fullscreen-close -- por encima de los
+       panes internos de Leaflet, que comparten su contexto de apilamiento. */
+    z-index:1000;
+
+}
+
 /* cursor:default -- "fotografía" fija, no un mapa de consulta; con
    zoomControl:false/dragging:false (mountRouteMap) el cursor grab/grabbing
    de Leaflet ya no debería aplicar solo, pero se fuerza explícito por si

@@ -22,6 +22,7 @@ const initial = () => ({
     warningsExpanded: false,
     chartMetricMode: "both",
     showOnlyIntervals: false,
+    fullscreenMapOpen: false,
 
     // Recorridos de referencia (V1) -- detailRouteId: qué recorrido está
     // abierto en el paso "referenceRouteDetail". creatingRoute: si el
@@ -379,14 +380,16 @@ export function getDetailWorkoutId() {
 }
 
 // Cambiar de entreno reinicia el acordeón de avisos, el modo de métricas
-// del gráfico y el toggle "Ver solo intervalos" -- ninguno de los tres
-// debe arrastrarse del entreno anterior al abrir uno distinto.
+// del gráfico, el toggle "Ver solo intervalos" y el mapa a pantalla
+// completa -- ninguno de los cuatro debe arrastrarse del entreno anterior
+// al abrir uno distinto.
 export function setDetailWorkoutId(id) {
 
     wizard.detailWorkoutId = id;
     wizard.warningsExpanded = false;
     wizard.chartMetricMode = "both";
     wizard.showOnlyIntervals = false;
+    wizard.fullscreenMapOpen = false;
 
 }
 
@@ -439,6 +442,22 @@ export function setShowOnlyIntervals(value) {
 }
 
 /*==========================
+   MAPA A PANTALLA COMPLETA (detalle de entreno y Recorridos de referencia)
+==========================*/
+
+export function getFullscreenMapOpen() {
+
+    return wizard.fullscreenMapOpen ?? false;
+
+}
+
+export function setFullscreenMapOpen(value) {
+
+    wizard.fullscreenMapOpen = value;
+
+}
+
+/*==========================
    RECORRIDOS DE REFERENCIA (V1)
 ==========================*/
 
@@ -448,9 +467,12 @@ export function getDetailRouteId() {
 
 }
 
+// Mismo motivo que setDetailWorkoutId() -- el mapa a pantalla completa no
+// debe arrastrarse de un recorrido de referencia al siguiente.
 export function setDetailRouteId(id) {
 
     wizard.detailRouteId = id;
+    wizard.fullscreenMapOpen = false;
 
 }
 

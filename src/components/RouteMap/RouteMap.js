@@ -105,6 +105,43 @@ export function RouteMapContainer(id = "route-map") {
     return `<div class="route-map" id="${id}"></div>`;
 }
 
+// Envuelve el mapa pequeño para que TODO él sea un único objetivo táctil
+// que abre el modo pantalla completa (ver RouteMapFullscreenOverlay) -- el
+// mapa pequeño en sí ya no tiene nada interactivo dentro (mountRouteMap con
+// interactive:false: ni marcadores con popup, ni zoom, ni arrastre), así
+// que un solo listener en todo el contenedor no compite con nada.
+export function RouteMapTapTarget(id = "route-map") {
+    return `<div class="route-map-tap-target" data-action="open-route-map-fullscreen">${RouteMapContainer(id)}</div>`;
+}
+
+// Overlay a pantalla completa ("explorar el recorrido") -- toda la
+// interactividad real (zoom por pellizco, arrastre, marcadores de km con
+// popup) vive AQUÍ, nunca en el mapa pequeño. Es una instancia de Leaflet
+// SEPARADA (mountRouteMap se llama otra vez sobre este contenedor, con
+// interactive:true) -- Leaflet no permite mover un mapa ya montado de un
+// contenedor a otro. legendHtml opcional, ya renderizado por quien llama
+// (RouteMapLegend() de siempre) -- este componente sigue sin saber nada de
+// "ritmo"/splits.
+export function RouteMapFullscreenOverlay(id = "route-map-fullscreen", legendHtml = "") {
+
+    return `
+
+        <div class="route-map-fullscreen-overlay">
+
+            <button class="route-map-fullscreen-close" data-action="close-route-map-fullscreen" aria-label="Cerrar mapa a pantalla completa">
+                <iconify-icon icon="solar:close-circle-bold-duotone"></iconify-icon>
+            </button>
+
+            <div class="route-map-fullscreen-map" id="${id}"></div>
+
+            ${legendHtml}
+
+        </div>
+
+    `;
+
+}
+
 // Import dinámico (leaflet.js + su CSS) a propósito -- Vite trocea un
 // import() en su propio chunk automáticamente, así que la librería no pesa
 // nada en el bundle principal ni se descarga en pantallas sin mapa. Solo se
@@ -119,48 +156,42 @@ export function RouteMapContainer(id = "route-map") {
 // markers: array opcional de {lat, lon, km, paceSecPerKm, avgHr} -- marcas
 // de km completo, cada una en su posición geométrica exacta sobre la línea
 // (sin desplazamiento, igual que Garmin/Strava). Dos marcas pueden coincidir
-// visualmente si el recorrido pasa muy cerca de sí mismo a la vista inicial
-// (ida y vuelta) -- a propósito no se corrige con ningún desplazamiento ni
-// fusión: el pellizco para hacer zoom (touchZoom, ver más abajo) es la forma
-// real de distinguirlas, tal cual funciona en Garmin.
+// visualmente si el recorrido pasa muy cerca de sí mismo -- a propósito no
+// se corrige con ningún desplazamiento ni fusión: el modo pantalla completa
+// (ver RouteMapFullscreenOverlay/options.interactive) es la forma real de
+// distinguirlas acercándose, tal cual funciona en Garmin.
 // routeTrace: los mismos puntos {lat,lon} que ya dibujan `segments`, para
 // poder marcar inicio/fin en sus dos extremos reales -- no hace falta que
 // este componente sepa nada más de la traza (routeTrace[0]/[length-1] son
 // ya el inicio/fin real, ordenados cronológicamente por construcción, ver
 // geoTrace.js/tcx.js/gpx.js).
-export async function mountRouteMap(container, segments, markers = [], routeTrace = []) {
+// options.interactive (false por defecto): el mapa PEQUEÑO es una
+// "fotografía" fija de verdad -- ni zoom, ni arrastre, ni marcadores
+// interactivos, nada, ver retoque real "que sea solo una foto". El modo
+// pantalla completa (RouteMapFullscreenOverlay) llama a esto una SEGUNDA
+// vez sobre su propio contenedor con interactive:true: zoom por pellizco Y
+// arrastre libres para poder explorar el recorrido, marcadores de km con
+// popup. zoomControl (botones +/-) se queda en false SIEMPRE, en los dos
+// modos -- nunca controles visuales de zoom, solo el gesto.
+export async function mountRouteMap(container, segments, markers = [], routeTrace = [], { interactive = false } = {}) {
 
     const [{ default: L }] = await Promise.all([
         import("leaflet"),
         import("leaflet/dist/leaflet.css")
     ]);
 
-    // "Fotografía" fija del recorrido en cuanto a navegación (sin arrastre,
-    // sin controles +/- visibles), pero CON zoom real vía pellizco --
-    // retoque real: los marcadores de km pueden solapar a la vista inicial
-    // en un recorrido que pasa cerca de sí mismo, y la forma real de
-    // distinguirlos (igual que en Garmin) es acercarse con los dedos, no un
-    // desplazamiento ni fusión automática. touchZoom:true (no 'center') deja
-    // que el pellizco también recentre hacia el punto donde se pellizca, no
-    // solo hacia el centro fijo del mapa -- así se puede "entrar" a la zona
-    // concreta con los km apretados. zoomControl:false sigue ocultando los
-    // botones +/- (sin controles visuales, solo el gesto); scrollWheelZoom/
-    // doubleClickZoom/boxZoom siguen desactivados (gestos de escritorio o de
-    // un solo toque que no se han pedido). Nota: con dragging:false, una vez
-    // ampliado no se puede deslizar con un dedo para explorar más allá de
-    // adonde llevó el pellizco -- limitación conocida y aceptada por ahora.
-    //
-    // tap: true a propósito -- las marcas de km SÍ son interactivas (tocar
-    // muestra su ritmo/FC, ver más abajo) y ese handler de Leaflet es el que
-    // hace fiable el tap-a-click en iOS Safari.
+    // tap: true siempre -- en modo interactivo hace fiable el tap-a-click de
+    // los marcadores en iOS Safari; en el mapa pequeño no interactivo no
+    // hace nada (no hay nada que reciba el tap), así que no hace falta
+    // condicionarlo.
     const map = L.map(container, {
         zoomControl: false,
-        dragging: false,
-        touchZoom: true,
-        scrollWheelZoom: false,
-        doubleClickZoom: false,
+        dragging: interactive,
+        touchZoom: interactive,
+        scrollWheelZoom: interactive,
+        doubleClickZoom: interactive,
         boxZoom: false,
-        keyboard: false,
+        keyboard: interactive,
         tap: true,
         attributionControl: false
     });
@@ -181,6 +212,15 @@ export async function mountRouteMap(container, segments, markers = [], routeTrac
     // parte de la línea de color del segmento anterior justo en el punto de
     // frontera que ambos comparten. Pesos más finos que en el primer
     // acabado (8/5 -> 5/3, retoque de acabado: "se ve demasiado grueso").
+    //
+    // smoothFactor:0 -- bug real corregido: por defecto (1.0) Leaflet
+    // SIMPLIFICA el trazado al dibujarlo (quita vértices "redundantes" por
+    // rendimiento), así que la línea VISIBLE podía pasar a un par de
+    // píxeles de un marcador de km, aunque ese marcador esté calculado
+    // exactamente sobre la traza ORIGINAL sin simplificar (interpolateAtDistance
+    // en routeMapPaceColoring.js). Con smoothFactor:0 la línea dibujada pasa
+    // por todos los puntos reales -- sin coste perceptible para un
+    // recorrido de unos pocos cientos de puntos.
     segments.forEach(segment => {
 
         L.polyline(segment.latlngs, {
@@ -188,7 +228,8 @@ export async function mountRouteMap(container, segments, markers = [], routeTrac
             weight: 5,
             opacity: 0.85,
             lineCap: "round",
-            lineJoin: "round"
+            lineJoin: "round",
+            smoothFactor: 0
         }).addTo(map);
 
     });
@@ -200,7 +241,8 @@ export async function mountRouteMap(container, segments, markers = [], routeTrac
             weight: 3,
             opacity: 1,
             lineCap: "round",
-            lineJoin: "round"
+            lineJoin: "round",
+            smoothFactor: 0
         }).addTo(map);
 
     });
@@ -251,10 +293,10 @@ export async function mountRouteMap(container, segments, markers = [], routeTrac
     // El círculo solo muestra el número (especificación de cierre del Paso
     // 2: "no queremos duplicar el detalle del gráfico de abajo a la
     // vista") -- el ritmo/FC de ese km concreto vive en un popup al pulsar
-    // (ver buildKmPopupHtml), no permanentemente en el mapa. Cada marca en
-    // su posición geométrica exacta, sin desplazamiento -- si dos coinciden
-    // en pantalla a la vista inicial, el pellizco del usuario (touchZoom,
-    // ver arriba) es lo que las distingue, no un cálculo aquí.
+    // (ver buildKmPopupHtml), solo en modo interactivo (pantalla completa).
+    // Cada marca en su posición geométrica exacta, sin desplazamiento -- si
+    // dos coinciden en pantalla, el zoom de pantalla completa es lo que las
+    // distingue, no un cálculo aquí.
     markers.forEach(marker => {
 
         const leafletMarker = L.marker([marker.lat, marker.lon], {
@@ -264,17 +306,21 @@ export async function mountRouteMap(container, segments, markers = [], routeTrac
                 iconSize: [KM_MARKER_TAP_SIZE_PX, KM_MARKER_TAP_SIZE_PX],
                 iconAnchor: [KM_MARKER_TAP_SIZE_PX / 2, KM_MARKER_TAP_SIZE_PX / 2]
             }),
-            // interactive:true -- especificación de cierre del Paso 2: al
-            // pulsar un km debe verse su ritmo/FC real. keyboard:false
-            // porque este mapa no tiene foco de teclado (no es navegable).
-            interactive: true,
+            // interactive: en el mapa pequeño (interactive:false) es solo
+            // una foto -- ni siquiera los marcadores responden al toque, ver
+            // el comentario de options.interactive más arriba. keyboard:false
+            // porque este mapa no navega por foco (el paneo por teclado, si
+            // lo hay, es del propio mapa vía options.keyboard).
+            interactive,
             keyboard: false
         }).addTo(map);
 
         // Sin dato real que enseñar (entreno demasiado corto para tener
         // splits, ver initRunningEvents.js) -- nunca un popup con guiones,
-        // mismo criterio de "nunca inventar" del resto de la app.
-        if (marker.paceSecPerKm != null) {
+        // mismo criterio de "nunca inventar" del resto de la app. Tampoco
+        // se liga popup si el propio marcador no es interactivo (mapa
+        // pequeño) -- nunca podría abrirse, es puro ruido dejarlo enlazado.
+        if (interactive && marker.paceSecPerKm != null) {
             leafletMarker.bindPopup(buildKmPopupHtml(marker), { closeButton: false, className: "route-map-popup" });
         }
 

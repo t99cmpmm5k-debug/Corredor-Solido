@@ -46,6 +46,7 @@ import {
     getWarningsExpanded,
     getChartMetricMode,
     getShowOnlyIntervals,
+    getFullscreenMapOpen,
     getDetailRouteId,
     isCreatingRoute,
     getRouteMenuOpenId,
@@ -1447,7 +1448,7 @@ export function Running() {
 
         const workouts = getWorkouts();
         const workout = workouts.find(w => w.id === getDetailWorkoutId());
-        content = RunningDetailView(workout, getShoes(), getWarningsExpanded(), getChartMetricMode(), workouts, getShowOnlyIntervals());
+        content = RunningDetailView(workout, getShoes(), getWarningsExpanded(), getChartMetricMode(), workouts, getShowOnlyIntervals(), getFullscreenMapOpen());
 
     } else if (step === "shoes") {
 
@@ -1473,7 +1474,8 @@ export function Running() {
             route,
             route ? resolveRouteWorkouts(route, getWorkouts()) : [],
             getRouteSortColumn(),
-            getRouteSortDirection()
+            getRouteSortDirection(),
+            getFullscreenMapOpen()
         );
 
     } else {
