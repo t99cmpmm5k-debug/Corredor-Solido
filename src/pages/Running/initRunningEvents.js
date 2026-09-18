@@ -10,7 +10,7 @@ import { REVIEW_FIELDS, parseFieldValue } from "./components/RunningReviewStep.j
 import { estimateTemperature } from "../../services/weatherEstimate.js";
 import { hasRouteTrace, mountRouteMap, unmountRouteMap } from "../../components/RouteMap/RouteMap.js";
 import { chartSplits, MIN_SPLITS_FOR_CHART } from "./components/RunningDetailView.js";
-import { buildPaceColorSegments, buildKmMarkers, buildDirectionArrows, ROUTE_COLOR_NORMAL } from "./routeMapPaceColoring.js";
+import { buildPaceColorSegments, buildKmMarkers, ROUTE_COLOR_NORMAL } from "./routeMapPaceColoring.js";
 
 import {
     resetWizard,
@@ -1405,16 +1405,11 @@ function initRouteMap() {
 
     if (!routeTrace) return;
 
-    // Flechas de sentido -- puramente geométricas (no dependen de splits ni
-    // de coloreado), así que se calculan igual para las dos pantallas: el
-    // detalle de un entreno y Recorridos de referencia.
-    const arrows = buildDirectionArrows(routeTrace);
-
     // El import() de leaflet es asíncrono -- si el usuario navega fuera de
     // la ficha antes de que resuelva (rerender ya reemplazó app.innerHTML),
     // container queda desconectado del documento real y no debe montarse
     // ningún mapa sobre él.
-    mountRouteMap(container, segments, markers, arrows).then(map => {
+    mountRouteMap(container, segments, markers, routeTrace).then(map => {
 
         if (document.body.contains(container)) {
             activeRouteMap = map;

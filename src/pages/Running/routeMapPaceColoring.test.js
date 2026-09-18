@@ -2,7 +2,6 @@ import { describe, it, expect } from "vitest";
 import {
     cumulativeDistancesMeters,
     buildKmMarkers,
-    buildDirectionArrows,
     buildPaceColorSegments,
     ROUTE_COLOR_NORMAL,
     ROUTE_COLOR_FAST,
@@ -69,23 +68,16 @@ describe("buildKmMarkers", () => {
 
     });
 
-    it("cada marcador trae dirA/dirB (los puntos en bruto que lo rodean, para calcular dirección perpendicular en RouteMap.js)", () => {
+    it("cada marcador cae en su posición geométrica exacta sobre la traza, sin ningún desplazamiento lateral", () => {
 
-        // 1200m, no 1000m exactos -- straightTrace() aproxima grados a
-        // metros con una constante que no coincide al milímetro con la
-        // fórmula haversine real que usa cumulativeDistancesMeters(), así
-        // que una distancia justo en el límite de 1km es frágil por un
-        // motivo de la propia fixture del test, no del código real.
         const trace = straightTrace(1200);
         const [marker] = buildKmMarkers(trace);
 
-        expect(marker.dirA).toHaveProperty("lat");
-        expect(marker.dirA).toHaveProperty("lon");
-        expect(marker.dirB).toHaveProperty("lat");
-        expect(marker.dirB).toHaveProperty("lon");
-        // dirA/dirB son dos puntos DISTINTOS de la traza (si no, no habría
-        // ninguna dirección real que calcular).
-        expect(marker.dirA).not.toEqual(marker.dirB);
+        expect(marker).toHaveProperty("lat");
+        expect(marker).toHaveProperty("lon");
+        // Sobre la misma longitud que toda la traza recta (straightTrace()
+        // solo avanza en latitud) -- ningún offset perpendicular aplicado.
+        expect(marker.lon).toBe(trace[0].lon);
 
     });
 
@@ -129,38 +121,6 @@ describe("buildKmMarkers", () => {
 
         const trace = straightTrace(800);
         expect(buildKmMarkers(trace)).toEqual([]);
-
-    });
-
-});
-
-describe("buildDirectionArrows", () => {
-
-    it("coloca una flecha cada ~1000m, desfasada de las marcas de km", () => {
-
-        const trace = straightTrace(2000);
-        const arrows = buildDirectionArrows(trace);
-
-        // 2 flechas esperadas: ~500m, ~1500m.
-        expect(arrows).toHaveLength(2);
-
-    });
-
-    it("cada flecha trae dirA/dirB para poder calcular su ángulo real en RouteMap.js", () => {
-
-        const trace = straightTrace(2000);
-        const [arrow] = buildDirectionArrows(trace);
-
-        expect(arrow.dirA).toHaveProperty("lat");
-        expect(arrow.dirB).toHaveProperty("lat");
-        expect(arrow.dirA).not.toEqual(arrow.dirB);
-
-    });
-
-    it("sin recorrido suficiente para ni una sola flecha, devuelve un array vacío", () => {
-
-        const trace = straightTrace(200);
-        expect(buildDirectionArrows(trace)).toEqual([]);
 
     });
 

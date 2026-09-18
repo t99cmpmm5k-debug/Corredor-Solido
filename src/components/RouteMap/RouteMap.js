@@ -35,6 +35,12 @@ const KM_MARKER_SIZE_PX = 14;
 // flex, ver RouteMap.css.
 const KM_MARKER_TAP_SIZE_PX = 32;
 
+// Marcas de inicio/fin (especificación de cierre: "igual que Garmin, saber
+// de un vistazo dónde empezó y terminó") -- no interactivas (sin popup, sin
+// dato que consultar), así que no necesitan una zona de toque ampliada como
+// las de km: su tamaño de icono ya es el tamaño real que ocupan.
+const ENDPOINT_MARKER_SIZE_PX = 20;
+
 // Separación mínima en PÍXELES DE PANTALLA (no metros de recorrido) entre
 // dos marcas de km ya colocadas -- un recorrido con giros o ida-y-vuelta
 // puede traer dos kilómetros distintos muy cerca EN EL MAPA aunque estén
@@ -82,72 +88,68 @@ function clusterByProximity(points, spacingPx) {
 
 }
 
-// Cuando dos o más marcas de km quedan a menos de spacingPx en pantalla
-// (recorrido con giros o ida-y-vuelta cerca de sí mismo -- ver bug real
-// reportado: km 1/5 y 2/4 casi encima), se reparten a lados opuestos de la
-// línea en vez de ocultar o simplemente encoger ninguna -- mismo criterio
-// visual que usan Garmin Connect/Strava. `directions[i]` es el vector
-// unitario perpendicular al recorrido EN EL PUNTO i (ver
-// perpendicularUnitVector en mountRouteMap) -- cada marcador usa siempre
-// SU PROPIA dirección local, nunca la de otro miembro del grupo: en un
-// recorrido que pasa cerca de sí mismo (ida y vuelta por la misma zona,
-// caso real verificado) el rumbo real en el km lejano suele ir en sentido
-// contrario al del km cercano, así que imponer un único eje "prestado"
-// desplazaba la marca en un ángulo que no correspondía a la línea real
-// bajo ella. Regla fija y predecible, sin comparar geometrías entre sí
-// caso por caso: dentro de cada grupo (ya en orden cronológico real, ver
-// el comentario de buildKmMarkers), los miembros alternan de lado -- rank
-// par a un lado, impar al opuesto -- y cada pareja adicional se aleja un
-// paso más para no solaparse entre sí en grupos de más de 2. Devuelve un
-// desplazamiento {x,y} en píxeles por marcador (0,0 si no coincide con
-// nadie). Pura -- trabaja en espacio de píxeles ya resuelto, sin
-// Leaflet/DOM, para poder testearla sola.
-export function resolveMarkerOffsets(points, directions, spacingPx) {
+// Cada marcador de km se coloca en su posición geométrica EXACTA sobre el
+// trazado (igual que Garmin/Strava -- ver buildKmMarkers en
+// routeMapPaceColoring.js), sin ningún desplazamiento lateral: el propio
+// orden numérico creciente sobre la línea ya comunica el sentido del
+// recorrido. Pero un recorrido con giros o ida-y-vuelta puede traer dos
+// kilómetros distintos muy cerca EN PANTALLA aunque estén lejos en la ruta
+// real (bug real reportado: km 1/5 y 2/4 casi encima) -- desplazar
+// cualquiera de los dos a un lado u otro de la línea resultó en marcas mal
+// posicionadas (el rumbo real en el km lejano suele ir en sentido
+// contrario al del km cercano, así que cualquier eje "prestado" quedaba
+// torcido). En vez de mover nada de su sitio real, los marcadores que
+// coinciden en pantalla se FUNDEN en uno solo ("1·5") colocado en la
+// posición real del primero de ellos (orden cronológico, ver el comentario
+// de buildKmMarkers) -- ninguno de los dos queda oculto ni sin poder
+// consultarse, y ninguno se desplaza de su sitio geométrico real.
+export function mergeOverlappingKmMarkers(markers, points, spacingPx) {
 
-    const offsets = points.map(() => ({ x: 0, y: 0 }));
     const clusters = clusterByProximity(points, spacingPx);
 
-    clusters.forEach(indices => {
+    return clusters.map(indices => {
 
-        if (indices.length < 2) return;
+        const members = indices.map(i => markers[i]);
+        const [first] = members;
 
-        indices.forEach((pointIndex, rank) => {
-
-            const side = rank % 2 === 0 ? 1 : -1;
-            const magnitude = (Math.floor(rank / 2) + 0.5) * spacingPx;
-            const axis = directions[pointIndex];
-
-            offsets[pointIndex] = { x: axis.x * side * magnitude, y: axis.y * side * magnitude };
-
-        });
+        return {
+            lat: first.lat,
+            lon: first.lon,
+            label: members.map(m => m.km).join("·"),
+            entries: members.map(m => ({ km: m.km, paceSecPerKm: m.paceSecPerKm, avgHr: m.avgHr }))
+        };
 
     });
-
-    return offsets;
 
 }
 
 // Contenido del popup al pulsar una marca de km -- mismo ritmo/FC que ya
 // muestra "Ritmo por kilómetro" (RunningDetailView.js le pasa ese mismo
 // split vía buildKmMarkers(routeTrace, splits) en routeMapPaceColoring.js),
-// nunca un dato recalculado aparte. Sin FC si ese split no la trae (OCR de
-// Garmin sin tabla de Vueltas con FC, o TCX/GPX sin sensor) -- "—" o un
-// guion inventado no, mismo criterio que el resto de la app.
-function buildKmPopupHtml(marker) {
+// nunca un dato recalculado aparte. Un grupo fusionado (mergeOverlappingKmMarkers)
+// trae más de una entrada -- una fila por km, en vez de una sola. Un km sin
+// ritmo real (entreno demasiado corto para tener splits) no genera fila --
+// "—" o un guion inventado no, mismo criterio que el resto de la app.
+function buildKmPopupHtml(group) {
 
-    return `
+    const rows = group.entries
+        .filter(entry => entry.paceSecPerKm != null)
+        .map(entry => `
 
-        <div class="route-map-popup-content">
+            <div class="route-map-popup-row">
 
-            <strong>Km ${marker.km}</strong>
+                <strong>Km ${entry.km}</strong>
 
-            <span>${formatSecondsAsClock(marker.paceSecPerKm)}/km</span>
+                <span>${formatSecondsAsClock(entry.paceSecPerKm)}/km</span>
 
-            ${marker.avgHr != null ? `<span>${Math.round(marker.avgHr)} ppm</span>` : ""}
+                ${entry.avgHr != null ? `<span>${Math.round(entry.avgHr)} ppm</span>` : ""}
 
-        </div>
+            </div>
 
-    `;
+        `)
+        .join("");
+
+    return `<div class="route-map-popup-content">${rows}</div>`;
 
 }
 
@@ -199,12 +201,16 @@ export function RouteMapContainer(id = "route-map") {
 // vive en routeMapPaceColoring.js, propio de Running). El caso sin
 // coloreado (Paso 1, o Recorridos de referencia) simplemente pasa un único
 // segmento con todo el trazado.
-// markers: array opcional de {lat, lon, km, dirA, dirB, paceSecPerKm, avgHr}
-// -- marcas de km completo.
-// arrows: array opcional de {lat, lon, dirA, dirB} -- flechas de sentido a
-// lo largo del trazado (ayudan a confirmar visualmente en qué dirección se
-// corrió, especialmente en rutas de ida y vuelta).
-export async function mountRouteMap(container, segments, markers = [], arrows = []) {
+// markers: array opcional de {lat, lon, km, paceSecPerKm, avgHr} -- marcas
+// de km completo, cada una en su posición geométrica exacta sobre la línea
+// (sin desplazamiento -- ver mergeOverlappingKmMarkers para el caso de dos
+// que coinciden en pantalla).
+// routeTrace: los mismos puntos {lat,lon} que ya dibujan `segments`, para
+// poder marcar inicio/fin en sus dos extremos reales -- no hace falta que
+// este componente sepa nada más de la traza (routeTrace[0]/[length-1] son
+// ya el inicio/fin real, ordenados cronológicamente por construcción, ver
+// geoTrace.js/tcx.js/gpx.js).
+export async function mountRouteMap(container, segments, markers = [], routeTrace = []) {
 
     const [{ default: L }] = await Promise.all([
         import("leaflet"),
@@ -287,77 +293,61 @@ export async function mountRouteMap(container, segments, markers = [], arrows = 
     // que tampoco hay ninguna transición que "se note" al quitarla.
     map.fitBounds(bounds, { padding: [24, 24], animate: false });
 
-    // Flechas de sentido -- ángulo calculado EN PÍXELES de pantalla (no en
-    // lat/lon), convirtiendo los dos puntos "en bruto" que rodean cada
-    // flecha (dirA/dirB, ver buildDirectionArrows) con la misma técnica que
-    // ya usa el desplazamiento de marcas de km más abajo -- correcto sea
-    // cual sea la proyección real del mapa en pantalla. atan2(dy,dx) da 0°
-    // apuntando a la derecha, que es la orientación "de fábrica" del
-    // triángulo CSS (.route-map-direction-arrow, ver RouteMap.css), así que
-    // el ángulo se aplica tal cual, sin ningún offset de +90°.
-    arrows.forEach(arrow => {
+    // Marcas de inicio/fin -- los dos extremos reales de la traza, sin
+    // ningún cálculo de dirección: el propio orden de los números de km
+    // creciendo sobre la línea ya comunica el sentido del recorrido (las
+    // flechas de sentido que había antes se han quitado por redundantes).
+    // No interactivas -- son solo contexto visual, sin dato que consultar.
+    if (routeTrace.length >= 2) {
 
-        const from = map.latLngToContainerPoint([arrow.dirA.lat, arrow.dirA.lon]);
-        const to = map.latLngToContainerPoint([arrow.dirB.lat, arrow.dirB.lon]);
-        const angleDeg = Math.atan2(to.y - from.y, to.x - from.x) * 180 / Math.PI;
+        const start = routeTrace[0];
+        const finish = routeTrace[routeTrace.length - 1];
 
-        L.marker([arrow.lat, arrow.lon], {
+        L.marker([start.lat, start.lon], {
             icon: L.divIcon({
-                className: "route-map-direction-arrow-wrap",
-                html: `<span class="route-map-direction-arrow" style="transform:translate(-50%, -50%) rotate(${angleDeg}deg)"></span>`,
-                iconSize: [0, 0]
+                className: "route-map-endpoint-marker-wrap",
+                html: `<span class="route-map-endpoint-marker route-map-endpoint-marker--start"></span>`,
+                iconSize: [ENDPOINT_MARKER_SIZE_PX, ENDPOINT_MARKER_SIZE_PX],
+                iconAnchor: [ENDPOINT_MARKER_SIZE_PX / 2, ENDPOINT_MARKER_SIZE_PX / 2]
             }),
             interactive: false,
             keyboard: false
         }).addTo(map);
 
-    });
+        L.marker([finish.lat, finish.lon], {
+            icon: L.divIcon({
+                className: "route-map-endpoint-marker-wrap",
+                html: `<span class="route-map-endpoint-marker route-map-endpoint-marker--finish"><iconify-icon icon="solar:flag-bold-duotone"></iconify-icon></span>`,
+                iconSize: [ENDPOINT_MARKER_SIZE_PX, ENDPOINT_MARKER_SIZE_PX],
+                iconAnchor: [ENDPOINT_MARKER_SIZE_PX / 2, ENDPOINT_MARKER_SIZE_PX / 2]
+            }),
+            interactive: false,
+            keyboard: false
+        }).addTo(map);
 
-    // El círculo solo muestra el número (especificación de cierre del Paso
-    // 2: "no queremos duplicar el detalle del gráfico de abajo a la
-    // vista") -- el ritmo/FC de ese km concreto vive en un popup al pulsar
-    // (ver buildKmPopupHtml), no permanentemente en el mapa.
+    }
+
+    // El círculo solo muestra el/los número(s) (especificación de cierre
+    // del Paso 2: "no queremos duplicar el detalle del gráfico de abajo a
+    // la vista") -- el ritmo/FC de cada km concreto vive en un popup al
+    // pulsar (ver buildKmPopupHtml), no permanentemente en el mapa.
     //
-    // resolveMarkerOffsets trabaja en píxeles de pantalla (no metros de
+    // mergeOverlappingKmMarkers trabaja en píxeles de pantalla (no metros de
     // recorrido) -- un recorrido con giros o ida-y-vuelta puede traer dos km
     // distintos muy cerca EN EL MAPA aunque estén lejos en la ruta real;
     // comprobarlo sobre el mapa ya encuadrado es lo único que funciona igual
     // a cualquier zoom (bug real reportado: km 1/5 y 2/4 casi solapados).
     const markerPoints = markers.map(m => map.latLngToContainerPoint([m.lat, m.lon]));
+    const groups = mergeOverlappingKmMarkers(markers, markerPoints, MIN_KM_MARKER_SPACING_PX);
 
-    // Dirección local del recorrido en cada marca, calculada EN PÍXELES
-    // (no en lat/lon) convirtiendo los dos puntos "en bruto" que la rodean
-    // (dirA/dirB, ver buildKmMarkers) -- así el desplazamiento perpendicular
-    // es correcto sea cual sea la proyección/rotación real del mapa en
-    // pantalla, no una aproximación geográfica.
-    const markerDirections = markers.map(marker => {
+    groups.forEach(group => {
 
-        const from = map.latLngToContainerPoint([marker.dirA.lat, marker.dirA.lon]);
-        const to = map.latLngToContainerPoint([marker.dirB.lat, marker.dirB.lon]);
+        const isMerged = group.entries.length > 1;
 
-        const dx = to.x - from.x, dy = to.y - from.y;
-        const len = Math.hypot(dx, dy) || 1;
-
-        // Perpendicular (rotación 90°) al vector de avance del recorrido.
-        return { x: -dy / len, y: dx / len };
-
-    });
-
-    const offsets = resolveMarkerOffsets(markerPoints, markerDirections, MIN_KM_MARKER_SPACING_PX);
-
-    markers.forEach((marker, i) => {
-
-        const { x, y } = offsets[i];
-
-        // El desplazamiento va en un <span> INTERNO (route-map-km-marker),
-        // nunca en el elemento que Leaflet posiciona (el de className) --
-        // Leaflet aplica su propia transformación de posicionamiento ahí,
-        // y una transform CSS propia en el mismo elemento se la pisaría por
-        // completo, no solo la desplazaría.
-        const leafletMarker = L.marker([marker.lat, marker.lon], {
+        const leafletMarker = L.marker([group.lat, group.lon], {
             icon: L.divIcon({
                 className: "route-map-km-marker-wrap",
-                html: `<span class="route-map-km-marker" style="transform:translate(${x}px, ${y}px)">${marker.km}</span>`,
+                html: `<span class="route-map-km-marker ${isMerged ? "route-map-km-marker--merged" : ""}">${group.label}</span>`,
                 iconSize: [KM_MARKER_TAP_SIZE_PX, KM_MARKER_TAP_SIZE_PX],
                 iconAnchor: [KM_MARKER_TAP_SIZE_PX / 2, KM_MARKER_TAP_SIZE_PX / 2]
             }),
@@ -368,11 +358,12 @@ export async function mountRouteMap(container, segments, markers = [], arrows = 
             keyboard: false
         }).addTo(map);
 
-        // Sin dato real que enseñar (entreno demasiado corto para tener
-        // splits, ver initRunningEvents.js) -- nunca un popup con guiones,
+        // Sin ningún dato real que enseñar en ninguna de sus entradas
+        // (entreno demasiado corto para tener splits, ver
+        // initRunningEvents.js) -- nunca un popup con guiones ni vacío,
         // mismo criterio de "nunca inventar" del resto de la app.
-        if (marker.paceSecPerKm != null) {
-            leafletMarker.bindPopup(buildKmPopupHtml(marker), { closeButton: false, className: "route-map-popup" });
+        if (group.entries.some(entry => entry.paceSecPerKm != null)) {
+            leafletMarker.bindPopup(buildKmPopupHtml(group), { closeButton: false, className: "route-map-popup" });
         }
 
     });

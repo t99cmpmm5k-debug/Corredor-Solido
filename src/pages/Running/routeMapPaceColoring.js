@@ -185,11 +185,12 @@ export function buildPaceColorSegments(routeTrace, splits) {
 // Un marcador por cada km completo (1, 2, 3...) -- nunca por el tramo final
 // parcial. Interpola entre los dos puntos de routeTrace que rodean esa
 // distancia exacta (mismo criterio que buildRouteTrace en geoTrace.js), en
-// vez de "saltar" al punto de muestreo más cercano (~20m de error). `dirA`/
-// `dirB` son esos mismos dos puntos "en bruto" (sin interpolar) -- se
-// exponen para que RouteMap.js pueda calcular la dirección local real del
-// recorrido en ese punto (perpendicular a la línea, para desplazar marcas
-// que quedan demasiado juntas EN PANTALLA, ver mountRouteMap).
+// vez de "saltar" al punto de muestreo más cercano (~20m de error) --
+// coloca cada marcador tal cual, en su posición geométrica exacta sobre el
+// trazado, sin ningún desplazamiento (igual que Garmin/Strava: el propio
+// orden numérico creciente sobre la línea ya comunica el sentido del
+// recorrido, sin necesitar flechas aparte -- ver RouteMap.js para el caso
+// de dos marcadores que coinciden en pantalla).
 //
 // Numera SIEMPRE en el orden cronológico real de routeTrace (nunca por
 // cercanía geográfica) -- en una ruta que pasa dos veces cerca del mismo
@@ -207,14 +208,6 @@ export function buildPaceColorSegments(routeTrace, splits) {
 // genera marcador de km completo) para el popup al pulsar (RouteMap.js) --
 // mismo dato que ya muestra el gráfico "Ritmo por kilómetro", nunca uno
 // recalculado aparte.
-// Interpola el punto de routeTrace que cae exactamente a targetMeters del
-// inicio (mismo criterio que buildRouteTrace en geoTrace.js) -- compartida
-// entre buildKmMarkers y buildDirectionArrows para no duplicar la misma
-// búsqueda+interpolación dos veces. Devuelve también dirA/dirB (los dos
-// puntos "en bruto" sin interpolar que rodean el target) para que
-// RouteMap.js pueda calcular la dirección local real del recorrido ahí
-// (perpendicular para desplazar marcas de km que quedan muy juntas en
-// pantalla, o el ángulo de rotación de una flecha de sentido).
 function interpolateAtDistance(routeTrace, distances, targetMeters) {
 
     let i = distances.findIndex(d => d >= targetMeters);
@@ -230,9 +223,7 @@ function interpolateAtDistance(routeTrace, distances, targetMeters) {
 
     return {
         lat: prev.lat + (curr.lat - prev.lat) * ratio,
-        lon: prev.lon + (curr.lon - prev.lon) * ratio,
-        dirA: { lat: prev.lat, lon: prev.lon },
-        dirB: { lat: curr.lat, lon: curr.lon }
+        lon: prev.lon + (curr.lon - prev.lon) * ratio
     };
 
 }
@@ -262,32 +253,5 @@ export function buildKmMarkers(routeTrace, splits = []) {
     }
 
     return markers;
-
-}
-
-// Flechas de sentido a lo largo del trazado (especificación de cierre del
-// Paso 2: "de vez en cuando, no en cada punto" -- también ayuda a confirmar
-// visualmente el sentido real del recorrido). Una cada ARROW_STEP_METERS,
-// desfasadas medio paso desde el inicio para que nunca coincidan
-// exactamente con una marca de km (que cae en múltiplos de 1000m).
-// 500 -> 1000 (retoque de acabado real, verificado con "Puerto Lumbreras -
-// 8k zona dos": a 500m salían demasiadas flechas para el tamaño real de la
-// tarjeta del mapa, y en los tramos con curva llegaban a cruzarse entre
-// sí -- con una cada km de separación (desfasada 500m del inicio, así
-// nunca cae justo sobre una marca de km) queda un rastro de sentido claro
-// sin amontonarse.
-const ARROW_STEP_METERS = 1000;
-
-export function buildDirectionArrows(routeTrace) {
-
-    const distances = cumulativeDistancesMeters(routeTrace);
-    const total = distances[distances.length - 1];
-    const arrows = [];
-
-    for (let target = ARROW_STEP_METERS / 2; target < total; target += ARROW_STEP_METERS) {
-        arrows.push(interpolateAtDistance(routeTrace, distances, target));
-    }
-
-    return arrows;
 
 }

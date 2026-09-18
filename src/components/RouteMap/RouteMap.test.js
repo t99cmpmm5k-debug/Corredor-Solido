@@ -1,97 +1,72 @@
 import { describe, it, expect } from "vitest";
-import { resolveMarkerOffsets, hasRouteTrace } from "./RouteMap.js";
+import { mergeOverlappingKmMarkers, hasRouteTrace } from "./RouteMap.js";
 
-describe("resolveMarkerOffsets", () => {
+function marker(km, overrides) {
+    return { km, lat: km, lon: 0, paceSecPerKm: 300, avgHr: 150, ...overrides };
+}
 
-    it("no desplaza nada si todos los puntos están lejos entre sí", () => {
+describe("mergeOverlappingKmMarkers", () => {
 
+    it("sin ningún par cerca en pantalla, cada km sale como su propio grupo, en su posición real", () => {
+
+        const markers = [marker(1), marker(2), marker(3)];
         const points = [{ x: 0, y: 0 }, { x: 100, y: 0 }, { x: 200, y: 0 }];
-        const directions = points.map(() => ({ x: 1, y: 0 }));
 
-        const offsets = resolveMarkerOffsets(points, directions, 20);
+        const groups = mergeOverlappingKmMarkers(markers, points, 20);
 
-        expect(offsets).toEqual([{ x: 0, y: 0 }, { x: 0, y: 0 }, { x: 0, y: 0 }]);
-
-    });
-
-    it("desplaza dos puntos casi encima en lados opuestos de la línea, ninguno se oculta", () => {
-
-        // Simula km 1 y km 5 casi encima en el mapa (recorrido con giro),
-        // avanzando en horizontal -- la perpendicular es vertical (0,1).
-        const points = [{ x: 0, y: 0 }, { x: 2, y: 1 }];
-        const directions = [{ x: 0, y: 1 }, { x: 0, y: 1 }];
-
-        const offsets = resolveMarkerOffsets(points, directions, 20);
-
-        // Ambos se mueven (ninguno se queda en 0,0) y en direcciones
-        // opuestas a lo largo del mismo eje perpendicular.
-        expect(offsets[0]).not.toEqual({ x: 0, y: 0 });
-        expect(offsets[1]).not.toEqual({ x: 0, y: 0 });
-        expect(offsets[0].y).toBe(-offsets[1].y);
+        expect(groups).toHaveLength(3);
+        expect(groups.map(g => g.label)).toEqual(["1", "2", "3"]);
+        // Posición geométrica real de cada uno, SIN ningún desplazamiento.
+        expect(groups[0]).toMatchObject({ lat: 1, lon: 0 });
+        expect(groups[1]).toMatchObject({ lat: 2, lon: 0 });
 
     });
 
-    it("tras desplazar, las posiciones finales quedan separadas al menos spacingPx", () => {
+    it("dos marcas casi encima en pantalla (km 1 y km 5, recorrido con giro) se funden en un único grupo, sin mover ninguna de su sitio", () => {
 
-        const points = [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 2, y: 0 }];
-        const directions = points.map(() => ({ x: 0, y: 1 }));
-        const spacing = 20;
+        const markers = [marker(1), marker(5)];
+        const points = [{ x: 0, y: 0 }, { x: 2, y: 1 }]; // a 2.24px, por debajo de spacing=20
 
-        const offsets = resolveMarkerOffsets(points, directions, spacing);
-        const finalPositions = points.map((p, i) => ({ x: p.x + offsets[i].x, y: p.y + offsets[i].y }));
+        const groups = mergeOverlappingKmMarkers(markers, points, 20);
 
-        for (let i = 0; i < finalPositions.length; i++) {
-            for (let j = i + 1; j < finalPositions.length; j++) {
-
-                const dist = Math.hypot(
-                    finalPositions[i].x - finalPositions[j].x,
-                    finalPositions[i].y - finalPositions[j].y
-                );
-
-                expect(dist).toBeGreaterThanOrEqual(spacing - 0.001);
-
-            }
-        }
+        expect(groups).toHaveLength(1);
+        expect(groups[0].label).toBe("1·5");
+        // En la posición real del PRIMERO cronológicamente (km 1) -- nunca
+        // un punto medio inventado ni un desplazamiento lateral.
+        expect(groups[0].lat).toBe(1);
+        expect(groups[0].lon).toBe(0);
+        // Ninguno de los dos kilómetros se pierde -- ambos siguen
+        // consultables en el popup.
+        expect(groups[0].entries.map(e => e.km)).toEqual([1, 5]);
 
     });
 
-    it("agrupa transitivamente 3 puntos encadenados en un único grupo, alternando de lado", () => {
+    it("agrupa transitivamente 3 puntos encadenados en un único grupo fusionado", () => {
 
         // A cerca de B, B cerca de C, pero A y C no están cerca directamente
         // entre sí -- deben entrar igualmente en el mismo grupo de 3.
+        const markers = [marker(1), marker(2), marker(3)];
         const points = [{ x: 0, y: 0 }, { x: 5, y: 0 }, { x: 10, y: 0 }];
-        const directions = points.map(() => ({ x: 0, y: 1 }));
 
-        const offsets = resolveMarkerOffsets(points, directions, 20);
+        const groups = mergeOverlappingKmMarkers(markers, points, 20);
 
-        // Los 3 se desplazan (ninguno se queda quieto); A y C (rank par)
-        // van al mismo lado, B (rank impar) al opuesto.
-        expect(offsets[0].y).not.toBe(0);
-        expect(offsets[1].y).not.toBe(0);
-        expect(offsets[2].y).not.toBe(0);
-        expect(Math.sign(offsets[0].y)).toBe(Math.sign(offsets[2].y));
-        expect(Math.sign(offsets[1].y)).toBe(-Math.sign(offsets[0].y));
+        expect(groups).toHaveLength(1);
+        expect(groups[0].label).toBe("1·2·3");
+        expect(groups[0].entries.map(e => e.km)).toEqual([1, 2, 3]);
 
     });
 
-    it("cada marcador usa SU PROPIA dirección local, no la de otro miembro del grupo -- caso real de ida y vuelta por la misma zona", () => {
+    it("cada entrada del grupo conserva su propio ritmo/FC real -- nunca se promedian ni se pierden", () => {
 
-        // km 1 (yendo) y km 4 (volviendo) casi encima en pantalla, pero el
-        // recorrido va en sentidos opuestos en cada uno -- la perpendicular
-        // real de cada punto también es opuesta. Con un eje compartido
-        // (el algoritmo anterior) ambos se habrían desplazado a lo largo del
-        // eje de km 1, ignorando el rumbo real bajo km 4.
+        const markers = [marker(1, { paceSecPerKm: 300, avgHr: 145 }), marker(5, { paceSecPerKm: 320, avgHr: null })];
         const points = [{ x: 0, y: 0 }, { x: 1, y: 1 }];
-        const directions = [{ x: 0, y: 1 }, { x: 0, y: -1 }];
 
-        const offsets = resolveMarkerOffsets(points, directions, 20);
+        const [group] = mergeOverlappingKmMarkers(markers, points, 20);
 
-        // km 1 se desplaza sobre SU propio eje (0,1); km 4 sobre el suyo
-        // (0,-1) -- nunca el prestado del otro miembro del grupo.
-        expect(offsets[0].x).toBeCloseTo(0);
-        expect(offsets[1].x).toBeCloseTo(0);
-        expect(offsets[0].y).not.toBe(0);
-        expect(offsets[1].y).not.toBe(0);
+        expect(group.entries).toEqual([
+            { km: 1, paceSecPerKm: 300, avgHr: 145 },
+            { km: 5, paceSecPerKm: 320, avgHr: null }
+        ]);
 
     });
 
