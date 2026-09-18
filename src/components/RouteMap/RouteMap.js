@@ -21,6 +21,23 @@ const ROUTE_LINE_CASING_COLOR = "#FFFFFF";
 const TERRAIN_TILE_URL = "https://tiles.stadiamaps.com/tiles/stamen_terrain/{z}/{x}/{y}{r}.png";
 const TERRAIN_ATTRIBUTION = '&copy; <a href="https://stadiamaps.com/attribution/" target="_blank" rel="noopener">Stadia Maps</a> &copy; <a href="https://stamen.com/" target="_blank" rel="noopener">Stamen Design</a> &copy; <a href="https://openmaptiles.org/" target="_blank" rel="noopener">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>';
 
+// Bug real reportado: al hacer zoom en pantalla completa, en algún punto
+// aparecía el logo de Stadia flotando sobre un tile en blanco. La
+// documentación de Stadia dice que este endpoint concreto (el legacy
+// /tiles/stamen_terrain/) admite hasta zoom 20 en general -- pero el bug ya
+// ocurría con el límite anterior (18), así que el problema real no es un
+// techo de zoom mal declarado, sino falta de cobertura real de este estilo
+// (hillshade/terreno, no satélite) en según qué zonas rurales a esa
+// profundidad de zoom -- ese "tile de disculpa" con su logo es lo que
+// Stadia sirve cuando no tiene datos reales para un tile concreto, con
+// HTTP 200 (no un error real que Leaflet pueda detectar y sustituir solo).
+// Bajado a 16 -- techo conservador, muy por debajo de donde ya se vio el
+// problema, que sigue dejando ver calles/edificios/curvas de nivel reales
+// con detalle de sobra para un mapa de recorrido. Si en la práctica sigue
+// apareciendo el logo a este nivel, bajar más -- no hay una cifra "segura"
+// universal, depende de qué zona rural concreta cubra cada recorrido.
+const TERRAIN_MAX_ZOOM = 16;
+
 // Tamaño real del círculo VISIBLE de marca de km -- debe coincidir EXACTO
 // con .route-map-km-marker (RouteMap.css, box-sizing:border-box) para que
 // el centrado cuadre con su coordenada. 18px -> 14px (retoque de acabado:
@@ -110,8 +127,25 @@ export function RouteMapContainer(id = "route-map") {
 // mapa pequeño en sí ya no tiene nada interactivo dentro (mountRouteMap con
 // interactive:false: ni marcadores con popup, ni zoom, ni arrastre), así
 // que un solo listener en todo el contenedor no compite con nada.
-export function RouteMapTapTarget(id = "route-map") {
-    return `<div class="route-map-tap-target" data-action="open-route-map-fullscreen">${RouteMapContainer(id)}</div>`;
+// legendHtml opcional (RouteMapLegend(), ya renderizada por quien llama) --
+// retoque real: la leyenda vive DENTRO del área visual del mapa como
+// overlay flotante (position:absolute sobre este mismo envoltorio, ver
+// RouteMap.css), nunca como bloque aparte debajo -- mismo criterio que ya
+// usa RouteMapFullscreenOverlay.
+export function RouteMapTapTarget(id = "route-map", legendHtml = "") {
+
+    return `
+
+        <div class="route-map-tap-target" data-action="open-route-map-fullscreen">
+
+            ${RouteMapContainer(id)}
+
+            ${legendHtml}
+
+        </div>
+
+    `;
+
 }
 
 // Overlay a pantalla completa ("explorar el recorrido") -- toda la
@@ -193,6 +227,11 @@ export async function mountRouteMap(container, segments, markers = [], routeTrac
         boxZoom: false,
         keyboard: interactive,
         tap: true,
+        // Explícito aquí además de en el tileLayer de abajo -- Leaflet ya
+        // debería derivarlo solo del maxZoom de la capa, pero fijarlo
+        // también en el propio mapa es lo que de verdad garantiza que el
+        // pellizco nunca pueda pasarse del límite real (ver TERRAIN_MAX_ZOOM).
+        maxZoom: TERRAIN_MAX_ZOOM,
         attributionControl: false
     });
 
@@ -203,7 +242,7 @@ export async function mountRouteMap(container, segments, markers = [], routeTrac
     // adicional de implementación.
     L.tileLayer(TERRAIN_TILE_URL, {
         attribution: TERRAIN_ATTRIBUTION,
-        maxZoom: 18,
+        maxZoom: TERRAIN_MAX_ZOOM,
         detectRetina: true
     }).addTo(map);
 
@@ -211,7 +250,11 @@ export async function mountRouteMap(container, segments, markers = [], routeTrac
     // color después -- si no, el casing de un segmento posterior taparía
     // parte de la línea de color del segmento anterior justo en el punto de
     // frontera que ambos comparten. Pesos más finos que en el primer
-    // acabado (8/5 -> 5/3, retoque de acabado: "se ve demasiado grueso").
+    // acabado (8/5 -> 5/3, retoque de acabado: "se ve demasiado grueso") --
+    // pero un pelín más gruesos en modo interactivo (pantalla completa,
+    // +1/+1) que en el mapa pequeño: retoque real, "se ve demasiado fino al
+    // hacer zoom" -- con más zoom real disponible el trazo fino de la vista
+    // general se queda corto para leerse bien ampliado.
     //
     // smoothFactor:0 -- bug real corregido: por defecto (1.0) Leaflet
     // SIMPLIFICA el trazado al dibujarlo (quita vértices "redundantes" por
@@ -221,11 +264,14 @@ export async function mountRouteMap(container, segments, markers = [], routeTrac
     // en routeMapPaceColoring.js). Con smoothFactor:0 la línea dibujada pasa
     // por todos los puntos reales -- sin coste perceptible para un
     // recorrido de unos pocos cientos de puntos.
+    const casingWeight = interactive ? 6 : 5;
+    const colorWeight = interactive ? 4 : 3;
+
     segments.forEach(segment => {
 
         L.polyline(segment.latlngs, {
             color: ROUTE_LINE_CASING_COLOR,
-            weight: 5,
+            weight: casingWeight,
             opacity: 0.85,
             lineCap: "round",
             lineJoin: "round",
@@ -238,7 +284,7 @@ export async function mountRouteMap(container, segments, markers = [], routeTrac
 
         L.polyline(segment.latlngs, {
             color: segment.color,
-            weight: 3,
+            weight: colorWeight,
             opacity: 1,
             lineCap: "round",
             lineJoin: "round",

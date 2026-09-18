@@ -26,9 +26,13 @@
    área de toque no se note visualmente por fuera de la tarjeta. */
 .route-map-tap-target{
 
+    position:relative;
+
     display:block;
 
     border-radius:26px;
+
+    overflow:hidden;
 
     cursor:pointer;
 
@@ -102,24 +106,6 @@
     font-size:24px;
 
     color:var(--text-secondary);
-
-}
-
-/* Misma leyenda que en el mapa pequeño (RouteMapLegend, más abajo) pero
-   flotando sobre el mapa a pantalla completa -- ahí no hay ningún otro
-   elemento de página bajo el que colocarla. */
-.route-map-fullscreen-overlay .route-map-legend{
-
-    position:absolute;
-
-    bottom:calc(16px + env(safe-area-inset-bottom));
-    left:50%;
-
-    transform:translateX(-50%);
-
-    /* Mismo motivo que .route-map-fullscreen-close -- por encima de los
-       panes internos de Leaflet, que comparten su contexto de apilamiento. */
-    z-index:1000;
 
 }
 
@@ -371,10 +357,26 @@
 
 /* Leyenda "Más lento <- degradado -> Más rápido" (especificación de cierre
    del Paso 2) -- misma forma de píldora que la referencia visual de
-   Garmin/Strava, reskinada al estilo oscuro del resto de tarjetas de esta
-   pantalla (.detail-summary/.pace-chart) en vez de copiar su píldora
-   blanca, que desentonaría con el tema oscuro de toda la app. */
+   Garmin/Strava. Retoque real de diseño: vive DENTRO del área visual del
+   mapa como overlay flotante (nunca como bloque aparte debajo -- ver
+   RouteMapTapTarget/RouteMapFullscreenOverlay, los dos sitios que la
+   colocan como hijo directo de un contenedor position:relative del mismo
+   tamaño que el mapa) y con el mismo tratamiento "glass" que ya usan
+   .wizard-close/.update-banner/.route-map-fullscreen-close en vez del
+   recuadro plano de antes -- desenfoque real del mapa/tiles de debajo, no
+   un simple color sólido semitransparente. z-index por encima de los
+   panes internos de Leaflet (hasta ~700), que comparten el mismo contexto
+   de apilamiento que este overlay al no crear uno propio. */
 .route-map-legend{
+
+    position:absolute;
+
+    bottom:14px;
+    left:50%;
+
+    transform:translateX(-50%);
+
+    z-index:1000;
 
     display:flex;
 
@@ -386,9 +388,24 @@
 
     border-radius:999px;
 
-    background:color-mix(in srgb, var(--card-background) 75%, transparent);
+    background:color-mix(in srgb, var(--card-background) 55%, transparent);
 
-    border:1px solid var(--card-border);
+    border:1px solid color-mix(in srgb, var(--card-border) 45%, transparent);
+
+    backdrop-filter:blur(14px);
+    -webkit-backdrop-filter:blur(14px);
+
+    box-shadow:0 4px 14px rgba(0,0,0,.3);
+
+}
+
+/* En pantalla completa el overlay toca los bordes reales del dispositivo
+   -- respeta el área segura inferior (notch/home indicator), a diferencia
+   del mapa pequeño, que ya vive dentro de una tarjeta con su propio margen
+   respecto al borde de la pantalla. */
+.route-map-fullscreen-overlay .route-map-legend{
+
+    bottom:calc(16px + env(safe-area-inset-bottom));
 
 }
 

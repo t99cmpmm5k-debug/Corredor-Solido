@@ -847,9 +847,7 @@ export function RunningDetailView(workout, shoes = [], warningsExpanded = false,
 
             </div>
 
-            ${hasRouteTrace(workout) ? RouteMapTapTarget("route-map") : ""}
-
-            ${hasRouteTrace(workout) && allSplits.length >= MIN_SPLITS_FOR_CHART ? RouteMapLegend() : ""}
+            ${hasRouteTrace(workout) ? RouteMapTapTarget("route-map", allSplits.length >= MIN_SPLITS_FOR_CHART ? RouteMapLegend() : "") : ""}
 
             ${hasRouteTrace(workout) && fullscreenMapOpen ? RouteMapFullscreenOverlay("route-map-fullscreen", allSplits.length >= MIN_SPLITS_FOR_CHART ? RouteMapLegend() : "") : ""}
 

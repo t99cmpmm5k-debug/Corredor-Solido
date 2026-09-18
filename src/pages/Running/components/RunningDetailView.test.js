@@ -1093,6 +1093,26 @@ describe("Mapa a pantalla completa (RouteMapTapTarget/RouteMapFullscreenOverlay)
 
     });
 
+    it("con splits suficientes, la leyenda de ritmo vive DENTRO del objetivo táctil del mapa pequeño (overlay flotante), no como bloque aparte debajo", () => {
+
+        const html = RunningDetailView(workout({ routeTrace: routeTraceFixture() }));
+
+        const tapTargetIndex = html.indexOf('data-action="open-route-map-fullscreen"');
+        const routeMapIdIndex = html.indexOf('id="route-map"');
+        const legendIndex = html.indexOf("route-map-legend");
+        const chartTitleIndex = html.indexOf("RITMO POR KILÓMETRO");
+
+        // Orden real en el HTML: objetivo táctil -> mapa -> leyenda, todo
+        // ANTES de que empiece la siguiente sección de la pantalla (el
+        // gráfico) -- si la leyenda volviera a ser un bloque aparte muy
+        // por debajo del mapa, este orden dejaría de cumplirse.
+        expect(tapTargetIndex).toBeGreaterThan(-1);
+        expect(routeMapIdIndex).toBeGreaterThan(tapTargetIndex);
+        expect(legendIndex).toBeGreaterThan(routeMapIdIndex);
+        expect(legendIndex).toBeLessThan(chartTitleIndex);
+
+    });
+
     it("fullscreenMapOpen=false (por defecto), el overlay de pantalla completa no se pinta", () => {
 
         const html = RunningDetailView(workout({ routeTrace: routeTraceFixture() }));
