@@ -141,25 +141,6 @@
 
 }
 
-/* Dos o más marcas de km que coinciden en pantalla (ver
-   mergeOverlappingKmMarkers en RouteMap.js) -- círculo no, píldora: la
-   etiqueta ("1·5") no cabe en 14px de ancho fijo sin desbordar. */
-.route-map-km-marker--merged{
-
-    width:auto;
-
-    min-width:14px;
-
-    padding:0 4px;
-
-    border-radius:999px;
-
-    font-size:.45rem;
-
-    letter-spacing:-.02em;
-
-}
-
 /* Marcas de inicio/fin (especificación de cierre: "igual que Garmin, saber
    de un vistazo dónde empezó y terminó") -- no interactivas, puramente
    informativas. El wrapper anula el fondo/borde de fábrica de Leaflet
@@ -172,6 +153,9 @@
 
 }
 
+/* 20px -> 16px, borde 2px -> 1.5px (retoque real: "se ven demasiado
+   grandes") -- ligeramente por encima de los 14px del círculo de km, para
+   que sigan destacando un poco como marcas especiales sin desentonar. */
 .route-map-endpoint-marker{
 
     box-sizing:border-box;
@@ -188,13 +172,13 @@
 
     border-radius:50%;
 
-    border:2px solid rgba(255,255,255,.92);
+    border:1.5px solid rgba(255,255,255,.92);
 
     box-shadow:0 1px 3px rgba(0,0,0,.5);
 
     color:#FFFFFF;
 
-    font-size:.6rem;
+    font-size:.5rem;
 
 }
 
@@ -223,8 +207,8 @@
    cerrar, más limpio para un dato tan pequeño.
    Retoque real: "sigue siendo demasiado grande" -- margen/tipografía
    reducidos para que sea proporcional al mapa de 340px, no una tarjeta
-   grande más. min-width evita que un popup de una sola fila (el caso
-   normal, sin fusión) quede más ancho de lo que el propio texto pide. */
+   grande más. min-width:0 evita que el popup quede más ancho de lo que el
+   propio texto pide. */
 .route-map-popup .leaflet-popup-content-wrapper{
 
     border-radius:var(--radius-sm);
@@ -249,20 +233,7 @@
 
 }
 
-/* Una fila por entrada -- el caso normal (una sola marca de km) es una
-   sola fila; un marcador fusionado (mergeOverlappingKmMarkers) trae una
-   fila por cada km fusionado en ella. */
 .route-map-popup-content{
-
-    display:flex;
-
-    flex-direction:column;
-
-    gap:2px;
-
-}
-
-.route-map-popup-row{
 
     display:flex;
 
@@ -274,7 +245,7 @@
 
 }
 
-.route-map-popup-row strong{
+.route-map-popup-content strong{
 
     color:var(--color-primary);
 
@@ -284,7 +255,7 @@
 
 }
 
-.route-map-popup-row span{
+.route-map-popup-content span{
 
     color:#FFFFFF;
 
