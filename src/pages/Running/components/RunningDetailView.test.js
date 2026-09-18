@@ -1148,3 +1148,23 @@ describe("Mapa a pantalla completa (RouteMapTapTarget/RouteMapFullscreenOverlay)
     });
 
 });
+
+describe("Ciudad/pueblo real en el detalle (GPX/TCX, ver reverseGeocode.js)", () => {
+
+    it("con workout.locationCity, la muestra cerca del título/fecha", () => {
+
+        const html = RunningDetailView(workout({ locationCity: "Ojós" }));
+
+        expect(html).toContain('<span class="detail-location">Ojós</span>');
+
+    });
+
+    it("sin workout.locationCity, no pinta nada -- nunca un nombre inventado", () => {
+
+        const html = RunningDetailView(workout());
+
+        expect(html).not.toContain("detail-location");
+
+    });
+
+});

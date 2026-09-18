@@ -1580,6 +1580,29 @@
 
 }
 
+/* Ciudad/pueblo real (GPX/TCX, ver reverseGeocode.js) -- misma tipografía
+   que ya usan .history-shoe/.history-context para metadatos secundarios
+   (color:var(--text-secondary), tamaño de letra similar), no un estilo
+   nuevo. Con nombres largos se trunca con puntos suspensivos en vez de
+   romper la línea 1 (fecha+tipo+menú), que ya va justa de espacio. */
+.history-location{
+
+    overflow:hidden;
+
+    text-overflow:ellipsis;
+
+    white-space:nowrap;
+
+    min-width:0;
+
+    color:var(--text-secondary);
+
+    font-size:.78rem;
+
+    font-weight:600;
+
+}
+
 /* Línea 2 (jerarquía nueva): distancia grande + tiempo, antes compartían
    la línea 1 en texto pequeño -- ahora es el dato más visible de la
    tarjeta, la propia razón de ser de la fila. */

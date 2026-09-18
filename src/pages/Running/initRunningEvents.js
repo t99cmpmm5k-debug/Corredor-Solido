@@ -8,6 +8,7 @@ import { readShoePhotoAsDataUrl } from "./shoePhoto.js";
 import { importWorkout } from "../../importers/index.js";
 import { REVIEW_FIELDS, parseFieldValue } from "./components/RunningReviewStep.js";
 import { estimateTemperature } from "../../services/weatherEstimate.js";
+import { reverseGeocodeCity } from "../../services/reverseGeocode.js";
 import { hasRouteTrace, mountRouteMap, unmountRouteMap } from "../../components/RouteMap/RouteMap.js";
 import { chartSplits, MIN_SPLITS_FOR_CHART } from "./components/RunningDetailView.js";
 import { buildPaceColorSegments, buildKmMarkers, ROUTE_COLOR_NORMAL } from "./routeMapPaceColoring.js";
@@ -399,6 +400,48 @@ function maybeEstimateTemperature(workout) {
 
 }
 
+// Ciudad/pueblo real por geocoding inverso (Nominatim), a partir del
+// primer punto real del GPS del propio archivo (startLat/startLon, mismo
+// dato que ya usa maybeEstimateTemperature() arriba) -- SOLO tiene sentido
+// para GPX/TCX: por eso solo se llama desde handleTcxFileSelected/
+// handleGpxFileSelected, nunca desde el flujo de capturas de Garmin (ese
+// ya trae su propio `location` de texto extraído de la captura, que no se
+// toca) ni hay ningún llamador para entrenos manuales (sin coordenadas).
+// Mismo patrón exacto que maybeEstimateTemperature(): enriquecimiento
+// asíncrono tras dejar ya el entreno listo en "review" -- nunca bloquea la
+// importación, y si Nominatim no da una ciudad/pueblo reconocible (o falla
+// la petición) el entreno se queda sin `locationCity`, nunca con un
+// nombre inventado.
+function maybeResolveLocationCity(workout) {
+
+    if (workout.startLat == null || workout.startLon == null) {
+        appendTiming("ciudad: sin GPS real en el archivo -- no se llama a Nominatim");
+        return;
+    }
+
+    reverseGeocodeCity(workout.startLat, workout.startLon, appendTiming).then(city => {
+
+        if (getWorkout() !== workout) {
+            appendTiming("ciudad: el workout cambió mientras se esperaba la respuesta -- se descarta");
+            rerender();
+            return;
+        }
+
+        if (city) {
+            workout.locationCity = city;
+            workout.fieldMeta = workout.fieldMeta || {};
+            workout.fieldMeta.locationCity = { confidence: null, corrected: false };
+        }
+
+        rerender();
+
+    }).catch(err => {
+        appendTiming(`ciudad: excepción no controlada: ${err.message}`);
+        rerender();
+    });
+
+}
+
 // Un .tcx/.gpx es un archivo de actividad ya completo por sí solo (a
 // diferencia de las capturas, que necesitan varias para fusionarse) —
 // no pasa por Tesseract ni por el paso "processing", el parseo XML es
@@ -415,6 +458,7 @@ async function handleTcxFileSelected(xmlText) {
         setWorkout(workout);
         setWizardStep("review");
         maybeEstimateTemperature(workout);
+        maybeResolveLocationCity(workout);
 
     } catch (err) {
 
@@ -438,6 +482,7 @@ async function handleGpxFileSelected(xmlText) {
         setWorkout(workout);
         setWizardStep("review");
         maybeEstimateTemperature(workout);
+        maybeResolveLocationCity(workout);
 
     } catch (err) {
 

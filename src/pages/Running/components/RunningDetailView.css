@@ -76,6 +76,22 @@
 
 }
 
+/* Ciudad/pueblo real (GPX/TCX, ver reverseGeocode.js) -- misma tipografía
+   "secundaria" que .history-shoe/.history-context en la lista de Running
+   (color:var(--text-secondary)), no un estilo nuevo. Nunca aparece para
+   OCR de Garmin -- ese trae su propio `location` de texto (usado hoy solo
+   internamente para clima/geocoding, workout.location no se muestra en
+   ningún sitio de Running todavía) ni para entrenos manuales. */
+.detail-location{
+
+    color:var(--text-secondary);
+
+    font-size:.82rem;
+
+    font-weight:600;
+
+}
+
 /*==========================
    AVISOS DE IMPORTACIÓN (acordeón colapsable)
 ==========================*/

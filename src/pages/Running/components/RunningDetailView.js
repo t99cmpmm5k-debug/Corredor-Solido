@@ -832,6 +832,8 @@ export function RunningDetailView(workout, shoes = [], warningsExpanded = false,
 
                     ${workout.time ? `<span class="detail-time">${workout.time}</span>` : ""}
 
+                    ${workout.locationCity ? `<span class="detail-location">${workout.locationCity}</span>` : ""}
+
                 </div>
 
                 ${typeSelector(workout)}

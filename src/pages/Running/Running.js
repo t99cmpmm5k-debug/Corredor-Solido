@@ -97,7 +97,16 @@ function workoutTypeBadge(type) {
 // mismo patrón que Plan/Gimnasio (data-session-id reutiliza el mismo
 // nombre de atributo que esos menús, aunque aquí sea un workoutId, para
 // que el mismo tipo de listener sirva sin inventar un atributo nuevo).
-function RunningHistoryItem(workout, shoes, routes, allWorkouts) {
+//
+// workout.locationCity (ciudad/pueblo real, ver reverseGeocode.js) se
+// añade en la línea 1 junto a fecha/tipo -- solo GPX/TCX lo traen (el OCR
+// de Garmin ya tiene su propio `location` de texto, que no se toca aquí);
+// se calculó UNA VEZ en el momento de importar, nunca se recalcula al
+// pintar la lista.
+// Exportada para poder testear directamente el renderizado de
+// workout.locationCity (ciudad/pueblo real, GPX/TCX) sin tener que montar
+// la pantalla Running() entera con todos sus stores.
+export function RunningHistoryItem(workout, shoes, routes, allWorkouts) {
 
     const distance = formatDistance(workout.distanceKm);
     const duration = workout.durationSec != null ? formatSecondsAsClock(workout.durationSec) : "—";
@@ -124,6 +133,8 @@ function RunningHistoryItem(workout, shoes, routes, allWorkouts) {
                     <span class="history-date">${formatDayMonth(workout.date)}</span>
 
                     ${typeBadge ? `<span class="history-type-badge">${typeBadge}</span>` : ""}
+
+                    ${workout.locationCity ? `<span class="history-location">${workout.locationCity}</span>` : ""}
 
                 </div>
 
