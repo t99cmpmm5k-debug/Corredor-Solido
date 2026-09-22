@@ -36,19 +36,23 @@
    .comunidad-hero (mismo truco que .carreras-tabs sobre .carreras-hero).
 ========================= */
 
+/* Pulido de cierre: más fina y menos alta -- margin-top/padding/gap
+   recortados en la misma proporción que el hero (-18%, ver
+   ComunidadHero.css) para que el solape sobre su colchón de foto/degradado
+   siga viéndose igual de intencional sobre un hero más bajo. */
 .comunidad-tabs{
 
     position:relative;
 
     z-index:10;
 
-    margin-top:-68px;
+    margin-top:-54px;
 
     display:flex;
 
-    gap:4px;
+    gap:3px;
 
-    padding:4px;
+    padding:3px;
 
     border-radius:999px;
 
@@ -57,7 +61,7 @@
     backdrop-filter:blur(16px);
     -webkit-backdrop-filter:blur(16px);
 
-    border:1px solid var(--card-border);
+    border:1px solid color-mix(in srgb, var(--card-border) 70%, transparent);
 
 }
 
@@ -65,9 +69,9 @@
 
     flex:1;
 
-    padding:10px 0;
+    padding:7px 0;
 
-    border:none;
+    border:1px solid transparent;
 
     border-radius:999px;
 
@@ -75,7 +79,7 @@
 
     color:var(--text-secondary);
 
-    font-size:.82rem;
+    font-size:.78rem;
 
     font-weight:700;
 
@@ -83,11 +87,21 @@
 
 }
 
+/* Color horario -- misma variable que ya tiñe "Sólido" en el Hero
+   (ComunidadHero.css/var(--color-primary), cambia sola sunrise/day/sunset/
+   night vía themeManager). Solo la pestaña ACTIVA lo usa, la inactiva se
+   queda en el gris azulado de siempre (var(--text-secondary)) -- glow
+   discreto a propósito (punto 9: reservar el brillo para pestaña activa/
+   fila propia/CTA importante, nunca de fábrica en toda la pantalla). */
 .comunidad-tab.is-active{
 
-    background:var(--color-primary);
+    background:color-mix(in srgb, var(--color-primary) 20%, transparent);
 
-    color:var(--button-text);
+    border-color:color-mix(in srgb, var(--color-primary) 45%, transparent);
+
+    color:var(--color-primary);
+
+    box-shadow:0 0 8px color-mix(in srgb, var(--color-glow) 16%, transparent);
 
 }
 
@@ -213,54 +227,14 @@
 
 }
 
-/* Rótulo "de quién es esta ruta" sobre el mapa fullscreen (RouteMap.js no
-   sabe nada de alias -- se reutiliza tal cual, este badge vive fuera de
-   él). Mismo z-index que .route-map-fullscreen-close (RouteMap.css) para
-   quedar en el mismo plano que el botón de cerrar, en la esquina opuesta
-   (izquierda) para no competir por espacio con él. */
-.comunidad-detail-alias-badge{
-
-    position:fixed;
-
-    top:calc(16px + env(safe-area-inset-top));
-    left:16px;
-
-    z-index:1000;
-
-    max-width:60%;
-
-    overflow:hidden;
-
-    text-overflow:ellipsis;
-
-    white-space:nowrap;
-
-    padding:10px 16px;
-
-    border-radius:999px;
-
-    border:1px solid color-mix(in srgb, var(--card-border) 14%, transparent);
-
-    background:color-mix(in srgb, var(--card-background) 70%, transparent);
-
-    backdrop-filter:blur(18px);
-    -webkit-backdrop-filter:blur(18px);
-
-    color:#FFFFFF;
-
-    font-size:.85rem;
-
-    font-weight:800;
-
-}
-
-/* Detalle SIN mapa (Fase 3c) -- mismo tratamiento fixed/inset:0 que
-   .route-map-fullscreen-overlay (RouteMap.css) para verse igual de
-   "pantalla completa", pero sin ningún Leaflet detrás: solo un icono
-   grande centrado (mismo lenguaje que .comunidad-activity-placeholder de
-   la propia tarjeta) y las 3 estadísticas de siempre, para que quien pulsó
-   una tarjeta sin GPS aterrice en algo coherente, no en un hueco vacío. */
-.comunidad-detail-no-route{
+/* Tarjeta de stats -- punto de entrada del detalle SIEMPRE (con o sin GPS,
+   pulido de cierre punto 6), mapa a pantalla completa incluido: es una
+   acción explícita ahora ("Ver ruta"), no el primer plano. Mismo
+   tratamiento fixed/inset:0 que .route-map-fullscreen-overlay (RouteMap.css)
+   para verse igual de "pantalla completa" que el resto de overlays de la
+   app; overflow-y:auto por si un alias muy largo o un móvil muy bajo
+   necesitaran más alto del que cabe de una vez. */
+.comunidad-detail-card{
 
     position:fixed;
 
@@ -272,37 +246,246 @@
 
     flex-direction:column;
 
-    align-items:center;
+    gap:20px;
 
-    justify-content:center;
+    overflow-y:auto;
 
-    gap:24px;
+    padding:calc(16px + env(safe-area-inset-top)) 20px calc(24px + env(safe-area-inset-bottom));
 
-    background:var(--card-background);
+    background:var(--color-background);
 
 }
 
-.comunidad-detail-no-route-placeholder iconify-icon{
+.comunidad-detail-header{
 
-    font-size:72px;
+    display:flex;
+
+    align-items:flex-start;
+
+    justify-content:space-between;
+
+    gap:12px;
+
+}
+
+.comunidad-detail-header-text{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:4px;
+
+    min-width:0;
+
+}
+
+.comunidad-detail-type-badge{
+
+    align-self:flex-start;
+
+    padding:3px 10px;
+
+    border-radius:999px;
+
+    background:color-mix(in srgb, var(--color-primary) 16%, transparent);
+
+    color:var(--color-primary);
+
+    font-size:.68rem;
+
+    font-weight:700;
+
+}
+
+.comunidad-detail-header-text h2{
+
+    margin:0;
+
+    overflow:hidden;
+
+    text-overflow:ellipsis;
+
+    white-space:nowrap;
+
+    color:var(--text-primary);
+
+    font-size:1.3rem;
+
+    font-weight:800;
+
+}
+
+.comunidad-detail-date{
 
     color:var(--text-secondary);
 
+    font-size:.78rem;
+
+    font-weight:700;
+
+    letter-spacing:.02em;
+
 }
 
-.comunidad-detail-no-route-stats{
+/* El botón de cerrar de la cabecera reutiliza el aspecto visual de
+   .route-map-fullscreen-close (RouteMap.css, círculo translúcido) pero NO
+   su posición fixed -- aquí vive dentro del flujo normal de la cabecera,
+   así que se recorta a solo lo visual. */
+.comunidad-detail-header .route-map-fullscreen-close{
+
+    position:static;
+
+    flex-shrink:0;
+
+}
+
+.comunidad-detail-icon-placeholder{
+
+    height:200px;
 
     display:flex;
 
     align-items:center;
 
-    gap:18px;
+    justify-content:center;
+
+    border-radius:26px;
+
+    background:color-mix(in srgb, var(--card-background) 90%, transparent);
+
+    border:1px solid var(--card-border);
+
+}
+
+.comunidad-detail-icon-placeholder iconify-icon{
+
+    font-size:64px;
+
+    color:var(--text-secondary);
+
+}
+
+/* CTA "Ver ruta" superpuesto sobre el mapa compacto (RouteMapTapTarget) --
+   vive DENTRO de ese mismo contenedor pulsable (pasado como legendHtml,
+   Comunidad.js), así que no necesita su propio listener: cualquier punto
+   del mapa, CTA incluido, abre el mismo mapa a pantalla completa.
+   z-index:1001, no un valor bajo -- mismo motivo EXACTO que
+   .route-map-fullscreen-close (RouteMap.css, z-index:1000): Leaflet pone
+   z-index:1000 de fábrica a .leaflet-top/.leaflet-bottom (donde vive el
+   control de atribución), y .route-map-tap-target no crea su propio
+   contexto de apilamiento (position:relative SIN z-index) -- sin superar
+   ese 1000, la atribución de Esri se comía los clics de este CTA aunque
+   se viera visualmente por encima (bug real encontrado con Playwright: el
+   CTA "se veía" pero el click nunca llegaba a activarlo). */
+.comunidad-detail-view-route-cta{
+
+    position:absolute;
+
+    /* bottom:48px, no 14px -- verificado con Playwright: a 14px el CTA
+       tapaba parte del texto de atribución de Esri (franja siempre
+       pegada al borde inferior real del mapa, RouteMap.css), un problema
+       real de licencia (esa atribución debe quedar siempre legible). */
+    bottom:48px;
+    right:14px;
+
+    z-index:1001;
+
+    display:flex;
+
+    align-items:center;
+
+    gap:6px;
+
+    padding:8px 14px;
+
+    border-radius:999px;
+
+    background:color-mix(in srgb, var(--color-primary) 85%, transparent);
+
+    color:var(--button-text);
+
+    font-size:.8rem;
+
+    font-weight:700;
+
+    box-shadow:0 4px 14px rgba(0,0,0,.25);
+
+}
+
+.comunidad-detail-view-route-cta iconify-icon{
+
+    font-size:16px;
+
+}
+
+.comunidad-detail-stats{
+
+    display:flex;
+
+    flex-wrap:wrap;
+
+    gap:12px;
+
+}
+
+.comunidad-detail-stat{
+
+    flex:1 1 calc(50% - 6px);
+
+    min-width:120px;
+
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+
+    padding:12px 14px;
+
+    border-radius:var(--radius-md);
+
+    background:color-mix(in srgb, var(--card-background) 70%, transparent);
+
+    border:1px solid var(--card-border);
+
+}
+
+.comunidad-detail-stat iconify-icon{
+
+    flex-shrink:0;
+
+    font-size:22px;
+
+    color:var(--color-primary);
+
+}
+
+.comunidad-detail-stat-text{
+
+    display:flex;
+
+    flex-direction:column;
+
+}
+
+.comunidad-detail-stat-value{
 
     color:var(--text-primary);
 
     font-size:1rem;
 
-    font-weight:700;
+    font-weight:800;
+
+}
+
+.comunidad-detail-stat-label{
+
+    color:var(--text-secondary);
+
+    font-size:.72rem;
+
+    font-weight:600;
 
 }
 

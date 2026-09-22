@@ -103,6 +103,23 @@ describe("comunidadStore", () => {
 
     });
 
+    it("la ventana de Ranking empieza en \"week\", setComunidadRankingPeriod ignora un valor que no sea real, y resetComunidadView la vuelve a \"week\"", async () => {
+
+        const { getComunidadRankingPeriod, setComunidadRankingPeriod, resetComunidadView } = await import("./comunidadStore.js");
+
+        expect(getComunidadRankingPeriod()).toBe("week");
+
+        setComunidadRankingPeriod("century");
+        expect(getComunidadRankingPeriod()).toBe("week");
+
+        setComunidadRankingPeriod("all");
+        expect(getComunidadRankingPeriod()).toBe("all");
+
+        resetComunidadView();
+        expect(getComunidadRankingPeriod()).toBe("week");
+
+    });
+
     it("loadComunidadEntrenos carga la lista real y pasa a status ready", async () => {
 
         const entrenos = [{ alias: "Rafa", routeTrace: [{ lat: 1, lon: 1 }, { lat: 2, lon: 2 }] }];
@@ -197,7 +214,7 @@ describe("comunidadStore -- detalle de un entreno (mapa fullscreen al pulsar una
 
         await vi.waitFor(() => expect(getComunidadRouteDetail().status).toBe("ready"));
 
-        expect(getComunidadRouteDetail()).toEqual({ status: "ready", alias: "Rafa", detail });
+        expect(getComunidadRouteDetail()).toEqual({ status: "ready", alias: "Rafa", detail, mapExpanded: false });
         expect(getEntrenoComunidadDetailMock).toHaveBeenCalledWith("w1", "token-real");
 
     });
@@ -243,5 +260,39 @@ describe("comunidadStore -- detalle de un entreno (mapa fullscreen al pulsar una
         await vi.waitFor(() => expect(getComunidadRouteDetailError()).toBeNull(), { timeout: 4000 });
 
     }, 6000);
+
+    it("arranca con el mapa colapsado; openComunidadDetailMap/closeComunidadDetailMap alternan sin cerrar el detalle entero", async () => {
+
+        getEntrenoComunidadDetailMock.mockResolvedValue({ alias: "Rafa", id: "w1", routeTrace: [{ lat: 1, lon: 1 }, { lat: 2, lon: 2 }] });
+
+        const {
+            openComunidadRouteDetail, openComunidadDetailMap, closeComunidadDetailMap,
+            isComunidadDetailMapExpanded, getComunidadRouteDetail
+        } = await import("./comunidadStore.js");
+
+        openComunidadRouteDetail({ id: "w1", alias: "Rafa" });
+        await vi.waitFor(() => expect(getComunidadRouteDetail().status).toBe("ready"));
+
+        expect(isComunidadDetailMapExpanded()).toBe(false);
+
+        openComunidadDetailMap();
+        expect(isComunidadDetailMapExpanded()).toBe(true);
+        expect(getComunidadRouteDetail().status).toBe("ready");
+
+        closeComunidadDetailMap();
+        expect(isComunidadDetailMapExpanded()).toBe(false);
+        expect(getComunidadRouteDetail().status).toBe("ready");
+
+    });
+
+    it("openComunidadDetailMap/closeComunidadDetailMap no rompen si el detalle no está abierto", async () => {
+
+        const { openComunidadDetailMap, closeComunidadDetailMap, isComunidadDetailMapExpanded } = await import("./comunidadStore.js");
+
+        expect(() => openComunidadDetailMap()).not.toThrow();
+        expect(() => closeComunidadDetailMap()).not.toThrow();
+        expect(isComunidadDetailMapExpanded()).toBe(false);
+
+    });
 
 });

@@ -1,13 +1,14 @@
 import { describe, it, expect } from "vitest";
 import { ComunidadRankingView } from "./ComunidadRankingView.js";
+import { formatISODate } from "../../../utils/date.js";
 
-const TODAY_ISO = new Date().toISOString().slice(0, 10);
+const TODAY_ISO = formatISODate(new Date());
 
 function entreno(overrides) {
     return { alias: "alguien", id: "w", type: "easy", date: TODAY_ISO, distanceKm: null, avgPaceSecPerKm: null, ...overrides };
 }
 
-describe("ComunidadRankingView -- 4 tablas a partir de la misma lista de Mapas", () => {
+describe("ComunidadRankingView -- 5 tablas a partir de la misma lista de Actividad", () => {
 
     it("idle/loading muestran un aviso de carga", () => {
 
@@ -16,7 +17,7 @@ describe("ComunidadRankingView -- 4 tablas a partir de la misma lista de Mapas",
 
     });
 
-    it("unavailable muestra un estado de error con el mismo botón de reintentar que Mapas", () => {
+    it("unavailable muestra un estado de error con el mismo botón de reintentar que Actividad", () => {
 
         const html = ComunidadRankingView({ status: "unavailable", entrenos: [] }, null);
 
@@ -25,15 +26,35 @@ describe("ComunidadRankingView -- 4 tablas a partir de la misma lista de Mapas",
 
     });
 
-    it("ready sin ningún entreno muestra las 4 tablas, cada una con su propio aviso de \"sin datos\"", () => {
+    it("ready sin ningún entreno muestra las 5 tablas, cada una con su propio aviso de \"sin datos\"", () => {
 
         const html = ComunidadRankingView({ status: "ready", entrenos: [] }, null);
 
-        expect(html).toContain("Ritmo más rápido");
+        expect(html).toContain("Mejor ritmo medio");
         expect(html).toContain("Z2 mejor ejecutada");
         expect(html).toContain("Más constante");
         expect(html).toContain("Mejor tirada larga");
-        expect((html.match(/Sin datos esta ventana/g) || []).length).toBe(4);
+        expect(html).toContain("Ranking Sólido");
+        expect((html.match(/Sin datos esta ventana/g) || []).length).toBe(5);
+
+    });
+
+    it("pinta el selector de periodo con \"Semana\" activa por defecto", () => {
+
+        const html = ComunidadRankingView({ status: "ready", entrenos: [] }, null);
+
+        expect(html).toMatch(/data-period="week"[^>]*is-active|is-active"[^>]*data-period="week"/);
+        expect(html).toContain("Semana");
+        expect(html).toContain("Mes");
+        expect(html).toContain("Histórico");
+
+    });
+
+    it("respeta el periodo que se le pase, marcándolo como activo", () => {
+
+        const html = ComunidadRankingView({ status: "ready", entrenos: [] }, null, "month");
+
+        expect(html).toMatch(/data-period="month"[^>]*is-active|is-active"[^>]*data-period="month"/);
 
     });
 
@@ -52,12 +73,13 @@ describe("ComunidadRankingView -- 4 tablas a partir de la misma lista de Mapas",
 
     });
 
-    it("sin alias propio configurado (null), no resalta ninguna fila -- nunca adivina cuál sería", () => {
+    it("sin alias propio configurado (null), no resalta ninguna fila ni pinta la tarjeta resumen", () => {
 
         const entrenos = [entreno({ alias: "Ana", type: "long", distanceKm: 18 })];
         const html = ComunidadRankingView({ status: "ready", entrenos }, null);
 
         expect(html).not.toContain("is-mine");
+        expect(html).not.toContain("comunidad-ranking-summary-card");
 
     });
 
@@ -75,13 +97,14 @@ describe("ComunidadRankingView -- 4 tablas a partir de la misma lista de Mapas",
 
     });
 
-    it("pluraliza \"1 entreno\" en singular en Más constante", () => {
+    it("pluraliza \"1 sesión\" en singular en Más constante (ya no \"entreno\")", () => {
 
         const entrenos = [entreno({ alias: "Rafa", type: "long" })];
         const html = ComunidadRankingView({ status: "ready", entrenos }, null);
 
-        expect(html).toContain("1 entreno<");
-        expect(html).not.toContain("1 entrenos");
+        expect(html).toContain("1 sesión<");
+        expect(html).not.toContain("1 sesiones");
+        expect(html).not.toContain("1 entreno");
 
     });
 
@@ -92,6 +115,92 @@ describe("ComunidadRankingView -- 4 tablas a partir de la misma lista de Mapas",
 
         expect(html).not.toContain("<img src=x");
         expect(html).toContain("&lt;img");
+
+    });
+
+    it("Mejor ritmo medio lleva el contexto (distancia · fecha) del entreno concreto", () => {
+
+        const entrenos = [entreno({ alias: "Rafa", type: "long", distanceKm: 10, avgPaceSecPerKm: 300, date: "2026-09-21" })];
+        const html = ComunidadRankingView({ status: "ready", entrenos }, null);
+
+        expect(html).toMatch(/comunidad-ranking-context[^>]*>10 km · 21 SEPT/);
+
+    });
+
+    it("Mejor tirada larga lleva el contexto (fecha) del entreno concreto", () => {
+
+        const entrenos = [entreno({ alias: "Rafa", type: "long", distanceKm: 25, date: "2026-09-21" })];
+        const html = ComunidadRankingView({ status: "ready", entrenos }, null);
+
+        expect(html).toMatch(/comunidad-ranking-context[^>]*>21 SEPT/);
+
+    });
+
+    it("Ranking Sólido no muestra ninguna puntuación cruda, solo posición y alias", () => {
+
+        const entrenos = [entreno({ alias: "Rafa", type: "long", distanceKm: 20 })];
+        const html = ComunidadRankingView({ status: "ready", entrenos }, null);
+
+        const solidSection = html.slice(html.indexOf("Ranking Sólido"));
+        expect(solidSection).not.toContain("comunidad-ranking-value");
+
+    });
+
+    it("un usuario fuera del top 5 de una tabla aparece igualmente, con su posición real y un separador", () => {
+
+        const entrenos = [
+            ...Array.from({ length: 5 }, (_, i) => entreno({ alias: `u${i}`, type: "long", distanceKm: 30 - i })),
+            entreno({ alias: "Rafa", type: "long", distanceKm: 5 })
+        ];
+
+        const html = ComunidadRankingView({ status: "ready", entrenos }, "Rafa");
+
+        expect(html).toContain("comunidad-ranking-own-divider");
+        expect(html).toMatch(/is-mine[^>]*>[\s\S]*?<span class="comunidad-ranking-position">6<\/span>[\s\S]*?Rafa/);
+
+    });
+
+    it("un usuario dentro del top 5 no pinta el separador de fila propia añadida aparte", () => {
+
+        const entrenos = [entreno({ alias: "Rafa", type: "long", distanceKm: 25 })];
+        const html = ComunidadRankingView({ status: "ready", entrenos }, "Rafa");
+
+        expect(html).not.toContain("comunidad-ranking-own-divider");
+
+    });
+
+    it("el 1er puesto lleva la clase de podio de oro, el 2º y 3º la de plata/bronce, el resto ninguna", () => {
+
+        const entrenos = Array.from({ length: 4 }, (_, i) => entreno({ alias: `u${i}`, type: "long", distanceKm: 30 - i }));
+        const html = ComunidadRankingView({ status: "ready", entrenos }, null);
+
+        expect(html).toContain("is-podium-1");
+        expect(html).toContain("is-podium-2-3");
+
+    });
+
+    it("con un alias propio configurado y actividad real esta ventana, pinta la tarjeta resumen con posición/km/sesiones", () => {
+
+        const entrenos = [
+            entreno({ alias: "Rafa", type: "long", distanceKm: 20 }),
+            entreno({ alias: "Rafa", type: "easy", distanceKm: 8 })
+        ];
+
+        const html = ComunidadRankingView({ status: "ready", entrenos }, "Rafa");
+
+        expect(html).toContain("Tu semana");
+        expect(html).toContain("1.º general");
+        expect(html).toContain("28 km");
+        expect(html).toContain("2 sesiones");
+
+    });
+
+    it("con alias propio pero sin actividad esta ventana, la tarjeta resumen lo dice sin inventar una posición", () => {
+
+        const entrenos = [entreno({ alias: "Ana", type: "long", distanceKm: 20 })];
+        const html = ComunidadRankingView({ status: "ready", entrenos }, "Rafa");
+
+        expect(html).toContain("Sin actividad esta ventana");
 
     });
 

@@ -1,4 +1,99 @@
-/* 4 tablas apiladas -- mismo espaciado vertical que .comunidad-route-list
+/* Selector temporal Semana/Mes/Histórico (pulido de cierre, punto 7) --
+   mismo lenguaje que .comunidad-activity-filters (ComunidadActividadView.css),
+   sin scroll horizontal (solo 3 opciones fijas, siempre caben). */
+.comunidad-ranking-period-selector{
+
+    display:flex;
+
+    gap:8px;
+
+    margin-bottom:14px;
+
+}
+
+.comunidad-ranking-period-chip{
+
+    flex:1;
+
+    padding:7px 0;
+
+    border-radius:999px;
+
+    border:1px solid var(--card-border);
+
+    background:color-mix(in srgb, var(--card-background) 60%, transparent);
+
+    color:var(--text-secondary);
+
+    font-size:.78rem;
+
+    font-weight:700;
+
+    cursor:pointer;
+
+}
+
+.comunidad-ranking-period-chip.is-active{
+
+    background:color-mix(in srgb, var(--color-primary) 20%, transparent);
+
+    border-color:color-mix(in srgb, var(--color-primary) 45%, transparent);
+
+    color:var(--color-primary);
+
+}
+
+/* Tarjeta resumen personal -- siempre visible con un alias propio
+   configurado, independiente de aparecer o no en el podio de cualquier
+   tabla de debajo. Único glow real de Ranking fuera de la fila propia/
+   podio (punto 9: reservarlo para lo importante). */
+.comunidad-ranking-summary-card{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:2px;
+
+    padding:14px 16px;
+
+    margin-bottom:14px;
+
+    border-radius:var(--radius-lg);
+
+    background:color-mix(in srgb, var(--color-primary) 12%, transparent);
+
+    border:1px solid color-mix(in srgb, var(--color-primary) 35%, transparent);
+
+    box-shadow:0 0 14px color-mix(in srgb, var(--color-glow) 14%, transparent);
+
+}
+
+.comunidad-ranking-summary-title{
+
+    color:var(--color-primary);
+
+    font-size:.72rem;
+
+    font-weight:800;
+
+    text-transform:uppercase;
+
+    letter-spacing:.03em;
+
+}
+
+.comunidad-ranking-summary-line{
+
+    color:var(--text-primary);
+
+    font-size:.92rem;
+
+    font-weight:700;
+
+}
+
+/* 5 tablas apiladas -- mismo espaciado vertical que .comunidad-route-list
    (ComunidadActividadView.css), coherente entre las dos pestañas de Comunidad. */
 .comunidad-ranking-list{
 
@@ -11,12 +106,13 @@
 }
 
 /* Mismo tratamiento "glass" que .comunidad-route-card -- fondo/borde/radio
-   compartidos con el resto de Comunidad, no una tarjeta nueva a parte. */
+   compartidos con el resto de Comunidad, no una tarjeta nueva a parte.
+   Padding recortado (pulido de cierre, densidad ~20-25% menos que antes). */
 .comunidad-ranking-table{
 
     border-radius:var(--radius-xl);
 
-    padding:16px;
+    padding:14px 14px 12px;
 
     background:color-mix(in srgb, var(--card-background) 70%, transparent);
 
@@ -28,7 +124,7 @@
 
 .comunidad-ranking-title{
 
-    margin:0 0 12px;
+    margin:0 0 10px;
 
     color:var(--text-primary);
 
@@ -39,6 +135,28 @@
     text-transform:uppercase;
 
     letter-spacing:.03em;
+
+}
+
+/* Cuando SÍ hay subtítulo (Mejor ritmo medio/Z2/Ranking Sólido), el título
+   se acerca a él (margin-bottom pequeño) y es el subtítulo quien pone el
+   espacio real antes de las filas -- evita el hueco doble de sumar el
+   margen del título de siempre + el propio del subtítulo. */
+.comunidad-ranking-title:has(+ .comunidad-ranking-subtitle){
+
+    margin-bottom:2px;
+
+}
+
+.comunidad-ranking-subtitle{
+
+    margin:0 0 10px;
+
+    color:var(--text-secondary);
+
+    font-size:.72rem;
+
+    font-weight:600;
 
 }
 
@@ -58,7 +176,7 @@
 
     flex-direction:column;
 
-    gap:8px;
+    gap:6px;
 
     margin:0;
 
@@ -76,7 +194,7 @@
 
     gap:10px;
 
-    padding:8px 10px;
+    padding:6px 8px;
 
     border-radius:var(--radius-md);
 
@@ -84,12 +202,32 @@
 
 /* Fila propia resaltada -- mismo criterio de color que el resto de la app
    para "esto es tuyo" (var(--color-primary) con opacidad baja de fondo,
-   sin cambiar el resto del tratamiento visual de la fila). */
+   sin cambiar el resto del tratamiento visual de la fila). Borde fino +
+   fondo ligeramente tintado (punto 8), con el color horario activo -- SIGUE
+   aplicando aunque la fila no sea del podio (top 3), a propósito. */
 .comunidad-ranking-row.is-mine{
 
     background:color-mix(in srgb, var(--color-primary) 16%, transparent);
 
     border:1px solid color-mix(in srgb, var(--color-primary) 35%, transparent);
+
+}
+
+/* Separador visual "···" entre el top 5 y la fila propia añadida aparte
+   (sliceWithOwnRow, ComunidadRankingView.js) -- dice sin palabras "aquí
+   hay un salto real en la clasificación", nunca implica que sean puestos
+   consecutivos. */
+.comunidad-ranking-own-divider{
+
+    text-align:center;
+
+    color:var(--text-secondary);
+
+    font-size:.75rem;
+
+    letter-spacing:.2em;
+
+    padding:2px 0;
 
 }
 
@@ -127,11 +265,53 @@
 
 }
 
-.comunidad-ranking-alias{
+/* Podio (punto 8) -- 1º con el color horario de acento (misma variable que
+   ya tiñe la pestaña activa/"Sólido" del Hero), 2º/3º en un azul grisáceo
+   neutral fijo (nunca el color horario -- ese queda solo para el 1er
+   puesto/fila propia/CTA importante, punto 9). Se aplica sobre la propia
+   pastilla de posición, nunca sobre la fila entera (esa solo cambia de
+   fondo si además es la fila propia, is-mine). */
+.comunidad-ranking-row.is-podium-1 .comunidad-ranking-position{
+
+    background:var(--color-primary);
+
+    color:var(--button-text);
+
+}
+
+.comunidad-ranking-row.is-podium-2-3 .comunidad-ranking-position{
+
+    background:#5C7691;
+
+    color:#FFFFFF;
+
+}
+
+.comunidad-ranking-podium-icon{
+
+    margin-left:4px;
+
+    font-size:13px;
+
+    vertical-align:-2px;
+
+    color:inherit;
+
+}
+
+.comunidad-ranking-alias-block{
 
     flex:1;
 
     min-width:0;
+
+    display:flex;
+
+    flex-direction:column;
+
+}
+
+.comunidad-ranking-alias{
 
     overflow:hidden;
 
@@ -144,6 +324,19 @@
     font-size:.88rem;
 
     font-weight:700;
+
+}
+
+/* Distancia/fecha del entreno concreto que produjo el valor de la fila
+   (Mejor ritmo medio/Mejor tirada larga) -- gris azulado pequeño, debajo
+   del alias (punto 8). */
+.comunidad-ranking-context{
+
+    color:var(--text-secondary);
+
+    font-size:.68rem;
+
+    font-weight:600;
 
 }
 

@@ -39,6 +39,26 @@ export function setComunidadActivityTypeFilter(type) {
     activityTypeFilter = type || "";
 }
 
+// Ventana temporal del Ranking (pulido de cierre, punto 7) -- "week" por
+// defecto (pedido explícito). Vive aparte de activeTab, mismo criterio que
+// activityTypeFilter: cambiar de pestaña y volver a Ranking no debe perder
+// la ventana elegida dentro de la misma visita, solo resetComunidadView()
+// (al salir de Comunidad del todo) la limpia.
+export const RANKING_PERIODS = ["week", "month", "all"];
+
+let rankingPeriod = "week";
+
+export function getComunidadRankingPeriod() {
+    return rankingPeriod;
+}
+
+export function setComunidadRankingPeriod(period) {
+
+    if (!RANKING_PERIODS.includes(period)) return;
+    rankingPeriod = period;
+
+}
+
 // La pantalla siempre arranca en "Actividad" al entrar desde la navegación
 // -- mismo criterio que resetPlanView()/resetCarrerasView() (BottomNavigation.js):
 // lo que estuvieras viendo antes no persiste, incluido el filtro de
@@ -48,6 +68,7 @@ export function setComunidadActivityTypeFilter(type) {
 export function resetComunidadView() {
     activeTab = "actividad";
     activityTypeFilter = "";
+    rankingPeriod = "week";
 }
 
 // idle -> loading -> ready|unavailable, una sola petición real por sesión
@@ -117,6 +138,11 @@ export function getComunidadRouteDetailError() {
 // entreno: {id, alias} de la tarjeta pulsada (ComunidadActividadView.js) -- solo
 // esos dos campos hacen falta aquí, el resto (distancia/ritmo/duración) ya
 // se pintó en la propia tarjeta y no hace falta repetirlo en el estado.
+// mapExpanded arranca siempre en false -- el detalle abre primero sobre la
+// tarjeta de stats (alias/tipo/fecha/distancia/ritmo/duración/FC), nunca
+// directo al mapa a pantalla completa (pulido de cierre, punto 6: mismo
+// criterio que RunningDetailView.js, que también arranca en el mapa
+// pequeño/tap-target y solo pasa a fullscreen si se pulsa el propio mapa).
 export function openComunidadRouteDetail(entreno) {
 
     lastError = null;
@@ -125,7 +151,7 @@ export function openComunidadRouteDetail(entreno) {
 
     getEntrenoComunidadDetail(entreno.id, getToken()).then(detail => {
 
-        routeDetailState = { status: "ready", alias: entreno.alias, detail };
+        routeDetailState = { status: "ready", alias: entreno.alias, detail, mapExpanded: false };
         rerender();
 
     }).catch(err => {
@@ -152,6 +178,34 @@ export function openComunidadRouteDetail(entreno) {
 export function closeComunidadRouteDetail() {
 
     routeDetailState = { status: "closed" };
+    rerender();
+
+}
+
+// Mapa a pantalla completa DENTRO del detalle ya abierto -- estado aparte
+// de routeDetailState.status (que sigue en "ready" todo el rato): abrirlo
+// nunca vuelve a pedir nada al servidor, solo cambia qué se pinta
+// (Comunidad.js). Cerrarlo (closeComunidadDetailMap) vuelve a la tarjeta de
+// stats, NUNCA cierra el detalle entero -- eso es cosa exclusiva de
+// closeComunidadRouteDetail(), de arriba, con su propio botón.
+export function isComunidadDetailMapExpanded() {
+    return routeDetailState.status === "ready" && !!routeDetailState.mapExpanded;
+}
+
+export function openComunidadDetailMap() {
+
+    if (routeDetailState.status !== "ready") return;
+
+    routeDetailState.mapExpanded = true;
+    rerender();
+
+}
+
+export function closeComunidadDetailMap() {
+
+    if (routeDetailState.status !== "ready") return;
+
+    routeDetailState.mapExpanded = false;
     rerender();
 
 }

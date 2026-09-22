@@ -7,6 +7,8 @@ const getComunidadRouteDetailMock = vi.fn();
 const getComunidadRouteDetailErrorMock = vi.fn();
 const getMyAliasMock = vi.fn();
 const getComunidadActivityTypeFilterMock = vi.fn();
+const getComunidadRankingPeriodMock = vi.fn();
+const isComunidadDetailMapExpandedMock = vi.fn();
 
 vi.mock("./comunidadStore.js", () => ({
     COMUNIDAD_TABS: ["actividad", "ranking"],
@@ -14,7 +16,9 @@ vi.mock("./comunidadStore.js", () => ({
     getComunidadEntrenos: () => getComunidadEntrenosMock(),
     getComunidadRouteDetail: () => getComunidadRouteDetailMock(),
     getComunidadRouteDetailError: () => getComunidadRouteDetailErrorMock(),
-    getComunidadActivityTypeFilter: () => getComunidadActivityTypeFilterMock()
+    getComunidadActivityTypeFilter: () => getComunidadActivityTypeFilterMock(),
+    getComunidadRankingPeriod: () => getComunidadRankingPeriodMock(),
+    isComunidadDetailMapExpanded: () => isComunidadDetailMapExpandedMock()
 }));
 
 vi.mock("../Profile/profileStore.js", () => ({
@@ -31,7 +35,7 @@ vi.mock("../Profile/profileStore.js", () => ({
 // ser mutuamente excluyentes en el DOM, nunca los dos montados a la vez.
 // (Bug encontrado originalmente cuando esta pantalla se llamaba Mapas --
 // misma protección, ahora en Actividad tras fusionar las dos pestañas.)
-describe("Comunidad -- feed de Actividad y mapa fullscreen del detalle son mutuamente excluyentes", () => {
+describe("Comunidad -- feed de Actividad y detalle son mutuamente excluyentes", () => {
 
     beforeEach(() => {
         getComunidadTabMock.mockReset().mockReturnValue("actividad");
@@ -43,6 +47,7 @@ describe("Comunidad -- feed de Actividad y mapa fullscreen del detalle son mutua
         getComunidadRouteDetailErrorMock.mockReset().mockReturnValue(null);
         getMyAliasMock.mockReset().mockReturnValue({ status: "idle", value: null });
         getComunidadActivityTypeFilterMock.mockReset().mockReturnValue("");
+        isComunidadDetailMapExpandedMock.mockReset().mockReturnValue(false);
     });
 
     it("sin ningún detalle abierto, pinta la lista de tarjetas con su propio mapa", async () => {
@@ -52,24 +57,47 @@ describe("Comunidad -- feed de Actividad y mapa fullscreen del detalle son mutua
 
         expect(html).toContain("comunidad-route-card");
         expect(html).not.toContain("route-map-fullscreen-overlay");
+        expect(html).not.toContain("comunidad-detail-card");
 
     });
 
-    it("con el detalle en status ready, pinta el mapa fullscreen y NO la lista de tarjetas", async () => {
+    it("con el detalle en status ready de un entreno CON GPS, pinta la tarjeta de stats (no el mapa fullscreen todavía) y NO la lista", async () => {
+
+        getComunidadRouteDetailMock.mockReturnValue({
+            status: "ready",
+            alias: "Rafa",
+            detail: { id: "w1", type: "long", date: "2026-09-20", distanceKm: 21.5, avgPaceSecPerKm: 330, durationSec: 7095, avgHr: 148, splits: [], routeTrace: [{ lat: 1, lon: 1 }, { lat: 2, lon: 2 }] }
+        });
+
+        const { Comunidad } = await import("./Comunidad.js");
+        const html = Comunidad();
+
+        expect(html).toContain("comunidad-detail-card");
+        expect(html).toContain("Rafa");
+        expect(html).toContain("21,5 km");
+        expect(html).toContain("148 ppm");
+        expect(html).toContain("Ver ruta");
+        expect(html).not.toContain("route-map-fullscreen-overlay");
+        expect(html).not.toContain("comunidad-route-card");
+        expect(html).not.toContain("comunidad-route-list");
+
+    });
+
+    it("con el mapa expandido (isComunidadDetailMapExpanded), pinta el mapa fullscreen y NO la tarjeta de stats", async () => {
 
         getComunidadRouteDetailMock.mockReturnValue({
             status: "ready",
             alias: "Rafa",
             detail: { id: "w1", splits: [], routeTrace: [{ lat: 1, lon: 1 }, { lat: 2, lon: 2 }] }
         });
+        isComunidadDetailMapExpandedMock.mockReturnValue(true);
 
         const { Comunidad } = await import("./Comunidad.js");
         const html = Comunidad();
 
         expect(html).toContain("route-map-fullscreen-overlay");
+        expect(html).not.toContain("comunidad-detail-card");
         expect(html).not.toContain("comunidad-route-card");
-        expect(html).not.toContain("comunidad-route-list");
-        expect(html).not.toContain("comunidad-comments-panel");
 
     });
 
@@ -85,20 +113,21 @@ describe("Comunidad -- feed de Actividad y mapa fullscreen del detalle son mutua
 
     });
 
-    it("con el detalle en status ready de un entreno SIN ruta, pinta la pantalla simple (icono+stats) sin panel de comentarios", async () => {
+    it("con el detalle en status ready de un entreno SIN ruta, pinta la tarjeta de stats con icono en vez de mapa, sin CTA \"Ver ruta\"", async () => {
 
         getComunidadRouteDetailMock.mockReturnValue({
             status: "ready",
             alias: "Rafa",
-            detail: { id: "w1", type: "series", distanceKm: 6, avgPaceSecPerKm: 270, durationSec: 1620, routeTrace: null }
+            detail: { id: "w1", type: "series", date: "2026-09-20", distanceKm: 6, avgPaceSecPerKm: 270, durationSec: 1620, routeTrace: null }
         });
 
         const { Comunidad } = await import("./Comunidad.js");
         const html = Comunidad();
 
-        expect(html).toContain("comunidad-detail-no-route");
+        expect(html).toContain("comunidad-detail-card");
+        expect(html).toContain("comunidad-detail-icon-placeholder");
         expect(html).not.toContain("route-map-fullscreen-overlay");
-        expect(html).not.toContain("comunidad-comments-panel");
+        expect(html).not.toContain("Ver ruta");
 
     });
 
@@ -110,9 +139,13 @@ describe("Comunidad -- pestaña Ranking (Fase 2)", () => {
         getComunidadTabMock.mockReset().mockReturnValue("ranking");
         getComunidadRouteDetailMock.mockReset().mockReturnValue({ status: "closed" });
         getComunidadRouteDetailErrorMock.mockReset().mockReturnValue(null);
+        // "all" -- evita que estos fixtures con fecha fija dependan de en
+        // qué día real se ejecute el test (period "week"/"month" filtran
+        // por la fecha REAL de hoy, no por una fecha inyectada aquí).
+        getComunidadRankingPeriodMock.mockReset().mockReturnValue("all");
     });
 
-    it("pinta las 4 tablas de Ranking a partir de la misma lista de entrenos que Actividad", async () => {
+    it("pinta las 5 tablas de Ranking a partir de la misma lista de entrenos que Actividad", async () => {
 
         getComunidadEntrenosMock.mockReset().mockReturnValue({
             status: "ready",
@@ -123,8 +156,9 @@ describe("Comunidad -- pestaña Ranking (Fase 2)", () => {
         const { Comunidad } = await import("./Comunidad.js");
         const html = Comunidad();
 
-        expect(html).toContain("Ritmo más rápido");
+        expect(html).toContain("Mejor ritmo medio");
         expect(html).toContain("Mejor tirada larga");
+        expect(html).toContain("Ranking Sólido");
         expect(html).toContain("is-mine");
 
     });
