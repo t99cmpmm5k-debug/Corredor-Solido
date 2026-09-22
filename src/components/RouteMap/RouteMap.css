@@ -123,10 +123,12 @@
 /* cursor:default -- "fotografía" fija, no un mapa de consulta (mapa
    pequeño); en pantalla completa (.route-map-fullscreen-map) sí hay
    arrastre real, así que ahí se deja el cursor grab/grabbing normal de
-   Leaflet en vez de forzar default. background -- los tiles de terreno son
-   claros de por sí, así que sin esto el hueco visible mientras cargan (o
-   si algún tile falla) mostraría lo que haya detrás en vez de un
-   placeholder neutro consistente con el resto de la app. */
+   Leaflet en vez de forzar default. background -- los tiles de satélite
+   (Esri World Imagery, vía el proxy propio, ver SATELLITE_TILE_URL en
+   RouteMap.js) suelen ser claros, así que sin esto el hueco visible
+   mientras cargan (o si algún tile falla/no tiene cobertura a ese zoom)
+   mostraría lo que haya detrás en vez de un placeholder neutro consistente
+   con el resto de la app. */
 .route-map .leaflet-container{
 
     cursor:default;
@@ -142,10 +144,11 @@
 }
 
 /* white-space:normal (Leaflet trae nowrap por defecto) -- con el ancho
-   real de la tarjeta pequeña en móvil, la atribución completa (Stadia +
-   Stamen + OpenMapTiles + OSM) no cabe en una sola línea sin envolver; con
-   nowrap se quedaba cortada por el overflow:hidden de .route-map en vez de
-   leerse entera en 2 líneas. Bug real corregido: esta regla solo cubría
+   real de la tarjeta pequeña en móvil, la atribución completa de Esri
+   (SATELLITE_ATTRIBUTION, RouteMap.js) no cabe en una sola línea sin
+   envolver; con nowrap se quedaba cortada por el overflow:hidden de
+   .route-map en vez de leerse entera en 2 líneas. Bug real corregido: esta
+   regla solo cubría
    .route-map (el mapa pequeño) -- la de pantalla completa (.route-map-
    fullscreen-map) nunca la heredaba y se quedaba con el estilo de fábrica
    de Leaflet (caja blanca, texto oscuro), fuera de sitio sobre el tema

@@ -2,41 +2,51 @@ import "./RouteMap.css";
 
 import { formatSecondsAsClock } from "../../utils/format.js";
 
-// Contorno blanco debajo de la línea de color -- sobre un mapa de terreno
-// (verdes/marrones variables según la zona) una línea plana puede perder
-// contraste en algunos tramos; el "casing" es la técnica estándar de
-// Garmin/Strava para que el trazado se lea igual de bien en cualquier
-// fondo, no un adorno.
+// Contorno blanco debajo de la línea de color -- sobre satélite real
+// (terreno/vegetación/tejados variables según la zona, más "ruidoso"
+// visualmente que un mapa de calles o de relieve plano) una línea plana
+// puede perder contraste en algunos tramos; el "casing" es la técnica
+// estándar de Garmin/Strava para que el trazado se lea igual de bien en
+// cualquier fondo, no un adorno.
 const ROUTE_LINE_CASING_COLOR = "#FFFFFF";
 
-// Terreno con relieve/vegetación (Stamen Terrain, servido hoy por Stadia
-// Maps) en vez del estilo "calles" plano de OSM estándar -- pedido
-// explícito de diseño (especificación de cierre del mapa, punto 3):
-// visualmente más atractivo y con más sentido temático para running/trail.
-// En localhost funciona sin ninguna configuración (autenticación por
-// dominio de Stadia deja pasar localhost/127.0.0.1 siempre); en producción
-// hace falta dar de alta una cuenta gratuita en stadiamaps.com y añadir el
-// dominio real (el de GitHub Pages) a la lista blanca de esa cuenta -- sin
-// eso, los tiles no cargan en producción aunque el código esté bien.
-const TERRAIN_TILE_URL = "https://tiles.stadiamaps.com/tiles/stamen_terrain/{z}/{x}/{y}{r}.png";
-const TERRAIN_ATTRIBUTION = '&copy; <a href="https://stadiamaps.com/attribution/" target="_blank" rel="noopener">Stadia Maps</a> &copy; <a href="https://stamen.com/" target="_blank" rel="noopener">Stamen Design</a> &copy; <a href="https://openmaptiles.org/" target="_blank" rel="noopener">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>';
+// Satélite real (Esri World Imagery) en vez del terreno con relieve que
+// usaba antes Stadia/Stamen -- sustituye esa capa por completo (pedido
+// explícito: único estilo de mapa en todo el proyecto). Nunca se llama a
+// Esri directamente desde el cliente: pasa por el proxy propio del backend
+// (GET /api/tiles/satellite/:z/:y/:x, ver server/src/routes/tiles.js), que
+// guarda la ESRI_API_KEY real solo en el servidor y nunca la expone aquí.
+// {z}/{y}/{x} en vez del {z}/{x}/{y} habitual de una plantilla XYZ de
+// Leaflet -- ese proxy espera el mismo orden que exige la propia URL de
+// Esri (MapServer/tile/{level}/{row}/{col} = z/y/x), no lo reordena él
+// mismo; ver el comentario junto a esa ruta en el backend.
+const SATELLITE_TILE_URL = "https://api.corredorsolido.es/api/tiles/satellite/{z}/{y}/{x}";
 
-// Bug real reportado: al hacer zoom en pantalla completa, en algún punto
-// aparecía el logo de Stadia flotando sobre un tile en blanco. La
-// documentación de Stadia dice que este endpoint concreto (el legacy
-// /tiles/stamen_terrain/) admite hasta zoom 20 en general -- pero el bug ya
-// ocurría con el límite anterior (18), así que el problema real no es un
-// techo de zoom mal declarado, sino falta de cobertura real de este estilo
-// (hillshade/terreno, no satélite) en según qué zonas rurales a esa
-// profundidad de zoom -- ese "tile de disculpa" con su logo es lo que
-// Stadia sirve cuando no tiene datos reales para un tile concreto, con
-// HTTP 200 (no un error real que Leaflet pueda detectar y sustituir solo).
-// Bajado a 16 -- techo conservador, muy por debajo de donde ya se vio el
-// problema, que sigue dejando ver calles/edificios/curvas de nivel reales
-// con detalle de sobra para un mapa de recorrido. Si en la práctica sigue
-// apareciendo el logo a este nivel, bajar más -- no hay una cifra "segura"
-// universal, depende de qué zona rural concreta cubra cada recorrido.
-const TERRAIN_MAX_ZOOM = 16;
+// Créditos reales de World Imagery -- "Esri" con enlace (requisito de
+// atribución de la licencia) más los proveedores de datos que Esri cita
+// hoy para esta capa (Maxar, Earthstar Geographics, comunidad de usuarios
+// de su SIG). Un único texto para TODOS los mapas del proyecto (mapa
+// individual pequeño/fullscreen y tarjetas de Comunidad) -- nunca una
+// versión "recortada" distinta solo por ir en una tarjeta pequeña, para no
+// arriesgar quedarse corto de atribución en ningún sitio; lo que sí cambia
+// según el tamaño del mapa es el tratamiento visual (fuente pequeña +
+// ajuste de línea en vez de una sola línea sin cortar, ver RouteMap.css)
+// para que no ocupe una proporción desmedida de una tarjeta pequeña.
+const SATELLITE_ATTRIBUTION = '&copy; <a href="https://www.esri.com" target="_blank" rel="noopener">Esri</a> — Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community';
+
+// Techo de zoom real de World Imagery -- Esri solo garantiza cobertura
+// global completa hasta este nivel; por encima solo hay imagen de mayor
+// resolución en zonas concretas (grandes ciudades, ciertas regiones), igual
+// que ya pasaba con el terreno de Stadia/Stamen (bug real ya corregido ahí:
+// un techo declarado más alto que la cobertura real de una zona rural
+// concreta producía tiles en blanco/de disculpa en vez de un error que
+// Leaflet pudiera detectar). 19 es el nivel que Esri documenta como
+// cobertura global para esta capa -- conservador a propósito: un recorrido
+// de trail en zona rural tiene más probabilidad real de toparse con el
+// límite de cobertura que uno urbano. Si en la práctica aparecen tiles en
+// blanco a este nivel en alguna zona concreta, bajar más -- no hay una
+// cifra "segura" universal, depende de qué zona cubra cada recorrido.
+const SATELLITE_MAX_ZOOM = 19;
 
 // Tamaño real del círculo VISIBLE de marca de km -- debe coincidir EXACTO
 // con .route-map-km-marker (RouteMap.css, box-sizing:border-box) para que
@@ -230,20 +240,21 @@ export async function mountRouteMap(container, segments, markers = [], routeTrac
         // Explícito aquí además de en el tileLayer de abajo -- Leaflet ya
         // debería derivarlo solo del maxZoom de la capa, pero fijarlo
         // también en el propio mapa es lo que de verdad garantiza que el
-        // pellizco nunca pueda pasarse del límite real (ver TERRAIN_MAX_ZOOM).
-        maxZoom: TERRAIN_MAX_ZOOM,
+        // pellizco nunca pueda pasarse del límite real (ver SATELLITE_MAX_ZOOM).
+        maxZoom: SATELLITE_MAX_ZOOM,
         attributionControl: false
     });
 
     L.control.attribution({ position: "bottomright", prefix: false }).addTo(map);
 
-    // detectRetina: la plantilla de Stadia lleva {r} para servir tiles @2x
-    // en pantallas de alta densidad (iPhone) -- más nitidez sin coste
-    // adicional de implementación.
-    L.tileLayer(TERRAIN_TILE_URL, {
-        attribution: TERRAIN_ATTRIBUTION,
-        maxZoom: TERRAIN_MAX_ZOOM,
-        detectRetina: true
+    // Sin detectRetina -- a diferencia de la plantilla de Stadia que sí
+    // llevaba {r} para servir tiles @2x, el proxy propio (server/src/routes/
+    // tiles.js) no tiene ninguna variante retina que reenviar: pediría un
+    // tile con un sufijo que la ruta no reconoce. World Imagery ya sirve una
+    // resolución razonable en su zoom nativo sin ese extra.
+    L.tileLayer(SATELLITE_TILE_URL, {
+        attribution: SATELLITE_ATTRIBUTION,
+        maxZoom: SATELLITE_MAX_ZOOM
     }).addTo(map);
 
     // Todos los "casing" (contorno blanco) primero y todas las líneas de
@@ -256,6 +267,14 @@ export async function mountRouteMap(container, segments, markers = [], routeTrac
     // hacer zoom" -- con más zoom real disponible el trazo fino de la vista
     // general se queda corto para leerse bien ampliado.
     //
+    // Casing +1 en los dos modos (5/3 -> 6/4) tras cambiar a satélite real --
+    // el color de la línea (segmentType/ritmo, routeMapPaceColoring.js) NO
+    // cambia, pero un halo blanco más fino se perdía más fácilmente contra
+    // el fondo variable de una foto real (tejados claros, arena, hormigón)
+    // de lo que se perdía contra el terreno ilustrado de antes. colorWeight
+    // se queda igual -- el grosor de la línea de color en sí no necesitaba
+    // tocarse, solo el contorno que la separa del fondo.
+    //
     // smoothFactor:0 -- bug real corregido: por defecto (1.0) Leaflet
     // SIMPLIFICA el trazado al dibujarlo (quita vértices "redundantes" por
     // rendimiento), así que la línea VISIBLE podía pasar a un par de
@@ -264,7 +283,7 @@ export async function mountRouteMap(container, segments, markers = [], routeTrac
     // en routeMapPaceColoring.js). Con smoothFactor:0 la línea dibujada pasa
     // por todos los puntos reales -- sin coste perceptible para un
     // recorrido de unos pocos cientos de puntos.
-    const casingWeight = interactive ? 6 : 5;
+    const casingWeight = interactive ? 7 : 6;
     const colorWeight = interactive ? 4 : 3;
 
     segments.forEach(segment => {

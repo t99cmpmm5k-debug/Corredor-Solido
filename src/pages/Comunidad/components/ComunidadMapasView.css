@@ -58,6 +58,24 @@
 
 }
 
+/* Atribución de Esri (SATELLITE_ATTRIBUTION, RouteMap.js) más compacta SOLO
+   aquí -- a diferencia del mapa de 340px/fullscreen de un entreno propio,
+   esta miniatura de 160px no tiene margen de sobra para el mismo tamaño de
+   fuente sin que la franja de atribución se coma una parte grande del
+   alto real del mapa. Mismo texto completo (nunca uno recortado que
+   pudiera incumplir la licencia), solo más pequeño y con menos relleno --
+   más especificidad que la regla compartida de RouteMap.css, se aplica sin
+   tocarla. */
+.comunidad-route-card .route-map .leaflet-control-attribution{
+
+    padding:2px 5px;
+
+    font-size:9px;
+
+    line-height:1.25;
+
+}
+
 .comunidad-route-card-info{
 
     display:flex;
