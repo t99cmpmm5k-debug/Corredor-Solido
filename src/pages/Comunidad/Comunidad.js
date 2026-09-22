@@ -4,8 +4,10 @@ import { BottomNavigation } from "../../components/Navigation/BottomNavigation.j
 import { getComunidadTab, getComunidadEntrenos, getComunidadRouteDetail, getComunidadRouteDetailError, COMUNIDAD_TABS } from "./comunidadStore.js";
 import { ComunidadHero } from "./components/ComunidadHero.js";
 import { ComunidadMapasView } from "./components/ComunidadMapasView.js";
+import { ComunidadRankingView } from "./components/ComunidadRankingView.js";
 import { RouteMapFullscreenOverlay, RouteMapLegend } from "../../components/RouteMap/RouteMap.js";
 import { chartSplits, MIN_SPLITS_FOR_CHART } from "../Running/components/RunningDetailView.js";
+import { getMyAlias } from "../Profile/profileStore.js";
 
 const TAB_LABELS = {
     actividad: "Actividad",
@@ -148,6 +150,21 @@ function ComunidadComingSoon() {
 
 }
 
+// Ranking (Fase 2) ya es funcional -- reutiliza LA MISMA lista de entrenos
+// que Mapas (getComunidadEntrenos(), ninguna llamada nueva al backend) más
+// el alias propio (getMyAlias(), Profile/profileStore.js) para resaltar la
+// fila del usuario -- null si todavía no configuró uno en Perfil, caso en
+// el que simplemente no se resalta ninguna fila (nunca se adivina cuál
+// sería). Actividad se queda en "Próximamente" hasta su propia Fase 3.
+function ComunidadTabContent(activeTab) {
+
+    if (activeTab === "mapas") return ComunidadMapasView(getComunidadEntrenos());
+    if (activeTab === "ranking") return ComunidadRankingView(getComunidadEntrenos(), getMyAlias().value ?? null);
+
+    return ComunidadComingSoon();
+
+}
+
 export function Comunidad() {
 
     const activeTab = getComunidadTab();
@@ -174,7 +191,7 @@ export function Comunidad() {
 
                 ${ComunidadTabs(activeTab)}
 
-                ${routeDetailOpen ? "" : (activeTab === "mapas" ? ComunidadMapasView(getComunidadEntrenos()) : ComunidadComingSoon())}
+                ${routeDetailOpen ? "" : ComunidadTabContent(activeTab)}
 
             </div>
 

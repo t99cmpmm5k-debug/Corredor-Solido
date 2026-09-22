@@ -5,6 +5,7 @@ const getComunidadTabMock = vi.fn();
 const getComunidadEntrenosMock = vi.fn();
 const getComunidadRouteDetailMock = vi.fn();
 const getComunidadRouteDetailErrorMock = vi.fn();
+const getMyAliasMock = vi.fn();
 
 vi.mock("./comunidadStore.js", () => ({
     COMUNIDAD_TABS: ["actividad", "mapas", "ranking"],
@@ -12,6 +13,10 @@ vi.mock("./comunidadStore.js", () => ({
     getComunidadEntrenos: () => getComunidadEntrenosMock(),
     getComunidadRouteDetail: () => getComunidadRouteDetailMock(),
     getComunidadRouteDetailError: () => getComunidadRouteDetailErrorMock()
+}));
+
+vi.mock("../Profile/profileStore.js", () => ({
+    getMyAlias: () => getMyAliasMock()
 }));
 
 // Bug real corregido: el mapa fullscreen del detalle (RouteMapFullscreenOverlay)
@@ -32,6 +37,7 @@ describe("Comunidad -- lista de Mapas y mapa fullscreen del detalle son mutuamen
         });
         getComunidadRouteDetailMock.mockReset().mockReturnValue({ status: "closed" });
         getComunidadRouteDetailErrorMock.mockReset().mockReturnValue(null);
+        getMyAliasMock.mockReset().mockReturnValue({ status: "idle", value: null });
     });
 
     it("sin ningún detalle abierto, pinta la lista de tarjetas con su propio mapa", async () => {
@@ -70,6 +76,48 @@ describe("Comunidad -- lista de Mapas y mapa fullscreen del detalle son mutuamen
 
         expect(html).toContain("comunidad-route-card");
         expect(html).toContain("comunidad-detail-loading-overlay");
+
+    });
+
+});
+
+describe("Comunidad -- pestaña Ranking (Fase 2)", () => {
+
+    beforeEach(() => {
+        getComunidadTabMock.mockReset().mockReturnValue("ranking");
+        getComunidadRouteDetailMock.mockReset().mockReturnValue({ status: "closed" });
+        getComunidadRouteDetailErrorMock.mockReset().mockReturnValue(null);
+    });
+
+    it("pinta las 4 tablas de Ranking a partir de la misma lista de entrenos que Mapas", async () => {
+
+        getComunidadEntrenosMock.mockReset().mockReturnValue({
+            status: "ready",
+            entrenos: [{ alias: "Rafa", id: "w1", type: "long", date: "2026-09-20", distanceKm: 20 }]
+        });
+        getMyAliasMock.mockReset().mockReturnValue({ status: "ready", value: "Rafa" });
+
+        const { Comunidad } = await import("./Comunidad.js");
+        const html = Comunidad();
+
+        expect(html).toContain("Ritmo más rápido");
+        expect(html).toContain("Mejor tirada larga");
+        expect(html).toContain("is-mine");
+
+    });
+
+    it("sin alias propio configurado, no pasa ningún alias a resaltar", async () => {
+
+        getComunidadEntrenosMock.mockReset().mockReturnValue({
+            status: "ready",
+            entrenos: [{ alias: "Ana", id: "w1", type: "long", date: "2026-09-20", distanceKm: 20 }]
+        });
+        getMyAliasMock.mockReset().mockReturnValue({ status: "idle", value: null });
+
+        const { Comunidad } = await import("./Comunidad.js");
+        const html = Comunidad();
+
+        expect(html).not.toContain("is-mine");
 
     });
 

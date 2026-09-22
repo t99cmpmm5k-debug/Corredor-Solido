@@ -7,6 +7,7 @@ import { mountRouteMap, unmountRouteMap } from "../../components/RouteMap/RouteM
 import { ROUTE_COLOR_NORMAL, buildPaceColorSegments, buildKmMarkers } from "../Running/routeMapPaceColoring.js";
 import { chartSplits, MIN_SPLITS_FOR_CHART } from "../Running/components/RunningDetailView.js";
 import { buildCommunityRouteCards } from "./communityMapData.js";
+import { loadMyAlias } from "../Profile/profileStore.js";
 
 // Un mapa pequeño POR TARJETA (a diferencia del mapa único agregado que
 // tenía esta pantalla antes) -- array, no una única instancia, con la
@@ -109,12 +110,24 @@ function initComunidadDetailMap() {
 
 export function initComunidadEvents() {
 
-    // Punto 7 de la especificación: la carga se dispara solo al entrar de
-    // verdad en Comunidad > Mapas -- loadComunidadEntrenos() es idempotente
+    // Punto 7 de la especificación original: la carga se dispara solo al
+    // entrar de verdad en Comunidad -- loadComunidadEntrenos() es idempotente
     // (no hace nada si status ya no es "idle"), así que entrar y salir de
-    // la tab, o pasar por otras pantallas, no repite la petición.
-    if (document.querySelector(".comunidad") && getComunidadTab() === "mapas") {
+    // una tab, o pasar por otras pantallas, no repite la petición. Ranking
+    // (Fase 2) consume la MISMA lista que Mapas -- se dispara también desde
+    // esa tab, no solo desde Mapas, para no depender de haber pasado antes
+    // por Mapas en la misma sesión.
+    if (document.querySelector(".comunidad") && (getComunidadTab() === "mapas" || getComunidadTab() === "ranking")) {
         loadComunidadEntrenos();
+    }
+
+    // Alias propio (Perfil) -- para resaltar la fila del usuario en
+    // Ranking. Mismo patrón idempotente que initProfileEvents.js: una sola
+    // petición real por sesión, se pide en cuanto se visita Comunidad (no
+    // solo al entrar en Ranking) para que ya esté lista si el usuario
+    // cambia de tab.
+    if (document.querySelector(".comunidad")) {
+        loadMyAlias();
     }
 
     document.querySelectorAll('[data-action="select-comunidad-tab"]').forEach(button => {

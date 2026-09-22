@@ -1,0 +1,160 @@
+/* 4 tablas apiladas -- mismo espaciado vertical que .comunidad-route-list
+   (ComunidadMapasView.css), coherente entre las dos pestañas de Comunidad. */
+.comunidad-ranking-list{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:14px;
+
+}
+
+/* Mismo tratamiento "glass" que .comunidad-route-card -- fondo/borde/radio
+   compartidos con el resto de Comunidad, no una tarjeta nueva a parte. */
+.comunidad-ranking-table{
+
+    border-radius:var(--radius-xl);
+
+    padding:16px;
+
+    background:color-mix(in srgb, var(--card-background) 70%, transparent);
+
+    border:1px solid var(--card-border);
+
+    box-shadow:0 8px 20px rgba(0,0,0,.18);
+
+}
+
+.comunidad-ranking-title{
+
+    margin:0 0 12px;
+
+    color:var(--text-primary);
+
+    font-size:.82rem;
+
+    font-weight:800;
+
+    text-transform:uppercase;
+
+    letter-spacing:.03em;
+
+}
+
+.comunidad-ranking-empty{
+
+    margin:0;
+
+    color:var(--text-secondary);
+
+    font-size:.85rem;
+
+}
+
+.comunidad-ranking-rows{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:8px;
+
+    margin:0;
+
+    padding:0;
+
+    list-style:none;
+
+}
+
+.comunidad-ranking-row{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+
+    padding:8px 10px;
+
+    border-radius:var(--radius-md);
+
+}
+
+/* Fila propia resaltada -- mismo criterio de color que el resto de la app
+   para "esto es tuyo" (var(--color-primary) con opacidad baja de fondo,
+   sin cambiar el resto del tratamiento visual de la fila). */
+.comunidad-ranking-row.is-mine{
+
+    background:color-mix(in srgb, var(--color-primary) 16%, transparent);
+
+    border:1px solid color-mix(in srgb, var(--color-primary) 35%, transparent);
+
+}
+
+.comunidad-ranking-position{
+
+    flex-shrink:0;
+
+    width:22px;
+
+    height:22px;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    border-radius:50%;
+
+    background:color-mix(in srgb, var(--card-border) 60%, transparent);
+
+    color:var(--text-secondary);
+
+    font-size:.72rem;
+
+    font-weight:800;
+
+}
+
+.comunidad-ranking-row.is-mine .comunidad-ranking-position{
+
+    background:var(--color-primary);
+
+    color:var(--button-text);
+
+}
+
+.comunidad-ranking-alias{
+
+    flex:1;
+
+    min-width:0;
+
+    overflow:hidden;
+
+    text-overflow:ellipsis;
+
+    white-space:nowrap;
+
+    color:var(--text-primary);
+
+    font-size:.88rem;
+
+    font-weight:700;
+
+}
+
+.comunidad-ranking-value{
+
+    flex-shrink:0;
+
+    color:var(--color-primary);
+
+    font-size:.85rem;
+
+    font-weight:800;
+
+}
