@@ -36,11 +36,20 @@ describe("comunidadStore", () => {
 
         const { setComunidadTab, getComunidadTab } = await import("./comunidadStore.js");
 
-        setComunidadTab("actividad");
+        setComunidadTab("clasificacion");
         expect(getComunidadTab()).toBe("mapas");
 
         setComunidadTab("ranking");
         expect(getComunidadTab()).toBe("ranking");
+
+    });
+
+    it("acepta actividad -- ya visible en el selector, aunque su contenido siga siendo Próximamente", async () => {
+
+        const { setComunidadTab, getComunidadTab } = await import("./comunidadStore.js");
+
+        setComunidadTab("actividad");
+        expect(getComunidadTab()).toBe("actividad");
 
     });
 

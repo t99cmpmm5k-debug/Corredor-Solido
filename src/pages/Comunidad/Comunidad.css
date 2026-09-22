@@ -23,50 +23,58 @@
 
 }
 
-/* Sin foto de hero (a diferencia de Home/Plan/Running/Gym/Carreras) --
-   esta pantalla no tiene un tema propio por hora del día que justifique
-   generar un set de imágenes nuevo (ver src/assets/, convención de
-   carpetas por pantalla), y el propio mapa ya es el elemento visual
-   principal. Mismo encabezado simple que Profile.js. */
-.comunidad-header h1{
-
-    color:var(--text-primary);
-
-    font-size:1.6rem;
-
-    font-weight:800;
-
-}
-
 /* =========================
-   TABS (Mapas / Ranking) -- mismo lenguaje que .carreras-tabs/.carreras-tab
-   (Carreras.css), sin el margin-top negativo de ahí (esa fila se
-   superpone a una foto de hero que aquí no existe).
+   CÁPSULA DE SUB-APARTADOS (Actividad / Mapas / Ranking) -- ajuste visual
+   para acercarse al mockup aprobado: antes eran píldoras sueltas (mismo
+   lenguaje que .carreras-tab), ahora una única cápsula que las engloba,
+   mismo patrón que .gym-detail-tabs/.gym-detail-tab
+   (GymExerciseDetailView.css: HISTORIAL/GRÁFICAS) -- un fondo/borde
+   compartido con padding interno, cada opción a flex:1 sin su propio
+   fondo/borde, la activa resaltada por dentro con el color de acento.
+   margin-top negativo: se superpone al colchón de foto/degradado libre de
+   .comunidad-hero (mismo truco que .carreras-tabs sobre .carreras-hero).
 ========================= */
 
 .comunidad-tabs{
 
+    position:relative;
+
+    z-index:10;
+
+    margin-top:-68px;
+
     display:flex;
 
-    gap:8px;
+    gap:4px;
+
+    padding:4px;
+
+    border-radius:999px;
+
+    background:color-mix(in srgb, var(--card-background) 70%, transparent);
+
+    backdrop-filter:blur(16px);
+    -webkit-backdrop-filter:blur(16px);
+
+    border:1px solid var(--card-border);
 
 }
 
 .comunidad-tab{
 
-    flex-shrink:0;
+    flex:1;
 
-    padding:9px 18px;
+    padding:10px 0;
+
+    border:none;
 
     border-radius:999px;
 
-    border:1px solid var(--card-border);
-
-    background:color-mix(in srgb, var(--card-background) 60%, transparent);
+    background:none;
 
     color:var(--text-secondary);
 
-    font-size:.85rem;
+    font-size:.82rem;
 
     font-weight:700;
 
@@ -75,8 +83,6 @@
 }
 
 .comunidad-tab.is-active{
-
-    border-color:var(--color-primary);
 
     background:var(--color-primary);
 

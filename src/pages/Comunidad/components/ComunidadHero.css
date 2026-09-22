@@ -1,0 +1,138 @@
+/* Mismo cascarón full-bleed que .carreras-hero (Carreras.css) -- foto a
+   los 3 bordes reales de la pantalla vía margin-top negativo (cancela el
+   padding que .comunidad-content le mete desde fuera), con un colchón de
+   padding-bottom libre de texto para que .comunidad-tabs pueda
+   superponerse por debajo sin tapar el título (ver margin-top negativo en
+   Comunidad.css). */
+.comunidad-hero{
+
+    position:relative;
+
+    overflow:hidden;
+
+    min-height:280px;
+
+    display:flex;
+
+    flex-direction:column;
+
+    justify-content:flex-end;
+
+    padding:24px 20px 90px;
+
+    padding-top:calc(24px + env(safe-area-inset-top));
+
+    margin:calc(-1 * (24px + env(safe-area-inset-top))) -24px 0;
+
+    isolation:isolate;
+
+    background:var(--color-background);
+
+}
+
+.comunidad-hero-background-image{
+
+    position:absolute;
+
+    inset:0;
+
+    width:100%;
+
+    height:100%;
+
+    object-fit:cover;
+
+    z-index:0;
+
+}
+
+.comunidad-hero-overlay{
+
+    position:absolute;
+
+    inset:0;
+
+    background:linear-gradient(180deg,
+        rgba(4,10,22,.35) 0%,
+        rgba(4,10,22,.6) 55%,
+        rgba(4,10,22,.96) 100%
+    );
+
+    mix-blend-mode:overlay;
+
+    z-index:1;
+
+}
+
+.comunidad-hero-content{
+
+    position:relative;
+
+    z-index:2;
+
+}
+
+/* "Corredor Sólido" -- línea de marca pequeña, no el título real de la
+   pantalla (ese es el <h1> de más abajo). "Sólido" en el color de acento
+   pedido explícitamente, el resto en blanco -- mismo color que ya usa
+   .comunidad-tab.is-active/.carreras-tab.is-active para "esto es lo
+   importante". */
+.comunidad-hero-brand{
+
+    color:rgba(255,255,255,.85);
+
+    font-size:.8rem;
+
+    font-weight:700;
+
+    letter-spacing:.02em;
+
+    text-shadow:0 2px 8px rgba(0,0,0,.4);
+
+}
+
+.comunidad-hero-brand span{
+
+    color:var(--color-primary);
+
+}
+
+.comunidad-hero-eyebrow{
+
+    margin-top:2px;
+
+    color:rgba(255,255,255,.7);
+
+    font-size:.74rem;
+
+    text-shadow:0 2px 8px rgba(0,0,0,.4);
+
+}
+
+.comunidad-hero-content h1{
+
+    margin-top:10px;
+
+    color:#fff;
+
+    font-size:2rem;
+
+    font-weight:800;
+
+    letter-spacing:.01em;
+
+    text-shadow:0 2px 12px rgba(0,0,0,.4);
+
+}
+
+.comunidad-hero-subtitle{
+
+    margin-top:4px;
+
+    color:rgba(255,255,255,.85);
+
+    font-size:.88rem;
+
+    text-shadow:0 2px 8px rgba(0,0,0,.4);
+
+}

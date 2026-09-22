@@ -2,19 +2,24 @@ import "./Comunidad.css";
 
 import { BottomNavigation } from "../../components/Navigation/BottomNavigation.js";
 import { getComunidadTab, getComunidadEntrenos, COMUNIDAD_TABS } from "./comunidadStore.js";
+import { ComunidadHero } from "./components/ComunidadHero.js";
 import { ComunidadMapasView } from "./components/ComunidadMapasView.js";
 
 const TAB_LABELS = {
+    actividad: "Actividad",
     mapas: "Mapas",
     ranking: "Ranking"
 };
 
-// Mismo patrón visual de píldoras que CarrerasTabs() (Carreras.js) -- solo
-// "mapas" está funcional en esta fase, "ranking" ya se ve como pestaña
-// (para que su llegada en la Fase 2 no sea una sorpresa) pero lleva a un
-// estado "Próximamente" fijo, no a ninguna vista real todavía. Sin
-// "actividad" a propósito (pedido explícito de esta fase) -- esa tercera
-// pestaña del mockup se añade cuando le toque su propia fase.
+// Cápsula única (ajuste visual: acercar al mockup aprobado) en vez de
+// píldoras sueltas -- mismo patrón que .gym-detail-tabs/.gym-detail-tab
+// (GymExerciseDetailView.css: HISTORIAL/GRÁFICAS), no el de
+// .carreras-tabs (esas SÍ son píldoras independientes, pensadas para
+// poder crecer y hacer scroll horizontal si hiciera falta -- aquí son
+// siempre exactamente 3, un segmento fijo). Actividad y Ranking ya se ven
+// como opciones reales (mockup: las 3 visibles desde ya), pero solo Mapas
+// tiene contenido funcional -- las otras dos caen al mismo "Próximamente"
+// (ver ComunidadComingSoon más abajo) hasta sus propias fases.
 function ComunidadTabs(activeTab) {
 
     return `
@@ -41,7 +46,7 @@ function ComunidadTabs(activeTab) {
 
 }
 
-function ComunidadRankingPlaceholder() {
+function ComunidadComingSoon() {
 
     return `
 
@@ -67,15 +72,11 @@ export function Comunidad() {
 
             <div class="comunidad-content">
 
-                <header class="comunidad-header">
-
-                    <h1>Comunidad</h1>
-
-                </header>
+                ${ComunidadHero()}
 
                 ${ComunidadTabs(activeTab)}
 
-                ${activeTab === "mapas" ? ComunidadMapasView(getComunidadEntrenos()) : ComunidadRankingPlaceholder()}
+                ${activeTab === "mapas" ? ComunidadMapasView(getComunidadEntrenos()) : ComunidadComingSoon()}
 
             </div>
 
