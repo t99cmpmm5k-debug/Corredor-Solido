@@ -3,10 +3,8 @@ import { getToken } from "../../data/authStore.js";
 import { rerender } from "../../core/router.js";
 
 // Orden real del selector (Actividad | Mapas | Ranking, ver mockup) --
-// Actividad y Ranking solo se VEN ya (para que las 3 opciones coincidan
-// con el diseño aprobado desde ya), su contenido real sigue siendo
-// "Próximamente" hasta la Fase 3/Fase 2 respectivamente. Mapas se queda
-// como tab por defecto (más abajo) -- es la única funcional hoy.
+// las 3 pestañas son ya funcionales (Actividad Fase 3a, Mapas Fase 1,
+// Ranking Fase 2). Mapas se queda como tab por defecto (más abajo).
 export const COMUNIDAD_TABS = ["actividad", "mapas", "ranking"];
 
 let activeTab = "mapas";
@@ -22,13 +20,30 @@ export function setComunidadTab(tab) {
 
 }
 
+// Filtro por tipo del feed de Actividad -- "" (Todos) o uno de
+// easy/long/series/race, mismo id real que ya usa Running (RUNNING_WORKOUT_TYPES).
+// Vive aparte de activeTab: cambiar de pestaña y volver a Actividad no debe
+// perder el filtro elegido dentro de la misma visita a Comunidad (solo
+// resetComunidadView(), al salir de Comunidad del todo, lo limpia).
+let activityTypeFilter = "";
+
+export function getComunidadActivityTypeFilter() {
+    return activityTypeFilter;
+}
+
+export function setComunidadActivityTypeFilter(type) {
+    activityTypeFilter = type || "";
+}
+
 // La pantalla siempre arranca en "Mapas" al entrar desde la navegación --
 // mismo criterio que resetPlanView()/resetCarrerasView() (BottomNavigation.js):
-// lo que estuvieras viendo antes no persiste. No toca entrenosState (más
-// abajo) -- los datos de la comunidad no dependen de qué sub-apartado
-// estés mirando, no hace falta recargarlos por volver a entrar en la tab.
+// lo que estuvieras viendo antes no persiste, incluido el filtro de
+// Actividad. No toca entrenosState (más abajo) -- los datos de la
+// comunidad no dependen de qué sub-apartado estés mirando, no hace falta
+// recargarlos por volver a entrar en la tab.
 export function resetComunidadView() {
     activeTab = "mapas";
+    activityTypeFilter = "";
 }
 
 // idle -> loading -> ready|unavailable, una sola petición real por sesión

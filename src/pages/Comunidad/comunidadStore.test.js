@@ -47,7 +47,7 @@ describe("comunidadStore", () => {
 
     });
 
-    it("acepta actividad -- ya visible en el selector, aunque su contenido siga siendo Próximamente", async () => {
+    it("acepta actividad como tab real", async () => {
 
         const { setComunidadTab, getComunidadTab } = await import("./comunidadStore.js");
 
@@ -70,6 +70,36 @@ describe("comunidadStore", () => {
 
         expect(getComunidadTab()).toBe("mapas");
         expect(getComunidadEntrenos().status).toBe("ready");
+
+    });
+
+    it("el filtro de tipo de Actividad empieza en \"\" (Todos)", async () => {
+
+        const { getComunidadActivityTypeFilter } = await import("./comunidadStore.js");
+        expect(getComunidadActivityTypeFilter()).toBe("");
+
+    });
+
+    it("setComunidadActivityTypeFilter guarda el tipo elegido, y un valor vacío/nulo vuelve a \"Todos\"", async () => {
+
+        const { setComunidadActivityTypeFilter, getComunidadActivityTypeFilter } = await import("./comunidadStore.js");
+
+        setComunidadActivityTypeFilter("long");
+        expect(getComunidadActivityTypeFilter()).toBe("long");
+
+        setComunidadActivityTypeFilter("");
+        expect(getComunidadActivityTypeFilter()).toBe("");
+
+    });
+
+    it("resetComunidadView también limpia el filtro de Actividad -- nada persiste al salir de Comunidad", async () => {
+
+        const { setComunidadActivityTypeFilter, getComunidadActivityTypeFilter, resetComunidadView } = await import("./comunidadStore.js");
+
+        setComunidadActivityTypeFilter("race");
+        resetComunidadView();
+
+        expect(getComunidadActivityTypeFilter()).toBe("");
 
     });
 

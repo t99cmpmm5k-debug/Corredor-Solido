@@ -1,0 +1,101 @@
+/* Píldoras de filtro por tipo -- mismo lenguaje visual de "fila de chips
+   horizontal, activo resaltado con var(--color-primary)" que ya usa
+   Running (.type-filter-list/.type-filter-chip), reescrito aquí en vez de
+   importar el CSS de Running (evita acoplar Comunidad a estilos pensados
+   para otra pantalla). Scroll horizontal si algún día no caben todas en una
+   línea (5 chips hoy, en un iPhone estrecho puede apretar). */
+.comunidad-activity-filters{
+
+    display:flex;
+
+    gap:8px;
+
+    overflow-x:auto;
+
+    padding-bottom:2px;
+
+    margin-bottom:14px;
+
+}
+
+.comunidad-activity-filter-chip{
+
+    flex-shrink:0;
+
+    display:flex;
+
+    align-items:center;
+
+    gap:6px;
+
+    padding:8px 14px;
+
+    border-radius:999px;
+
+    border:1px solid var(--card-border);
+
+    background:color-mix(in srgb, var(--card-background) 60%, transparent);
+
+    color:var(--text-secondary);
+
+    font-size:.8rem;
+
+    font-weight:700;
+
+    white-space:nowrap;
+
+    cursor:pointer;
+
+}
+
+.comunidad-activity-filter-chip iconify-icon{
+
+    font-size:16px;
+
+}
+
+.comunidad-activity-filter-chip.is-selected{
+
+    background:var(--color-primary);
+
+    border-color:var(--color-primary);
+
+    color:var(--button-text);
+
+}
+
+/* Mismo hueco (altura) que .comunidad-route-card .route-map
+   (ComunidadMapasView.css) para que una tarjeta sin GPS mida igual que una
+   con mapa en la misma lista -- solo cambia el contenido: un icono grande
+   centrado en vez de un mapa real, nunca un hueco en blanco ni un mapa
+   vacío fingido. */
+.comunidad-activity-placeholder{
+
+    height:160px;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    background:color-mix(in srgb, var(--card-background) 90%, transparent);
+
+}
+
+.comunidad-activity-placeholder iconify-icon{
+
+    font-size:40px;
+
+    color:var(--text-secondary);
+
+}
+
+/* Tarjeta sin ruta -- no es pulsable (sin data-action, ver
+   ComunidadActividadView.js), así que no hereda el cursor:pointer de
+   .comunidad-route-card. */
+.comunidad-route-card.is-routeless{
+
+    cursor:default;
+
+}

@@ -1,12 +1,14 @@
 import { rerender } from "../../core/router.js";
 import {
     setComunidadTab, getComunidadTab, loadComunidadEntrenos, getComunidadEntrenos, retryComunidadEntrenos,
-    openComunidadRouteDetail, closeComunidadRouteDetail, getComunidadRouteDetail
+    openComunidadRouteDetail, closeComunidadRouteDetail, getComunidadRouteDetail,
+    getComunidadActivityTypeFilter, setComunidadActivityTypeFilter
 } from "./comunidadStore.js";
-import { mountRouteMap, unmountRouteMap } from "../../components/RouteMap/RouteMap.js";
+import { mountRouteMap, unmountRouteMap, hasRouteTrace } from "../../components/RouteMap/RouteMap.js";
 import { ROUTE_COLOR_NORMAL, buildPaceColorSegments, buildKmMarkers } from "../Running/routeMapPaceColoring.js";
 import { chartSplits, MIN_SPLITS_FOR_CHART } from "../Running/components/RunningDetailView.js";
 import { buildCommunityRouteCards } from "./communityMapData.js";
+import { buildCommunityFeedCards } from "./communityFeedData.js";
 import { loadMyAlias } from "../Profile/profileStore.js";
 
 // Un mapa pequeño POR TARJETA (a diferencia del mapa único agregado que
@@ -58,11 +60,63 @@ function initComunidadMaps() {
 
 }
 
-// Mapa fullscreen del detalle -- instancia SEPARADA de activeComunidadMaps
-// de arriba (mismo motivo que activeFullscreenRouteMap en Running/
-// initRunningEvents.js: es un contenedor propio, "comunidad-detail-map-
-// fullscreen", que solo existe en el DOM mientras openComunidadRouteDetail()
-// está en status "ready", ver Comunidad.js).
+// Mismo patrón que activeComunidadMaps de arriba, pero para el feed de
+// Actividad (Fase 3a) -- namespace de contenedor propio
+// ("comunidad-feed-map-N", ComunidadActividadView.js) e instancias propias,
+// nunca compartidas con las de Mapas aunque las dos vistas nunca coexistan
+// en el DOM a la vez.
+let activeComunidadFeedMaps = [];
+
+function initComunidadFeedMaps() {
+
+    activeComunidadFeedMaps.forEach(unmountRouteMap);
+    activeComunidadFeedMaps = [];
+
+    const { status, entrenos } = getComunidadEntrenos();
+    if (status !== "ready") return;
+
+    // Mismo orden e ÍNDICE que ComunidadActividadView.js (buildCommunityFeedCards,
+    // con el mismo typeFilter activo) -- bug real corregido: filtrar por
+    // hasRouteTrace ANTES de enumerar (como hacía esta función antes)
+    // renumera los índices sin los huecos de los entrenos sin ruta, pero la
+    // vista genera cada id "comunidad-feed-map-N" con el índice dentro de
+    // la lista COMPLETA (incluye los que no tienen mapa, aunque no les
+    // ponga contenedor) -- con >=2 entrenos con GPS mezclados con otros sin
+    // GPS, los índices dejaban de coincidir y el segundo mapa en adelante
+    // nunca encontraba su contenedor real (buscaba un id que no existía,
+    // mientras el contenedor real con el índice correcto se quedaba vacío
+    // para siempre). Filtrar DESPUÉS de enumerar mantiene el mismo índice
+    // que ve la vista.
+    buildCommunityFeedCards(entrenos, getComunidadActivityTypeFilter())
+        .forEach((entreno, index) => {
+
+            if (!hasRouteTrace(entreno)) return;
+
+            const container = document.getElementById(`comunidad-feed-map-${index}`);
+            if (!container) return;
+
+            // Mismo modo pequeño no interactivo, mismo color fijo sin
+            // splits reales -- ver el comentario gemelo en initComunidadMaps().
+            mountRouteMap(container, [{ latlngs: entreno.routeTrace.map(p => [p.lat, p.lon]), color: ROUTE_COLOR_NORMAL }], [], entreno.routeTrace).then(map => {
+
+                if (document.body.contains(container)) {
+                    activeComunidadFeedMaps.push(map);
+                } else {
+                    unmountRouteMap(map);
+                }
+
+            });
+
+        });
+
+}
+
+// Mapa fullscreen del detalle -- instancia SEPARADA de activeComunidadMaps/
+// activeComunidadFeedMaps de arriba (mismo motivo que
+// activeFullscreenRouteMap en Running/initRunningEvents.js: es un
+// contenedor propio, "comunidad-detail-map-fullscreen", que solo existe en
+// el DOM mientras openComunidadRouteDetail() está en status "ready", ver
+// Comunidad.js).
 let activeComunidadDetailMap = null;
 
 function initComunidadDetailMap() {
@@ -114,10 +168,10 @@ export function initComunidadEvents() {
     // entrar de verdad en Comunidad -- loadComunidadEntrenos() es idempotente
     // (no hace nada si status ya no es "idle"), así que entrar y salir de
     // una tab, o pasar por otras pantallas, no repite la petición. Ranking
-    // (Fase 2) consume la MISMA lista que Mapas -- se dispara también desde
-    // esa tab, no solo desde Mapas, para no depender de haber pasado antes
-    // por Mapas en la misma sesión.
-    if (document.querySelector(".comunidad") && (getComunidadTab() === "mapas" || getComunidadTab() === "ranking")) {
+    // (Fase 2) y Actividad (Fase 3a) consumen LA MISMA lista que Mapas --
+    // se dispara también desde esas dos tabs, no solo desde Mapas, para no
+    // depender de haber pasado antes por Mapas en la misma sesión.
+    if (document.querySelector(".comunidad") && ["mapas", "ranking", "actividad"].includes(getComunidadTab())) {
         loadComunidadEntrenos();
     }
 
@@ -147,6 +201,20 @@ export function initComunidadEvents() {
         retryButton.addEventListener("click", retryComunidadEntrenos);
     }
 
+    // Filtro por tipo de Actividad (Fase 3a) -- mismo patrón que
+    // filter-by-type en Running.js: guarda el tipo y repinta, la propia
+    // ComunidadActividadView.js decide qué chip queda marcado como activo.
+    document.querySelectorAll('[data-action="filter-comunidad-activity-type"]').forEach(chip => {
+
+        chip.addEventListener("click", () => {
+
+            setComunidadActivityTypeFilter(chip.dataset.type);
+            rerender();
+
+        });
+
+    });
+
     // Pulsar cualquier tarjeta de Mapas pide su detalle real (con splits)
     // y abre el mapa fullscreen -- ver openComunidadRouteDetail()/
     // ComunidadRouteDetailOverlay() (Comunidad.js). data-entreno-id/-alias
@@ -173,6 +241,7 @@ export function initComunidadEvents() {
     }
 
     initComunidadMaps();
+    initComunidadFeedMaps();
     initComunidadDetailMap();
 
 }

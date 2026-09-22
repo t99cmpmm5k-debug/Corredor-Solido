@@ -1,10 +1,14 @@
 import "./Comunidad.css";
 
 import { BottomNavigation } from "../../components/Navigation/BottomNavigation.js";
-import { getComunidadTab, getComunidadEntrenos, getComunidadRouteDetail, getComunidadRouteDetailError, COMUNIDAD_TABS } from "./comunidadStore.js";
+import {
+    getComunidadTab, getComunidadEntrenos, getComunidadRouteDetail, getComunidadRouteDetailError,
+    getComunidadActivityTypeFilter, COMUNIDAD_TABS
+} from "./comunidadStore.js";
 import { ComunidadHero } from "./components/ComunidadHero.js";
 import { ComunidadMapasView } from "./components/ComunidadMapasView.js";
 import { ComunidadRankingView } from "./components/ComunidadRankingView.js";
+import { ComunidadActividadView } from "./components/ComunidadActividadView.js";
 import { RouteMapFullscreenOverlay, RouteMapLegend } from "../../components/RouteMap/RouteMap.js";
 import { chartSplits, MIN_SPLITS_FOR_CHART } from "../Running/components/RunningDetailView.js";
 import { getMyAlias } from "../Profile/profileStore.js";
@@ -20,10 +24,9 @@ const TAB_LABELS = {
 // (GymExerciseDetailView.css: HISTORIAL/GRÁFICAS), no el de
 // .carreras-tabs (esas SÍ son píldoras independientes, pensadas para
 // poder crecer y hacer scroll horizontal si hiciera falta -- aquí son
-// siempre exactamente 3, un segmento fijo). Actividad y Ranking ya se ven
-// como opciones reales (mockup: las 3 visibles desde ya), pero solo Mapas
-// tiene contenido funcional -- las otras dos caen al mismo "Próximamente"
-// (ver ComunidadComingSoon más abajo) hasta sus propias fases.
+// siempre exactamente 3, un segmento fijo). Las 3 son ya funcionales
+// (Actividad Fase 3a, Mapas Fase 1, Ranking Fase 2) -- sin likes/
+// comentarios todavía en Actividad, eso llega en las Fases 3b/3c.
 function ComunidadTabs(activeTab) {
 
     return `
@@ -134,34 +137,19 @@ function ComunidadRouteDetailOverlay() {
 
 }
 
-function ComunidadComingSoon() {
-
-    return `
-
-        <div class="comunidad-empty">
-
-            <iconify-icon icon="solar:ranking-bold-duotone"></iconify-icon>
-
-            <p>Próximamente.</p>
-
-        </div>
-
-    `;
-
-}
-
-// Ranking (Fase 2) ya es funcional -- reutiliza LA MISMA lista de entrenos
-// que Mapas (getComunidadEntrenos(), ninguna llamada nueva al backend) más
+// Las 3 pestañas son ya funcionales, todas sobre LA MISMA lista de
+// entrenos ya cargada (getComunidadEntrenos(), una única petición real por
+// sesión) -- ninguna dispara una llamada propia al backend. Ranking añade
 // el alias propio (getMyAlias(), Profile/profileStore.js) para resaltar la
 // fila del usuario -- null si todavía no configuró uno en Perfil, caso en
 // el que simplemente no se resalta ninguna fila (nunca se adivina cuál
-// sería). Actividad se queda en "Próximamente" hasta su propia Fase 3.
+// sería). Actividad añade su propio filtro por tipo (comunidadStore.js).
 function ComunidadTabContent(activeTab) {
 
     if (activeTab === "mapas") return ComunidadMapasView(getComunidadEntrenos());
     if (activeTab === "ranking") return ComunidadRankingView(getComunidadEntrenos(), getMyAlias().value ?? null);
 
-    return ComunidadComingSoon();
+    return ComunidadActividadView(getComunidadEntrenos(), getComunidadActivityTypeFilter());
 
 }
 

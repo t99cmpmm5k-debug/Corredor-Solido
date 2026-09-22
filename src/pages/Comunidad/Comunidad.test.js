@@ -6,13 +6,15 @@ const getComunidadEntrenosMock = vi.fn();
 const getComunidadRouteDetailMock = vi.fn();
 const getComunidadRouteDetailErrorMock = vi.fn();
 const getMyAliasMock = vi.fn();
+const getComunidadActivityTypeFilterMock = vi.fn();
 
 vi.mock("./comunidadStore.js", () => ({
     COMUNIDAD_TABS: ["actividad", "mapas", "ranking"],
     getComunidadTab: () => getComunidadTabMock(),
     getComunidadEntrenos: () => getComunidadEntrenosMock(),
     getComunidadRouteDetail: () => getComunidadRouteDetailMock(),
-    getComunidadRouteDetailError: () => getComunidadRouteDetailErrorMock()
+    getComunidadRouteDetailError: () => getComunidadRouteDetailErrorMock(),
+    getComunidadActivityTypeFilter: () => getComunidadActivityTypeFilterMock()
 }));
 
 vi.mock("../Profile/profileStore.js", () => ({
@@ -118,6 +120,34 @@ describe("Comunidad -- pestaña Ranking (Fase 2)", () => {
         const html = Comunidad();
 
         expect(html).not.toContain("is-mine");
+
+    });
+
+});
+
+describe("Comunidad -- pestaña Actividad (Fase 3a)", () => {
+
+    beforeEach(() => {
+        getComunidadTabMock.mockReset().mockReturnValue("actividad");
+        getComunidadRouteDetailMock.mockReset().mockReturnValue({ status: "closed" });
+        getComunidadRouteDetailErrorMock.mockReset().mockReturnValue(null);
+        getMyAliasMock.mockReset().mockReturnValue({ status: "idle", value: null });
+        getComunidadActivityTypeFilterMock.mockReset().mockReturnValue("");
+    });
+
+    it("pinta el feed con entrenos sin GPS incluidos -- a diferencia de Mapas", async () => {
+
+        getComunidadEntrenosMock.mockReset().mockReturnValue({
+            status: "ready",
+            entrenos: [{ alias: "Ana", id: "w1", type: "series", date: "2026-09-20", distanceKm: 6, routeTrace: null }]
+        });
+
+        const { Comunidad } = await import("./Comunidad.js");
+        const html = Comunidad();
+
+        expect(html).toContain("Ana");
+        expect(html).toContain("comunidad-activity-placeholder");
+        expect(html).toContain("is-routeless");
 
     });
 
