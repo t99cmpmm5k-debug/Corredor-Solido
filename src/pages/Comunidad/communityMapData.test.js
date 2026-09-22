@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildCommunitySegments, buildCommunityLegendEntries } from "./communityMapData.js";
+import { buildCommunitySegments, buildCommunityLegendEntries, COMMUNITY_MAP_MIN_ZOOM, COMMUNITY_MAP_DEFAULT_CENTER } from "./communityMapData.js";
 import { colorForAlias } from "./communityMapColors.js";
 
 const withTrace = (alias, id) => ({
@@ -82,6 +82,34 @@ describe("buildCommunityLegendEntries -- una fila por alias, nunca por entreno",
     it("sin ningún entreno con GPS en toda la comunidad, devuelve una lista vacía", () => {
 
         expect(buildCommunityLegendEntries([withoutTrace("Rafa"), withoutTrace("Ana")])).toEqual([]);
+
+    });
+
+});
+
+// Bug real corregido: fitBounds encuadrando rutas de usuarios muy
+// alejados entre sí (ej. Murcia/Almería) dejaba cada recorrido como un
+// punto -- estas 2 constantes son el suelo de zoom y la vista por defecto
+// que usa initComunidadEvents.js/RouteMap.js para evitarlo (ver sus
+// comentarios). Solo se comprueba la forma/rango real, no el valor exacto
+// -- ese es un ajuste de diseño, no un contrato que testear al dígito.
+describe("constantes de encuadre del mapa agregado", () => {
+
+    it("COMMUNITY_MAP_MIN_ZOOM es una escala de ciudad, no de región entera", () => {
+
+        expect(COMMUNITY_MAP_MIN_ZOOM).toBeGreaterThanOrEqual(10);
+        expect(COMMUNITY_MAP_MIN_ZOOM).toBeLessThanOrEqual(15);
+
+    });
+
+    it("COMMUNITY_MAP_DEFAULT_CENTER es un par [lat, lon] real dentro de la Región de Murcia", () => {
+
+        const [lat, lon] = COMMUNITY_MAP_DEFAULT_CENTER;
+
+        expect(lat).toBeGreaterThan(37);
+        expect(lat).toBeLessThan(39);
+        expect(lon).toBeGreaterThan(-2);
+        expect(lon).toBeLessThan(0);
 
     });
 

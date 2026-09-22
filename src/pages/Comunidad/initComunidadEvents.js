@@ -1,7 +1,7 @@
 import { rerender } from "../../core/router.js";
 import { setComunidadTab, getComunidadTab, loadComunidadEntrenos, getComunidadEntrenos, retryComunidadEntrenos } from "./comunidadStore.js";
 import { mountRouteMap, unmountRouteMap } from "../../components/RouteMap/RouteMap.js";
-import { buildCommunitySegments } from "./communityMapData.js";
+import { buildCommunitySegments, COMMUNITY_MAP_MIN_ZOOM, COMMUNITY_MAP_DEFAULT_CENTER } from "./communityMapData.js";
 
 // Misma instancia única con destrucción explícita en cada render que
 // activeRouteMap/activeFullscreenRouteMap en Running/initRunningEvents.js
@@ -24,8 +24,11 @@ function initComunidadMap() {
     const { status, entrenos } = getComunidadEntrenos();
     if (status !== "ready") return;
 
+    // Punto "comunidad vacía" del fix de zoom: segments puede venir vacío
+    // (nadie tiene todavía un entreno con GPS) -- el mapa se monta igual,
+    // con la vista fija de COMMUNITY_MAP_DEFAULT_CENTER (ver mountRouteMap/
+    // defaultView en RouteMap.js), en vez de no mostrar nada.
     const segments = buildCommunitySegments(entrenos);
-    if (segments.length === 0) return;
 
     // interactive:true directamente (a diferencia del mapa pequeño de un
     // entreno individual) -- aquí el mapa ES el contenido principal de la
@@ -33,7 +36,13 @@ function initComunidadMap() {
     // aparte. Sin markers ni routeTrace propios ("[]"/"[]" de más abajo):
     // las marcas de km y de inicio/fin son de UN entreno concreto, no
     // tienen sentido con decenas de rutas de gente distinta mezcladas.
-    mountRouteMap(container, segments, [], [], { interactive: true }).then(map => {
+    // minZoom/defaultView -- ver comentarios junto a COMMUNITY_MAP_MIN_ZOOM/
+    // COMMUNITY_MAP_DEFAULT_CENTER en communityMapData.js.
+    mountRouteMap(container, segments, [], [], {
+        interactive: true,
+        minZoom: COMMUNITY_MAP_MIN_ZOOM,
+        defaultView: { center: COMMUNITY_MAP_DEFAULT_CENTER, zoom: COMMUNITY_MAP_MIN_ZOOM }
+    }).then(map => {
 
         if (document.body.contains(container)) {
             activeComunidadMap = map;

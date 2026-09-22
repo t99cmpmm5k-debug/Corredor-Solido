@@ -25,12 +25,12 @@ describe("ComunidadMapasView -- pinta según el status de comunidadStore, nunca 
 
     });
 
-    it("ready sin ningún entreno con GPS en la comunidad muestra el estado vacío, no un mapa en blanco", () => {
+    it("ready sin ningún entreno con GPS en la comunidad monta el mapa igual (vista por defecto), sin leyenda", () => {
 
         const html = ComunidadMapasView({ status: "ready", entrenos: [{ alias: "Rafa", routeTrace: null }] });
 
-        expect(html).toContain("Todavía no hay recorridos con GPS");
-        expect(html).not.toContain('id="comunidad-map"');
+        expect(html).toContain('id="comunidad-map"');
+        expect(html).not.toContain("comunidad-map-legend");
 
     });
 

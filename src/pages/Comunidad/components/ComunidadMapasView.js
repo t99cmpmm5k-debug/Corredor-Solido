@@ -98,14 +98,13 @@ export function ComunidadMapasView(entrenosState) {
 
     const legendEntries = buildCommunityLegendEntries(entrenos);
 
-    // Punto 6 tal cual sale de buildCommunityLegendEntries()/
-    // buildCommunitySegments() (mismo filtro): si NADIE de la comunidad
-    // tiene un entreno con GPS todavía, no hay mapa que dibujar -- estado
-    // vacío explícito, no un mapa en blanco sin contexto.
-    if (legendEntries.length === 0) {
-        return ComunidadMapasState("solar:users-group-rounded-bold-duotone", "Todavía no hay recorridos con GPS en la comunidad.");
-    }
-
+    // Bug real corregido: antes, sin ningún entreno con GPS en la
+    // comunidad, se mostraba un estado de texto en vez de mapa -- ahora el
+    // mapa se monta igual (initComunidadEvents.js le pasa defaultView,
+    // centrado en Murcia, ver COMMUNITY_MAP_DEFAULT_CENTER), listo para
+    // cuando aparezcan rutas reales. ComunidadMapLegend() ya devuelve ""
+    // sola cuando legendEntries está vacío (punto 6 de la especificación
+    // original), así que no hace falta ningún caso especial aquí.
     return `
 
         <div class="comunidad-map-wrap">

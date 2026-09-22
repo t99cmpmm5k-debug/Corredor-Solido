@@ -207,7 +207,23 @@ export function RouteMapFullscreenOverlay(id = "route-map-fullscreen", legendHtm
 // arrastre libres para poder explorar el recorrido, marcadores de km con
 // popup. zoomControl (botones +/-) se queda en false SIEMPRE, en los dos
 // modos -- nunca controles visuales de zoom, solo el gesto.
-export async function mountRouteMap(container, segments, markers = [], routeTrace = [], { interactive = false } = {}) {
+// options.minZoom (null por defecto, sin efecto en ningún caso existente):
+// solo lo usa el mapa agregado de Comunidad (ComunidadMapasView.js/
+// initComunidadEvents.js) -- ahí `segments` puede mezclar rutas de
+// usuarios muy alejados entre sí (bug real reportado: dos ciudades a
+// ~150km, el encuadre automático que las engloba a ambas deja cada
+// recorrido individual como un punto minúsculo, no una línea legible). Un
+// suelo de zoom evita que fitBounds se aleje más allá de esa escala, a
+// costa de que no todas las rutas queden visibles de entrada -- el propio
+// pellizco (interactive:true) sigue permitiendo alejar del todo si hace
+// falta. Nunca fuerza a acercar MÁS de lo que fitBounds ya calculó por su
+// cuenta, solo pone un límite a alejarse.
+// options.defaultView ({center, zoom}, null por defecto): vista fija para
+// cuando `segments` viene vacío -- único caso real hoy es la Comunidad sin
+// ningún entreno con GPS todavía (ver COMMUNITY_MAP_DEFAULT_CENTER en
+// communityMapData.js). L.latLngBounds([]) no es válido, así que sin esto
+// fitBounds no tendría nada que encuadrar.
+export async function mountRouteMap(container, segments, markers = [], routeTrace = [], { interactive = false, minZoom = null, defaultView = null } = {}) {
 
     const [{ default: L }] = await Promise.all([
         import("leaflet"),
@@ -303,14 +319,35 @@ export async function mountRouteMap(container, segments, markers = [], routeTrac
     // montados en contenedores recién insertados/mostrados.
     map.invalidateSize();
 
-    const bounds = L.latLngBounds(segments.flatMap(segment => segment.latlngs));
+    if (segments.length === 0 && defaultView) {
 
-    // animate:false -- fitBounds necesita haber fijado ya el zoom/centro
-    // definitivos de verdad (no a medias, en pleno vuelo de una animación)
-    // antes de poder convertir lat/lon de las marcas a píxeles de pantalla
-    // más abajo. Esto es solo el encuadre INICIAL -- el pellizco del usuario
-    // (touchZoom, ver arriba) sigue animándose con normalidad después.
-    map.fitBounds(bounds, { padding: [24, 24], animate: false });
+        // Comunidad sin ningún entreno con GPS todavía -- nada que
+        // encuadrar de verdad, misma vista fija que se usaría en el mapa
+        // individual si tuviera un estado equivalente (ver defaultView más
+        // arriba).
+        map.setView(defaultView.center, defaultView.zoom);
+
+    } else {
+
+        const bounds = L.latLngBounds(segments.flatMap(segment => segment.latlngs));
+
+        // animate:false -- fitBounds necesita haber fijado ya el zoom/centro
+        // definitivos de verdad (no a medias, en pleno vuelo de una animación)
+        // antes de poder convertir lat/lon de las marcas a píxeles de pantalla
+        // más abajo. Esto es solo el encuadre INICIAL -- el pellizco del usuario
+        // (touchZoom, ver arriba) sigue animándose con normalidad después.
+        map.fitBounds(bounds, { padding: [24, 24], animate: false });
+
+        // Suelo de zoom (ver minZoom más arriba) -- solo baja el zoom si
+        // fitBounds se alejó MÁS de lo razonable para poder leer un
+        // trazado; nunca lo sube por encima de lo que fitBounds ya decidió
+        // (un único recorrido corto seguiría acercándose todo lo que
+        // necesite, sin tocar este suelo).
+        if (minZoom != null && map.getZoom() < minZoom) {
+            map.setZoom(minZoom);
+        }
+
+    }
 
     // Marcas de inicio/fin -- los dos extremos reales de la traza, sin
     // ningún cálculo de dirección: el propio orden de los números de km
