@@ -11,6 +11,7 @@ import { initGymEvents } from "../pages/Gym/initGymEvents.js";
 import { initCarrerasEvents } from "../pages/Carreras/initCarrerasEvents.js";
 import { initMonthlyKmWidgetEvents } from "../pages/Home/components/initMonthlyKmWidgetEvents.js";
 import { initAuthEvents } from "../pages/Auth/initAuthEvents.js";
+import { initComunidadEvents } from "../pages/Comunidad/initComunidadEvents.js";
 
 export function render() {
 
@@ -45,5 +46,7 @@ export function render() {
     initMonthlyKmWidgetEvents();
 
     initAuthEvents();
+
+    initComunidadEvents();
 
 }

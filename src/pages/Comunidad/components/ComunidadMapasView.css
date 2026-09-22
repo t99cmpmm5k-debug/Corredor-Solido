@@ -1,0 +1,176 @@
+/* Mapa PRINCIPAL de la pantalla (no una miniatura dentro de una ficha,
+   como el .route-map de un entreno individual) -- ocupa la mayor parte
+   alto disponible en vez de los 340px fijos pensados para vivir dentro de
+   una lista larga de tarjetas. Selector con más especificidad que .route-map
+   (RouteMap.css) para no tocar esa regla compartida, que sigue rigiendo
+   el resto de mapas de la app tal cual. */
+.comunidad-map-wrap .route-map{
+
+    height:min(65vh, 560px);
+    height:min(65dvh, 560px);
+
+}
+
+/* Mismo envoltorio position:relative que .route-map-tap-target
+   (RouteMap.css) para poder colocar la leyenda como overlay flotante
+   DENTRO del área visual del mapa -- pero sin cursor:pointer ni
+   data-action de apertura: este mapa ya es interactivo por sí mismo
+   (mountRouteMap con interactive:true en initComunidadEvents.js), no abre
+   ningún modo pantalla completa. */
+.comunidad-map-wrap{
+
+    position:relative;
+
+    display:block;
+
+    border-radius:26px;
+
+    overflow:hidden;
+
+}
+
+/* Leyenda "quién es cada color" -- misma familia visual glass que
+   .route-map-legend (blur + fondo translúcido + borde sutil), pero
+   columna vertical de filas en vez de una píldora horizontal con
+   degradado: aquí el número de entradas varía con cuánta gente tenga
+   entrenos con GPS, así que necesita poder crecer hacia abajo (y, pasado
+   un límite, scrollear) en vez de un ancho fijo como el de ritmo. Vive en
+   la esquina para no tapar el centro del mapa, donde están las rutas. */
+.comunidad-map-legend{
+
+    position:absolute;
+
+    top:14px;
+    right:14px;
+
+    z-index:1000;
+
+    max-width:160px;
+    max-height:calc(100% - 28px);
+
+    overflow-y:auto;
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:6px;
+
+    padding:10px 12px;
+
+    border-radius:var(--radius-md);
+
+    background:color-mix(in srgb, var(--card-background) 55%, transparent);
+
+    border:1px solid color-mix(in srgb, var(--card-border) 45%, transparent);
+
+    backdrop-filter:blur(14px);
+    -webkit-backdrop-filter:blur(14px);
+
+    box-shadow:0 4px 14px rgba(0,0,0,.3);
+
+}
+
+.comunidad-map-legend-row{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:8px;
+
+}
+
+.comunidad-map-legend-dot{
+
+    flex-shrink:0;
+
+    width:10px;
+    height:10px;
+
+    border-radius:50%;
+
+    box-shadow:0 0 4px rgba(0,0,0,.4);
+
+}
+
+.comunidad-map-legend-alias{
+
+    min-width:0;
+
+    overflow:hidden;
+
+    text-overflow:ellipsis;
+
+    white-space:nowrap;
+
+    color:#FFFFFF;
+
+    font-size:.72rem;
+
+    font-weight:700;
+
+}
+
+/* Mismos 3 estados no-mapa (cargando / error / sin datos) -- mismo
+   lenguaje que .carreras-empty (Carreras.css): icono + texto centrado en
+   tarjeta glass, nunca un hueco en blanco. */
+.comunidad-empty{
+
+    display:flex;
+
+    flex-direction:column;
+
+    align-items:center;
+
+    gap:12px;
+
+    padding:56px 24px;
+
+    border-radius:var(--radius-xl);
+
+    background:color-mix(in srgb, var(--card-background) 70%, transparent);
+
+    border:1px solid var(--card-border);
+
+    text-align:center;
+
+}
+
+.comunidad-empty iconify-icon{
+
+    font-size:52px;
+
+    color:var(--color-primary);
+
+}
+
+.comunidad-empty p{
+
+    color:var(--text-secondary);
+
+    font-size:.9rem;
+
+}
+
+.comunidad-retry-button{
+
+    margin-top:4px;
+
+    padding:10px 20px;
+
+    border-radius:999px;
+
+    border:1px solid color-mix(in srgb, var(--color-primary) 35%, transparent);
+
+    background:color-mix(in srgb, var(--color-primary) 14%, transparent);
+
+    color:var(--color-primary);
+
+    font-size:.85rem;
+
+    font-weight:700;
+
+    cursor:pointer;
+
+}

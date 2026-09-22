@@ -141,6 +141,17 @@
 .nav-item small{
     font-size:10px;
     font-weight:600;
+
+    /* nowrap + ellipsis -- séptima pestaña (Comunidad) añadida: con 7
+       columnas flex:1 en vez de 6, el ancho real de cada .nav-item baja lo
+       suficiente en pantallas estrechas como para que una etiqueta de 9
+       letras pudiera partirse en 2 líneas (desalineando esa pestaña frente
+       al resto). Defensivo -- ninguna etiqueta actual llega a truncarse de
+       verdad con esto, solo evita el salto de línea. */
+    max-width:100%;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
 }
 
 .nav-item.active{

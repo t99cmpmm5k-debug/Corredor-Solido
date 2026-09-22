@@ -9,10 +9,12 @@ import { Running } from "../../pages/Running/Running.js";
 import { Carreras } from "../../pages/Carreras/Carreras.js";
 import { Profile } from "../../pages/Profile/Profile.js";
 import { Gym } from "../../pages/Gym/Gym.js";
+import { Comunidad } from "../../pages/Comunidad/Comunidad.js";
 import { resetPlanView } from "../../pages/Plan/planStore.js";
 import { resetCarrerasView } from "../../pages/Carreras/carrerasStore.js";
+import { resetComunidadView } from "../../pages/Comunidad/comunidadStore.js";
 
-const PAGES = { home: Home, plan: Plan, running: Running, carreras: Carreras, profile: Profile, gym: Gym };
+const PAGES = { home: Home, plan: Plan, running: Running, carreras: Carreras, gym: Gym, comunidad: Comunidad, profile: Profile };
 
 export function BottomNavigation() {
 
@@ -63,6 +65,14 @@ export function BottomNavigation() {
 
             </button>
 
+            <button class="nav-item ${currentPage === Comunidad ? "active" : ""}" data-page="comunidad">
+
+                <iconify-icon icon="solar:users-group-rounded-bold-duotone"></iconify-icon>
+
+                <small>Comunidad</small>
+
+            </button>
+
             <button class="nav-item ${currentPage === Profile ? "active" : ""}" data-page="profile">
 
                 <iconify-icon icon="solar:user-rounded-bold-duotone"></iconify-icon>
@@ -91,6 +101,7 @@ export function initBottomNavigationEvents() {
             // ahora"), no una vuelta a donde lo dejaste.
             if (page === Plan) resetPlanView();
             if (page === Carreras) resetCarrerasView();
+            if (page === Comunidad) resetComunidadView();
 
             navigate(page);
 

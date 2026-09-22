@@ -1,0 +1,85 @@
+.comunidad{
+
+    width:100%;
+
+    min-height:100vh;
+    min-height:100dvh;
+
+}
+
+.comunidad-content{
+
+    padding:24px;
+
+    padding-top:calc(24px + env(safe-area-inset-top));
+
+    padding-bottom:calc(var(--bottom-nav-clearance) + env(safe-area-inset-bottom));
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:18px;
+
+}
+
+/* Sin foto de hero (a diferencia de Home/Plan/Running/Gym/Carreras) --
+   esta pantalla no tiene un tema propio por hora del día que justifique
+   generar un set de imágenes nuevo (ver src/assets/, convención de
+   carpetas por pantalla), y el propio mapa ya es el elemento visual
+   principal. Mismo encabezado simple que Profile.js. */
+.comunidad-header h1{
+
+    color:var(--text-primary);
+
+    font-size:1.6rem;
+
+    font-weight:800;
+
+}
+
+/* =========================
+   TABS (Mapas / Ranking) -- mismo lenguaje que .carreras-tabs/.carreras-tab
+   (Carreras.css), sin el margin-top negativo de ahí (esa fila se
+   superpone a una foto de hero que aquí no existe).
+========================= */
+
+.comunidad-tabs{
+
+    display:flex;
+
+    gap:8px;
+
+}
+
+.comunidad-tab{
+
+    flex-shrink:0;
+
+    padding:9px 18px;
+
+    border-radius:999px;
+
+    border:1px solid var(--card-border);
+
+    background:color-mix(in srgb, var(--card-background) 60%, transparent);
+
+    color:var(--text-secondary);
+
+    font-size:.85rem;
+
+    font-weight:700;
+
+    cursor:pointer;
+
+}
+
+.comunidad-tab.is-active{
+
+    border-color:var(--color-primary);
+
+    background:var(--color-primary);
+
+    color:var(--button-text);
+
+}

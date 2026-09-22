@@ -19,7 +19,7 @@ const src = resolve(here, "../../");
 // en vez de quedarse anclada al viewport. Este test no sustituye probar
 // en un dispositivo real (ver PARTE del pedido sobre iPhone/isla
 // dinámica), pero blinda contra que alguien reintroduzca sin querer una
-// de estas propiedades en el contenedor raíz de cualquiera de las 6
+// de estas propiedades en el contenedor raíz de cualquiera de las
 // pantallas -- justo el tipo de cambio (hero full-bleed, márgenes
 // negativos) que motivó este bug.
 const CONTAINING_BLOCK_PROPERTIES = [
@@ -41,6 +41,7 @@ const PAGE_ROOT_CONTAINERS = [
     ["pages/Running/Running.css", ".running"],
     ["pages/Carreras/Carreras.css", ".carreras"],
     ["pages/Gym/Gym.css", ".gym-page"],
+    ["pages/Comunidad/Comunidad.css", ".comunidad"],
     ["pages/Profile/Profile.css", ".profile"],
     ["styles/app.css", "#app"],
     ["styles/app.css", "body"],
