@@ -1,14 +1,16 @@
 import "./ComunidadMapasView.css";
 
 import { RouteMapContainer } from "../../../components/RouteMap/RouteMap.js";
-import { buildCommunityLegendEntries } from "../communityMapData.js";
+import { formatDayMonth } from "../../../utils/date.js";
+import { formatKm, formatSecondsAsClock } from "../../../utils/format.js";
+import { buildCommunityRouteCards } from "../communityMapData.js";
 
 // alias es texto libre puesto por CUALQUIER usuario (alias_publico, ver
 // server/migrations/004_alias_publico.sql) y se renderiza aquí para que lo
 // vean TODOS los demás -- a diferencia del propio en Profile.js
 // (autoataque como mucho), esto es una entrada real para un XSS
 // almacenado si no se escapa. Mismo escapeHtml local que ya usa
-// updateNotifier.js para el mismo motivo (texto externo no confiable
+// updateNotifier.js por el mismo motivo (texto externo no confiable
 // insertado por innerHTML).
 function escapeHtml(text) {
 
@@ -19,40 +21,10 @@ function escapeHtml(text) {
 
 }
 
-// Leyenda "quién es cada color" (punto 5) -- mismo patrón visual que
-// RouteMapLegend() (overlay flotante en glass dentro del área del mapa,
-// ver ComunidadMapasView.css/RouteMap.css), adaptado a una lista de
-// personas en vez de un degradado de ritmo: aquí no hay un eje continuo
-// que resumir en 2 etiquetas, cada usuario necesita su propia fila.
-function ComunidadMapLegend(entries) {
-
-    if (entries.length === 0) return "";
-
-    return `
-
-        <div class="comunidad-map-legend">
-
-            ${entries.map(entry => `
-
-                <div class="comunidad-map-legend-row">
-
-                    <span class="comunidad-map-legend-dot" style="background:${entry.color}"></span>
-
-                    <span class="comunidad-map-legend-alias">${escapeHtml(entry.alias)}</span>
-
-                </div>
-
-            `).join("")}
-
-        </div>
-
-    `;
-
-}
-
 // Mismo lenguaje visual que .carreras-empty (icono + texto centrado, en
-// tarjeta glass) para los 3 estados no-mapa de esta vista (cargando, error,
-// sin datos con GPS) -- nunca un hueco en blanco.
+// tarjeta glass) para los 3 estados no-lista de esta vista (cargando, error,
+// sin ningún entreno con GPS en toda la comunidad) -- nunca un hueco en
+// blanco.
 function ComunidadMapasState(icon, text, actionHtml = "") {
 
     return `
@@ -66,6 +38,54 @@ function ComunidadMapasState(icon, text, actionHtml = "") {
             ${actionHtml}
 
         </div>
+
+    `;
+
+}
+
+// El contenedor id="comunidad-route-map-N" lo monta initComunidadEvents.js
+// (mountRouteMap en modo pequeño -- interactive:false, sin minZoom/
+// defaultView, exactamente igual que el mapa pequeño de la ficha de un
+// entreno propio en RunningDetailView.js) -- este componente solo pinta el
+// hueco vacío, nunca sabe nada de Leaflet. Índice de la lista ya ordenada
+// (buildCommunityRouteCards), no workout.id -- ids de workouts vienen de
+// IndexedDBs independientes por usuario y no hay garantía real de que no
+// puedan coincidir entre dos personas.
+function ComunidadRouteCard(entreno, index) {
+
+    const pace = entreno.avgPaceSecPerKm != null ? `${formatSecondsAsClock(entreno.avgPaceSecPerKm)}/km` : "—";
+    const duration = entreno.durationSec != null ? formatSecondsAsClock(entreno.durationSec) : "—";
+    const distance = entreno.distanceKm != null ? `${formatKm(entreno.distanceKm)} km` : "—";
+
+    return `
+
+        <article class="comunidad-route-card">
+
+            ${RouteMapContainer(`comunidad-route-map-${index}`)}
+
+            <div class="comunidad-route-card-info">
+
+                <div class="comunidad-route-card-header">
+
+                    <span class="comunidad-route-card-alias">${escapeHtml(entreno.alias)}</span>
+
+                    ${entreno.date ? `<span class="comunidad-route-card-date">${formatDayMonth(entreno.date)}</span>` : ""}
+
+                </div>
+
+                <div class="comunidad-route-card-stats">
+
+                    <span>${distance}</span>
+
+                    <span>${pace}</span>
+
+                    <span>${duration}</span>
+
+                </div>
+
+            </div>
+
+        </article>
 
     `;
 
@@ -85,9 +105,9 @@ export function ComunidadMapasView(entrenosState) {
         return ComunidadMapasState("solar:map-point-wave-bold-duotone", "Cargando rutas de la comunidad...");
     }
 
-    // Punto 7: error simple, sin romper el resto de la app -- botón de
-    // reintentar en vez de una recarga automática (sin red real, reintentar
-    // solo produciría el mismo error en bucle).
+    // Error simple, sin romper el resto de la app -- botón de reintentar en
+    // vez de una recarga automática (sin red real, reintentar solo
+    // produciría el mismo error en bucle).
     if (status === "unavailable") {
         return ComunidadMapasState(
             "solar:wifi-router-minimalistic-bold-duotone",
@@ -96,22 +116,17 @@ export function ComunidadMapasView(entrenosState) {
         );
     }
 
-    const legendEntries = buildCommunityLegendEntries(entrenos);
+    const cards = buildCommunityRouteCards(entrenos);
 
-    // Bug real corregido: antes, sin ningún entreno con GPS en la
-    // comunidad, se mostraba un estado de texto en vez de mapa -- ahora el
-    // mapa se monta igual (initComunidadEvents.js le pasa defaultView,
-    // centrado en Murcia, ver COMMUNITY_MAP_DEFAULT_CENTER), listo para
-    // cuando aparezcan rutas reales. ComunidadMapLegend() ya devuelve ""
-    // sola cuando legendEntries está vacío (punto 6 de la especificación
-    // original), así que no hace falta ningún caso especial aquí.
+    if (cards.length === 0) {
+        return ComunidadMapasState("solar:map-point-wave-bold-duotone", "Todavía no hay recorridos con GPS en la comunidad.");
+    }
+
     return `
 
-        <div class="comunidad-map-wrap">
+        <div class="comunidad-route-list">
 
-            ${RouteMapContainer("comunidad-map")}
-
-            ${ComunidadMapLegend(legendEntries)}
+            ${cards.map((entreno, index) => ComunidadRouteCard(entreno, index)).join("")}
 
         </div>
 

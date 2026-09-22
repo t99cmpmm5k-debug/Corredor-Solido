@@ -1,15 +1,13 @@
 import "./ComunidadHero.css";
 
 import { themeManager } from "../../../theme/themeManager.js";
-import { RUNNING_IMAGES } from "../../../assets/running";
+import { COMUNIDAD_IMAGES } from "../../../assets/comunidad";
 
 // Mismo cascarón foto-de-fondo + overlay + título anclado abajo que
 // CarrerasHero.js/RunningHeader.js/GymHeader.js (themeManager decide el
-// tema, un mapa de imágenes por tema decide la foto) -- Comunidad no tiene
-// su propio set de fotos propio (pedido explícito: no generar/descargar
-// una imagen nueva sin confirmar antes), así que reutiliza tal cual el de
-// Running (RUNNING_IMAGES): "imagen de running genérica" ya coherente con
-// el resto de heroes de la app, sin inventar un archivo nuevo.
+// tema, un mapa de imágenes por tema decide la foto) -- set de fotos
+// propio de Comunidad (COMUNIDAD_IMAGES), ya no las de Running usadas como
+// placeholder temporal mientras no existían.
 export function ComunidadHero() {
 
     const theme = themeManager.getTheme();
@@ -18,7 +16,7 @@ export function ComunidadHero() {
 
         <header class="comunidad-hero">
 
-            <img class="comunidad-hero-background-image" src="${RUNNING_IMAGES[theme.id]}" alt="">
+            <img class="comunidad-hero-background-image" src="${COMUNIDAD_IMAGES[theme.id]}" alt="">
 
             <div class="comunidad-hero-overlay"></div>
 

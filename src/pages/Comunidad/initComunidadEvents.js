@@ -1,54 +1,53 @@
 import { rerender } from "../../core/router.js";
 import { setComunidadTab, getComunidadTab, loadComunidadEntrenos, getComunidadEntrenos, retryComunidadEntrenos } from "./comunidadStore.js";
 import { mountRouteMap, unmountRouteMap } from "../../components/RouteMap/RouteMap.js";
-import { buildCommunitySegments, COMMUNITY_MAP_MIN_ZOOM, COMMUNITY_MAP_DEFAULT_CENTER } from "./communityMapData.js";
+import { ROUTE_COLOR_NORMAL } from "../Running/routeMapPaceColoring.js";
+import { buildCommunityRouteCards } from "./communityMapData.js";
 
-// Misma instancia única con destrucción explícita en cada render que
-// activeRouteMap/activeFullscreenRouteMap en Running/initRunningEvents.js
-// -- render() reemplaza TODO app.innerHTML en cada pantalla (incluidas las
-// que no son Comunidad), así que el contenedor DOM de una instancia
-// anterior puede dejar de existir sin que el objeto L.Map en sí se
-// destruya solo (sus listeners de window/resize seguirían colgados).
-let activeComunidadMap = null;
+// Un mapa pequeño POR TARJETA (a diferencia del mapa único agregado que
+// tenía esta pantalla antes) -- array, no una única instancia, con la
+// misma destrucción explícita en cada render que activeRouteMap en
+// Running/initRunningEvents.js: render() reemplaza TODO app.innerHTML en
+// cada pantalla, así que los contenedores DOM de la tanda anterior pueden
+// dejar de existir sin que los objetos L.Map en sí se destruyan solos (sus
+// listeners de window/resize seguirían colgados).
+let activeComunidadMaps = [];
 
-function initComunidadMap() {
+function initComunidadMaps() {
 
-    if (activeComunidadMap) {
-        unmountRouteMap(activeComunidadMap);
-        activeComunidadMap = null;
-    }
-
-    const container = document.getElementById("comunidad-map");
-    if (!container) return;
+    activeComunidadMaps.forEach(unmountRouteMap);
+    activeComunidadMaps = [];
 
     const { status, entrenos } = getComunidadEntrenos();
     if (status !== "ready") return;
 
-    // Punto "comunidad vacía" del fix de zoom: segments puede venir vacío
-    // (nadie tiene todavía un entreno con GPS) -- el mapa se monta igual,
-    // con la vista fija de COMMUNITY_MAP_DEFAULT_CENTER (ver mountRouteMap/
-    // defaultView en RouteMap.js), en vez de no mostrar nada.
-    const segments = buildCommunitySegments(entrenos);
+    // Mismo orden que ComunidadMapasView.js (buildCommunityRouteCards) --
+    // el índice de esta lista es el mismo que usó esa vista para generar
+    // el id "comunidad-route-map-N" de cada tarjeta, una única fuente de
+    // verdad para la correspondencia tarjeta <-> contenedor.
+    buildCommunityRouteCards(entrenos).forEach((entreno, index) => {
 
-    // interactive:true directamente (a diferencia del mapa pequeño de un
-    // entreno individual) -- aquí el mapa ES el contenido principal de la
-    // pantalla, no una miniatura que abre un modo pantalla completa
-    // aparte. Sin markers ni routeTrace propios ("[]"/"[]" de más abajo):
-    // las marcas de km y de inicio/fin son de UN entreno concreto, no
-    // tienen sentido con decenas de rutas de gente distinta mezcladas.
-    // minZoom/defaultView -- ver comentarios junto a COMMUNITY_MAP_MIN_ZOOM/
-    // COMMUNITY_MAP_DEFAULT_CENTER en communityMapData.js.
-    mountRouteMap(container, segments, [], [], {
-        interactive: true,
-        minZoom: COMMUNITY_MAP_MIN_ZOOM,
-        defaultView: { center: COMMUNITY_MAP_DEFAULT_CENTER, zoom: COMMUNITY_MAP_MIN_ZOOM }
-    }).then(map => {
+        const container = document.getElementById(`comunidad-route-map-${index}`);
+        if (!container) return;
 
-        if (document.body.contains(container)) {
-            activeComunidadMap = map;
-        } else {
-            unmountRouteMap(map);
-        }
+        // interactive:false, sin markers/minZoom/defaultView -- "fotografía"
+        // fija de un único recorrido, exactamente el mismo modo pequeño que
+        // ya usa el mapa de la ficha de un entreno propio (RunningDetailView.js
+        // vía initRunningEvents.js), nunca el modo pantalla completa. Color
+        // fijo (ROUTE_COLOR_NORMAL) y no por ritmo real: /api/community/entrenos
+        // no manda `splits` (whitelist explícita en toPublicEntreno, server/
+        // src/routes/community.js), así que no hay datos por km de los que
+        // derivar un degradado -- mismo color que usaría el mapa de un entreno
+        // propio sin splits suficientes (ver el fallback en initRunningEvents.js).
+        mountRouteMap(container, [{ latlngs: entreno.routeTrace.map(p => [p.lat, p.lon]), color: ROUTE_COLOR_NORMAL }], [], entreno.routeTrace).then(map => {
+
+            if (document.body.contains(container)) {
+                activeComunidadMaps.push(map);
+            } else {
+                unmountRouteMap(map);
+            }
+
+        });
 
     });
 
@@ -81,6 +80,6 @@ export function initComunidadEvents() {
         retryButton.addEventListener("click", retryComunidadEntrenos);
     }
 
-    initComunidadMap();
+    initComunidadMaps();
 
 }

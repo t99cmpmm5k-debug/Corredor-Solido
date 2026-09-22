@@ -1,115 +1,60 @@
 import { describe, it, expect } from "vitest";
-import { buildCommunitySegments, buildCommunityLegendEntries, COMMUNITY_MAP_MIN_ZOOM, COMMUNITY_MAP_DEFAULT_CENTER } from "./communityMapData.js";
-import { colorForAlias } from "./communityMapColors.js";
+import { buildCommunityRouteCards } from "./communityMapData.js";
 
-const withTrace = (alias, id) => ({
+const withTrace = (alias, id, date) => ({
     alias,
     id,
+    date,
     routeTrace: [{ lat: 37.9, lon: -1.1 }, { lat: 37.91, lon: -1.11 }, { lat: 37.92, lon: -1.12 }]
 });
 
-const withoutTrace = alias => ({ alias, id: `${alias}-no-gps`, routeTrace: null });
+const withoutTrace = alias => ({ alias, id: `${alias}-no-gps`, date: "2026-09-01", routeTrace: null });
 
-describe("buildCommunitySegments -- un segmento de polilínea por entreno con GPS", () => {
+describe("buildCommunityRouteCards -- una tarjeta por entreno con GPS, de cualquier usuario", () => {
 
     it("descarta entrenos sin routeTrace, con un único punto, o sin el campo", () => {
 
         const entrenos = [
             withoutTrace("Rafa"),
-            { alias: "Ana", id: "w1", routeTrace: [{ lat: 1, lon: 1 }] },
-            { alias: "Luis", id: "w2" }
+            { alias: "Ana", id: "w1", date: "2026-09-01", routeTrace: [{ lat: 1, lon: 1 }] },
+            { alias: "Luis", id: "w2", date: "2026-09-01" }
         ];
 
-        expect(buildCommunitySegments(entrenos)).toEqual([]);
+        expect(buildCommunityRouteCards(entrenos)).toEqual([]);
 
     });
 
-    it("un usuario con varios entrenos con GPS produce varios segmentos, todos con su mismo color", () => {
+    it("un usuario con varios entrenos con GPS produce varias tarjetas", () => {
 
-        const entrenos = [withTrace("Rafa", "w1"), withTrace("Rafa", "w2")];
-        const segments = buildCommunitySegments(entrenos);
+        const entrenos = [withTrace("Rafa", "w1", "2026-09-01"), withTrace("Rafa", "w2", "2026-09-02")];
 
-        expect(segments).toHaveLength(2);
-        expect(segments[0].color).toBe(colorForAlias("Rafa"));
-        expect(segments[1].color).toBe(colorForAlias("Rafa"));
+        expect(buildCommunityRouteCards(entrenos)).toHaveLength(2);
 
     });
 
-    it("convierte {lat,lon} a pares [lat,lon] en el orden real del recorrido", () => {
+    it("ordena por fecha descendente, mezclando entrenos de todos los usuarios", () => {
 
-        const segments = buildCommunitySegments([withTrace("Rafa", "w1")]);
+        const entrenos = [
+            withTrace("Ana", "w1", "2026-09-01"),
+            withTrace("Rafa", "w2", "2026-09-05"),
+            withTrace("Luis", "w3", "2026-09-03")
+        ];
 
-        expect(segments[0].latlngs).toEqual([[37.9, -1.1], [37.91, -1.11], [37.92, -1.12]]);
-
-    });
-
-    it("dos usuarios distintos obtienen colores distintos", () => {
-
-        const segments = buildCommunitySegments([withTrace("Rafa", "w1"), withTrace("annamateoalca", "w2")]);
-
-        expect(segments[0].color).not.toBe(segments[1].color);
-
-    });
-
-});
-
-describe("buildCommunityLegendEntries -- una fila por alias, nunca por entreno", () => {
-
-    it("un usuario con varios entrenos con GPS aparece una sola vez en la leyenda", () => {
-
-        const entries = buildCommunityLegendEntries([withTrace("Rafa", "w1"), withTrace("Rafa", "w2")]);
-
-        expect(entries).toEqual([{ alias: "Rafa", color: colorForAlias("Rafa") }]);
+        expect(buildCommunityRouteCards(entrenos).map(e => e.alias)).toEqual(["Rafa", "Luis", "Ana"]);
 
     });
 
     it("un usuario sin ningún entreno con GPS no aparece -- ni hueco ni error", () => {
 
-        const entries = buildCommunityLegendEntries([withTrace("Rafa", "w1"), withoutTrace("SinGPS")]);
+        const entrenos = [withTrace("Rafa", "w1", "2026-09-01"), withoutTrace("SinGPS")];
 
-        expect(entries.map(e => e.alias)).toEqual(["Rafa"]);
-
-    });
-
-    it("orden alfabético, estable entre llamadas", () => {
-
-        const entries = buildCommunityLegendEntries([withTrace("Zoe", "w1"), withTrace("Ana", "w2"), withTrace("Luis", "w3")]);
-
-        expect(entries.map(e => e.alias)).toEqual(["Ana", "Luis", "Zoe"]);
+        expect(buildCommunityRouteCards(entrenos).map(e => e.alias)).toEqual(["Rafa"]);
 
     });
 
     it("sin ningún entreno con GPS en toda la comunidad, devuelve una lista vacía", () => {
 
-        expect(buildCommunityLegendEntries([withoutTrace("Rafa"), withoutTrace("Ana")])).toEqual([]);
-
-    });
-
-});
-
-// Bug real corregido: fitBounds encuadrando rutas de usuarios muy
-// alejados entre sí (ej. Murcia/Almería) dejaba cada recorrido como un
-// punto -- estas 2 constantes son el suelo de zoom y la vista por defecto
-// que usa initComunidadEvents.js/RouteMap.js para evitarlo (ver sus
-// comentarios). Solo se comprueba la forma/rango real, no el valor exacto
-// -- ese es un ajuste de diseño, no un contrato que testear al dígito.
-describe("constantes de encuadre del mapa agregado", () => {
-
-    it("COMMUNITY_MAP_MIN_ZOOM es una escala de ciudad, no de región entera", () => {
-
-        expect(COMMUNITY_MAP_MIN_ZOOM).toBeGreaterThanOrEqual(10);
-        expect(COMMUNITY_MAP_MIN_ZOOM).toBeLessThanOrEqual(15);
-
-    });
-
-    it("COMMUNITY_MAP_DEFAULT_CENTER es un par [lat, lon] real dentro de la Región de Murcia", () => {
-
-        const [lat, lon] = COMMUNITY_MAP_DEFAULT_CENTER;
-
-        expect(lat).toBeGreaterThan(37);
-        expect(lat).toBeLessThan(39);
-        expect(lon).toBeGreaterThan(-2);
-        expect(lon).toBeLessThan(0);
+        expect(buildCommunityRouteCards([withoutTrace("Rafa"), withoutTrace("Ana")])).toEqual([]);
 
     });
 
