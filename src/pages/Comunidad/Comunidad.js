@@ -6,7 +6,6 @@ import {
     getComunidadActivityTypeFilter, COMUNIDAD_TABS
 } from "./comunidadStore.js";
 import { ComunidadHero } from "./components/ComunidadHero.js";
-import { ComunidadMapasView } from "./components/ComunidadMapasView.js";
 import { ComunidadRankingView } from "./components/ComunidadRankingView.js";
 import { ComunidadActividadView } from "./components/ComunidadActividadView.js";
 import { RouteMapFullscreenOverlay, RouteMapLegend } from "../../components/RouteMap/RouteMap.js";
@@ -15,7 +14,6 @@ import { getMyAlias } from "../Profile/profileStore.js";
 
 const TAB_LABELS = {
     actividad: "Actividad",
-    mapas: "Mapas",
     ranking: "Ranking"
 };
 
@@ -24,9 +22,11 @@ const TAB_LABELS = {
 // (GymExerciseDetailView.css: HISTORIAL/GRÁFICAS), no el de
 // .carreras-tabs (esas SÍ son píldoras independientes, pensadas para
 // poder crecer y hacer scroll horizontal si hiciera falta -- aquí son
-// siempre exactamente 3, un segmento fijo). Las 3 son ya funcionales
-// (Actividad Fase 3a, Mapas Fase 1, Ranking Fase 2) -- sin likes/
-// comentarios todavía en Actividad, eso llega en las Fases 3b/3c.
+// siempre exactamente 2, un segmento fijo). Mapas existió como pestaña
+// propia (Fase 1) pero se fusionó dentro de Actividad (Fase 3a la dejó
+// como un subconjunto exacto: solo entrenos con GPS, sin filtro de tipo).
+// Las 2 son ya funcionales -- sin likes/comentarios todavía en Actividad,
+// eso llega en las Fases 3b/3c.
 function ComunidadTabs(activeTab) {
 
     return `
@@ -53,7 +53,7 @@ function ComunidadTabs(activeTab) {
 
 }
 
-// Mismo escapeHtml local que ya usa ComunidadMapasView.js/updateNotifier.js
+// Mismo escapeHtml local que ya usa ComunidadActividadView.js/updateNotifier.js
 // por el mismo motivo -- el alias es texto libre de OTRO usuario.
 function escapeHtml(text) {
 
@@ -117,7 +117,7 @@ function ComunidadRouteDetailFullscreen(alias, detail) {
 // "vuelve a la lista sin abrir nada... sin romper la navegación") -- se
 // limpia solo (ver ROUTE_DETAIL_ERROR_TIMEOUT_MS en comunidadStore.js), sin
 // botón ni acción: no hay nada que reintentar de un solo entreno concreto,
-// a diferencia del error de la lista completa (ComunidadMapasView.js).
+// a diferencia del error de la lista completa (ComunidadActividadView.js).
 function ComunidadRouteDetailError(message) {
 
     return `<div class="comunidad-detail-toast">${escapeHtml(message)}</div>`;
@@ -137,16 +137,15 @@ function ComunidadRouteDetailOverlay() {
 
 }
 
-// Las 3 pestañas son ya funcionales, todas sobre LA MISMA lista de
-// entrenos ya cargada (getComunidadEntrenos(), una única petición real por
-// sesión) -- ninguna dispara una llamada propia al backend. Ranking añade
-// el alias propio (getMyAlias(), Profile/profileStore.js) para resaltar la
-// fila del usuario -- null si todavía no configuró uno en Perfil, caso en
-// el que simplemente no se resalta ninguna fila (nunca se adivina cuál
-// sería). Actividad añade su propio filtro por tipo (comunidadStore.js).
+// Las 2 pestañas son ya funcionales, sobre LA MISMA lista de entrenos ya
+// cargada (getComunidadEntrenos(), una única petición real por sesión) --
+// ninguna dispara una llamada propia al backend. Ranking añade el alias
+// propio (getMyAlias(), Profile/profileStore.js) para resaltar la fila del
+// usuario -- null si todavía no configuró uno en Perfil, caso en el que
+// simplemente no se resalta ninguna fila (nunca se adivina cuál sería).
+// Actividad añade su propio filtro por tipo (comunidadStore.js).
 function ComunidadTabContent(activeTab) {
 
-    if (activeTab === "mapas") return ComunidadMapasView(getComunidadEntrenos());
     if (activeTab === "ranking") return ComunidadRankingView(getComunidadEntrenos(), getMyAlias().value ?? null);
 
     return ComunidadActividadView(getComunidadEntrenos(), getComunidadActivityTypeFilter());
@@ -157,16 +156,16 @@ export function Comunidad() {
 
     const activeTab = getComunidadTab();
 
-    // Bug real corregido: el mapa fullscreen del detalle y la lista de
-    // tarjetas de Mapas (cada una con su propio mapa pequeño, mismo
-    // mountRouteMap() -- ver ComunidadMapasView.js) son MUTUAMENTE
-    // EXCLUYENTES, mismo criterio que ya usa RunningDetailView.js para su
-    // propio mapa pequeño vs fullscreen. Sin esto, la lista se quedaba
-    // montada (con sus propias instancias de Leaflet vivas) DEBAJO del
-    // overlay -- su control de atribución (z-index alto a propósito de
-    // Leaflet, por encima del z-index del propio overlay al no compartir
-    // contexto de apilamiento) se colaba por encima, viéndose como una
-    // segunda atribución de Esri duplicada a media altura de la pantalla.
+    // Bug real corregido: el mapa fullscreen del detalle y el contenido de
+    // la tab activa (Actividad -- cada tarjeta con GPS con su propio mapa
+    // pequeño, mismo mountRouteMap()) son MUTUAMENTE EXCLUYENTES, mismo
+    // criterio que ya usa RunningDetailView.js para su propio mapa pequeño
+    // vs fullscreen. Sin esto, la lista se quedaba montada (con sus propias
+    // instancias de Leaflet vivas) DEBAJO del overlay -- su control de
+    // atribución (z-index alto a propósito de Leaflet, por encima del
+    // z-index del propio overlay al no compartir contexto de apilamiento)
+    // se colaba por encima, viéndose como una segunda atribución de Esri
+    // duplicada a media altura de la pantalla.
     const routeDetailOpen = getComunidadRouteDetail().status === "ready";
 
     return `

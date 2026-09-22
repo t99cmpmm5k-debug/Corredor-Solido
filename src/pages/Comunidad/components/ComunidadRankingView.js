@@ -1,11 +1,10 @@
 import "./ComunidadRankingView.css";
-import "./ComunidadMapasView.css";
 
 import { formatSecondsAsClock, formatKm } from "../../../utils/format.js";
 import { buildFastestPaceRanking, buildZ2Ranking, buildConsistencyRanking, buildLongRunRanking } from "../communityRanking.js";
 
-// Mismo escapeHtml local que ya usa ComunidadMapasView.js/Comunidad.js por
-// el mismo motivo -- el alias es texto libre de OTRO usuario.
+// Mismo escapeHtml local que ya usa Comunidad.js por el mismo motivo -- el
+// alias es texto libre de OTRO usuario.
 function escapeHtml(text) {
 
     return String(text)
@@ -20,11 +19,12 @@ function formatPercent(value) {
     return `${value.toFixed(1).replace(".", ",")}%`;
 }
 
-// Mismos 2 estados no-tabla (cargando/error) que ya usa Mapas, reutilizando
-// literalmente sus clases (.comunidad-empty/.comunidad-retry-button,
-// ComunidadMapasView.css) -- misma data comunidadStore.entrenosState para
-// las dos pestañas, así que el mismo botón "Reintentar" ya cableado en
-// initComunidadEvents.js sirve aquí sin tocar nada más.
+// Mismos 2 estados no-tabla (cargando/error) que ya usa Actividad,
+// reutilizando literalmente sus clases (.comunidad-empty/.comunidad-retry-button,
+// Comunidad.css -- compartidas porque la página siempre está montada) --
+// misma data comunidadStore.entrenosState para las dos pestañas, así que
+// el mismo botón "Reintentar" ya cableado en initComunidadEvents.js sirve
+// aquí sin tocar nada más.
 function ComunidadRankingState(icon, text, actionHtml = "") {
 
     return `
@@ -91,7 +91,7 @@ function ComunidadRankingTable(title, rows, formatValue, myAlias) {
 }
 
 // entrenosState: {status, entrenos} de comunidadStore.js -- LA MISMA lista
-// ya cargada para Mapas (sin ninguna llamada nueva al backend, pedido
+// ya cargada para Actividad (sin ninguna llamada nueva al backend, pedido
 // explícito de esta fase); myAlias: string|null (getMyAlias().value).
 export function ComunidadRankingView(entrenosState, myAlias) {
 

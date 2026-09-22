@@ -2,12 +2,16 @@ import { getEntrenosComunidad, getEntrenoComunidadDetail } from "../../data/comm
 import { getToken } from "../../data/authStore.js";
 import { rerender } from "../../core/router.js";
 
-// Orden real del selector (Actividad | Mapas | Ranking, ver mockup) --
-// las 3 pestañas son ya funcionales (Actividad Fase 3a, Mapas Fase 1,
-// Ranking Fase 2). Mapas se queda como tab por defecto (más abajo).
-export const COMUNIDAD_TABS = ["actividad", "mapas", "ranking"];
+// Orden real del selector (Actividad | Ranking, ver mockup original) --
+// Mapas existió como pestaña propia (Fase 1) pero era un subconjunto
+// exacto de Actividad (solo entrenos con GPS, sin filtro de tipo) desde
+// que Actividad ganó su propio feed con mapa/placeholder por entreno
+// (Fase 3a) -- fusionada dentro de Actividad, ya no es una sección aparte.
+// Actividad es la tab por defecto (más abajo), coherente con el mockup
+// original.
+export const COMUNIDAD_TABS = ["actividad", "ranking"];
 
-let activeTab = "mapas";
+let activeTab = "actividad";
 
 export function getComunidadTab() {
     return activeTab;
@@ -35,14 +39,14 @@ export function setComunidadActivityTypeFilter(type) {
     activityTypeFilter = type || "";
 }
 
-// La pantalla siempre arranca en "Mapas" al entrar desde la navegación --
-// mismo criterio que resetPlanView()/resetCarrerasView() (BottomNavigation.js):
+// La pantalla siempre arranca en "Actividad" al entrar desde la navegación
+// -- mismo criterio que resetPlanView()/resetCarrerasView() (BottomNavigation.js):
 // lo que estuvieras viendo antes no persiste, incluido el filtro de
 // Actividad. No toca entrenosState (más abajo) -- los datos de la
 // comunidad no dependen de qué sub-apartado estés mirando, no hace falta
 // recargarlos por volver a entrar en la tab.
 export function resetComunidadView() {
-    activeTab = "mapas";
+    activeTab = "actividad";
     activityTypeFilter = "";
 }
 
@@ -110,7 +114,7 @@ export function getComunidadRouteDetailError() {
     return lastError;
 }
 
-// entreno: {id, alias} de la tarjeta pulsada (ComunidadMapasView.js) -- solo
+// entreno: {id, alias} de la tarjeta pulsada (ComunidadActividadView.js) -- solo
 // esos dos campos hacen falta aquí, el resto (distancia/ritmo/duración) ya
 // se pintó en la propia tarjeta y no hace falta repetirlo en el estado.
 export function openComunidadRouteDetail(entreno) {

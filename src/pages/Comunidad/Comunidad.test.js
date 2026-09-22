@@ -9,7 +9,7 @@ const getMyAliasMock = vi.fn();
 const getComunidadActivityTypeFilterMock = vi.fn();
 
 vi.mock("./comunidadStore.js", () => ({
-    COMUNIDAD_TABS: ["actividad", "mapas", "ranking"],
+    COMUNIDAD_TABS: ["actividad", "ranking"],
     getComunidadTab: () => getComunidadTabMock(),
     getComunidadEntrenos: () => getComunidadEntrenosMock(),
     getComunidadRouteDetail: () => getComunidadRouteDetailMock(),
@@ -22,24 +22,27 @@ vi.mock("../Profile/profileStore.js", () => ({
 }));
 
 // Bug real corregido: el mapa fullscreen del detalle (RouteMapFullscreenOverlay)
-// y la lista de tarjetas de Mapas (cada una con su propio mapa pequeño,
+// y el feed de Actividad (cada tarjeta con GPS con su propio mapa pequeño,
 // mountRouteMap() vivo) coexistían siempre en el DOM -- el control de
 // atribución de Leaflet de una tarjeta debajo se colaba por encima del
 // overlay (z-index de Leaflet, ajeno al contexto de apilamiento del propio
 // overlay), viéndose como una atribución de Esri duplicada a media altura.
 // Mismo criterio que RunningDetailView.js: mapa pequeño y fullscreen deben
 // ser mutuamente excluyentes en el DOM, nunca los dos montados a la vez.
-describe("Comunidad -- lista de Mapas y mapa fullscreen del detalle son mutuamente excluyentes", () => {
+// (Bug encontrado originalmente cuando esta pantalla se llamaba Mapas --
+// misma protección, ahora en Actividad tras fusionar las dos pestañas.)
+describe("Comunidad -- feed de Actividad y mapa fullscreen del detalle son mutuamente excluyentes", () => {
 
     beforeEach(() => {
-        getComunidadTabMock.mockReset().mockReturnValue("mapas");
+        getComunidadTabMock.mockReset().mockReturnValue("actividad");
         getComunidadEntrenosMock.mockReset().mockReturnValue({
             status: "ready",
-            entrenos: [{ alias: "Rafa", id: "w1", date: "2026-09-20", routeTrace: [{ lat: 1, lon: 1 }, { lat: 2, lon: 2 }] }]
+            entrenos: [{ alias: "Rafa", id: "w1", type: "long", date: "2026-09-20", routeTrace: [{ lat: 1, lon: 1 }, { lat: 2, lon: 2 }] }]
         });
         getComunidadRouteDetailMock.mockReset().mockReturnValue({ status: "closed" });
         getComunidadRouteDetailErrorMock.mockReset().mockReturnValue(null);
         getMyAliasMock.mockReset().mockReturnValue({ status: "idle", value: null });
+        getComunidadActivityTypeFilterMock.mockReset().mockReturnValue("");
     });
 
     it("sin ningún detalle abierto, pinta la lista de tarjetas con su propio mapa", async () => {
@@ -91,7 +94,7 @@ describe("Comunidad -- pestaña Ranking (Fase 2)", () => {
         getComunidadRouteDetailErrorMock.mockReset().mockReturnValue(null);
     });
 
-    it("pinta las 4 tablas de Ranking a partir de la misma lista de entrenos que Mapas", async () => {
+    it("pinta las 4 tablas de Ranking a partir de la misma lista de entrenos que Actividad", async () => {
 
         getComunidadEntrenosMock.mockReset().mockReturnValue({
             status: "ready",
@@ -135,7 +138,7 @@ describe("Comunidad -- pestaña Actividad (Fase 3a)", () => {
         getComunidadActivityTypeFilterMock.mockReset().mockReturnValue("");
     });
 
-    it("pinta el feed con entrenos sin GPS incluidos -- a diferencia de Mapas", async () => {
+    it("pinta el feed con entrenos sin GPS incluidos -- placeholder en vez de mapa", async () => {
 
         getComunidadEntrenosMock.mockReset().mockReturnValue({
             status: "ready",

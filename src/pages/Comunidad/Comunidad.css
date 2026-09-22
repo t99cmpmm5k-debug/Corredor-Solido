@@ -24,8 +24,9 @@
 }
 
 /* =========================
-   CÁPSULA DE SUB-APARTADOS (Actividad / Mapas / Ranking) -- ajuste visual
-   para acercarse al mockup aprobado: antes eran píldoras sueltas (mismo
+   CÁPSULA DE SUB-APARTADOS (Actividad / Ranking, Mapas fusionada dentro de
+   Actividad) -- ajuste visual para acercarse al mockup aprobado: antes eran
+   píldoras sueltas (mismo
    lenguaje que .carreras-tab), ahora una única cápsula que las engloba,
    mismo patrón que .gym-detail-tabs/.gym-detail-tab
    (GymExerciseDetailView.css: HISTORIAL/GRÁFICAS) -- un fondo/borde
@@ -87,6 +88,72 @@
     background:var(--color-primary);
 
     color:var(--button-text);
+
+}
+
+/* Estados no-lista compartidos por Actividad y Ranking (cargando / error /
+   sin datos) -- mismo lenguaje que .carreras-empty (Carreras.css): icono +
+   texto centrado en tarjeta glass, nunca un hueco en blanco. Viven aquí
+   (página, siempre cargada) en vez de en el CSS propio de cada vista
+   porque las dos las usan por igual -- antes vivían en el CSS de la
+   extinta pestaña Mapas, fusionada dentro de Actividad. */
+.comunidad-empty{
+
+    display:flex;
+
+    flex-direction:column;
+
+    align-items:center;
+
+    gap:12px;
+
+    padding:56px 24px;
+
+    border-radius:var(--radius-xl);
+
+    background:color-mix(in srgb, var(--card-background) 70%, transparent);
+
+    border:1px solid var(--card-border);
+
+    text-align:center;
+
+}
+
+.comunidad-empty iconify-icon{
+
+    font-size:52px;
+
+    color:var(--color-primary);
+
+}
+
+.comunidad-empty p{
+
+    color:var(--text-secondary);
+
+    font-size:.9rem;
+
+}
+
+.comunidad-retry-button{
+
+    margin-top:4px;
+
+    padding:10px 20px;
+
+    border-radius:999px;
+
+    border:1px solid color-mix(in srgb, var(--color-primary) 35%, transparent);
+
+    background:color-mix(in srgb, var(--color-primary) 14%, transparent);
+
+    color:var(--color-primary);
+
+    font-size:.85rem;
+
+    font-weight:700;
+
+    cursor:pointer;
 
 }
 

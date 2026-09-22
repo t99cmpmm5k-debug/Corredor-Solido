@@ -1,5 +1,4 @@
 import "./ComunidadActividadView.css";
-import "./ComunidadMapasView.css";
 
 import { hasRouteTrace, RouteMapContainer } from "../../../components/RouteMap/RouteMap.js";
 import { formatDayMonth } from "../../../utils/date.js";
@@ -7,8 +6,8 @@ import { formatKm, formatSecondsAsClock } from "../../../utils/format.js";
 import { RUNNING_WORKOUT_TYPES } from "../../../data/runningWorkoutTypes.js";
 import { buildCommunityFeedCards } from "../communityFeedData.js";
 
-// Mismo escapeHtml local que ya usa ComunidadMapasView.js/Comunidad.js por
-// el mismo motivo -- el alias es texto libre de OTRO usuario.
+// Mismo escapeHtml local que ya usa Comunidad.js por el mismo motivo -- el
+// alias es texto libre de OTRO usuario.
 function escapeHtml(text) {
 
     return String(text)
@@ -18,9 +17,8 @@ function escapeHtml(text) {
 
 }
 
-// Mismo lenguaje visual que ComunidadMapasState() (ComunidadMapasView.js) --
-// duplicado a propósito, no exportado desde allí: es una pieza pequeña, y
-// las dos vistas pueden divergir en su texto sin acoplarse una a la otra.
+// .comunidad-empty vive en Comunidad.css (compartida con Ranking, la
+// pestaña siempre está montada así que ya está cargada).
 function ComunidadActividadState(icon, text, actionHtml = "") {
 
     return `
@@ -109,16 +107,13 @@ function ComunidadActivityPlaceholder(type) {
 
 // El contenedor id="comunidad-feed-map-N" (solo si hasRouteTrace) lo monta
 // initComunidadEvents.js -- mismo mountRouteMap() en modo pequeño que ya
-// usa Mapas, namespace de id propio (comunidad-feed-map, no comunidad-route-map)
-// para no chocar con el de ComunidadMapasView.js aunque las dos vistas nunca
-// coexistan en el DOM a la vez (mismo motivo por el que Ranking/Mapas/
-// Actividad son pestañas mutuamente excluyentes).
+// usa el mapa de un entreno propio (RunningDetailView.js).
 //
 // data-action="open-comunidad-route-detail" SOLO si tiene GPS -- reutiliza
-// tal cual el mismo mapa fullscreen ya construido para Mapas (mismo
-// data-entreno-id/-alias, mismo listener en initComunidadEvents.js, cero
-// cableado nuevo). Un entreno sin ruta no tiene detalle con mapa que abrir,
-// así que no es pulsable.
+// tal cual el mismo mapa fullscreen ya construido para el detalle de un
+// entreno de otro usuario (mismo data-entreno-id/-alias, mismo listener en
+// initComunidadEvents.js, cero cableado nuevo). Un entreno sin ruta no
+// tiene detalle con mapa que abrir, así que no es pulsable.
 function ComunidadActivityCard(entreno, index) {
 
     const pace = entreno.avgPaceSecPerKm != null ? `${formatSecondsAsClock(entreno.avgPaceSecPerKm)}/km` : "—";
@@ -168,8 +163,8 @@ function ComunidadActivityCard(entreno, index) {
 }
 
 // entrenosState: {status, entrenos} de comunidadStore.js -- LA MISMA carga
-// que ya usa Mapas (ninguna petición nueva). typeFilter: "" (Todos) o un id
-// real de RUNNING_WORKOUT_TYPES.
+// que también usa Ranking (ninguna petición nueva por pestaña). typeFilter:
+// "" (Todos) o un id real de RUNNING_WORKOUT_TYPES.
 export function ComunidadActividadView(entrenosState, typeFilter) {
 
     const { status, entrenos } = entrenosState;

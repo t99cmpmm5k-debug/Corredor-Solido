@@ -1,5 +1,5 @@
 /* 4 tablas apiladas -- mismo espaciado vertical que .comunidad-route-list
-   (ComunidadMapasView.css), coherente entre las dos pestañas de Comunidad. */
+   (ComunidadActividadView.css), coherente entre las dos pestañas de Comunidad. */
 .comunidad-ranking-list{
 
     display:flex;

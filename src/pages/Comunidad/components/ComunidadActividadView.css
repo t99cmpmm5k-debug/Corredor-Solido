@@ -1,3 +1,156 @@
+/* Lista de tarjetas -- una por entreno de cualquier usuario, con o sin GPS
+   (a diferencia de la extinta pestaña Mapas, fusionada aquí: era un
+   subconjunto de este mismo feed, solo los que tenían GPS y sin filtro de
+   tipo), mezclando gente distinta en orden cronológico (ver
+   buildCommunityFeedCards en communityFeedData.js). */
+.comunidad-route-list{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:14px;
+
+}
+
+/* Toda la tarjeta con GPS es un único objetivo táctil (pulsarla abre el
+   detalle fullscreen con splits reales, ver openComunidadRouteDetail() en
+   comunidadStore.js/initComunidadEvents.js) -- una sin GPS no lo es (ver
+   .is-routeless más abajo), a diferencia de RouteMapTapTarget (ese abre SU
+   PROPIO overlay fullscreen con la misma traza sin colorear; aquí hace
+   falta pedir el detalle real al servidor primero, así que el gesto vive
+   en la tarjeta entera). */
+.comunidad-route-card{
+
+    display:flex;
+
+    flex-direction:column;
+
+    border-radius:var(--radius-xl);
+
+    overflow:hidden;
+
+    background:color-mix(in srgb, var(--card-background) 70%, transparent);
+
+    border:1px solid var(--card-border);
+
+    box-shadow:0 8px 20px rgba(0,0,0,.18);
+
+    cursor:pointer;
+
+}
+
+/* Mapa PEQUEÑO individual de esta tarjeta -- mismo componente/modo que el
+   mapa pequeño de la ficha de un entreno propio (.route-map, RouteMap.css),
+   pero más bajo: 340px tiene sentido como "la fotografía" central de una
+   ficha a pantalla completa, aquí es solo una miniatura dentro de una lista
+   larga. Selector con más especificidad que .route-map para no tocar esa
+   regla compartida, que sigue rigiendo el resto de mapas de la app tal
+   cual. Sin cursor:pointer -- a diferencia de RouteMapTapTarget, esta
+   miniatura no abre ningún modo pantalla completa propio, es solo dato
+   visual de la tarjeta. */
+.comunidad-route-card .route-map{
+
+    height:160px;
+
+    border-radius:0;
+
+    border:none;
+
+    box-shadow:none;
+
+}
+
+/* Atribución de Esri (SATELLITE_ATTRIBUTION, RouteMap.js) más compacta SOLO
+   aquí -- a diferencia del mapa de 340px/fullscreen de un entreno propio,
+   esta miniatura de 160px no tiene margen de sobra para el mismo tamaño de
+   fuente sin que la franja de atribución se coma una parte grande del
+   alto real del mapa. Mismo texto completo (nunca uno recortado que
+   pudiera incumplir la licencia), solo más pequeño y con menos relleno --
+   más especificidad que la regla compartida de RouteMap.css, se aplica sin
+   tocarla. */
+.comunidad-route-card .route-map .leaflet-control-attribution{
+
+    padding:2px 5px;
+
+    font-size:9px;
+
+    line-height:1.25;
+
+}
+
+.comunidad-route-card-info{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:6px;
+
+    padding:14px 16px;
+
+}
+
+.comunidad-route-card-header{
+
+    display:flex;
+
+    align-items:baseline;
+
+    justify-content:space-between;
+
+    gap:10px;
+
+}
+
+.comunidad-route-card-alias{
+
+    min-width:0;
+
+    overflow:hidden;
+
+    text-overflow:ellipsis;
+
+    white-space:nowrap;
+
+    color:var(--text-primary);
+
+    font-size:.92rem;
+
+    font-weight:800;
+
+}
+
+.comunidad-route-card-date{
+
+    flex-shrink:0;
+
+    color:var(--text-secondary);
+
+    font-size:.72rem;
+
+    font-weight:700;
+
+    letter-spacing:.02em;
+
+}
+
+.comunidad-route-card-stats{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:14px;
+
+    color:var(--text-secondary);
+
+    font-size:.82rem;
+
+    font-weight:600;
+
+}
+
 /* Píldoras de filtro por tipo -- mismo lenguaje visual de "fila de chips
    horizontal, activo resaltado con var(--color-primary)" que ya usa
    Running (.type-filter-list/.type-filter-chip), reescrito aquí en vez de
@@ -64,9 +217,9 @@
 
 }
 
-/* Mismo hueco (altura) que .comunidad-route-card .route-map
-   (ComunidadMapasView.css) para que una tarjeta sin GPS mida igual que una
-   con mapa en la misma lista -- solo cambia el contenido: un icono grande
+/* Mismo hueco (altura) que .comunidad-route-card .route-map (arriba) para
+   que una tarjeta sin GPS mida igual que una con mapa en la misma lista --
+   solo cambia el contenido: un icono grande
    centrado en vez de un mapa real, nunca un hueco en blanco ni un mapa
    vacío fingido. */
 .comunidad-activity-placeholder{

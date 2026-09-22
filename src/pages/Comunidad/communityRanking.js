@@ -1,5 +1,5 @@
 // Fase 2 de Comunidad: 4 tablas de Ranking, todas calculadas en el cliente
-// a partir de la misma lista que ya trae Mapas (/api/community/entrenos) --
+// a partir de la misma lista que ya trae Actividad (/api/community/entrenos) --
 // ninguna llamada nueva al backend. Función pura por tabla (recibe el
 // array ya devuelto por la API, no toca comunidadStore.js) para poder
 // testear sin DOM, mismo criterio que communityMapData.js.

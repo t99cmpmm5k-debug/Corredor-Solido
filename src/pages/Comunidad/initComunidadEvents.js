@@ -7,64 +7,15 @@ import {
 import { mountRouteMap, unmountRouteMap, hasRouteTrace } from "../../components/RouteMap/RouteMap.js";
 import { ROUTE_COLOR_NORMAL, buildPaceColorSegments, buildKmMarkers } from "../Running/routeMapPaceColoring.js";
 import { chartSplits, MIN_SPLITS_FOR_CHART } from "../Running/components/RunningDetailView.js";
-import { buildCommunityRouteCards } from "./communityMapData.js";
 import { buildCommunityFeedCards } from "./communityFeedData.js";
 import { loadMyAlias } from "../Profile/profileStore.js";
 
-// Un mapa pequeño POR TARJETA (a diferencia del mapa único agregado que
-// tenía esta pantalla antes) -- array, no una única instancia, con la
-// misma destrucción explícita en cada render que activeRouteMap en
-// Running/initRunningEvents.js: render() reemplaza TODO app.innerHTML en
-// cada pantalla, así que los contenedores DOM de la tanda anterior pueden
-// dejar de existir sin que los objetos L.Map en sí se destruyan solos (sus
-// listeners de window/resize seguirían colgados).
-let activeComunidadMaps = [];
-
-function initComunidadMaps() {
-
-    activeComunidadMaps.forEach(unmountRouteMap);
-    activeComunidadMaps = [];
-
-    const { status, entrenos } = getComunidadEntrenos();
-    if (status !== "ready") return;
-
-    // Mismo orden que ComunidadMapasView.js (buildCommunityRouteCards) --
-    // el índice de esta lista es el mismo que usó esa vista para generar
-    // el id "comunidad-route-map-N" de cada tarjeta, una única fuente de
-    // verdad para la correspondencia tarjeta <-> contenedor.
-    buildCommunityRouteCards(entrenos).forEach((entreno, index) => {
-
-        const container = document.getElementById(`comunidad-route-map-${index}`);
-        if (!container) return;
-
-        // interactive:false, sin markers/minZoom/defaultView -- "fotografía"
-        // fija de un único recorrido, exactamente el mismo modo pequeño que
-        // ya usa el mapa de la ficha de un entreno propio (RunningDetailView.js
-        // vía initRunningEvents.js), nunca el modo pantalla completa. Color
-        // fijo (ROUTE_COLOR_NORMAL) y no por ritmo real: /api/community/entrenos
-        // no manda `splits` (whitelist explícita en toPublicEntreno, server/
-        // src/routes/community.js), así que no hay datos por km de los que
-        // derivar un degradado -- mismo color que usaría el mapa de un entreno
-        // propio sin splits suficientes (ver el fallback en initRunningEvents.js).
-        mountRouteMap(container, [{ latlngs: entreno.routeTrace.map(p => [p.lat, p.lon]), color: ROUTE_COLOR_NORMAL }], [], entreno.routeTrace).then(map => {
-
-            if (document.body.contains(container)) {
-                activeComunidadMaps.push(map);
-            } else {
-                unmountRouteMap(map);
-            }
-
-        });
-
-    });
-
-}
-
-// Mismo patrón que activeComunidadMaps de arriba, pero para el feed de
-// Actividad (Fase 3a) -- namespace de contenedor propio
-// ("comunidad-feed-map-N", ComunidadActividadView.js) e instancias propias,
-// nunca compartidas con las de Mapas aunque las dos vistas nunca coexistan
-// en el DOM a la vez.
+// Un mapa pequeño POR TARJETA con GPS en el feed de Actividad -- array, no
+// una única instancia, con la misma destrucción explícita en cada render
+// que activeRouteMap en Running/initRunningEvents.js: render() reemplaza
+// TODO app.innerHTML en cada pantalla, así que los contenedores DOM de la
+// tanda anterior pueden dejar de existir sin que los objetos L.Map en sí
+// se destruyan solos (sus listeners de window/resize seguirían colgados).
 let activeComunidadFeedMaps = [];
 
 function initComunidadFeedMaps() {
@@ -95,8 +46,16 @@ function initComunidadFeedMaps() {
             const container = document.getElementById(`comunidad-feed-map-${index}`);
             if (!container) return;
 
-            // Mismo modo pequeño no interactivo, mismo color fijo sin
-            // splits reales -- ver el comentario gemelo en initComunidadMaps().
+            // interactive:false -- "fotografía" fija de un único recorrido,
+            // exactamente el mismo modo pequeño que ya usa el mapa de la
+            // ficha de un entreno propio (RunningDetailView.js vía
+            // initRunningEvents.js), nunca el modo pantalla completa. Color
+            // fijo (ROUTE_COLOR_NORMAL) y no por ritmo real:
+            // /api/community/entrenos no manda `splits` (whitelist explícita
+            // en toPublicEntreno, server/src/routes/community.js), así que
+            // no hay datos por km de los que derivar un degradado -- mismo
+            // color que usaría el mapa de un entreno propio sin splits
+            // suficientes (ver el fallback en initRunningEvents.js).
             mountRouteMap(container, [{ latlngs: entreno.routeTrace.map(p => [p.lat, p.lon]), color: ROUTE_COLOR_NORMAL }], [], entreno.routeTrace).then(map => {
 
                 if (document.body.contains(container)) {
@@ -111,7 +70,7 @@ function initComunidadFeedMaps() {
 
 }
 
-// Mapa fullscreen del detalle -- instancia SEPARADA de activeComunidadMaps/
+// Mapa fullscreen del detalle -- instancia SEPARADA de
 // activeComunidadFeedMaps de arriba (mismo motivo que
 // activeFullscreenRouteMap en Running/initRunningEvents.js: es un
 // contenedor propio, "comunidad-detail-map-fullscreen", que solo existe en
@@ -168,10 +127,10 @@ export function initComunidadEvents() {
     // entrar de verdad en Comunidad -- loadComunidadEntrenos() es idempotente
     // (no hace nada si status ya no es "idle"), así que entrar y salir de
     // una tab, o pasar por otras pantallas, no repite la petición. Ranking
-    // (Fase 2) y Actividad (Fase 3a) consumen LA MISMA lista que Mapas --
-    // se dispara también desde esas dos tabs, no solo desde Mapas, para no
-    // depender de haber pasado antes por Mapas en la misma sesión.
-    if (document.querySelector(".comunidad") && ["mapas", "ranking", "actividad"].includes(getComunidadTab())) {
+    // y Actividad consumen LA MISMA lista -- se dispara desde las dos tabs,
+    // no solo desde una, para no depender de por cuál se haya entrado
+    // primero en la misma sesión.
+    if (document.querySelector(".comunidad") && ["ranking", "actividad"].includes(getComunidadTab())) {
         loadComunidadEntrenos();
     }
 
@@ -215,10 +174,11 @@ export function initComunidadEvents() {
 
     });
 
-    // Pulsar cualquier tarjeta de Mapas pide su detalle real (con splits)
-    // y abre el mapa fullscreen -- ver openComunidadRouteDetail()/
-    // ComunidadRouteDetailOverlay() (Comunidad.js). data-entreno-id/-alias
-    // vienen ya escapados/puestos por ComunidadMapasView.js.
+    // Pulsar cualquier tarjeta con GPS del feed de Actividad pide su
+    // detalle real (con splits) y abre el mapa fullscreen -- ver
+    // openComunidadRouteDetail()/ComunidadRouteDetailOverlay() (Comunidad.js).
+    // data-entreno-id/-alias vienen ya escapados/puestos por
+    // ComunidadActividadView.js.
     document.querySelectorAll('[data-action="open-comunidad-route-detail"]').forEach(card => {
 
         card.addEventListener("click", () => {
@@ -240,7 +200,6 @@ export function initComunidadEvents() {
         closeDetailButton.addEventListener("click", closeComunidadRouteDetail);
     }
 
-    initComunidadMaps();
     initComunidadFeedMaps();
     initComunidadDetailMap();
 

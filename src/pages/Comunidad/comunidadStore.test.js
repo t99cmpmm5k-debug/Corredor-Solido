@@ -28,10 +28,10 @@ describe("comunidadStore", () => {
         rerenderMock.mockReset();
     });
 
-    it("arranca en la tab Mapas", async () => {
+    it("arranca en la tab Actividad", async () => {
 
         const { getComunidadTab } = await import("./comunidadStore.js");
-        expect(getComunidadTab()).toBe("mapas");
+        expect(getComunidadTab()).toBe("actividad");
 
     });
 
@@ -40,7 +40,7 @@ describe("comunidadStore", () => {
         const { setComunidadTab, getComunidadTab } = await import("./comunidadStore.js");
 
         setComunidadTab("clasificacion");
-        expect(getComunidadTab()).toBe("mapas");
+        expect(getComunidadTab()).toBe("actividad");
 
         setComunidadTab("ranking");
         expect(getComunidadTab()).toBe("ranking");
@@ -56,7 +56,7 @@ describe("comunidadStore", () => {
 
     });
 
-    it("resetComunidadView vuelve a Mapas sin tocar los datos ya cargados", async () => {
+    it("resetComunidadView vuelve a Actividad sin tocar los datos ya cargados", async () => {
 
         getEntrenosComunidadMock.mockResolvedValue({ entrenos: [{ alias: "Rafa" }] });
 
@@ -68,7 +68,7 @@ describe("comunidadStore", () => {
         setComunidadTab("ranking");
         resetComunidadView();
 
-        expect(getComunidadTab()).toBe("mapas");
+        expect(getComunidadTab()).toBe("actividad");
         expect(getComunidadEntrenos().status).toBe("ready");
 
     });
