@@ -167,6 +167,75 @@ describe("getCommunityEntrenos -- lista blanca de campos, nunca datos personales
 
     });
 
+    it("z2TimeInZonePercent (Ranking Fase 2) solo se incluye para entrenos tipo \"easy\", aunque otro tipo tenga splits con FC", async () => {
+
+        const splits = [
+            { distanceKm: 1, paceSecPerKm: 300, avgHr: 140 },
+            { distanceKm: 1, paceSecPerKm: 300, avgHr: 170 }
+        ];
+
+        executeMock.mockResolvedValue([[
+            { email: "a@example.com", data: { id: "w1", type: "easy", splits } },
+            { email: "a@example.com", data: { id: "w2", type: "series", splits } }
+        ]]);
+
+        const { getCommunityEntrenos } = await import("./community.js");
+        const res = mockRes();
+
+        await getCommunityEntrenos({}, res);
+
+        const { entrenos } = res.json.mock.calls[0][0];
+
+        expect(entrenos[0].z2TimeInZonePercent).toBe(50);
+        expect(entrenos[1].z2TimeInZonePercent).toBeUndefined();
+
+    });
+
+    it("z2TimeInZonePercent pesa cada split por su duración estimada (distanceKm * paceSecPerKm), no cuenta splits a secas", async () => {
+
+        const splits = [
+            // 1km a 5:00/km = 300s dentro de zona (140 ppm)
+            { distanceKm: 1, paceSecPerKm: 300, avgHr: 140 },
+            // 2km a 6:00/km = 720s fuera de zona (170 ppm) -- más tiempo real
+            // que el split de arriba, aunque sea "solo un split más"
+            { distanceKm: 2, paceSecPerKm: 360, avgHr: 170 }
+        ];
+
+        executeMock.mockResolvedValue([[
+            { email: "a@example.com", data: { id: "w1", type: "easy", splits } }
+        ]]);
+
+        const { getCommunityEntrenos } = await import("./community.js");
+        const res = mockRes();
+
+        await getCommunityEntrenos({}, res);
+
+        const { entrenos } = res.json.mock.calls[0][0];
+
+        // 300 / (300 + 720) = 29.4%, no 50% (que sería contar splits a secas)
+        expect(entrenos[0].z2TimeInZonePercent).toBe(29.4);
+
+    });
+
+    it("un entreno easy sin splits, o con splits sin FC real, no inventa un valor -- simplemente no trae z2TimeInZonePercent", async () => {
+
+        executeMock.mockResolvedValue([[
+            { email: "a@example.com", data: { id: "w1", type: "easy" } },
+            { email: "a@example.com", data: { id: "w2", type: "easy", splits: [{ distanceKm: 1, paceSecPerKm: 300, avgHr: null }] } }
+        ]]);
+
+        const { getCommunityEntrenos } = await import("./community.js");
+        const res = mockRes();
+
+        await getCommunityEntrenos({}, res);
+
+        const { entrenos } = res.json.mock.calls[0][0];
+
+        expect(entrenos[0].z2TimeInZonePercent).toBeUndefined();
+        expect(entrenos[1].z2TimeInZonePercent).toBeUndefined();
+
+    });
+
     it("con alias_publico ya configurado, lo usa en vez del derivado del email", async () => {
 
         executeMock.mockResolvedValue([[

@@ -8,13 +8,56 @@ communityRouter.use(requireAuth);
 
 // Solo el tipo "easy" (Rodaje/Z2, ver src/data/runningWorkoutTypes.js del
 // frontend -- "Z2" es la etiqueta visible, "easy" es el id real que
-// guardan los entrenos) trae FC media en esta respuesta -- es el único
-// dato adicional que de verdad usa "Evolución Z2" en el cliente
-// (buildTypeEvolution() en runningEvolution.js: date + avgPaceSecPerKm,
-// que ya van en todos, + avgHr). Nunca se manda FC de otros tipos aquí --
-// no la pide esta fase, y cuanta menos fisiología de más gente circule,
-// mejor.
+// guardan los entrenos) trae FC media y % en zona en esta respuesta --
+// nunca se manda ninguna de las dos de otro tipo: no la pide ninguna
+// pantalla que consuma esto (Evolución Z2 en Home/Running, Ranking Fase 2
+// en Comunidad), y cuanta menos fisiología de más gente circule, mejor.
 const Z2_TYPE = "easy";
+
+// Rango fijo de pulsaciones tratado como "Zona 2" para TODA la comunidad --
+// confirmado con el usuario. No hay ningún perfil de FC máxima/reposo real
+// por usuario en la app (ni Karvonen ni %FCmax), así que un rango fijo es
+// una aproximación deliberada, igual para todos, no un cálculo personalizado
+// por corredor.
+const Z2_MIN_HR_BPM = 130;
+const Z2_MAX_HR_BPM = 150;
+
+// % de tiempo dentro de Zona 2 de un entreno -- aproximado a partir de los
+// splits ya guardados (avgHr/paceSecPerKm/distanceKm por km), no hay ningún
+// cálculo real de esto en el frontend que reutilizar ("Evolución Z2",
+// runningEvolution.js, compara ritmo/FC entre el PRIMER y el ÚLTIMO entreno
+// de una tanda, nunca un porcentaje dentro de un entreno) ni muestreo de FC
+// segundo a segundo en ningún entreno de la app (Garmin OCR/GPX/TCX nunca lo
+// capturan) del que derivar un tiempo-en-zona real. Cada split pesa por su
+// duración estimada (distanceKm * paceSecPerKm), no como split suelto -- un
+// km más lento representa más tiempo real dentro del entreno que uno rápido,
+// y contar splits a secas los trataría como si pesaran igual.
+function computeZ2TimeInZonePercent(splits) {
+
+    const valid = (splits || []).filter(s => s.avgHr != null && s.paceSecPerKm != null && s.distanceKm != null);
+    if (!valid.length) return null;
+
+    let totalSec = 0, inZoneSec = 0;
+
+    valid.forEach(s => {
+
+        const durationSec = s.distanceKm * s.paceSecPerKm;
+        totalSec += durationSec;
+
+        if (s.avgHr >= Z2_MIN_HR_BPM && s.avgHr <= Z2_MAX_HR_BPM) {
+            inZoneSec += durationSec;
+        }
+
+    });
+
+    if (totalSec <= 0) return null;
+
+    // Un decimal -- suficiente para distinguir puestos en el Ranking sin
+    // aparentar una precisión que la propia aproximación (rango fijo, splits
+    // por km en vez de muestreo real) no tiene.
+    return Math.round((inZoneSec / totalSec) * 1000) / 10;
+
+}
 
 // Reduce el JSON completo de un entreno (columna `data`, ver migrations/
 // 001_init.sql) a SOLO los campos que esta fase necesita exponer --
@@ -44,8 +87,20 @@ function toPublicEntreno(alias, workout) {
         entreno.routeTrace = workout.routeTrace;
     }
 
-    if (workout.type === Z2_TYPE && workout.avgHr != null) {
-        entreno.avgHr = workout.avgHr;
+    if (workout.type === Z2_TYPE) {
+
+        if (workout.avgHr != null) {
+            entreno.avgHr = workout.avgHr;
+        }
+
+        // Sin datos suficientes (sin splits, o splits sin FC real) --
+        // simplemente no se incluye, nunca un 0 o un valor inventado.
+        const z2TimeInZonePercent = computeZ2TimeInZonePercent(workout.splits);
+
+        if (z2TimeInZonePercent != null) {
+            entreno.z2TimeInZonePercent = z2TimeInZonePercent;
+        }
+
     }
 
     return entreno;
