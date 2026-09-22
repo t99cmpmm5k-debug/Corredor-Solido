@@ -152,6 +152,18 @@ export function Comunidad() {
 
     const activeTab = getComunidadTab();
 
+    // Bug real corregido: el mapa fullscreen del detalle y la lista de
+    // tarjetas de Mapas (cada una con su propio mapa pequeño, mismo
+    // mountRouteMap() -- ver ComunidadMapasView.js) son MUTUAMENTE
+    // EXCLUYENTES, mismo criterio que ya usa RunningDetailView.js para su
+    // propio mapa pequeño vs fullscreen. Sin esto, la lista se quedaba
+    // montada (con sus propias instancias de Leaflet vivas) DEBAJO del
+    // overlay -- su control de atribución (z-index alto a propósito de
+    // Leaflet, por encima del z-index del propio overlay al no compartir
+    // contexto de apilamiento) se colaba por encima, viéndose como una
+    // segunda atribución de Esri duplicada a media altura de la pantalla.
+    const routeDetailOpen = getComunidadRouteDetail().status === "ready";
+
     return `
 
         <div class="comunidad">
@@ -162,7 +174,7 @@ export function Comunidad() {
 
                 ${ComunidadTabs(activeTab)}
 
-                ${activeTab === "mapas" ? ComunidadMapasView(getComunidadEntrenos()) : ComunidadComingSoon()}
+                ${routeDetailOpen ? "" : (activeTab === "mapas" ? ComunidadMapasView(getComunidadEntrenos()) : ComunidadComingSoon())}
 
             </div>
 
