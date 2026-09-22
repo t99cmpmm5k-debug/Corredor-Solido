@@ -2,8 +2,7 @@ import { rerender } from "../../core/router.js";
 import {
     setComunidadTab, getComunidadTab, loadComunidadEntrenos, getComunidadEntrenos, retryComunidadEntrenos,
     openComunidadRouteDetail, closeComunidadRouteDetail, getComunidadRouteDetail,
-    getComunidadActivityTypeFilter, setComunidadActivityTypeFilter, toggleLikeComunidadEntreno,
-    toggleComunidadCommentsPanel, submitComunidadComment, deleteComunidadCommentEntry
+    getComunidadActivityTypeFilter, setComunidadActivityTypeFilter
 } from "./comunidadStore.js";
 import { mountRouteMap, unmountRouteMap, hasRouteTrace } from "../../components/RouteMap/RouteMap.js";
 import { ROUTE_COLOR_NORMAL, buildPaceColorSegments, buildKmMarkers } from "../Running/routeMapPaceColoring.js";
@@ -190,21 +189,6 @@ export function initComunidadEvents() {
 
     });
 
-    // Corazón de like (Fase 3b) -- stopPropagation() porque vive DENTRO de
-    // una tarjeta que, si el entreno tiene GPS, ya es pulsable entera (abre
-    // el detalle fullscreen, listener de arriba); sin esto, dar like a un
-    // entreno con mapa abriría también su detalle.
-    document.querySelectorAll('[data-action="toggle-comunidad-like"]').forEach(button => {
-
-        button.addEventListener("click", event => {
-
-            event.stopPropagation();
-            toggleLikeComunidadEntreno(button.dataset.entrenoId);
-
-        });
-
-    });
-
     // Mismo data-action que ya usa el botón de cerrar de
     // RouteMapFullscreenOverlay (RouteMap.js) en Running -- solo uno de los
     // dos existe en el DOM en cada render (páginas distintas nunca
@@ -217,48 +201,6 @@ export function initComunidadEvents() {
     if (closeDetailButton) {
         closeDetailButton.addEventListener("click", closeComunidadRouteDetail);
     }
-
-    // Comentarios (Fase 3c) -- franja colapsable dentro del detalle
-    // (ComunidadCommentsPanel.js).
-    const commentsToggle = document.querySelector('[data-action="toggle-comunidad-comments-panel"]');
-
-    if (commentsToggle) {
-        commentsToggle.addEventListener("click", toggleComunidadCommentsPanel);
-    }
-
-    // El input NUNCA se lee en cada tecla ni se wirea a rerender() -- se lee
-    // directamente del DOM solo al enviar (mismo criterio que save-new-shoe,
-    // lección ya aprendida con otro campo de texto libre: un rerender() por
-    // pulsación borraría lo escrito y cerraría el teclado en iOS). Tras
-    // submitComunidadComment() el propio rerender() optimista ya sustituye
-    // este input por uno nuevo vacío -- no hace falta limpiarlo a mano.
-    const commentInput = document.getElementById("comunidad-comment-input");
-    const submitComment = () => submitComunidadComment(commentInput?.value ?? "");
-
-    const commentSendButton = document.querySelector('[data-action="submit-comunidad-comment"]');
-    if (commentSendButton) {
-        commentSendButton.addEventListener("click", submitComment);
-    }
-
-    if (commentInput) {
-
-        commentInput.addEventListener("keydown", event => {
-
-            if (event.key === "Enter") submitComment();
-
-        });
-
-    }
-
-    document.querySelectorAll('[data-action="delete-comunidad-comment"]').forEach(button => {
-
-        button.addEventListener("click", () => {
-
-            deleteComunidadCommentEntry(Number(button.dataset.commentId));
-
-        });
-
-    });
 
     initComunidadFeedMaps();
     initComunidadDetailMap();

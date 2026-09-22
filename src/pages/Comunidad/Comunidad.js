@@ -3,12 +3,11 @@ import "./Comunidad.css";
 import { BottomNavigation } from "../../components/Navigation/BottomNavigation.js";
 import {
     getComunidadTab, getComunidadEntrenos, getComunidadRouteDetail, getComunidadRouteDetailError,
-    getComunidadActivityTypeFilter, getComunidadDetailComments, getComunidadCommentsPanelExpanded, COMUNIDAD_TABS
+    getComunidadActivityTypeFilter, COMUNIDAD_TABS
 } from "./comunidadStore.js";
 import { ComunidadHero } from "./components/ComunidadHero.js";
 import { ComunidadRankingView } from "./components/ComunidadRankingView.js";
 import { ComunidadActividadView } from "./components/ComunidadActividadView.js";
-import { ComunidadCommentsPanel } from "./components/ComunidadCommentsPanel.js";
 import { RouteMapFullscreenOverlay, RouteMapLegend, hasRouteTrace } from "../../components/RouteMap/RouteMap.js";
 import { chartSplits, MIN_SPLITS_FOR_CHART } from "../Running/components/RunningDetailView.js";
 import { formatKm, formatSecondsAsClock } from "../../utils/format.js";
@@ -97,12 +96,12 @@ const TYPE_ICON = {
     race: "solar:flag-2-bold-duotone"
 };
 
-// Detalle SIN mapa -- Fase 3c: cualquier entreno es comentable, no solo los
-// que tienen GPS, así que un entreno sin ruta necesita también un "detalle"
-// al que abrir, aunque no haya nada que dibujar. Mismo botón de cerrar que
-// RouteMapFullscreenOverlay (misma clase/data-action, RouteMap.css) para
-// que se vea y se comporte igual, sin reutilizar ESE componente en sí (que
-// siempre asume un mapa Leaflet detrás).
+// Detalle SIN mapa -- Fase 3c: toda tarjeta del feed es pulsable, no solo
+// las que tienen GPS, así que un entreno sin ruta necesita también un
+// "detalle" al que abrir, aunque no haya nada que dibujar. Mismo botón de
+// cerrar que RouteMapFullscreenOverlay (misma clase/data-action,
+// RouteMap.css) para que se vea y se comporte igual, sin reutilizar ESE
+// componente en sí (que siempre asume un mapa Leaflet detrás).
 function ComunidadRouteDetailNoRoute(detail) {
 
     const distance = detail.distanceKm != null ? `${formatKm(detail.distanceKm)} km` : "—";
@@ -157,9 +156,6 @@ function ComunidadRouteDetailNoRoute(detail) {
 // -- este componente solo decide si la leyenda tiene sentido (mismo umbral
 // MIN_SPLITS_FOR_CHART que ya usa Running para su propio mapa, ver
 // chartSplits()).
-//
-// La sección de comentarios (Fase 3c) va DEBAJO en los dos casos, como un
-// panel fijo abajo, colapsado por defecto -- ver ComunidadCommentsPanel.js.
 function ComunidadRouteDetailFullscreen(alias, detail) {
 
     const withRoute = hasRouteTrace(detail);
@@ -178,8 +174,6 @@ function ComunidadRouteDetailFullscreen(alias, detail) {
         ${bodyHtml}
 
         <div class="comunidad-detail-alias-badge">${escapeHtml(alias)}</div>
-
-        ${ComunidadCommentsPanel(getComunidadDetailComments(), getComunidadCommentsPanelExpanded())}
 
     `;
 

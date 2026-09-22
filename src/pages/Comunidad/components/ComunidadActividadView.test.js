@@ -3,12 +3,12 @@ import { ComunidadActividadView } from "./ComunidadActividadView.js";
 
 const withTrace = (alias, id, overrides = {}) => ({
     alias, id, date: "2026-09-15", type: "easy", distanceKm: 8, avgPaceSecPerKm: 330, durationSec: 2640,
-    routeTrace: [{ lat: 37.9, lon: -1.1 }, { lat: 37.91, lon: -1.11 }], likesCount: 0, likedByMe: false, ...overrides
+    routeTrace: [{ lat: 37.9, lon: -1.1 }, { lat: 37.91, lon: -1.11 }], ...overrides
 });
 
 const withoutTrace = (alias, id, overrides = {}) => ({
     alias, id, date: "2026-09-14", type: "series", distanceKm: 5, avgPaceSecPerKm: 260, durationSec: 1300, routeTrace: null,
-    likesCount: 0, likedByMe: false, ...overrides
+    ...overrides
 });
 
 describe("ComunidadActividadView -- feed de TODOS los entrenos, con o sin GPS", () => {
@@ -49,7 +49,7 @@ describe("ComunidadActividadView -- feed de TODOS los entrenos, con o sin GPS", 
 
     });
 
-    it("una tarjeta sin ruta TAMBIÉN es pulsable (Fase 3c: comentarios de cualquier entreno, no solo los que tienen mapa)", () => {
+    it("una tarjeta sin ruta TAMBIÉN es pulsable (abre el detalle simple, no solo las que tienen mapa)", () => {
 
         const html = ComunidadActividadView({ status: "ready", entrenos: [withoutTrace("Ana", "w1")] }, "");
 
@@ -109,65 +109,13 @@ describe("ComunidadActividadView -- feed de TODOS los entrenos, con o sin GPS", 
 
     });
 
-    it("muestra el número real de comentarios junto al de likes (Fase 3c, punto 11)", () => {
+    it("no lleva ningún botón de like ni contador de comentarios -- interacción social quitada del frontend", () => {
 
-        const html = ComunidadActividadView({ status: "ready", entrenos: [withTrace("Rafa", "w1", { commentsCount: 5 })] }, "");
+        const html = ComunidadActividadView({ status: "ready", entrenos: [withTrace("Rafa", "w1", { likesCount: 4, likedByMe: true, commentsCount: 5 })] }, "");
 
-        expect(html).toContain("comunidad-comment-count");
-        expect(html).toMatch(/comunidad-comment-count[^>]*>[\s\S]*?5/);
-
-    });
-
-    it("sin commentsCount en el entreno, muestra 0 en vez de romper", () => {
-
-        const html = ComunidadActividadView({ status: "ready", entrenos: [withTrace("Rafa", "w1", { commentsCount: undefined })] }, "");
-
-        expect(html).toMatch(/comunidad-comment-count[^>]*>[\s\S]*?0/);
-
-    });
-
-    it("el número de comentarios existe también en una tarjeta sin GPS", () => {
-
-        const html = ComunidadActividadView({ status: "ready", entrenos: [withoutTrace("Ana", "w1", { commentsCount: 2 })] }, "");
-
-        expect(html).toMatch(/comunidad-comment-count[^>]*>[\s\S]*?2/);
-
-    });
-
-    it("cada tarjeta lleva su botón de like, con el número real de likes", () => {
-
-        const html = ComunidadActividadView({ status: "ready", entrenos: [withTrace("Rafa", "w1", { likesCount: 4, likedByMe: false })] }, "");
-
-        expect(html).toContain('data-action="toggle-comunidad-like"');
-        expect(html).toContain('data-entreno-id="w1"');
-        expect(html).toMatch(/comunidad-like-button[^>]*>[\s\S]*?4/);
-
-    });
-
-    it("el corazón se ve relleno (is-liked, icono heart-bold) si el usuario ya dio like", () => {
-
-        const html = ComunidadActividadView({ status: "ready", entrenos: [withTrace("Rafa", "w1", { likedByMe: true, likesCount: 1 })] }, "");
-
-        expect(html).toContain("is-liked");
-        expect(html).toContain("solar:heart-bold");
-        expect(html).not.toContain("solar:heart-linear");
-
-    });
-
-    it("el corazón se ve vacío (sin is-liked, icono heart-linear) si el usuario no ha dado like", () => {
-
-        const html = ComunidadActividadView({ status: "ready", entrenos: [withTrace("Rafa", "w1", { likedByMe: false, likesCount: 1 })] }, "");
-
-        expect(html).not.toContain("is-liked");
-        expect(html).toContain("solar:heart-linear");
-
-    });
-
-    it("el botón de like existe también en una tarjeta sin GPS -- el like no depende de tener mapa", () => {
-
-        const html = ComunidadActividadView({ status: "ready", entrenos: [withoutTrace("Ana", "w1", { likesCount: 2 })] }, "");
-
-        expect(html).toContain('data-action="toggle-comunidad-like"');
+        expect(html).not.toContain('data-action="toggle-comunidad-like"');
+        expect(html).not.toContain("comunidad-like-button");
+        expect(html).not.toContain("comunidad-comment-count");
 
     });
 

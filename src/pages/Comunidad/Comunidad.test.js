@@ -7,8 +7,6 @@ const getComunidadRouteDetailMock = vi.fn();
 const getComunidadRouteDetailErrorMock = vi.fn();
 const getMyAliasMock = vi.fn();
 const getComunidadActivityTypeFilterMock = vi.fn();
-const getComunidadDetailCommentsMock = vi.fn();
-const getComunidadCommentsPanelExpandedMock = vi.fn();
 
 vi.mock("./comunidadStore.js", () => ({
     COMUNIDAD_TABS: ["actividad", "ranking"],
@@ -16,9 +14,7 @@ vi.mock("./comunidadStore.js", () => ({
     getComunidadEntrenos: () => getComunidadEntrenosMock(),
     getComunidadRouteDetail: () => getComunidadRouteDetailMock(),
     getComunidadRouteDetailError: () => getComunidadRouteDetailErrorMock(),
-    getComunidadActivityTypeFilter: () => getComunidadActivityTypeFilterMock(),
-    getComunidadDetailComments: () => getComunidadDetailCommentsMock(),
-    getComunidadCommentsPanelExpanded: () => getComunidadCommentsPanelExpandedMock()
+    getComunidadActivityTypeFilter: () => getComunidadActivityTypeFilterMock()
 }));
 
 vi.mock("../Profile/profileStore.js", () => ({
@@ -47,8 +43,6 @@ describe("Comunidad -- feed de Actividad y mapa fullscreen del detalle son mutua
         getComunidadRouteDetailErrorMock.mockReset().mockReturnValue(null);
         getMyAliasMock.mockReset().mockReturnValue({ status: "idle", value: null });
         getComunidadActivityTypeFilterMock.mockReset().mockReturnValue("");
-        getComunidadDetailCommentsMock.mockReset().mockReturnValue({ status: "ready", items: [] });
-        getComunidadCommentsPanelExpandedMock.mockReset().mockReturnValue(false);
     });
 
     it("sin ningún detalle abierto, pinta la lista de tarjetas con su propio mapa", async () => {
@@ -75,6 +69,7 @@ describe("Comunidad -- feed de Actividad y mapa fullscreen del detalle son mutua
         expect(html).toContain("route-map-fullscreen-overlay");
         expect(html).not.toContain("comunidad-route-card");
         expect(html).not.toContain("comunidad-route-list");
+        expect(html).not.toContain("comunidad-comments-panel");
 
     });
 
@@ -87,6 +82,23 @@ describe("Comunidad -- feed de Actividad y mapa fullscreen del detalle son mutua
 
         expect(html).toContain("comunidad-route-card");
         expect(html).toContain("comunidad-detail-loading-overlay");
+
+    });
+
+    it("con el detalle en status ready de un entreno SIN ruta, pinta la pantalla simple (icono+stats) sin panel de comentarios", async () => {
+
+        getComunidadRouteDetailMock.mockReturnValue({
+            status: "ready",
+            alias: "Rafa",
+            detail: { id: "w1", type: "series", distanceKm: 6, avgPaceSecPerKm: 270, durationSec: 1620, routeTrace: null }
+        });
+
+        const { Comunidad } = await import("./Comunidad.js");
+        const html = Comunidad();
+
+        expect(html).toContain("comunidad-detail-no-route");
+        expect(html).not.toContain("route-map-fullscreen-overlay");
+        expect(html).not.toContain("comunidad-comments-panel");
 
     });
 

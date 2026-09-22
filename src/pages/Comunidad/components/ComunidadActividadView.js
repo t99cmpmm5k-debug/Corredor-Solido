@@ -105,68 +105,17 @@ function ComunidadActivityPlaceholder(type) {
 
 }
 
-// Corazón + número (Fase 3b) -- relleno/resaltado si el usuario actual ya
-// dio like (entreno.likedByMe, siempre presente en la respuesta real del
-// backend -- ver server/src/routes/community.js), vacío si no. Propio
-// data-action y stopPropagation() en initComunidadEvents.js -- vive DENTRO
-// de una tarjeta que en el caso con GPS ya es pulsable entera (abre el
-// detalle fullscreen), así que pulsar el corazón no debe abrir también el
-// mapa.
-function ComunidadLikeButton(entreno) {
-
-    const liked = !!entreno.likedByMe;
-    const count = entreno.likesCount ?? 0;
-
-    return `
-
-        <button
-            class="comunidad-like-button ${liked ? "is-liked" : ""}"
-            data-action="toggle-comunidad-like"
-            data-entreno-id="${escapeHtml(entreno.id)}"
-            aria-label="${liked ? "Quitar me gusta" : "Dar me gusta"}"
-        >
-
-            <iconify-icon icon="${liked ? "solar:heart-bold" : "solar:heart-linear"}"></iconify-icon>
-
-            <span>${count}</span>
-
-        </button>
-
-    `;
-
-}
-
-// Solo texto, no un botón -- no tiene acción propia (punto 11: mostrar el
-// número, no abrir nada aparte): la tarjeta entera ya es pulsable y abre el
-// detalle real, donde de verdad se leen/escriben comentarios (ver
-// ComunidadCommentsPanel.js).
-function ComunidadCommentCountBadge(entreno) {
-
-    return `
-
-        <span class="comunidad-comment-count">
-
-            <iconify-icon icon="solar:chat-round-dots-linear"></iconify-icon>
-
-            <span>${entreno.commentsCount ?? 0}</span>
-
-        </span>
-
-    `;
-
-}
-
 // El contenedor id="comunidad-feed-map-N" (solo si hasRouteTrace) lo monta
 // initComunidadEvents.js -- mismo mountRouteMap() en modo pequeño que ya
 // usa el mapa de un entreno propio (RunningDetailView.js).
 //
-// TODA tarjeta es pulsable ahora (antes solo las que tenían GPS) -- los
-// likes ya se podían dar a cualquier entreno (Fase 3b) y los comentarios
-// también son de "cualquier entreno" (Fase 3c, pedido explícito en el
-// backend); sin esto, una tarjeta sin GPS podría mostrar "3 comentarios"
-// sin ninguna forma real de leerlos o añadir uno. Sin GPS, el propio
-// detalle (Comunidad.js) muestra un hueco simple en vez de mapa -- nunca
-// intenta montar Leaflet sobre nada.
+// TODA tarjeta es pulsable (con o sin GPS) -- abre el detalle real: el
+// mapa fullscreen si tiene ruta, una pantalla simple con icono+stats si no
+// (ComunidadRouteDetailNoRoute, Comunidad.js). Los likes/comentarios que
+// vivían aquí (Fases 3b/3c) se quitaron del frontend a petición de Rafa
+// (se parecía demasiado a Strava) -- el backend (workout_likes/
+// workout_comments) se queda construido pero sin consumir, por si se
+// retoma más adelante.
 function ComunidadActivityCard(entreno, index) {
 
     const pace = entreno.avgPaceSecPerKm != null ? `${formatSecondsAsClock(entreno.avgPaceSecPerKm)}/km` : "—";
@@ -202,14 +151,6 @@ function ComunidadActivityCard(entreno, index) {
                     <span>${pace}</span>
 
                     <span>${duration}</span>
-
-                </div>
-
-                <div class="comunidad-route-card-footer">
-
-                    ${ComunidadLikeButton(entreno)}
-
-                    ${ComunidadCommentCountBadge(entreno)}
 
                 </div>
 
