@@ -11,6 +11,12 @@
 
 }
 
+/* Toda la tarjeta es un único objetivo táctil (pulsarla abre el detalle
+   fullscreen con splits reales, ver openComunidadRouteDetail() en
+   comunidadStore.js/initComunidadEvents.js) -- no solo el mapa pequeño, a
+   diferencia de RouteMapTapTarget (ese abre SU PROPIO overlay fullscreen
+   con la misma traza sin colorear; aquí hace falta pedir el detalle real
+   al servidor primero, así que el gesto vive en la tarjeta entera). */
 .comunidad-route-card{
 
     display:flex;
@@ -26,6 +32,8 @@
     border:1px solid var(--card-border);
 
     box-shadow:0 8px 20px rgba(0,0,0,.18);
+
+    cursor:pointer;
 
 }
 

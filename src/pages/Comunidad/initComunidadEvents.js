@@ -1,7 +1,11 @@
 import { rerender } from "../../core/router.js";
-import { setComunidadTab, getComunidadTab, loadComunidadEntrenos, getComunidadEntrenos, retryComunidadEntrenos } from "./comunidadStore.js";
+import {
+    setComunidadTab, getComunidadTab, loadComunidadEntrenos, getComunidadEntrenos, retryComunidadEntrenos,
+    openComunidadRouteDetail, closeComunidadRouteDetail, getComunidadRouteDetail
+} from "./comunidadStore.js";
 import { mountRouteMap, unmountRouteMap } from "../../components/RouteMap/RouteMap.js";
-import { ROUTE_COLOR_NORMAL } from "../Running/routeMapPaceColoring.js";
+import { ROUTE_COLOR_NORMAL, buildPaceColorSegments, buildKmMarkers } from "../Running/routeMapPaceColoring.js";
+import { chartSplits, MIN_SPLITS_FOR_CHART } from "../Running/components/RunningDetailView.js";
 import { buildCommunityRouteCards } from "./communityMapData.js";
 
 // Un mapa pequeño POR TARJETA (a diferencia del mapa único agregado que
@@ -53,6 +57,56 @@ function initComunidadMaps() {
 
 }
 
+// Mapa fullscreen del detalle -- instancia SEPARADA de activeComunidadMaps
+// de arriba (mismo motivo que activeFullscreenRouteMap en Running/
+// initRunningEvents.js: es un contenedor propio, "comunidad-detail-map-
+// fullscreen", que solo existe en el DOM mientras openComunidadRouteDetail()
+// está en status "ready", ver Comunidad.js).
+let activeComunidadDetailMap = null;
+
+function initComunidadDetailMap() {
+
+    if (activeComunidadDetailMap) {
+        unmountRouteMap(activeComunidadDetailMap);
+        activeComunidadDetailMap = null;
+    }
+
+    const state = getComunidadRouteDetail();
+    if (state.status !== "ready") return;
+
+    const container = document.getElementById("comunidad-detail-map-fullscreen");
+    if (!container) return;
+
+    const { detail } = state;
+    const routeTrace = detail.routeTrace || [];
+    if (routeTrace.length < 2) return;
+
+    // Mismo criterio EXACTO que initRouteMap() (Running/initRunningEvents.js)
+    // para un entreno propio: coloreado por ritmo real si hay splits
+    // suficientes (MIN_SPLITS_FOR_CHART), si no un único segmento en el
+    // color neutro -- aquí sí hay splits reales (a diferencia del mapa
+    // pequeño de la tarjeta, que solo tiene los campos de la lista), porque
+    // GET /api/community/entrenos/:id los trae completos.
+    const splits = chartSplits(detail);
+
+    const segments = splits.length >= MIN_SPLITS_FOR_CHART
+        ? buildPaceColorSegments(routeTrace, splits)
+        : [{ latlngs: routeTrace.map(p => [p.lat, p.lon]), color: ROUTE_COLOR_NORMAL }];
+
+    const markers = buildKmMarkers(routeTrace, splits);
+
+    mountRouteMap(container, segments, markers, routeTrace, { interactive: true }).then(map => {
+
+        if (document.body.contains(container)) {
+            activeComunidadDetailMap = map;
+        } else {
+            unmountRouteMap(map);
+        }
+
+    });
+
+}
+
 export function initComunidadEvents() {
 
     // Punto 7 de la especificación: la carga se dispara solo al entrar de
@@ -80,6 +134,32 @@ export function initComunidadEvents() {
         retryButton.addEventListener("click", retryComunidadEntrenos);
     }
 
+    // Pulsar cualquier tarjeta de Mapas pide su detalle real (con splits)
+    // y abre el mapa fullscreen -- ver openComunidadRouteDetail()/
+    // ComunidadRouteDetailOverlay() (Comunidad.js). data-entreno-id/-alias
+    // vienen ya escapados/puestos por ComunidadMapasView.js.
+    document.querySelectorAll('[data-action="open-comunidad-route-detail"]').forEach(card => {
+
+        card.addEventListener("click", () => {
+
+            openComunidadRouteDetail({ id: card.dataset.entrenoId, alias: card.dataset.entrenoAlias });
+
+        });
+
+    });
+
+    // Mismo data-action que ya usa el botón de cerrar de
+    // RouteMapFullscreenOverlay (RouteMap.js) en Running -- solo uno de los
+    // dos existe en el DOM en cada render (páginas distintas nunca
+    // conviven), así que no hay colisión real al reutilizar el mismo
+    // atributo.
+    const closeDetailButton = document.querySelector('.comunidad [data-action="close-route-map-fullscreen"]');
+
+    if (closeDetailButton) {
+        closeDetailButton.addEventListener("click", closeComunidadRouteDetail);
+    }
+
     initComunidadMaps();
+    initComunidadDetailMap();
 
 }

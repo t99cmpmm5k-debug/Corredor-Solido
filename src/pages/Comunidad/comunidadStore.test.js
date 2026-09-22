@@ -1,10 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const getEntrenosComunidadMock = vi.fn();
+const getEntrenoComunidadDetailMock = vi.fn();
 const rerenderMock = vi.fn();
 
 vi.mock("../../data/communityApi.js", () => ({
-    getEntrenosComunidad: (...args) => getEntrenosComunidadMock(...args)
+    getEntrenosComunidad: (...args) => getEntrenosComunidadMock(...args),
+    getEntrenoComunidadDetail: (...args) => getEntrenoComunidadDetailMock(...args)
 }));
 
 vi.mock("../../data/authStore.js", () => ({
@@ -22,6 +24,7 @@ describe("comunidadStore", () => {
     beforeEach(() => {
         vi.resetModules();
         getEntrenosComunidadMock.mockReset();
+        getEntrenoComunidadDetailMock.mockReset();
         rerenderMock.mockReset();
     });
 
@@ -132,5 +135,83 @@ describe("comunidadStore", () => {
         expect(getEntrenosComunidadMock).toHaveBeenCalledTimes(2);
 
     });
+
+});
+
+describe("comunidadStore -- detalle de un entreno (mapa fullscreen al pulsar una tarjeta)", () => {
+
+    beforeEach(() => {
+        vi.resetModules();
+        getEntrenoComunidadDetailMock.mockReset();
+        rerenderMock.mockReset();
+    });
+
+    it("empieza closed, sin error", async () => {
+
+        const { getComunidadRouteDetail, getComunidadRouteDetailError } = await import("./comunidadStore.js");
+
+        expect(getComunidadRouteDetail()).toEqual({ status: "closed" });
+        expect(getComunidadRouteDetailError()).toBeNull();
+
+    });
+
+    it("openComunidadRouteDetail pasa a loading con el alias, luego a ready con el detalle real", async () => {
+
+        const detail = { alias: "Rafa", id: "w1", splits: [] };
+        getEntrenoComunidadDetailMock.mockResolvedValue(detail);
+
+        const { openComunidadRouteDetail, getComunidadRouteDetail } = await import("./comunidadStore.js");
+
+        openComunidadRouteDetail({ id: "w1", alias: "Rafa" });
+        expect(getComunidadRouteDetail()).toEqual({ status: "loading", alias: "Rafa" });
+
+        await vi.waitFor(() => expect(getComunidadRouteDetail().status).toBe("ready"));
+
+        expect(getComunidadRouteDetail()).toEqual({ status: "ready", alias: "Rafa", detail });
+        expect(getEntrenoComunidadDetailMock).toHaveBeenCalledWith("w1", "token-real");
+
+    });
+
+    it("closeComunidadRouteDetail vuelve a closed", async () => {
+
+        getEntrenoComunidadDetailMock.mockResolvedValue({ alias: "Rafa", id: "w1", splits: [] });
+
+        const { openComunidadRouteDetail, closeComunidadRouteDetail, getComunidadRouteDetail } = await import("./comunidadStore.js");
+
+        openComunidadRouteDetail({ id: "w1", alias: "Rafa" });
+        await vi.waitFor(() => expect(getComunidadRouteDetail().status).toBe("ready"));
+
+        closeComunidadRouteDetail();
+        expect(getComunidadRouteDetail()).toEqual({ status: "closed" });
+
+    });
+
+    it("si falla, vuelve a closed (sin abrir nada) y deja un aviso breve, no un status de error persistente", async () => {
+
+        getEntrenoComunidadDetailMock.mockRejectedValue(new Error("No se encontró ese entreno."));
+
+        const { openComunidadRouteDetail, getComunidadRouteDetail, getComunidadRouteDetailError } = await import("./comunidadStore.js");
+
+        openComunidadRouteDetail({ id: "no-existe", alias: "Rafa" });
+
+        await vi.waitFor(() => expect(getComunidadRouteDetailError()).not.toBeNull());
+
+        expect(getComunidadRouteDetail()).toEqual({ status: "closed" });
+        expect(getComunidadRouteDetailError()).toBe("No se encontró ese entreno.");
+
+    });
+
+    it("el aviso de error se limpia solo pasado el timeout", async () => {
+
+        getEntrenoComunidadDetailMock.mockRejectedValue(new Error("network down"));
+
+        const { openComunidadRouteDetail, getComunidadRouteDetailError } = await import("./comunidadStore.js");
+
+        openComunidadRouteDetail({ id: "w1", alias: "Rafa" });
+        await vi.waitFor(() => expect(getComunidadRouteDetailError()).not.toBeNull());
+
+        await vi.waitFor(() => expect(getComunidadRouteDetailError()).toBeNull(), { timeout: 4000 });
+
+    }, 6000);
 
 });

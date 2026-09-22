@@ -89,3 +89,142 @@
     color:var(--button-text);
 
 }
+
+/* Spinner breve mientras se pide el detalle de un entreno (punto de la
+   especificación) -- mismo tratamiento fixed/inset:0 que
+   .route-map-fullscreen-overlay (RouteMap.css), por encima de la
+   navegación inferior, para que la lista de tarjetas quede claramente
+   bloqueada mientras dura la petición real. */
+.comunidad-detail-loading-overlay{
+
+    position:fixed;
+
+    inset:0;
+
+    z-index:500;
+
+    display:flex;
+
+    flex-direction:column;
+
+    align-items:center;
+
+    justify-content:center;
+
+    gap:14px;
+
+    padding:24px;
+
+    text-align:center;
+
+    background:color-mix(in srgb, var(--card-background) 85%, transparent);
+
+}
+
+.comunidad-detail-spinner{
+
+    font-size:40px;
+
+    color:var(--color-primary);
+
+    animation:comunidad-detail-spin 1s linear infinite;
+
+}
+
+@keyframes comunidad-detail-spin{
+
+    from{ transform:rotate(0deg); }
+    to{ transform:rotate(360deg); }
+
+}
+
+.comunidad-detail-loading-overlay p{
+
+    color:var(--text-secondary);
+
+    font-size:.9rem;
+
+}
+
+/* Rótulo "de quién es esta ruta" sobre el mapa fullscreen (RouteMap.js no
+   sabe nada de alias -- se reutiliza tal cual, este badge vive fuera de
+   él). Mismo z-index que .route-map-fullscreen-close (RouteMap.css) para
+   quedar en el mismo plano que el botón de cerrar, en la esquina opuesta
+   (izquierda) para no competir por espacio con él. */
+.comunidad-detail-alias-badge{
+
+    position:fixed;
+
+    top:calc(16px + env(safe-area-inset-top));
+    left:16px;
+
+    z-index:1000;
+
+    max-width:60%;
+
+    overflow:hidden;
+
+    text-overflow:ellipsis;
+
+    white-space:nowrap;
+
+    padding:10px 16px;
+
+    border-radius:999px;
+
+    border:1px solid color-mix(in srgb, var(--card-border) 14%, transparent);
+
+    background:color-mix(in srgb, var(--card-background) 70%, transparent);
+
+    backdrop-filter:blur(18px);
+    -webkit-backdrop-filter:blur(18px);
+
+    color:#FFFFFF;
+
+    font-size:.85rem;
+
+    font-weight:800;
+
+}
+
+/* Aviso de "no se pudo cargar este recorrido" -- se limpia solo pasado
+   ROUTE_DETAIL_ERROR_TIMEOUT_MS (comunidadStore.js), sin botón: la lista de
+   detrás sigue intacta y navegable, este toast es la única señal de que
+   algo falló. Por encima de la navegación inferior, pegado a su borde
+   superior. */
+.comunidad-detail-toast{
+
+    position:fixed;
+
+    left:50%;
+
+    bottom:calc(88px + env(safe-area-inset-bottom));
+
+    transform:translateX(-50%);
+
+    z-index:150;
+
+    max-width:calc(100% - 32px);
+
+    padding:12px 20px;
+
+    border-radius:999px;
+
+    text-align:center;
+
+    border:1px solid color-mix(in srgb, var(--card-border) 45%, transparent);
+
+    background:color-mix(in srgb, var(--card-background) 88%, transparent);
+
+    backdrop-filter:blur(14px);
+    -webkit-backdrop-filter:blur(14px);
+
+    box-shadow:0 4px 14px rgba(0,0,0,.3);
+
+    color:var(--text-secondary);
+
+    font-size:.82rem;
+
+    font-weight:600;
+
+}

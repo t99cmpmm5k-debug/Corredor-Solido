@@ -64,3 +64,48 @@ describe("getEntrenosComunidad -- cliente de GET /api/community/entrenos", () =>
     });
 
 });
+
+describe("getEntrenoComunidadDetail -- cliente de GET /api/community/entrenos/:id", () => {
+
+    afterEach(() => {
+        vi.unstubAllGlobals();
+    });
+
+    it("manda GET a la ruta del id concreto, con el Authorization Bearer real", async () => {
+
+        const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ alias: "Rafa", id: "w1", splits: [] }));
+        vi.stubGlobal("fetch", fetchMock);
+
+        const { getEntrenoComunidadDetail } = await import("./communityApi.js");
+        const result = await getEntrenoComunidadDetail("w1", "token-real");
+
+        expect(result).toEqual({ alias: "Rafa", id: "w1", splits: [] });
+
+        const [url, options] = fetchMock.mock.calls[0];
+        expect(url).toBe("https://api.corredorsolido.es/api/community/entrenos/w1");
+        expect(options.method).toBe("GET");
+        expect(options.headers.Authorization).toBe("Bearer token-real");
+
+    });
+
+    it("un id inexistente (404) lanza con el mensaje del backend", async () => {
+
+        vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ error: "No se encontró ese entreno." }, false, 404)));
+
+        const { getEntrenoComunidadDetail } = await import("./communityApi.js");
+
+        await expect(getEntrenoComunidadDetail("no-existe", "token-real")).rejects.toThrow("No se encontró ese entreno.");
+
+    });
+
+    it("sin red, lanza un error legible en vez de dejar la promesa colgada", async () => {
+
+        vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
+
+        const { getEntrenoComunidadDetail } = await import("./communityApi.js");
+
+        await expect(getEntrenoComunidadDetail("w1", "token-real")).rejects.toThrow("No se pudo conectar con el servidor");
+
+    });
+
+});

@@ -59,7 +59,12 @@ function ComunidadRouteCard(entreno, index) {
 
     return `
 
-        <article class="comunidad-route-card">
+        <article
+            class="comunidad-route-card"
+            data-action="open-comunidad-route-detail"
+            data-entreno-id="${escapeHtml(entreno.id)}"
+            data-entreno-alias="${escapeHtml(entreno.alias)}"
+        >
 
             ${RouteMapContainer(`comunidad-route-map-${index}`)}
 

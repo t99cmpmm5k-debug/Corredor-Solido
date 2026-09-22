@@ -98,6 +98,30 @@ describe("ComunidadMapasView -- lista de tarjetas, una por entreno con GPS", () 
 
     });
 
+    it("cada tarjeta es pulsable -- data-action + el id real del entreno, para pedir su detalle al pulsarla", () => {
+
+        const html = ComunidadMapasView({
+            status: "ready",
+            entrenos: [withTrace("Rafa", "w1")]
+        });
+
+        expect(html).toContain('data-action="open-comunidad-route-detail"');
+        expect(html).toContain('data-entreno-id="w1"');
+        expect(html).toContain('data-entreno-alias="Rafa"');
+
+    });
+
+    it("escapa el alias también en el atributo data-entreno-alias", () => {
+
+        const html = ComunidadMapasView({
+            status: "ready",
+            entrenos: [withTrace('<img src=x onerror=alert(1)>', "w1")]
+        });
+
+        expect(html).not.toContain('data-entreno-alias="<img');
+
+    });
+
     it("no incluye likes, comentarios, filtro por tipo, ni leyenda de colores por usuario", () => {
 
         const html = ComunidadMapasView({

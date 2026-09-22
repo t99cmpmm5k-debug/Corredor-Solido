@@ -1,4 +1,4 @@
-import { getEntrenosComunidad } from "../../data/communityApi.js";
+import { getEntrenosComunidad, getEntrenoComunidadDetail } from "../../data/communityApi.js";
 import { getToken } from "../../data/authStore.js";
 import { rerender } from "../../core/router.js";
 
@@ -69,6 +69,70 @@ export function loadComunidadEntrenos() {
 export function retryComunidadEntrenos() {
 
     entrenosState = { status: "idle", entrenos: [] };
+    rerender();
+
+}
+
+// Detalle completo de UN entreno (mapa fullscreen al pulsar una tarjeta de
+// Mapas) -- estado aparte de entrenosState de arriba: la lista ya está
+// cargada de antes, esto es una petición nueva por cada tarjeta pulsada,
+// nunca cacheada entre una y otra (cada entreno es de un usuario distinto).
+// closed -> loading -> ready | closed (error). A propósito NO hay un status
+// "error" persistente: "si la llamada falla, vuelve a la lista sin abrir
+// nada" -- el aviso es solo `lastError`, un mensaje de usar-y-tirar que
+// initComunidadEvents.js/Comunidad.js muestran mientras dure
+// ROUTE_DETAIL_ERROR_TIMEOUT_MS y luego se limpia solo.
+const ROUTE_DETAIL_ERROR_TIMEOUT_MS = 3000;
+
+let routeDetailState = { status: "closed" };
+let lastError = null;
+
+export function getComunidadRouteDetail() {
+    return routeDetailState;
+}
+
+export function getComunidadRouteDetailError() {
+    return lastError;
+}
+
+// entreno: {id, alias} de la tarjeta pulsada (ComunidadMapasView.js) -- solo
+// esos dos campos hacen falta aquí, el resto (distancia/ritmo/duración) ya
+// se pintó en la propia tarjeta y no hace falta repetirlo en el estado.
+export function openComunidadRouteDetail(entreno) {
+
+    lastError = null;
+    routeDetailState = { status: "loading", alias: entreno.alias };
+    rerender();
+
+    getEntrenoComunidadDetail(entreno.id, getToken()).then(detail => {
+
+        routeDetailState = { status: "ready", alias: entreno.alias, detail };
+        rerender();
+
+    }).catch(err => {
+
+        console.warn("No se pudo cargar el detalle de este entreno de la comunidad.", err);
+
+        routeDetailState = { status: "closed" };
+        lastError = err.message || "No se pudo cargar este recorrido.";
+        rerender();
+
+        setTimeout(() => {
+
+            if (lastError) {
+                lastError = null;
+                rerender();
+            }
+
+        }, ROUTE_DETAIL_ERROR_TIMEOUT_MS);
+
+    });
+
+}
+
+export function closeComunidadRouteDetail() {
+
+    routeDetailState = { status: "closed" };
     rerender();
 
 }
