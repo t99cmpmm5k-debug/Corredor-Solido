@@ -2,7 +2,8 @@ import { rerender } from "../../core/router.js";
 import {
     setComunidadTab, getComunidadTab, loadComunidadEntrenos, getComunidadEntrenos, retryComunidadEntrenos,
     openComunidadRouteDetail, closeComunidadRouteDetail, getComunidadRouteDetail,
-    getComunidadActivityTypeFilter, setComunidadActivityTypeFilter, toggleLikeComunidadEntreno
+    getComunidadActivityTypeFilter, setComunidadActivityTypeFilter, toggleLikeComunidadEntreno,
+    toggleComunidadCommentsPanel, submitComunidadComment, deleteComunidadCommentEntry
 } from "./comunidadStore.js";
 import { mountRouteMap, unmountRouteMap, hasRouteTrace } from "../../components/RouteMap/RouteMap.js";
 import { ROUTE_COLOR_NORMAL, buildPaceColorSegments, buildKmMarkers } from "../Running/routeMapPaceColoring.js";
@@ -174,11 +175,11 @@ export function initComunidadEvents() {
 
     });
 
-    // Pulsar cualquier tarjeta con GPS del feed de Actividad pide su
-    // detalle real (con splits) y abre el mapa fullscreen -- ver
-    // openComunidadRouteDetail()/ComunidadRouteDetailOverlay() (Comunidad.js).
-    // data-entreno-id/-alias vienen ya escapados/puestos por
-    // ComunidadActividadView.js.
+    // Pulsar cualquier tarjeta del feed de Actividad (con o sin GPS, Fase
+    // 3c) pide su detalle real y abre el mapa fullscreen o la pantalla
+    // simple sin ruta -- ver openComunidadRouteDetail()/
+    // ComunidadRouteDetailOverlay() (Comunidad.js). data-entreno-id/-alias
+    // vienen ya escapados/puestos por ComunidadActividadView.js.
     document.querySelectorAll('[data-action="open-comunidad-route-detail"]').forEach(card => {
 
         card.addEventListener("click", () => {
@@ -208,12 +209,56 @@ export function initComunidadEvents() {
     // RouteMapFullscreenOverlay (RouteMap.js) en Running -- solo uno de los
     // dos existe en el DOM en cada render (páginas distintas nunca
     // conviven), así que no hay colisión real al reutilizar el mismo
-    // atributo.
+    // atributo. También sirve para el propio botón de cerrar de
+    // ComunidadRouteDetailNoRoute() (Comunidad.js, mismo data-action a
+    // propósito) cuando el entreno no tiene GPS.
     const closeDetailButton = document.querySelector('.comunidad [data-action="close-route-map-fullscreen"]');
 
     if (closeDetailButton) {
         closeDetailButton.addEventListener("click", closeComunidadRouteDetail);
     }
+
+    // Comentarios (Fase 3c) -- franja colapsable dentro del detalle
+    // (ComunidadCommentsPanel.js).
+    const commentsToggle = document.querySelector('[data-action="toggle-comunidad-comments-panel"]');
+
+    if (commentsToggle) {
+        commentsToggle.addEventListener("click", toggleComunidadCommentsPanel);
+    }
+
+    // El input NUNCA se lee en cada tecla ni se wirea a rerender() -- se lee
+    // directamente del DOM solo al enviar (mismo criterio que save-new-shoe,
+    // lección ya aprendida con otro campo de texto libre: un rerender() por
+    // pulsación borraría lo escrito y cerraría el teclado en iOS). Tras
+    // submitComunidadComment() el propio rerender() optimista ya sustituye
+    // este input por uno nuevo vacío -- no hace falta limpiarlo a mano.
+    const commentInput = document.getElementById("comunidad-comment-input");
+    const submitComment = () => submitComunidadComment(commentInput?.value ?? "");
+
+    const commentSendButton = document.querySelector('[data-action="submit-comunidad-comment"]');
+    if (commentSendButton) {
+        commentSendButton.addEventListener("click", submitComment);
+    }
+
+    if (commentInput) {
+
+        commentInput.addEventListener("keydown", event => {
+
+            if (event.key === "Enter") submitComment();
+
+        });
+
+    }
+
+    document.querySelectorAll('[data-action="delete-comunidad-comment"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+
+            deleteComunidadCommentEntry(Number(button.dataset.commentId));
+
+        });
+
+    });
 
     initComunidadFeedMaps();
     initComunidadDetailMap();

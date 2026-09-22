@@ -189,3 +189,129 @@ describe("unlikeComunidadEntreno -- cliente de DELETE /api/community/entrenos/:i
     });
 
 });
+
+describe("postComunidadComment -- cliente de POST /api/community/entrenos/:id/comments", () => {
+
+    afterEach(() => {
+        vi.unstubAllGlobals();
+    });
+
+    it("manda POST con el texto en el body y devuelve el comentario creado", async () => {
+
+        const created = { id: 1, alias: "Rafa", text: "Bien ahí!", createdAt: "2026-09-22T10:00:00.000Z", isMine: true };
+        const fetchMock = vi.fn().mockResolvedValue(jsonResponse(created, true, 201));
+        vi.stubGlobal("fetch", fetchMock);
+
+        const { postComunidadComment } = await import("./communityApi.js");
+        const result = await postComunidadComment("w1", "Bien ahí!", "token-real");
+
+        expect(result).toEqual(created);
+
+        const [url, options] = fetchMock.mock.calls[0];
+        expect(url).toBe("https://api.corredorsolido.es/api/community/entrenos/w1/comments");
+        expect(options.method).toBe("POST");
+        expect(options.headers.Authorization).toBe("Bearer token-real");
+        expect(JSON.parse(options.body)).toEqual({ text: "Bien ahí!" });
+
+    });
+
+    it("con un error de validación del backend (400), lanza con el mensaje real", async () => {
+
+        vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ error: "El comentario no puede estar vacío." }, false, 400)));
+
+        const { postComunidadComment } = await import("./communityApi.js");
+
+        await expect(postComunidadComment("w1", "", "token-real")).rejects.toThrow("El comentario no puede estar vacío.");
+
+    });
+
+    it("sin red, lanza un error legible en vez de dejar la promesa colgada", async () => {
+
+        vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
+
+        const { postComunidadComment } = await import("./communityApi.js");
+
+        await expect(postComunidadComment("w1", "hola", "token-real")).rejects.toThrow("No se pudo conectar con el servidor");
+
+    });
+
+});
+
+describe("getComunidadEntrenoComments -- cliente de GET /api/community/entrenos/:id/comments", () => {
+
+    afterEach(() => {
+        vi.unstubAllGlobals();
+    });
+
+    it("manda GET a la ruta del id concreto y devuelve la lista", async () => {
+
+        const comments = [{ id: 1, alias: "Ana", text: "Genial", createdAt: "2026-09-22T10:00:00.000Z", isMine: false }];
+        const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ comments }));
+        vi.stubGlobal("fetch", fetchMock);
+
+        const { getComunidadEntrenoComments } = await import("./communityApi.js");
+        const result = await getComunidadEntrenoComments("w1", "token-real");
+
+        expect(result).toEqual({ comments });
+
+        const [url, options] = fetchMock.mock.calls[0];
+        expect(url).toBe("https://api.corredorsolido.es/api/community/entrenos/w1/comments");
+        expect(options.method).toBe("GET");
+
+    });
+
+    it("sin red, lanza un error legible en vez de dejar la promesa colgada", async () => {
+
+        vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
+
+        const { getComunidadEntrenoComments } = await import("./communityApi.js");
+
+        await expect(getComunidadEntrenoComments("w1", "token-real")).rejects.toThrow("No se pudo conectar con el servidor");
+
+    });
+
+});
+
+describe("deleteComunidadComment -- cliente de DELETE /api/community/entrenos/:id/comments/:commentId", () => {
+
+    afterEach(() => {
+        vi.unstubAllGlobals();
+    });
+
+    it("manda DELETE a la ruta del comentario concreto", async () => {
+
+        const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ deleted: true }));
+        vi.stubGlobal("fetch", fetchMock);
+
+        const { deleteComunidadComment } = await import("./communityApi.js");
+        const result = await deleteComunidadComment("w1", 42, "token-real");
+
+        expect(result).toEqual({ deleted: true });
+
+        const [url, options] = fetchMock.mock.calls[0];
+        expect(url).toBe("https://api.corredorsolido.es/api/community/entrenos/w1/comments/42");
+        expect(options.method).toBe("DELETE");
+
+    });
+
+    it("un 403 (comentario ajeno) lanza con el mensaje real del backend", async () => {
+
+        vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ error: "Solo puedes borrar tus propios comentarios." }, false, 403)));
+
+        const { deleteComunidadComment } = await import("./communityApi.js");
+
+        await expect(deleteComunidadComment("w1", 42, "token-real")).rejects.toThrow("Solo puedes borrar tus propios comentarios.");
+
+    });
+
+    it("sin red, lanza un error legible en vez de dejar la promesa colgada", async () => {
+
+        vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
+
+        const { deleteComunidadComment } = await import("./communityApi.js");
+
+        await expect(deleteComunidadComment("w1", 42, "token-real")).rejects.toThrow("No se pudo conectar con el servidor");
+
+    });
+
+});

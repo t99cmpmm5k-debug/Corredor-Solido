@@ -136,15 +136,37 @@ function ComunidadLikeButton(entreno) {
 
 }
 
+// Solo texto, no un botón -- no tiene acción propia (punto 11: mostrar el
+// número, no abrir nada aparte): la tarjeta entera ya es pulsable y abre el
+// detalle real, donde de verdad se leen/escriben comentarios (ver
+// ComunidadCommentsPanel.js).
+function ComunidadCommentCountBadge(entreno) {
+
+    return `
+
+        <span class="comunidad-comment-count">
+
+            <iconify-icon icon="solar:chat-round-dots-linear"></iconify-icon>
+
+            <span>${entreno.commentsCount ?? 0}</span>
+
+        </span>
+
+    `;
+
+}
+
 // El contenedor id="comunidad-feed-map-N" (solo si hasRouteTrace) lo monta
 // initComunidadEvents.js -- mismo mountRouteMap() en modo pequeño que ya
 // usa el mapa de un entreno propio (RunningDetailView.js).
 //
-// data-action="open-comunidad-route-detail" SOLO si tiene GPS -- reutiliza
-// tal cual el mismo mapa fullscreen ya construido para el detalle de un
-// entreno de otro usuario (mismo data-entreno-id/-alias, mismo listener en
-// initComunidadEvents.js, cero cableado nuevo). Un entreno sin ruta no
-// tiene detalle con mapa que abrir, así que no es pulsable.
+// TODA tarjeta es pulsable ahora (antes solo las que tenían GPS) -- los
+// likes ya se podían dar a cualquier entreno (Fase 3b) y los comentarios
+// también son de "cualquier entreno" (Fase 3c, pedido explícito en el
+// backend); sin esto, una tarjeta sin GPS podría mostrar "3 comentarios"
+// sin ninguna forma real de leerlos o añadir uno. Sin GPS, el propio
+// detalle (Comunidad.js) muestra un hueco simple en vez de mapa -- nunca
+// intenta montar Leaflet sobre nada.
 function ComunidadActivityCard(entreno, index) {
 
     const pace = entreno.avgPaceSecPerKm != null ? `${formatSecondsAsClock(entreno.avgPaceSecPerKm)}/km` : "—";
@@ -155,12 +177,10 @@ function ComunidadActivityCard(entreno, index) {
     return `
 
         <article
-            class="comunidad-route-card ${withRoute ? "" : "is-routeless"}"
-            ${withRoute ? `
-                data-action="open-comunidad-route-detail"
-                data-entreno-id="${escapeHtml(entreno.id)}"
-                data-entreno-alias="${escapeHtml(entreno.alias)}"
-            ` : ""}
+            class="comunidad-route-card"
+            data-action="open-comunidad-route-detail"
+            data-entreno-id="${escapeHtml(entreno.id)}"
+            data-entreno-alias="${escapeHtml(entreno.alias)}"
         >
 
             ${withRoute ? RouteMapContainer(`comunidad-feed-map-${index}`) : ComunidadActivityPlaceholder(entreno.type)}
@@ -188,6 +208,8 @@ function ComunidadActivityCard(entreno, index) {
                 <div class="comunidad-route-card-footer">
 
                     ${ComunidadLikeButton(entreno)}
+
+                    ${ComunidadCommentCountBadge(entreno)}
 
                 </div>
 

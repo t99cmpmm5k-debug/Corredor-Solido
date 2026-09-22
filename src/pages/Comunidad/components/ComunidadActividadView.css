@@ -13,13 +13,14 @@
 
 }
 
-/* Toda la tarjeta con GPS es un único objetivo táctil (pulsarla abre el
-   detalle fullscreen con splits reales, ver openComunidadRouteDetail() en
-   comunidadStore.js/initComunidadEvents.js) -- una sin GPS no lo es (ver
-   .is-routeless más abajo), a diferencia de RouteMapTapTarget (ese abre SU
-   PROPIO overlay fullscreen con la misma traza sin colorear; aquí hace
-   falta pedir el detalle real al servidor primero, así que el gesto vive
-   en la tarjeta entera). */
+/* Toda la tarjeta (con o sin GPS, Fase 3c) es un único objetivo táctil --
+   pulsarla abre el detalle real (mapa fullscreen si tiene ruta, una
+   pantalla simple si no), con su sección de comentarios debajo en los dos
+   casos. Distinto de RouteMapTapTarget (ese abre SU PROPIO overlay
+   fullscreen con la misma traza sin colorear; aquí hace falta pedir el
+   detalle real al servidor primero, así que el gesto vive en la tarjeta
+   entera, ver openComunidadRouteDetail() en comunidadStore.js/
+   initComunidadEvents.js). */
 .comunidad-route-card{
 
     display:flex;
@@ -151,17 +152,46 @@
 
 }
 
-/* Fila propia para el corazón (Fase 3b) -- separada de .comunidad-route-card-stats
-   (esos son datos planos, no interactivos) para que quede claro que ESTO sí
-   se puede pulsar. Alineado a la derecha -- mismo criterio visual que la
-   fecha en la cabecera de la tarjeta. */
+/* Fila propia para el corazón (Fase 3b) y el número de comentarios (Fase
+   3c) -- separada de .comunidad-route-card-stats (esos son datos planos,
+   no interactivos) para que quede claro que EL CORAZÓN sí se puede pulsar
+   (el número de comentarios no tiene acción propia, ver
+   ComunidadCommentCountBadge -- la tarjeta entera ya abre el detalle real).
+   Alineados a la derecha -- mismo criterio visual que la fecha en la
+   cabecera de la tarjeta. */
 .comunidad-route-card-footer{
 
     display:flex;
 
+    align-items:center;
+
     justify-content:flex-end;
 
+    gap:14px;
+
     margin-top:2px;
+
+}
+
+.comunidad-comment-count{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:5px;
+
+    color:var(--text-secondary);
+
+    font-size:.82rem;
+
+    font-weight:700;
+
+}
+
+.comunidad-comment-count iconify-icon{
+
+    font-size:18px;
 
 }
 
@@ -303,11 +333,3 @@
 
 }
 
-/* Tarjeta sin ruta -- no es pulsable (sin data-action, ver
-   ComunidadActividadView.js), así que no hereda el cursor:pointer de
-   .comunidad-route-card. */
-.comunidad-route-card.is-routeless{
-
-    cursor:default;
-
-}

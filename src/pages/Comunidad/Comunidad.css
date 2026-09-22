@@ -254,6 +254,58 @@
 
 }
 
+/* Detalle SIN mapa (Fase 3c) -- mismo tratamiento fixed/inset:0 que
+   .route-map-fullscreen-overlay (RouteMap.css) para verse igual de
+   "pantalla completa", pero sin ningún Leaflet detrás: solo un icono
+   grande centrado (mismo lenguaje que .comunidad-activity-placeholder de
+   la propia tarjeta) y las 3 estadísticas de siempre, para que quien pulsó
+   una tarjeta sin GPS aterrice en algo coherente, no en un hueco vacío. */
+.comunidad-detail-no-route{
+
+    position:fixed;
+
+    inset:0;
+
+    z-index:500;
+
+    display:flex;
+
+    flex-direction:column;
+
+    align-items:center;
+
+    justify-content:center;
+
+    gap:24px;
+
+    background:var(--card-background);
+
+}
+
+.comunidad-detail-no-route-placeholder iconify-icon{
+
+    font-size:72px;
+
+    color:var(--text-secondary);
+
+}
+
+.comunidad-detail-no-route-stats{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:18px;
+
+    color:var(--text-primary);
+
+    font-size:1rem;
+
+    font-weight:700;
+
+}
+
 /* Aviso de "no se pudo cargar este recorrido" -- se limpia solo pasado
    ROUTE_DETAIL_ERROR_TIMEOUT_MS (comunidadStore.js), sin botón: la lista de
    detrás sigue intacta y navegable, este toast es la única señal de que

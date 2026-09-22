@@ -49,11 +49,12 @@ describe("ComunidadActividadView -- feed de TODOS los entrenos, con o sin GPS", 
 
     });
 
-    it("una tarjeta sin ruta no lleva data-action (no hay detalle con mapa que abrir)", () => {
+    it("una tarjeta sin ruta TAMBIÉN es pulsable (Fase 3c: comentarios de cualquier entreno, no solo los que tienen mapa)", () => {
 
         const html = ComunidadActividadView({ status: "ready", entrenos: [withoutTrace("Ana", "w1")] }, "");
 
-        expect(html).not.toContain('data-action="open-comunidad-route-detail"');
+        expect(html).toContain('data-action="open-comunidad-route-detail"');
+        expect(html).toContain('data-entreno-id="w1"');
 
     });
 
@@ -108,11 +109,28 @@ describe("ComunidadActividadView -- feed de TODOS los entrenos, con o sin GPS", 
 
     });
 
-    it("no incluye comentarios -- eso es Fase 3c (likes ya son de esta fase, 3b)", () => {
+    it("muestra el número real de comentarios junto al de likes (Fase 3c, punto 11)", () => {
 
-        const html = ComunidadActividadView({ status: "ready", entrenos: [withTrace("Rafa", "w1")] }, "");
+        const html = ComunidadActividadView({ status: "ready", entrenos: [withTrace("Rafa", "w1", { commentsCount: 5 })] }, "");
 
-        expect(html).not.toContain("comentari");
+        expect(html).toContain("comunidad-comment-count");
+        expect(html).toMatch(/comunidad-comment-count[^>]*>[\s\S]*?5/);
+
+    });
+
+    it("sin commentsCount en el entreno, muestra 0 en vez de romper", () => {
+
+        const html = ComunidadActividadView({ status: "ready", entrenos: [withTrace("Rafa", "w1", { commentsCount: undefined })] }, "");
+
+        expect(html).toMatch(/comunidad-comment-count[^>]*>[\s\S]*?0/);
+
+    });
+
+    it("el número de comentarios existe también en una tarjeta sin GPS", () => {
+
+        const html = ComunidadActividadView({ status: "ready", entrenos: [withoutTrace("Ana", "w1", { commentsCount: 2 })] }, "");
+
+        expect(html).toMatch(/comunidad-comment-count[^>]*>[\s\S]*?2/);
 
     });
 

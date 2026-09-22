@@ -7,6 +7,8 @@ const getComunidadRouteDetailMock = vi.fn();
 const getComunidadRouteDetailErrorMock = vi.fn();
 const getMyAliasMock = vi.fn();
 const getComunidadActivityTypeFilterMock = vi.fn();
+const getComunidadDetailCommentsMock = vi.fn();
+const getComunidadCommentsPanelExpandedMock = vi.fn();
 
 vi.mock("./comunidadStore.js", () => ({
     COMUNIDAD_TABS: ["actividad", "ranking"],
@@ -14,7 +16,9 @@ vi.mock("./comunidadStore.js", () => ({
     getComunidadEntrenos: () => getComunidadEntrenosMock(),
     getComunidadRouteDetail: () => getComunidadRouteDetailMock(),
     getComunidadRouteDetailError: () => getComunidadRouteDetailErrorMock(),
-    getComunidadActivityTypeFilter: () => getComunidadActivityTypeFilterMock()
+    getComunidadActivityTypeFilter: () => getComunidadActivityTypeFilterMock(),
+    getComunidadDetailComments: () => getComunidadDetailCommentsMock(),
+    getComunidadCommentsPanelExpanded: () => getComunidadCommentsPanelExpandedMock()
 }));
 
 vi.mock("../Profile/profileStore.js", () => ({
@@ -43,6 +47,8 @@ describe("Comunidad -- feed de Actividad y mapa fullscreen del detalle son mutua
         getComunidadRouteDetailErrorMock.mockReset().mockReturnValue(null);
         getMyAliasMock.mockReset().mockReturnValue({ status: "idle", value: null });
         getComunidadActivityTypeFilterMock.mockReset().mockReturnValue("");
+        getComunidadDetailCommentsMock.mockReset().mockReturnValue({ status: "ready", items: [] });
+        getComunidadCommentsPanelExpandedMock.mockReset().mockReturnValue(false);
     });
 
     it("sin ningún detalle abierto, pinta la lista de tarjetas con su propio mapa", async () => {
@@ -60,7 +66,7 @@ describe("Comunidad -- feed de Actividad y mapa fullscreen del detalle son mutua
         getComunidadRouteDetailMock.mockReturnValue({
             status: "ready",
             alias: "Rafa",
-            detail: { id: "w1", splits: [] }
+            detail: { id: "w1", splits: [], routeTrace: [{ lat: 1, lon: 1 }, { lat: 2, lon: 2 }] }
         });
 
         const { Comunidad } = await import("./Comunidad.js");
@@ -150,7 +156,7 @@ describe("Comunidad -- pestaña Actividad (Fase 3a)", () => {
 
         expect(html).toContain("Ana");
         expect(html).toContain("comunidad-activity-placeholder");
-        expect(html).toContain("is-routeless");
+        expect(html).toContain('data-action="open-comunidad-route-detail"');
 
     });
 

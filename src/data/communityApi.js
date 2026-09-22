@@ -162,3 +162,116 @@ export async function unlikeComunidadEntreno(id, token) {
     return data;
 
 }
+
+// Cliente de POST/GET/DELETE .../comments (Fase 3c) -- comentar CUALQUIER
+// entreno, de cualquier usuario. Mismo tratamiento de red que las funciones
+// de arriba. postComunidadComment/getComunidadEntrenoComments/
+// deleteComunidadComment (nombres, no los de comunidadStore.js -- ese
+// módulo expone su propia capa de estado optimista con nombres distintos
+// para no confundir las dos capas).
+export async function postComunidadComment(id, text, token) {
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+    let res;
+
+    try {
+
+        res = await fetch(`${API_BASE_URL}/api/community/entrenos/${id}/comments`, {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${token}`,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ text }),
+            signal: controller.signal
+        });
+
+    } catch {
+
+        throw new Error("No se pudo conectar con el servidor. Comprueba tu conexión.");
+
+    } finally {
+
+        clearTimeout(timeout);
+
+    }
+
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) throw new Error(data.error || "No se pudo publicar el comentario.");
+
+    return data;
+
+}
+
+export async function getComunidadEntrenoComments(id, token) {
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+    let res;
+
+    try {
+
+        res = await fetch(`${API_BASE_URL}/api/community/entrenos/${id}/comments`, {
+            method: "GET",
+            headers: {
+                "Authorization": `Bearer ${token}`
+            },
+            signal: controller.signal
+        });
+
+    } catch {
+
+        throw new Error("No se pudo conectar con el servidor. Comprueba tu conexión.");
+
+    } finally {
+
+        clearTimeout(timeout);
+
+    }
+
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) throw new Error(data.error || "No se pudieron cargar los comentarios de este entreno.");
+
+    return data;
+
+}
+
+export async function deleteComunidadComment(id, commentId, token) {
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+    let res;
+
+    try {
+
+        res = await fetch(`${API_BASE_URL}/api/community/entrenos/${id}/comments/${commentId}`, {
+            method: "DELETE",
+            headers: {
+                "Authorization": `Bearer ${token}`
+            },
+            signal: controller.signal
+        });
+
+    } catch {
+
+        throw new Error("No se pudo conectar con el servidor. Comprueba tu conexión.");
+
+    } finally {
+
+        clearTimeout(timeout);
+
+    }
+
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) throw new Error(data.error || "No se pudo borrar el comentario.");
+
+    return data;
+
+}
