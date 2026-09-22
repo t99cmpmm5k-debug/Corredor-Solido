@@ -109,6 +109,30 @@ describe("ComunidadActividadView -- feed de TODOS los entrenos, con o sin GPS", 
 
     });
 
+    it("pinta un badge con el tipo de entreno, misma etiqueta que el chip de filtro correspondiente", () => {
+
+        const html = ComunidadActividadView({ status: "ready", entrenos: [withTrace("Rafa", "w1", { type: "long" })] }, "");
+
+        expect(html).toMatch(/comunidad-route-card-type-badge[^>]*>[\s\S]*?Tirada larga/);
+
+    });
+
+    it("sin tipo real (dato retroactivo), no pinta ningún badge de tipo", () => {
+
+        const html = ComunidadActividadView({ status: "ready", entrenos: [withTrace("Rafa", "w1", { type: undefined })] }, "");
+
+        expect(html).not.toContain("comunidad-route-card-type-badge");
+
+    });
+
+    it("las 3 estadísticas van en una sola línea separadas por \" · \"", () => {
+
+        const html = ComunidadActividadView({ status: "ready", entrenos: [withTrace("Rafa", "w1", { distanceKm: 10, avgPaceSecPerKm: 300, durationSec: 3000 })] }, "");
+
+        expect(html).toMatch(/10(,0)? km · 5:00\/km · 50:00/);
+
+    });
+
     it("no lleva ningún botón de like ni contador de comentarios -- interacción social quitada del frontend", () => {
 
         const html = ComunidadActividadView({ status: "ready", entrenos: [withTrace("Rafa", "w1", { likesCount: 4, likedByMe: true, commentsCount: 5 })] }, "");

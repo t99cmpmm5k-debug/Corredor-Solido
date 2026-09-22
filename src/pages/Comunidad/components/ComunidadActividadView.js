@@ -105,6 +105,22 @@ function ComunidadActivityPlaceholder(type) {
 
 }
 
+// Badge pequeño con el tipo, superpuesto sobre el mapa/placeholder (pulido
+// de cierre) -- misma etiqueta EXACTA que ya usa el chip de filtro
+// correspondiente (ACTIVIDAD_TYPES/RUNNING_WORKOUT_TYPES), nunca un texto
+// inventado aparte. Un entreno sin tipo real (dato retroactivo) simplemente
+// no pinta badge -- no hay una etiqueta "Sin tipo" que tenga sentido aquí,
+// a diferencia del selector de Running (ese sí necesita una opción para
+// poder asignar uno).
+function ComunidadTypeBadge(type) {
+
+    const label = ACTIVIDAD_TYPES.find(t => t.id === type)?.label;
+    if (!label) return "";
+
+    return `<span class="comunidad-route-card-type-badge">${label}</span>`;
+
+}
+
 // El contenedor id="comunidad-feed-map-N" (solo si hasRouteTrace) lo monta
 // initComunidadEvents.js -- mismo mountRouteMap() en modo pequeño que ya
 // usa el mapa de un entreno propio (RunningDetailView.js).
@@ -132,7 +148,13 @@ function ComunidadActivityCard(entreno, index) {
             data-entreno-alias="${escapeHtml(entreno.alias)}"
         >
 
-            ${withRoute ? RouteMapContainer(`comunidad-feed-map-${index}`) : ComunidadActivityPlaceholder(entreno.type)}
+            <div class="comunidad-route-card-media">
+
+                ${withRoute ? RouteMapContainer(`comunidad-feed-map-${index}`) : ComunidadActivityPlaceholder(entreno.type)}
+
+                ${ComunidadTypeBadge(entreno.type)}
+
+            </div>
 
             <div class="comunidad-route-card-info">
 
@@ -144,15 +166,7 @@ function ComunidadActivityCard(entreno, index) {
 
                 </div>
 
-                <div class="comunidad-route-card-stats">
-
-                    <span>${distance}</span>
-
-                    <span>${pace}</span>
-
-                    <span>${duration}</span>
-
-                </div>
+                <div class="comunidad-route-card-stats">${distance} · ${pace} · ${duration}</div>
 
             </div>
 

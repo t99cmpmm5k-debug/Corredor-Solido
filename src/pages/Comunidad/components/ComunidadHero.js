@@ -20,6 +20,8 @@ export function ComunidadHero() {
 
             <div class="comunidad-hero-overlay"></div>
 
+            <div class="comunidad-hero-fade"></div>
+
             <div class="comunidad-hero-content">
 
                 <p class="comunidad-hero-brand">Corredor <span>Sólido</span></p>

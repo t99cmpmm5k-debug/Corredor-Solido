@@ -4,13 +4,18 @@
    padding-bottom libre de texto para que .comunidad-tabs pueda
    superponerse por debajo sin tapar el título (ver margin-top negativo en
    Comunidad.css). */
+/* Pulido de cierre: min-height/padding-bottom -18% (280->228 / 90->72) --
+   ver el mismo recorte proporcional en .comunidad-tabs (Comunidad.css,
+   margin-top -68px -> -54px) para que el solape con la cápsula
+   Actividad/Ranking se mantenga igual de proporcionado, ahora sobre un
+   hero más bajo. */
 .comunidad-hero{
 
     position:relative;
 
     overflow:hidden;
 
-    min-height:280px;
+    min-height:228px;
 
     display:flex;
 
@@ -18,7 +23,7 @@
 
     justify-content:flex-end;
 
-    padding:24px 20px 90px;
+    padding:24px 20px 72px;
 
     padding-top:calc(24px + env(safe-area-inset-top));
 
@@ -61,6 +66,29 @@
     mix-blend-mode:overlay;
 
     z-index:1;
+
+}
+
+/* Degradado plano adicional (no mix-blend-mode, a diferencia de
+   .comunidad-hero-overlay) -- ese overlay ya oscurece la foto pero, al
+   combinarse en modo "overlay", nunca llega a fundirse del todo en un
+   único color plano: siempre deja algo de textura de la foto asomando.
+   Esta segunda capa, en modo normal, fuerza un remate limpio hacia
+   var(--color-background) en la franja final del hero, para que la
+   transición al fondo azul marino de la página sea realmente continua. */
+.comunidad-hero-fade{
+
+    position:absolute;
+
+    inset:auto 0 0 0;
+
+    height:70px;
+
+    background:linear-gradient(180deg, transparent 0%, var(--color-background) 100%);
+
+    z-index:1;
+
+    pointer-events:none;
 
 }
 

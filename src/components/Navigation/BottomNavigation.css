@@ -80,11 +80,11 @@
 
     height:58px;
 
-    padding:0 6px;
+    padding:0 3px;
 
     display:flex;
     align-items:center;
-    gap:4px;
+    gap:1px;
 
     border-radius:28px;
 
@@ -139,15 +139,20 @@
 }
 
 .nav-item small{
-    font-size:10px;
+    font-size:8px;
     font-weight:600;
+    letter-spacing:-.02em;
 
-    /* nowrap + ellipsis -- séptima pestaña (Comunidad) añadida: con 7
-       columnas flex:1 en vez de 6, el ancho real de cada .nav-item baja lo
-       suficiente en pantallas estrechas como para que una etiqueta de 9
-       letras pudiera partirse en 2 líneas (desalineando esa pestaña frente
-       al resto). Defensivo -- ninguna etiqueta actual llega a truncarse de
-       verdad con esto, solo evita el salto de línea. */
+    /* Pulido de cierre real: con 7 columnas flex:1, "Comunidad" (9 letras,
+       la etiqueta más larga) SÍ llegaba a truncarse en "Comun..." en un
+       iPhone real. Primer intento a 9px con menos padding/gap SEGUÍA
+       truncando -- verificado con Playwright midiendo scrollWidth vs
+       clientWidth del propio <small> (comparar solo su boundingBox contra
+       el padre no sirve: con overflow:hidden esa caja YA sale recortada al
+       ancho del padre, "mide bien" aunque el texto real no quepa). Bajado a
+       8px + letter-spacing más negativo + padding/gap de .bottom-nav
+       recortados otra vez (4px->3px / 2px->1px) hasta confirmar
+       scrollWidth <= clientWidth de verdad. */
     max-width:100%;
     white-space:nowrap;
     overflow:hidden;

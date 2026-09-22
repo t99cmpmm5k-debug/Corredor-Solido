@@ -41,18 +41,28 @@
 
 }
 
+/* Envoltorio del mapa/placeholder -- position:relative es lo único que
+   necesita: ancla el badge de tipo (ver más abajo), que se superpone por
+   encima en su esquina superior izquierda. */
+.comunidad-route-card-media{
+
+    position:relative;
+
+}
+
 /* Mapa PEQUEÑO individual de esta tarjeta -- mismo componente/modo que el
    mapa pequeño de la ficha de un entreno propio (.route-map, RouteMap.css),
    pero más bajo: 340px tiene sentido como "la fotografía" central de una
    ficha a pantalla completa, aquí es solo una miniatura dentro de una lista
-   larga. Selector con más especificidad que .route-map para no tocar esa
-   regla compartida, que sigue rigiendo el resto de mapas de la app tal
-   cual. Sin cursor:pointer -- a diferencia de RouteMapTapTarget, esta
-   miniatura no abre ningún modo pantalla completa propio, es solo dato
-   visual de la tarjeta. */
+   larga (pulido de cierre: 160px -> 132px, un poco más compacta todavía).
+   Selector con más especificidad que .route-map para no tocar esa regla
+   compartida, que sigue rigiendo el resto de mapas de la app tal cual. Sin
+   cursor:pointer -- a diferencia de RouteMapTapTarget, esta miniatura no
+   abre ningún modo pantalla completa propio, es solo dato visual de la
+   tarjeta. */
 .comunidad-route-card .route-map{
 
-    height:160px;
+    height:132px;
 
     border-radius:0;
 
@@ -62,21 +72,55 @@
 
 }
 
-/* Atribución de Esri (SATELLITE_ATTRIBUTION, RouteMap.js) más compacta SOLO
-   aquí -- a diferencia del mapa de 340px/fullscreen de un entreno propio,
-   esta miniatura de 160px no tiene margen de sobra para el mismo tamaño de
-   fuente sin que la franja de atribución se coma una parte grande del
-   alto real del mapa. Mismo texto completo (nunca uno recortado que
-   pudiera incumplir la licencia), solo más pequeño y con menos relleno --
-   más especificidad que la regla compartida de RouteMap.css, se aplica sin
-   tocarla. */
+/* Atribución de Esri (SATELLITE_ATTRIBUTION, RouteMap.js) más pequeña,
+   menos opaca y pegada al borde inferior -- pulido de cierre: la regla
+   compartida de RouteMap.css ya la compacta un poco, pero a esta altura de
+   miniatura seguía leyéndose como una franja clara ocupando una parte
+   notable del propio mapa. Fondo más transparente (.78 -> .5) y texto/
+   padding más pequeños todavía, sin recortar nunca el texto en sí (mismo
+   criterio de licencia que la regla de RouteMap.css). */
 .comunidad-route-card .route-map .leaflet-control-attribution{
 
-    padding:2px 5px;
+    padding:1px 4px;
 
-    font-size:9px;
+    font-size:8px;
 
-    line-height:1.25;
+    line-height:1.2;
+
+    background:rgba(8,17,29,.5);
+
+}
+
+/* Badge de tipo (pulido de cierre) -- misma etiqueta que el chip de filtro
+   correspondiente, superpuesto sobre el mapa/placeholder en vez de vivir
+   junto a alias/fecha (esa cabecera ya tiene suficiente con las dos). */
+.comunidad-route-card-type-badge{
+
+    position:absolute;
+
+    top:10px;
+    left:10px;
+
+    z-index:2;
+
+    padding:4px 10px;
+
+    border-radius:999px;
+
+    background:color-mix(in srgb, var(--card-background) 55%, transparent);
+
+    backdrop-filter:blur(10px);
+    -webkit-backdrop-filter:blur(10px);
+
+    border:1px solid color-mix(in srgb, rgba(255,255,255,.18) 100%, transparent);
+
+    color:#fff;
+
+    font-size:.68rem;
+
+    font-weight:700;
+
+    text-shadow:0 1px 3px rgba(0,0,0,.4);
 
 }
 
@@ -86,9 +130,9 @@
 
     flex-direction:column;
 
-    gap:6px;
+    gap:4px;
 
-    padding:14px 16px;
+    padding:12px 16px;
 
 }
 
@@ -136,13 +180,18 @@
 
 }
 
+/* Una sola línea "distancia · ritmo · duración" (pulido de cierre) --
+   antes 3 bloques sueltos con gap, ahora un único texto corrido con el
+   separador " · " ya puesto por la propia vista (ComunidadActividadView.js),
+   con ellipsis de respaldo si algún alias/fecha muy largos en la misma fila
+   llegasen a apretar el ancho disponible. */
 .comunidad-route-card-stats{
 
-    display:flex;
+    overflow:hidden;
 
-    align-items:center;
+    text-overflow:ellipsis;
 
-    gap:14px;
+    white-space:nowrap;
 
     color:var(--text-secondary);
 
@@ -225,7 +274,7 @@
    vacío fingido. */
 .comunidad-activity-placeholder{
 
-    height:160px;
+    height:132px;
 
     display:flex;
 
