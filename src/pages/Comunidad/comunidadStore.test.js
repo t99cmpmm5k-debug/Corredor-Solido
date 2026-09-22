@@ -2,11 +2,15 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const getEntrenosComunidadMock = vi.fn();
 const getEntrenoComunidadDetailMock = vi.fn();
+const likeComunidadEntrenoMock = vi.fn();
+const unlikeComunidadEntrenoMock = vi.fn();
 const rerenderMock = vi.fn();
 
 vi.mock("../../data/communityApi.js", () => ({
     getEntrenosComunidad: (...args) => getEntrenosComunidadMock(...args),
-    getEntrenoComunidadDetail: (...args) => getEntrenoComunidadDetailMock(...args)
+    getEntrenoComunidadDetail: (...args) => getEntrenoComunidadDetailMock(...args),
+    likeComunidadEntreno: (...args) => likeComunidadEntrenoMock(...args),
+    unlikeComunidadEntreno: (...args) => unlikeComunidadEntrenoMock(...args)
 }));
 
 vi.mock("../../data/authStore.js", () => ({
@@ -243,5 +247,116 @@ describe("comunidadStore -- detalle de un entreno (mapa fullscreen al pulsar una
         await vi.waitFor(() => expect(getComunidadRouteDetailError()).toBeNull(), { timeout: 4000 });
 
     }, 6000);
+
+});
+
+describe("comunidadStore -- likes de Actividad (Fase 3b, update optimista)", () => {
+
+    beforeEach(() => {
+        vi.resetModules();
+        getEntrenosComunidadMock.mockReset();
+        likeComunidadEntrenoMock.mockReset();
+        unlikeComunidadEntrenoMock.mockReset();
+        rerenderMock.mockReset();
+    });
+
+    async function withLoadedEntreno(entreno) {
+
+        const store = await import("./comunidadStore.js");
+
+        getEntrenosComunidadMock.mockResolvedValue({ entrenos: [entreno] });
+        store.loadComunidadEntrenos();
+        await vi.waitFor(() => expect(store.getComunidadEntrenos().status).toBe("ready"));
+
+        return store;
+
+    }
+
+    it("dar like cambia likedByMe/likesCount al instante, antes de que el servidor responda", async () => {
+
+        const { toggleLikeComunidadEntreno, getComunidadEntrenos } = await withLoadedEntreno({ id: "w1", alias: "Rafa", likedByMe: false, likesCount: 2 });
+
+        let resolveRequest;
+        likeComunidadEntrenoMock.mockReturnValue(new Promise(resolve => { resolveRequest = resolve; }));
+
+        toggleLikeComunidadEntreno("w1");
+
+        const [entreno] = getComunidadEntrenos().entrenos;
+        expect(entreno.likedByMe).toBe(true);
+        expect(entreno.likesCount).toBe(3);
+
+        resolveRequest({ liked: true, likesCount: 3 });
+
+    });
+
+    it("quitar like resta 1 en vez de sumar, y llama a unlikeComunidadEntreno (no a like)", async () => {
+
+        const { toggleLikeComunidadEntreno, getComunidadEntrenos } = await withLoadedEntreno({ id: "w1", alias: "Rafa", likedByMe: true, likesCount: 5 });
+
+        unlikeComunidadEntrenoMock.mockResolvedValue({ liked: false, likesCount: 4 });
+
+        toggleLikeComunidadEntreno("w1");
+
+        const [entreno] = getComunidadEntrenos().entrenos;
+        expect(entreno.likedByMe).toBe(false);
+        expect(entreno.likesCount).toBe(4);
+
+        await vi.waitFor(() => expect(unlikeComunidadEntrenoMock).toHaveBeenCalledWith("w1", "token-real"));
+        expect(likeComunidadEntrenoMock).not.toHaveBeenCalled();
+
+    });
+
+    it("al confirmar el servidor, se queda con el likesCount REAL devuelto, no con el +1/-1 local", async () => {
+
+        const { toggleLikeComunidadEntreno, getComunidadEntrenos } = await withLoadedEntreno({ id: "w1", alias: "Rafa", likedByMe: false, likesCount: 2 });
+
+        // El servidor dice 5 (otros 2 usuarios dieron like mientras tanto),
+        // no el 3 que habría calculado el optimista local por su cuenta.
+        likeComunidadEntrenoMock.mockResolvedValue({ liked: true, likesCount: 5 });
+
+        toggleLikeComunidadEntreno("w1");
+
+        await vi.waitFor(() => expect(getComunidadEntrenos().entrenos[0].likesCount).toBe(5));
+
+    });
+
+    it("si la petición falla, revierte likedByMe/likesCount a como estaban antes", async () => {
+
+        const { toggleLikeComunidadEntreno, getComunidadEntrenos } = await withLoadedEntreno({ id: "w1", alias: "Rafa", likedByMe: false, likesCount: 2 });
+
+        likeComunidadEntrenoMock.mockRejectedValue(new Error("network down"));
+
+        toggleLikeComunidadEntreno("w1");
+
+        await vi.waitFor(() => {
+            const [entreno] = getComunidadEntrenos().entrenos;
+            expect(entreno.likedByMe).toBe(false);
+            expect(entreno.likesCount).toBe(2);
+        });
+
+    });
+
+    it("un segundo toggle mientras el primero sigue en marcha no dispara una segunda petición", async () => {
+
+        const { toggleLikeComunidadEntreno } = await withLoadedEntreno({ id: "w1", alias: "Rafa", likedByMe: false, likesCount: 0 });
+
+        likeComunidadEntrenoMock.mockReturnValue(new Promise(() => {})); // nunca resuelve
+
+        toggleLikeComunidadEntreno("w1");
+        toggleLikeComunidadEntreno("w1");
+        toggleLikeComunidadEntreno("w1");
+
+        expect(likeComunidadEntrenoMock).toHaveBeenCalledTimes(1);
+
+    });
+
+    it("un entrenoId que no existe en la lista no rompe nada", async () => {
+
+        const { toggleLikeComunidadEntreno } = await withLoadedEntreno({ id: "w1", alias: "Rafa", likedByMe: false, likesCount: 0 });
+
+        expect(() => toggleLikeComunidadEntreno("no-existe")).not.toThrow();
+        expect(likeComunidadEntrenoMock).not.toHaveBeenCalled();
+
+    });
 
 });

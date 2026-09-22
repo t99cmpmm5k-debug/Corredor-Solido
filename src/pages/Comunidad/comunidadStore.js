@@ -1,4 +1,4 @@
-import { getEntrenosComunidad, getEntrenoComunidadDetail } from "../../data/communityApi.js";
+import { getEntrenosComunidad, getEntrenoComunidadDetail, likeComunidadEntreno, unlikeComunidadEntreno } from "../../data/communityApi.js";
 import { getToken } from "../../data/authStore.js";
 import { rerender } from "../../core/router.js";
 
@@ -153,5 +153,60 @@ export function closeComunidadRouteDetail() {
 
     routeDetailState = { status: "closed" };
     rerender();
+
+}
+
+// Likes del feed de Actividad (Fase 3b) -- update OPTIMISTA: cambia
+// likedByMe/likesCount del entreno ya cargado en entrenosState.entrenos
+// (mutación directa sobre ese mismo objeto, no una copia -- así el mismo
+// entreno se ve actualizado en cualquier sitio que lo lea, sin tener que
+// reconstruir la lista entera) antes de que el servidor responda, y repinta
+// de inmediato. Si la petición falla, revierte a los valores de antes de
+// tocar nada; si tiene éxito, se queda con el likesCount REAL que devuelve
+// el servidor en vez del +1/-1 local (el optimista es solo para que se
+// sienta instantáneo, nunca la fuente de verdad final).
+const pendingLikeToggles = new Set();
+
+export function toggleLikeComunidadEntreno(entrenoId) {
+
+    // Evita una segunda petición mientras la primera sigue en el aire --
+    // un doble toque rápido en el corazón no debe mandar un like Y un
+    // unlike en paralelo, cuyo orden de respuesta no está garantizado.
+    if (pendingLikeToggles.has(entrenoId)) return;
+
+    const entreno = entrenosState.entrenos.find(e => e.id === entrenoId);
+    if (!entreno) return;
+
+    const previousLiked = entreno.likedByMe;
+    const previousCount = entreno.likesCount;
+
+    entreno.likedByMe = !previousLiked;
+    entreno.likesCount = previousCount + (entreno.likedByMe ? 1 : -1);
+
+    pendingLikeToggles.add(entrenoId);
+    rerender();
+
+    const request = previousLiked
+        ? unlikeComunidadEntreno(entrenoId, getToken())
+        : likeComunidadEntreno(entrenoId, getToken());
+
+    request.then(data => {
+
+        entreno.likedByMe = data.liked;
+        entreno.likesCount = data.likesCount;
+
+    }).catch(err => {
+
+        console.warn("No se pudo actualizar el like de este entreno.", err);
+
+        entreno.likedByMe = previousLiked;
+        entreno.likesCount = previousCount;
+
+    }).finally(() => {
+
+        pendingLikeToggles.delete(entrenoId);
+        rerender();
+
+    });
 
 }

@@ -105,6 +105,37 @@ function ComunidadActivityPlaceholder(type) {
 
 }
 
+// Corazón + número (Fase 3b) -- relleno/resaltado si el usuario actual ya
+// dio like (entreno.likedByMe, siempre presente en la respuesta real del
+// backend -- ver server/src/routes/community.js), vacío si no. Propio
+// data-action y stopPropagation() en initComunidadEvents.js -- vive DENTRO
+// de una tarjeta que en el caso con GPS ya es pulsable entera (abre el
+// detalle fullscreen), así que pulsar el corazón no debe abrir también el
+// mapa.
+function ComunidadLikeButton(entreno) {
+
+    const liked = !!entreno.likedByMe;
+    const count = entreno.likesCount ?? 0;
+
+    return `
+
+        <button
+            class="comunidad-like-button ${liked ? "is-liked" : ""}"
+            data-action="toggle-comunidad-like"
+            data-entreno-id="${escapeHtml(entreno.id)}"
+            aria-label="${liked ? "Quitar me gusta" : "Dar me gusta"}"
+        >
+
+            <iconify-icon icon="${liked ? "solar:heart-bold" : "solar:heart-linear"}"></iconify-icon>
+
+            <span>${count}</span>
+
+        </button>
+
+    `;
+
+}
+
 // El contenedor id="comunidad-feed-map-N" (solo si hasRouteTrace) lo monta
 // initComunidadEvents.js -- mismo mountRouteMap() en modo pequeño que ya
 // usa el mapa de un entreno propio (RunningDetailView.js).
@@ -151,6 +182,12 @@ function ComunidadActivityCard(entreno, index) {
                     <span>${pace}</span>
 
                     <span>${duration}</span>
+
+                </div>
+
+                <div class="comunidad-route-card-footer">
+
+                    ${ComunidadLikeButton(entreno)}
 
                 </div>
 

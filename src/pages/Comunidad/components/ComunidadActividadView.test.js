@@ -3,11 +3,12 @@ import { ComunidadActividadView } from "./ComunidadActividadView.js";
 
 const withTrace = (alias, id, overrides = {}) => ({
     alias, id, date: "2026-09-15", type: "easy", distanceKm: 8, avgPaceSecPerKm: 330, durationSec: 2640,
-    routeTrace: [{ lat: 37.9, lon: -1.1 }, { lat: 37.91, lon: -1.11 }], ...overrides
+    routeTrace: [{ lat: 37.9, lon: -1.1 }, { lat: 37.91, lon: -1.11 }], likesCount: 0, likedByMe: false, ...overrides
 });
 
 const withoutTrace = (alias, id, overrides = {}) => ({
-    alias, id, date: "2026-09-14", type: "series", distanceKm: 5, avgPaceSecPerKm: 260, durationSec: 1300, routeTrace: null, ...overrides
+    alias, id, date: "2026-09-14", type: "series", distanceKm: 5, avgPaceSecPerKm: 260, durationSec: 1300, routeTrace: null,
+    likesCount: 0, likedByMe: false, ...overrides
 });
 
 describe("ComunidadActividadView -- feed de TODOS los entrenos, con o sin GPS", () => {
@@ -107,12 +108,48 @@ describe("ComunidadActividadView -- feed de TODOS los entrenos, con o sin GPS", 
 
     });
 
-    it("no incluye likes ni comentarios -- eso es Fase 3b/3c", () => {
+    it("no incluye comentarios -- eso es Fase 3c (likes ya son de esta fase, 3b)", () => {
 
         const html = ComunidadActividadView({ status: "ready", entrenos: [withTrace("Rafa", "w1")] }, "");
 
-        expect(html).not.toContain("like");
         expect(html).not.toContain("comentari");
+
+    });
+
+    it("cada tarjeta lleva su botón de like, con el número real de likes", () => {
+
+        const html = ComunidadActividadView({ status: "ready", entrenos: [withTrace("Rafa", "w1", { likesCount: 4, likedByMe: false })] }, "");
+
+        expect(html).toContain('data-action="toggle-comunidad-like"');
+        expect(html).toContain('data-entreno-id="w1"');
+        expect(html).toMatch(/comunidad-like-button[^>]*>[\s\S]*?4/);
+
+    });
+
+    it("el corazón se ve relleno (is-liked, icono heart-bold) si el usuario ya dio like", () => {
+
+        const html = ComunidadActividadView({ status: "ready", entrenos: [withTrace("Rafa", "w1", { likedByMe: true, likesCount: 1 })] }, "");
+
+        expect(html).toContain("is-liked");
+        expect(html).toContain("solar:heart-bold");
+        expect(html).not.toContain("solar:heart-linear");
+
+    });
+
+    it("el corazón se ve vacío (sin is-liked, icono heart-linear) si el usuario no ha dado like", () => {
+
+        const html = ComunidadActividadView({ status: "ready", entrenos: [withTrace("Rafa", "w1", { likedByMe: false, likesCount: 1 })] }, "");
+
+        expect(html).not.toContain("is-liked");
+        expect(html).toContain("solar:heart-linear");
+
+    });
+
+    it("el botón de like existe también en una tarjeta sin GPS -- el like no depende de tener mapa", () => {
+
+        const html = ComunidadActividadView({ status: "ready", entrenos: [withoutTrace("Ana", "w1", { likesCount: 2 })] }, "");
+
+        expect(html).toContain('data-action="toggle-comunidad-like"');
 
     });
 

@@ -109,3 +109,83 @@ describe("getEntrenoComunidadDetail -- cliente de GET /api/community/entrenos/:i
     });
 
 });
+
+describe("likeComunidadEntreno -- cliente de POST /api/community/entrenos/:id/like", () => {
+
+    afterEach(() => {
+        vi.unstubAllGlobals();
+    });
+
+    it("manda POST a la ruta del id concreto y devuelve { liked, likesCount }", async () => {
+
+        const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ liked: true, likesCount: 3 }));
+        vi.stubGlobal("fetch", fetchMock);
+
+        const { likeComunidadEntreno } = await import("./communityApi.js");
+        const result = await likeComunidadEntreno("w1", "token-real");
+
+        expect(result).toEqual({ liked: true, likesCount: 3 });
+
+        const [url, options] = fetchMock.mock.calls[0];
+        expect(url).toBe("https://api.corredorsolido.es/api/community/entrenos/w1/like");
+        expect(options.method).toBe("POST");
+        expect(options.headers.Authorization).toBe("Bearer token-real");
+
+    });
+
+    it("con un error real del servidor, lanza con el mensaje del backend", async () => {
+
+        vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ error: "No autorizado." }, false, 401)));
+
+        const { likeComunidadEntreno } = await import("./communityApi.js");
+
+        await expect(likeComunidadEntreno("w1", "token-caducado")).rejects.toThrow("No autorizado.");
+
+    });
+
+    it("sin red, lanza un error legible en vez de dejar la promesa colgada", async () => {
+
+        vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
+
+        const { likeComunidadEntreno } = await import("./communityApi.js");
+
+        await expect(likeComunidadEntreno("w1", "token-real")).rejects.toThrow("No se pudo conectar con el servidor");
+
+    });
+
+});
+
+describe("unlikeComunidadEntreno -- cliente de DELETE /api/community/entrenos/:id/like", () => {
+
+    afterEach(() => {
+        vi.unstubAllGlobals();
+    });
+
+    it("manda DELETE a la ruta del id concreto y devuelve { liked, likesCount }", async () => {
+
+        const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ liked: false, likesCount: 2 }));
+        vi.stubGlobal("fetch", fetchMock);
+
+        const { unlikeComunidadEntreno } = await import("./communityApi.js");
+        const result = await unlikeComunidadEntreno("w1", "token-real");
+
+        expect(result).toEqual({ liked: false, likesCount: 2 });
+
+        const [url, options] = fetchMock.mock.calls[0];
+        expect(url).toBe("https://api.corredorsolido.es/api/community/entrenos/w1/like");
+        expect(options.method).toBe("DELETE");
+        expect(options.headers.Authorization).toBe("Bearer token-real");
+
+    });
+
+    it("sin red, lanza un error legible en vez de dejar la promesa colgada", async () => {
+
+        vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
+
+        const { unlikeComunidadEntreno } = await import("./communityApi.js");
+
+        await expect(unlikeComunidadEntreno("w1", "token-real")).rejects.toThrow("No se pudo conectar con el servidor");
+
+    });
+
+});

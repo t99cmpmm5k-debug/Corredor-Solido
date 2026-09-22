@@ -151,6 +151,65 @@
 
 }
 
+/* Fila propia para el corazón (Fase 3b) -- separada de .comunidad-route-card-stats
+   (esos son datos planos, no interactivos) para que quede claro que ESTO sí
+   se puede pulsar. Alineado a la derecha -- mismo criterio visual que la
+   fecha en la cabecera de la tarjeta. */
+.comunidad-route-card-footer{
+
+    display:flex;
+
+    justify-content:flex-end;
+
+    margin-top:2px;
+
+}
+
+/* Botón sin relleno propio (el "resaltado" real lo da el color del icono/
+   número, mismo criterio que un botón "me gusta" cualquiera) -- zona de
+   toque generosa (padding) para no obligar a acertar justo sobre el icono
+   pequeño en un dedo real. */
+.comunidad-like-button{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:5px;
+
+    padding:6px 4px;
+
+    border:none;
+
+    background:none;
+
+    color:var(--text-secondary);
+
+    font-size:.82rem;
+
+    font-weight:700;
+
+    cursor:pointer;
+
+}
+
+.comunidad-like-button iconify-icon{
+
+    font-size:19px;
+
+}
+
+/* Relleno/resaltado cuando el usuario actual ya dio like -- icono distinto
+   (heart-bold, sólido) en vez de solo cambiar de color, para que "ya le di
+   like" se note incluso sin distinguir bien el color (accesibilidad básica
+   de daltonismo, mismo criterio que ya se usó para los marcadores de
+   inicio/fin del mapa, RouteMap.css). */
+.comunidad-like-button.is-liked{
+
+    color:#FF4D6D;
+
+}
+
 /* Píldoras de filtro por tipo -- mismo lenguaje visual de "fila de chips
    horizontal, activo resaltado con var(--color-primary)" que ya usa
    Running (.type-filter-list/.type-filter-chip), reescrito aquí en vez de

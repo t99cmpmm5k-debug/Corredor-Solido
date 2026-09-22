@@ -2,7 +2,7 @@ import { rerender } from "../../core/router.js";
 import {
     setComunidadTab, getComunidadTab, loadComunidadEntrenos, getComunidadEntrenos, retryComunidadEntrenos,
     openComunidadRouteDetail, closeComunidadRouteDetail, getComunidadRouteDetail,
-    getComunidadActivityTypeFilter, setComunidadActivityTypeFilter
+    getComunidadActivityTypeFilter, setComunidadActivityTypeFilter, toggleLikeComunidadEntreno
 } from "./comunidadStore.js";
 import { mountRouteMap, unmountRouteMap, hasRouteTrace } from "../../components/RouteMap/RouteMap.js";
 import { ROUTE_COLOR_NORMAL, buildPaceColorSegments, buildKmMarkers } from "../Running/routeMapPaceColoring.js";
@@ -184,6 +184,21 @@ export function initComunidadEvents() {
         card.addEventListener("click", () => {
 
             openComunidadRouteDetail({ id: card.dataset.entrenoId, alias: card.dataset.entrenoAlias });
+
+        });
+
+    });
+
+    // Corazón de like (Fase 3b) -- stopPropagation() porque vive DENTRO de
+    // una tarjeta que, si el entreno tiene GPS, ya es pulsable entera (abre
+    // el detalle fullscreen, listener de arriba); sin esto, dar like a un
+    // entreno con mapa abriría también su detalle.
+    document.querySelectorAll('[data-action="toggle-comunidad-like"]').forEach(button => {
+
+        button.addEventListener("click", event => {
+
+            event.stopPropagation();
+            toggleLikeComunidadEntreno(button.dataset.entrenoId);
 
         });
 

@@ -86,3 +86,79 @@ export async function getEntrenoComunidadDetail(id, token) {
     return data;
 
 }
+
+// Cliente de POST/DELETE /api/community/entrenos/:id/like (Fase 3b) -- dar/
+// quitar like a CUALQUIER entreno, de cualquier usuario. Mismo tratamiento
+// de red que las dos funciones de arriba. Devuelven `{ liked, likesCount }`
+// -- el conteo real que devuelve el servidor, para que comunidadStore.js
+// pueda reconciliar el update optimista con el valor autoritativo tras la
+// respuesta (nunca confiar solo en el +1/-1 local para siempre).
+export async function likeComunidadEntreno(id, token) {
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+    let res;
+
+    try {
+
+        res = await fetch(`${API_BASE_URL}/api/community/entrenos/${id}/like`, {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${token}`
+            },
+            signal: controller.signal
+        });
+
+    } catch {
+
+        throw new Error("No se pudo conectar con el servidor. Comprueba tu conexión.");
+
+    } finally {
+
+        clearTimeout(timeout);
+
+    }
+
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) throw new Error(data.error || "No se pudo dar like a este entreno.");
+
+    return data;
+
+}
+
+export async function unlikeComunidadEntreno(id, token) {
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+    let res;
+
+    try {
+
+        res = await fetch(`${API_BASE_URL}/api/community/entrenos/${id}/like`, {
+            method: "DELETE",
+            headers: {
+                "Authorization": `Bearer ${token}`
+            },
+            signal: controller.signal
+        });
+
+    } catch {
+
+        throw new Error("No se pudo conectar con el servidor. Comprueba tu conexión.");
+
+    } finally {
+
+        clearTimeout(timeout);
+
+    }
+
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) throw new Error(data.error || "No se pudo quitar el like de este entreno.");
+
+    return data;
+
+}
