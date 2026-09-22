@@ -161,23 +161,30 @@ function resolveAlias(row) {
 // pantalla que consuma esto (Actividad, Ranking) decide su propia ventana
 // de tiempo en el cliente.
 //
-// likesCount/likedByMe (Fase 3b) -- únicos 2 campos que SIEMPRE van en la
-// respuesta (a diferencia de avgHr/z2TimeInZonePercent/routeTrace, que solo
-// aparecen si hay dato real): 0 likes y "no le he dado like" son estados
+// likesCount/likedByMe/commentsCount -- van SIEMPRE en la respuesta (a
+// diferencia de avgHr/z2TimeInZonePercent/routeTrace, que solo aparecen si
+// hay dato real): 0 likes/comentarios y "no le he dado like" son estados
 // reales y válidos de cualquier entreno, no una ausencia de dato que
 // esconder -- omitirlos obligaría al frontend a tratar "sin campo" como
-// "cero likes", una inferencia frágil que esta ruta puede evitar sin más
-// coste. LEFT JOIN + GROUP BY en vez de una subconsulta por entreno -- una
-// sola pasada por toda la lista, sin N+1 consultas.
+// "cero", una inferencia frágil que esta ruta puede evitar sin más coste.
+// 2 LEFT JOIN (likes y comentarios) en la MISMA consulta -- COUNT(DISTINCT
+// ...) en los dos es obligatorio aquí (no un simple COUNT): unir dos tablas
+// "uno a muchos" a la vez multiplica filas (un entreno con 3 likes y 2
+// comentarios produce 6 filas combinadas antes de agregar), así que un
+// COUNT(wl.id) normal contaría cada like una vez POR CADA comentario que
+// tenga ese mismo entreno -- un conteo inflado y dependiente del número de
+// filas del otro JOIN, no del número real de likes.
 export async function getCommunityEntrenos(req, res) {
 
     const [rows] = await pool.execute(
         `SELECT u.email AS email, u.alias_publico AS alias_publico, w.data AS data,
-                COUNT(wl.id) AS likes_count,
-                MAX(CASE WHEN wl.user_id = ? THEN 1 ELSE 0 END) AS liked_by_me
+                COUNT(DISTINCT wl.id) AS likes_count,
+                MAX(CASE WHEN wl.user_id = ? THEN 1 ELSE 0 END) AS liked_by_me,
+                COUNT(DISTINCT wc.id) AS comments_count
          FROM workouts w
          JOIN users u ON u.id = w.user_id
          LEFT JOIN workout_likes wl ON wl.workout_id = w.id
+         LEFT JOIN workout_comments wc ON wc.workout_id = w.id
          GROUP BY w.user_id, w.id, u.email, u.alias_publico, w.data`,
         [req.userId]
     );
@@ -185,7 +192,8 @@ export async function getCommunityEntrenos(req, res) {
     const entrenos = rows.map(row => ({
         ...toPublicEntreno(resolveAlias(row), row.data),
         likesCount: row.likes_count,
-        likedByMe: !!row.liked_by_me
+        likedByMe: !!row.liked_by_me,
+        commentsCount: row.comments_count
     }));
 
     res.json({ entrenos });
@@ -285,3 +293,126 @@ export async function unlikeEntreno(req, res) {
 
 communityRouter.post("/entrenos/:id/like", likeEntreno);
 communityRouter.delete("/entrenos/:id/like", unlikeEntreno);
+
+const MAX_COMMENT_LENGTH = 500;
+
+// Reduce una fila de workout_comments (+ el JOIN a users para el alias) a
+// SOLO lo que el frontend necesita -- mismo criterio de lista blanca que
+// toPublicEntreno. isMine lo decide quien llama: en el propio POST siempre
+// es tuyo (lo acabas de crear); en el GET de la lista se calcula por fila
+// (ver getComunidadComments) -- nunca se infiere comparando alias (dos
+// usuarios podrían compartir alias_publico, no es una columna UNIQUE, ver
+// migrations/004_alias_publico.sql), siempre por el user_id real.
+function toPublicComment(row, isMine) {
+
+    return {
+        id: row.id,
+        alias: resolveAlias(row),
+        text: row.text,
+        createdAt: row.created_at,
+        isMine
+    };
+
+}
+
+// Comentar CUALQUIER entreno, de cualquier usuario -- mismo criterio de
+// apertura que el resto de esta ruta. Validación básica: no vacío tras
+// trim, longitud máxima razonable -- nunca a nivel de columna únicamente
+// (VARCHAR(500) truncaría o fallaría según el modo estricto del servidor,
+// un 400 con mensaje claro es mejor experiencia que cualquiera de las dos).
+//
+// Sin sanear/escapar el texto aquí -- mismo criterio ya usado para el alias
+// público (resolveAlias arriba): se guarda y se devuelve tal cual, el
+// escape de HTML es responsabilidad del FRONTEND al insertarlo en el DOM
+// (innerHTML), igual que ya hace con el alias -- escaparlo aquí ADEMÁS
+// sería redundante con ese mismo criterio ya establecido, no una capa extra
+// de seguridad real.
+//
+// result.insertId (no LAST_INSERT_ID() en una consulta aparte) -- con un
+// pool de conexiones, una segunda llamada a pool.execute() puede caer en
+// una conexión física distinta a la del INSERT, y LAST_INSERT_ID() es un
+// valor de sesión de ESA conexión concreta: pedirlo en una query aparte
+// podría devolver el de otra petición en marcha, o NULL. insertId viene
+// directamente del resultado del propio INSERT, sin esa ambigüedad.
+export async function postComunidadComment(req, res) {
+
+    const text = String(req.body?.text ?? "").trim();
+
+    if (!text) {
+        return res.status(400).json({ error: "El comentario no puede estar vacío." });
+    }
+
+    if (text.length > MAX_COMMENT_LENGTH) {
+        return res.status(400).json({ error: `El comentario no puede superar los ${MAX_COMMENT_LENGTH} caracteres.` });
+    }
+
+    const [result] = await pool.execute(
+        "INSERT INTO workout_comments (workout_id, user_id, text) VALUES (?, ?, ?)",
+        [req.params.id, req.userId, text]
+    );
+
+    const [[row]] = await pool.execute(
+        `SELECT wc.id AS id, wc.text AS text, wc.created_at AS created_at, u.email AS email, u.alias_publico AS alias_publico
+         FROM workout_comments wc
+         JOIN users u ON u.id = wc.user_id
+         WHERE wc.id = ?`,
+        [result.insertId]
+    );
+
+    res.status(201).json(toPublicComment(row, true));
+
+}
+
+// Lista de comentarios de UN entreno concreto -- orden cronológico
+// ascendente (el más antiguo primero), como cualquier hilo de conversación
+// normal, no el más reciente primero (criterio contrario al de la propia
+// lista de entrenos, que sí es descendente -- ahí "más reciente" es lo que
+// importa ver antes; en un hilo de comentarios es al revés, se lee en el
+// orden en que se escribió).
+export async function getComunidadComments(req, res) {
+
+    const [rows] = await pool.execute(
+        `SELECT wc.id AS id, wc.text AS text, wc.created_at AS created_at, u.email AS email, u.alias_publico AS alias_publico,
+                CASE WHEN wc.user_id = ? THEN 1 ELSE 0 END AS is_mine
+         FROM workout_comments wc
+         JOIN users u ON u.id = wc.user_id
+         WHERE wc.workout_id = ?
+         ORDER BY wc.created_at ASC, wc.id ASC`,
+        [req.userId, req.params.id]
+    );
+
+    res.json({ comments: rows.map(row => toPublicComment(row, !!row.is_mine)) });
+
+}
+
+// Borrar un comentario -- SOLO su propio autor, nunca otro usuario ni
+// siquiera el dueño del entreno comentado (pedido explícito). Comprobación
+// en dos pasos (SELECT primero, DELETE después) en vez de un DELETE directo
+// con user_id en el WHERE -- así se puede distinguir "ese comentario ya no
+// existe" (404) de "existe pero no es tuyo" (403), dos errores reales
+// distintos que merecen un mensaje distinto, no el mismo "no ha pasado
+// nada" silencioso que sí tiene sentido para un like (ver unlikeEntreno).
+export async function deleteComunidadComment(req, res) {
+
+    const [rows] = await pool.execute(
+        "SELECT user_id FROM workout_comments WHERE id = ?",
+        [req.params.commentId]
+    );
+
+    if (rows.length === 0) {
+        return res.status(404).json({ error: "Ese comentario ya no existe." });
+    }
+
+    if (rows[0].user_id !== req.userId) {
+        return res.status(403).json({ error: "Solo puedes borrar tus propios comentarios." });
+    }
+
+    await pool.execute("DELETE FROM workout_comments WHERE id = ?", [req.params.commentId]);
+
+    res.json({ deleted: true });
+
+}
+
+communityRouter.post("/entrenos/:id/comments", postComunidadComment);
+communityRouter.get("/entrenos/:id/comments", getComunidadComments);
+communityRouter.delete("/entrenos/:id/comments/:commentId", deleteComunidadComment);

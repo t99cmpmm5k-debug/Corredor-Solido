@@ -90,7 +90,7 @@ describe("getCommunityEntrenos -- lista blanca de campos, nunca datos personales
                     shoeId: "shoe1",
                     importWarnings: ["algo"]
                 },
-                likes_count: 0, liked_by_me: 0
+                likes_count: 0, liked_by_me: 0, comments_count: 0
             }
         ]]);
 
@@ -110,7 +110,8 @@ describe("getCommunityEntrenos -- lista blanca de campos, nunca datos personales
             avgPaceSecPerKm: 300,
             durationSec: 6300,
             likesCount: 0,
-            likedByMe: false
+            likedByMe: false,
+            commentsCount: 0
         });
 
     });
@@ -315,6 +316,29 @@ describe("getCommunityEntrenos -- lista blanca de campos, nunca datos personales
 
     });
 
+    it("commentsCount (Fase 3c) va SIEMPRE, incluso a 0, y no se infla al combinarse con el JOIN de likes", async () => {
+
+        executeMock.mockResolvedValue([[
+            // Simula lo que produciría de verdad un entreno con 3 likes y 2
+            // comentarios si el conteo NO usara DISTINCT -- aquí ya llega
+            // agregado correctamente (COUNT(DISTINCT ...) real), como
+            // llegaría de MariaDB.
+            { email: "a@example.com", data: { id: "w1", type: "long" }, likes_count: 3, liked_by_me: 1, comments_count: 2 },
+            { email: "b@example.com", data: { id: "w2", type: "long" }, likes_count: 0, liked_by_me: 0, comments_count: 0 }
+        ]]);
+
+        const { getCommunityEntrenos } = await import("./community.js");
+        const res = mockRes();
+
+        await getCommunityEntrenos({ userId: 1 }, res);
+
+        const { entrenos } = res.json.mock.calls[0][0];
+
+        expect(entrenos[0].commentsCount).toBe(2);
+        expect(entrenos[1].commentsCount).toBe(0);
+
+    });
+
 });
 
 describe("GET /api/community/entrenos/:id -- detalle completo, de CUALQUIER usuario", () => {
@@ -514,6 +538,212 @@ describe("DELETE /api/community/entrenos/:id/like -- quitar el like propio", () 
 
         await expect(unlikeEntreno(req, res)).resolves.not.toThrow();
         expect(res.json).toHaveBeenCalledWith({ liked: false, likesCount: 0 });
+
+    });
+
+});
+
+describe("POST /api/community/entrenos/:id/comments -- comentar CUALQUIER entreno", () => {
+
+    afterEach(() => {
+        executeMock.mockReset();
+    });
+
+    it("guarda el comentario real y devuelve el creado, con isMine siempre true (lo acabas de escribir tú)", async () => {
+
+        executeMock
+            .mockResolvedValueOnce([{ insertId: 42 }]) // INSERT
+            .mockResolvedValueOnce([[ // SELECT del comentario recién creado
+                { id: 42, text: "Menudo ritmazo!", created_at: "2026-09-22T10:00:00.000Z", email: "ana@example.com", alias_publico: "Ana" }
+            ]]);
+
+        const { postComunidadComment } = await import("./community.js");
+        const req = { params: { id: "w1" }, userId: 5, body: { text: "  Menudo ritmazo!  " } };
+        const res = mockRes();
+
+        await postComunidadComment(req, res);
+
+        expect(executeMock).toHaveBeenNthCalledWith(1, expect.stringContaining("INSERT INTO workout_comments"), ["w1", 5, "Menudo ritmazo!"]);
+        expect(res.status).toHaveBeenCalledWith(201);
+        expect(res.json).toHaveBeenCalledWith({
+            id: 42,
+            alias: "Ana",
+            text: "Menudo ritmazo!",
+            createdAt: "2026-09-22T10:00:00.000Z",
+            isMine: true
+        });
+
+    });
+
+    it("recorta espacios (trim) antes de guardar y de comprobar si está vacío", async () => {
+
+        const { postComunidadComment } = await import("./community.js");
+        const req = { params: { id: "w1" }, userId: 5, body: { text: "   " } };
+        const res = mockRes();
+
+        await postComunidadComment(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(400);
+        expect(executeMock).not.toHaveBeenCalled();
+
+    });
+
+    it("un texto vacío (o sin campo text) devuelve 400 con un mensaje claro, no un 500", async () => {
+
+        const { postComunidadComment } = await import("./community.js");
+        const res = mockRes();
+
+        await postComunidadComment({ params: { id: "w1" }, userId: 5, body: {} }, res);
+
+        expect(res.status).toHaveBeenCalledWith(400);
+        expect(res.json).toHaveBeenCalledWith({ error: expect.any(String) });
+
+    });
+
+    it("un texto por encima de 500 caracteres devuelve 400, no se guarda", async () => {
+
+        const { postComunidadComment } = await import("./community.js");
+        const req = { params: { id: "w1" }, userId: 5, body: { text: "a".repeat(501) } };
+        const res = mockRes();
+
+        await postComunidadComment(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(400);
+        expect(executeMock).not.toHaveBeenCalled();
+
+    });
+
+    it("un texto de exactamente 500 caracteres sí se acepta (el límite es inclusive)", async () => {
+
+        executeMock
+            .mockResolvedValueOnce([{ insertId: 1 }])
+            .mockResolvedValueOnce([[{ id: 1, text: "a".repeat(500), created_at: "2026-09-22T10:00:00.000Z", email: "a@example.com", alias_publico: null }]]);
+
+        const { postComunidadComment } = await import("./community.js");
+        const req = { params: { id: "w1" }, userId: 5, body: { text: "a".repeat(500) } };
+        const res = mockRes();
+
+        await postComunidadComment(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(201);
+
+    });
+
+});
+
+describe("GET /api/community/entrenos/:id/comments -- lista de comentarios de UN entreno", () => {
+
+    afterEach(() => {
+        executeMock.mockReset();
+    });
+
+    it("devuelve alias/texto/fecha de cada comentario, en orden cronológico ascendente", async () => {
+
+        executeMock.mockResolvedValue([[
+            { id: 1, text: "Primero", created_at: "2026-09-20T10:00:00.000Z", email: "ana@example.com", alias_publico: "Ana", is_mine: 0 },
+            { id: 2, text: "Segundo", created_at: "2026-09-21T10:00:00.000Z", email: "rafasanrom10@icloud.com", alias_publico: null, is_mine: 1 }
+        ]]);
+
+        const { getComunidadComments } = await import("./community.js");
+        const req = { params: { id: "w1" }, userId: 5 };
+        const res = mockRes();
+
+        await getComunidadComments(req, res);
+
+        expect(res.json).toHaveBeenCalledWith({
+            comments: [
+                { id: 1, alias: "Ana", text: "Primero", createdAt: "2026-09-20T10:00:00.000Z", isMine: false },
+                { id: 2, alias: "rafasanrom10", text: "Segundo", createdAt: "2026-09-21T10:00:00.000Z", isMine: true }
+            ]
+        });
+
+        // ORDER BY cronológico ascendente -- el más antiguo primero (a
+        // diferencia de la lista de entrenos, que es descendente).
+        expect(executeMock).toHaveBeenCalledWith(expect.stringMatching(/ORDER BY wc\.created_at ASC/), [5, "w1"]);
+
+    });
+
+    it("un entreno sin comentarios devuelve una lista vacía, no un error", async () => {
+
+        executeMock.mockResolvedValue([[]]);
+
+        const { getComunidadComments } = await import("./community.js");
+        const res = mockRes();
+
+        await expect(getComunidadComments({ params: { id: "w1" }, userId: 5 }, res)).resolves.not.toThrow();
+        expect(res.json).toHaveBeenCalledWith({ comments: [] });
+
+    });
+
+    it("nunca incluye email ni password -- misma disciplina que el resto de esta ruta", async () => {
+
+        executeMock.mockResolvedValue([[
+            { id: 1, text: "hola", created_at: "2026-09-20T10:00:00.000Z", email: "rafasanrom10@icloud.com", alias_publico: null, is_mine: 0 }
+        ]]);
+
+        const { getComunidadComments } = await import("./community.js");
+        const res = mockRes();
+
+        await getComunidadComments({ params: { id: "w1" }, userId: 999 }, res);
+
+        const serialized = JSON.stringify(res.json.mock.calls[0][0]);
+        expect(serialized).not.toContain("icloud.com");
+        expect(serialized.toLowerCase()).not.toContain("password");
+
+    });
+
+});
+
+describe("DELETE /api/community/entrenos/:id/comments/:commentId -- SOLO el autor puede borrar el suyo", () => {
+
+    afterEach(() => {
+        executeMock.mockReset();
+    });
+
+    it("el autor real borra su propio comentario", async () => {
+
+        executeMock
+            .mockResolvedValueOnce([[{ user_id: 5 }]]) // SELECT de comprobación
+            .mockResolvedValueOnce([{}]); // DELETE
+
+        const { deleteComunidadComment } = await import("./community.js");
+        const req = { params: { id: "w1", commentId: "42" }, userId: 5 };
+        const res = mockRes();
+
+        await deleteComunidadComment(req, res);
+
+        expect(executeMock).toHaveBeenNthCalledWith(2, expect.stringContaining("DELETE FROM workout_comments"), ["42"]);
+        expect(res.json).toHaveBeenCalledWith({ deleted: true });
+
+    });
+
+    it("OTRO usuario (ni siquiera el dueño del entreno) NO puede borrar un comentario ajeno -- 403, nunca lo borra", async () => {
+
+        executeMock.mockResolvedValueOnce([[{ user_id: 5 }]]); // el comentario es de user_id 5
+
+        const { deleteComunidadComment } = await import("./community.js");
+        const req = { params: { id: "w1", commentId: "42" }, userId: 999 }; // pregunta otro usuario distinto
+        const res = mockRes();
+
+        await deleteComunidadComment(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(403);
+        expect(executeMock).toHaveBeenCalledTimes(1); // nunca llega a ejecutar el DELETE
+
+    });
+
+    it("un comentario que ya no existe devuelve 404, no un 500 ni un falso 403", async () => {
+
+        executeMock.mockResolvedValueOnce([[]]); // SELECT no encuentra nada
+
+        const { deleteComunidadComment } = await import("./community.js");
+        const req = { params: { id: "w1", commentId: "no-existe" }, userId: 5 };
+        const res = mockRes();
+
+        await deleteComunidadComment(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(404);
+        expect(executeMock).toHaveBeenCalledTimes(1);
 
     });
 
