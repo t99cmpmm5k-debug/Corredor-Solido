@@ -270,16 +270,23 @@ export function todayRemainingHours(hours) {
 
 // Ajustes finales de cierre (B4): además de no cruzar la medianoche
 // (todayRemainingHours) ni proponer una hora ya pasada (remainingHours),
-// tampoco tiene sentido recomendar salir a correr de madrugada aunque
-// sea la hora más fresca del pronóstico -- 06:00 es el límite de
-// diseño, no un dato del pronóstico. El límite superior (23:00) ya lo
-// pone todayRemainingHours() de forma natural, esta función solo recorta
-// el extremo de abajo.
+// tampoco tiene sentido recomendar salir a correr de madrugada ni a
+// última hora de la noche aunque sea la hora más fresca del pronóstico
+// -- la franja recomendada debe caer entera dentro de 06:00-22:00
+// (límites de diseño, no un dato del pronóstico). Cada entrada es un
+// tramo de una hora, así que la última candidata es la de las 21:00
+// ("21:00-22:00"). Bug real (2026-09-23): de noche recomendaba
+// "23:00-00:00" -- antes solo había límite inferior y el superior se
+// dejaba a todayRemainingHours(), que solo corta en la medianoche.
 const EARLIEST_RECOMMENDABLE_HOUR = 6;
+const LATEST_RECOMMENDABLE_END_HOUR = 22;
 
 export function withinRecommendableWindow(hours) {
 
-    return hours.filter(h => Number(h.time.slice(0, 2)) >= EARLIEST_RECOMMENDABLE_HOUR);
+    return hours.filter(h => {
+        const hh = Number(h.time.slice(0, 2));
+        return hh >= EARLIEST_RECOMMENDABLE_HOUR && hh + 1 <= LATEST_RECOMMENDABLE_END_HOUR;
+    });
 
 }
 

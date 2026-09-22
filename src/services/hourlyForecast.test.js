@@ -328,10 +328,19 @@ describe("withinRecommendableWindow", () => {
 
     });
 
-    it("no descarta ninguna hora del resto del día (06:00-23:00)", () => {
+    it("no descarta ninguna hora cuya franja cae dentro de 06:00-22:00", () => {
 
-        const hours = [hour("06:00"), hour("12:00"), hour("23:00")];
+        const hours = [hour("06:00"), hour("12:00"), hour("21:00")];
         expect(withinRecommendableWindow(hours)).toEqual(hours);
+
+    });
+
+    // Bug real (2026-09-23): recomendaba "23:00-00:00". La franja tiene
+    // que terminar como tarde a las 22:00, así que 21:00 es la última.
+    it("descarta las franjas que terminan después de las 22:00", () => {
+
+        const hours = [hour("20:00"), hour("21:00"), hour("22:00"), hour("23:00")];
+        expect(withinRecommendableWindow(hours).map(h => h.time)).toEqual(["20:00", "21:00"]);
 
     });
 

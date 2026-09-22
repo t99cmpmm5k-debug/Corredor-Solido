@@ -78,9 +78,9 @@ function nextHourLabel(time) {
 // entre las que no llevan lluvia/tormenta/nieve, restringida a HOY
 // (todayRemainingHours -- nunca cruza la medianoche, aunque la hora más
 // fría de las 24h cacheadas caiga de madrugada de mañana), a la ventana
-// 06:00-23:00 (withinRecommendableWindow -- de madrugada no se recomienda
-// salir a correr aunque sea la hora más fresca, ajustes finales de
-// cierre, B4) y que además todavía no ha empezado respecto al reloj real
+// 06:00-22:00 (withinRecommendableWindow -- ni de madrugada ni a última
+// hora de la noche se recomienda salir a correr aunque sea la hora más
+// fresca; la última franja posible es 21:00-22:00) y que además todavía no ha empezado respecto al reloj real
 // de ahora mismo (remainingHours() -- nunca se propone una franja ya
 // pasada, aunque el pronóstico llevara un rato cacheado sin recargar, ver
 // homeWeatherStore.js). La franja de horas de abajo NO pasa por ninguno

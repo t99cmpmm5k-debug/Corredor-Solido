@@ -91,7 +91,8 @@ describe("HourlyWeather", () => {
 
         expect(bestBlock).not.toContain("00:00-01:00");
         expect(bestBlock).not.toContain("14°");
-        expect(bestBlock).toContain("23:00");
+        // 22:00 y 23:00 son más frescas pero caen fuera de 06:00-22:00.
+        expect(bestBlock).toContain("21:00-22:00");
 
     });
 
@@ -135,24 +136,24 @@ describe("HourlyWeather", () => {
     });
 
     // Bug real corregido en esta fase: con el reloj real ya DENTRO de la
-    // mejor franja (23:08, franja "23:00-00:00"), el mensaje hablaba en
-    // futuro ("mejor franja restante: 23:00-00:00") como si aún no
-    // hubiera empezado.
+    // mejor franja (p. ej. 21:08, franja "21:00-22:00"), el mensaje
+    // hablaba en futuro ("mejor franja restante") como si aún no hubiera
+    // empezado.
     it("con el reloj real ya dentro de la mejor franja, dice 'ahora' en vez de un rango futuro", () => {
 
         function h(time, temp) {
             return { time, temp, icon: "sun", isNewDay: false, windKmh: null, humidity: null };
         }
 
-        const hours = [h("21:00", 27), h("22:00", 25), h("23:00", 18)];
-        const now = new Date("2026-08-22T23:08:00");
+        const hours = [h("19:00", 27), h("20:00", 25), h("21:00", 18)];
+        const now = new Date("2026-08-22T21:08:00");
 
         const html = HourlyWeather({ hours, current: null, label: null }, now);
 
         expect(html).toContain("Ahora es una buena franja");
         expect(html).toContain("18°");
         expect(html).not.toContain("Mejor franja restante");
-        expect(html).not.toContain("23:00-00:00");
+        expect(html).not.toContain("21:00-22:00");
 
     });
 
@@ -162,21 +163,21 @@ describe("HourlyWeather", () => {
             return { time, temp, icon: "sun", isNewDay: false, windKmh: null, humidity: null };
         }
 
-        const hours = [h("21:00", 27), h("22:00", 25), h("23:00", 18)];
-        const now = new Date("2026-08-22T20:15:00");
+        const hours = [h("19:00", 27), h("20:00", 25), h("21:00", 18)];
+        const now = new Date("2026-08-22T18:15:00");
 
         const html = HourlyWeather({ hours, current: null, label: null }, now);
 
         expect(html).toContain("Mejor franja restante para correr");
-        expect(html).toContain("23:00-00:00");
+        expect(html).toContain("21:00-22:00");
         expect(html).not.toContain("Ahora es una buena franja");
 
     });
 
     // Ajustes finales de cierre (B4): ni siquiera la hora más fresca del
     // día se recomienda si cae de madrugada -- se elige la mejor opción
-    // real dentro de 06:00-23:00.
-    it("ignora la hora más fresca si cae de madrugada, y recomienda la mejor real dentro de 06:00-23:00", () => {
+    // real dentro de 06:00-22:00.
+    it("ignora la hora más fresca si cae de madrugada, y recomienda la mejor real dentro de 06:00-22:00", () => {
 
         function h(time, temp) {
             return { time, temp, icon: "sun", isNewDay: false, windKmh: null, humidity: null };
@@ -195,6 +196,46 @@ describe("HourlyWeather", () => {
         expect(bestBlock).not.toContain("04:00");
         expect(bestBlock).not.toContain("05:00");
         expect(bestBlock).toContain("06:00-07:00");
+
+    });
+
+    // Bug real (2026-09-23): de noche recomendaba "23:00-00:00" -- la
+    // franja tiene que terminar como tarde a las 22:00.
+    it("ignora 22:00 y 23:00 aunque sean las más frescas, y recomienda la mejor real que termina antes de las 22:00", () => {
+
+        function h(time, temp) {
+            return { time, temp, icon: "sun", isNewDay: false, windKmh: null, humidity: null };
+        }
+
+        const hours = [h("18:00", 24), h("19:00", 22), h("20:00", 21), h("21:00", 20), h("22:00", 18), h("23:00", 16)];
+        const now = new Date("2026-08-22T17:30:00");
+
+        const html = HourlyWeather({ hours, current: null, label: null }, now);
+
+        const bestBlock = html.slice(
+            html.indexOf('class="hourly-weather-best'),
+            html.indexOf('class="hourly-weather-scroll')
+        );
+
+        expect(bestBlock).not.toContain("23:00-00:00");
+        expect(bestBlock).not.toContain("22:00-23:00");
+        expect(bestBlock).toContain("21:00-22:00");
+
+    });
+
+    it("pasadas las 22:00 no queda ninguna franja recomendable hoy: omite la línea pero sigue mostrando la tira de horas", () => {
+
+        function h(time, temp, isNewDay = false) {
+            return { time, temp, icon: "sun", isNewDay, windKmh: null, humidity: null };
+        }
+
+        const hours = [h("22:00", 18), h("23:00", 17), h("00:00", 15, true), h("01:00", 14)];
+        const now = new Date("2026-08-22T22:10:00");
+
+        const html = HourlyWeather({ hours, current: null, label: null }, now);
+
+        expect(html).not.toContain('class="hourly-weather-best');
+        expect(html).toContain("23:00");
 
     });
 
