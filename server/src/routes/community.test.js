@@ -9,6 +9,7 @@ vi.mock("../db.js", () => ({
 function mockRes() {
     const res = {};
     res.json = vi.fn().mockReturnValue(res);
+    res.status = vi.fn().mockReturnValue(res);
     return res;
 }
 
@@ -196,6 +197,112 @@ describe("getCommunityEntrenos -- lista blanca de campos, nunca datos personales
 
         const { entrenos } = res.json.mock.calls[0][0];
         expect(entrenos[0].alias).toBe("novia");
+
+    });
+
+});
+
+describe("GET /api/community/entrenos/:id -- detalle completo, de CUALQUIER usuario", () => {
+
+    afterEach(() => {
+        executeMock.mockReset();
+    });
+
+    it("a diferencia de /api/sync (restringido a req.userId), un usuario puede pedir el detalle de un entreno que NO es suyo", async () => {
+
+        executeMock.mockResolvedValue([[
+            { email: "otro@example.com", alias_publico: null, data: { id: "w1", type: "long", distanceKm: 15 } }
+        ]]);
+
+        const { getCommunityEntrenoDetail } = await import("./community.js");
+        const req = { params: { id: "w1" }, userId: 999 };
+        const res = mockRes();
+
+        await getCommunityEntrenoDetail(req, res);
+
+        // La query no debe llevar el userId de quien pregunta como filtro --
+        // solo el id del entreno pedido.
+        expect(executeMock).toHaveBeenCalledWith(expect.any(String), ["w1"]);
+        expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ alias: "otro", distanceKm: 15 }));
+
+    });
+
+    it("un id de entreno inexistente devuelve 404 con un error claro, no un 500", async () => {
+
+        executeMock.mockResolvedValue([[]]);
+
+        const { getCommunityEntrenoDetail } = await import("./community.js");
+        const req = { params: { id: "no-existe" }, userId: 1 };
+        const res = mockRes();
+
+        await expect(getCommunityEntrenoDetail(req, res)).resolves.not.toThrow();
+
+        expect(res.status).toHaveBeenCalledWith(404);
+        expect(res.json).toHaveBeenCalledWith({ error: expect.any(String) });
+
+    });
+
+    it("incluye splits -- lap/distanceKm/paceSecPerKm/avgHr/maxHr/segmentType -- para colorear el mapa por ritmo real", async () => {
+
+        executeMock.mockResolvedValue([[
+            {
+                email: "a@example.com",
+                alias_publico: null,
+                data: {
+                    id: "w1", type: "series", distanceKm: 8,
+                    splits: [
+                        { lap: 1, distanceKm: 1, paceSecPerKm: 300, avgHr: 150, maxHr: 160, segmentType: "work" },
+                        { lap: 2, distanceKm: 1, paceSecPerKm: 400, avgHr: 130, segmentType: "rest" }
+                    ]
+                }
+            }
+        ]]);
+
+        const { getCommunityEntrenoDetail } = await import("./community.js");
+        const res = mockRes();
+
+        await getCommunityEntrenoDetail({ params: { id: "w1" } }, res);
+
+        const body = res.json.mock.calls[0][0];
+
+        expect(body.splits).toEqual([
+            { lap: 1, distanceKm: 1, paceSecPerKm: 300, avgHr: 150, maxHr: 160, segmentType: "work" },
+            { lap: 2, distanceKm: 1, paceSecPerKm: 400, avgHr: 130, maxHr: null, segmentType: "rest" }
+        ]);
+
+    });
+
+    it("sin splits guardados, devuelve un array vacío en vez de romper", async () => {
+
+        executeMock.mockResolvedValue([[
+            { email: "a@example.com", alias_publico: null, data: { id: "w1", type: "long" } }
+        ]]);
+
+        const { getCommunityEntrenoDetail } = await import("./community.js");
+        const res = mockRes();
+
+        await getCommunityEntrenoDetail({ params: { id: "w1" } }, res);
+
+        expect(res.json.mock.calls[0][0].splits).toEqual([]);
+
+    });
+
+    it("sigue excluyendo email, password y tokens -- misma disciplina que la lista", async () => {
+
+        executeMock.mockResolvedValue([[
+            { email: "rafasanrom10@icloud.com", alias_publico: null, data: { id: "w1", type: "long", splits: [] } }
+        ]]);
+
+        const { getCommunityEntrenoDetail } = await import("./community.js");
+        const res = mockRes();
+
+        await getCommunityEntrenoDetail({ params: { id: "w1" } }, res);
+
+        const serialized = JSON.stringify(res.json.mock.calls[0][0]);
+
+        expect(serialized).not.toContain("icloud.com");
+        expect(serialized.toLowerCase()).not.toContain("password");
+        expect(serialized.toLowerCase()).not.toContain("token");
 
     });
 

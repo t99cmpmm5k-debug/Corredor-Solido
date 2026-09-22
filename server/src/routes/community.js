@@ -52,6 +52,40 @@ function toPublicEntreno(alias, workout) {
 
 }
 
+// Campos de un split/tramo por km -- unión de todo lo que ya producen los
+// distintos importadores (lap/distanceKm/paceSecPerKm/avgHr siempre;
+// maxHr/segmentType solo Garmin, ver garmin.js) -- lista blanca explícita
+// igual que toPublicEntreno, nunca copiar el array de splits tal cual
+// aunque hoy no lleve nada personal: mismo criterio de esta ruta completa.
+function toPublicSplit(split) {
+
+    return {
+        lap: split.lap ?? null,
+        distanceKm: split.distanceKm ?? null,
+        paceSecPerKm: split.paceSecPerKm ?? null,
+        avgHr: split.avgHr ?? null,
+        maxHr: split.maxHr ?? null,
+        segmentType: split.segmentType ?? null
+    };
+
+}
+
+// Detalle completo de UN entreno (GET /entrenos/:id) -- mismos campos que
+// toPublicEntreno() más `splits`, el dato que le falta a la lista para
+// poder colorear el mapa por ritmo real y mostrar marcadores de km con
+// popup, exactamente igual que ya hace el mapa fullscreen de un entreno
+// PROPIO (chartSplits()/buildKmMarkers() en RunningDetailView.js/
+// routeMapPaceColoring.js, frontend). Reutiliza el mismo `workout.splits`
+// ya guardado en el JSON del entreno -- ningún formato nuevo.
+function toPublicEntrenoDetail(alias, workout) {
+
+    const entreno = toPublicEntreno(alias, workout);
+    entreno.splits = (workout.splits || []).map(toPublicSplit);
+
+    return entreno;
+
+}
+
 // alias público real (migrations/004_alias_publico.sql) si el usuario ya
 // lo rellenó en Perfil -- si no (NULL, todavía sin configurar), cae a la
 // parte local del email (antes de la @) como alias provisional de andar
@@ -86,3 +120,36 @@ export async function getCommunityEntrenos(req, res) {
 }
 
 communityRouter.get("/entrenos", getCommunityEntrenos);
+
+// Detalle de UN entreno concreto, de CUALQUIER usuario -- a diferencia de
+// /api/sync (siempre restringido a req.userId, ver sync.js), Comunidad ya
+// es abierta por diseño: cualquiera autenticado puede consultar cualquier
+// entreno con GPS, no solo el suyo. Por eso la query no filtra por
+// user_id, solo por el id del entreno (columna real de la tabla, no dentro
+// del JSON -- ver 001_init.sql).
+//
+// Exportada aparte del wiring de la ruta por el mismo motivo que
+// getCommunityEntrenos -- poder testear con un pool mockeado, sin montar
+// un servidor Express de verdad.
+export async function getCommunityEntrenoDetail(req, res) {
+
+    const [rows] = await pool.execute(
+        `SELECT u.email AS email, u.alias_publico AS alias_publico, w.data AS data
+         FROM workouts w
+         JOIN users u ON u.id = w.user_id
+         WHERE w.id = ?
+         LIMIT 1`,
+        [req.params.id]
+    );
+
+    if (rows.length === 0) {
+        return res.status(404).json({ error: "No se encontró ese entreno." });
+    }
+
+    const [row] = rows;
+
+    res.json(toPublicEntrenoDetail(resolveAlias(row), row.data));
+
+}
+
+communityRouter.get("/entrenos/:id", getCommunityEntrenoDetail);
