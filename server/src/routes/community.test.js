@@ -38,14 +38,15 @@ describe("getCommunityEntrenos -- lista blanca de campos, nunca datos personales
         executeMock.mockResolvedValue([[
             {
                 email: "rafasanrom10@icloud.com",
-                data: { id: "w1", type: "easy", date: "2026-09-20", distanceKm: 8, avgPaceSecPerKm: 320, durationSec: 2560, avgHr: 145 }
+                data: { id: "w1", type: "easy", date: "2026-09-20", distanceKm: 8, avgPaceSecPerKm: 320, durationSec: 2560, avgHr: 145 },
+                likes_count: 0, liked_by_me: 0
             }
         ]]);
 
         const { getCommunityEntrenos } = await import("./community.js");
         const res = mockRes();
 
-        await getCommunityEntrenos({}, res);
+        await getCommunityEntrenos({ userId: 1 }, res);
 
         const body = res.json.mock.calls[0][0];
         const serialized = JSON.stringify(body);
@@ -69,7 +70,7 @@ describe("getCommunityEntrenos -- lista blanca de campos, nunca datos personales
         const { getCommunityEntrenos } = await import("./community.js");
         const res = mockRes();
 
-        await expect(getCommunityEntrenos({}, res)).resolves.not.toThrow();
+        await expect(getCommunityEntrenos({ userId: 1 }, res)).resolves.not.toThrow();
         expect(res.json).toHaveBeenCalledWith({ entrenos: [] });
 
     });
@@ -88,14 +89,15 @@ describe("getCommunityEntrenos -- lista blanca de campos, nunca datos personales
                     location: "Ojós",
                     shoeId: "shoe1",
                     importWarnings: ["algo"]
-                }
+                },
+                likes_count: 0, liked_by_me: 0
             }
         ]]);
 
         const { getCommunityEntrenos } = await import("./community.js");
         const res = mockRes();
 
-        await getCommunityEntrenos({}, res);
+        await getCommunityEntrenos({ userId: 1 }, res);
 
         const [entreno] = res.json.mock.calls[0][0].entrenos;
 
@@ -106,7 +108,9 @@ describe("getCommunityEntrenos -- lista blanca de campos, nunca datos personales
             date: "2026-09-19",
             distanceKm: 21,
             avgPaceSecPerKm: 300,
-            durationSec: 6300
+            durationSec: 6300,
+            likesCount: 0,
+            likedByMe: false
         });
 
     });
@@ -114,15 +118,15 @@ describe("getCommunityEntrenos -- lista blanca de campos, nunca datos personales
     it("routeTrace solo se incluye si el entreno tiene un recorrido GPS real (2+ puntos)", async () => {
 
         executeMock.mockResolvedValue([[
-            { email: "a@example.com", data: { id: "w1", type: "long", routeTrace: [{ lat: 1, lon: 1 }, { lat: 2, lon: 2 }] } },
-            { email: "b@example.com", data: { id: "w2", type: "long", routeTrace: [{ lat: 1, lon: 1 }] } },
-            { email: "c@example.com", data: { id: "w3", type: "long" } }
+            { email: "a@example.com", data: { id: "w1", type: "long", routeTrace: [{ lat: 1, lon: 1 }, { lat: 2, lon: 2 }] }, likes_count: 0, liked_by_me: 0 },
+            { email: "b@example.com", data: { id: "w2", type: "long", routeTrace: [{ lat: 1, lon: 1 }] }, likes_count: 0, liked_by_me: 0 },
+            { email: "c@example.com", data: { id: "w3", type: "long" }, likes_count: 0, liked_by_me: 0 }
         ]]);
 
         const { getCommunityEntrenos } = await import("./community.js");
         const res = mockRes();
 
-        await getCommunityEntrenos({}, res);
+        await getCommunityEntrenos({ userId: 1 }, res);
 
         const { entrenos } = res.json.mock.calls[0][0];
 
@@ -142,7 +146,7 @@ describe("getCommunityEntrenos -- lista blanca de campos, nunca datos personales
         const { getCommunityEntrenos } = await import("./community.js");
         const res = mockRes();
 
-        await getCommunityEntrenos({}, res);
+        await getCommunityEntrenos({ userId: 1 }, res);
 
         const { entrenos } = res.json.mock.calls[0][0];
 
@@ -160,7 +164,7 @@ describe("getCommunityEntrenos -- lista blanca de campos, nunca datos personales
         const { getCommunityEntrenos } = await import("./community.js");
         const res = mockRes();
 
-        await getCommunityEntrenos({}, res);
+        await getCommunityEntrenos({ userId: 1 }, res);
 
         const { entrenos } = res.json.mock.calls[0][0];
         expect(entrenos[0].avgHr).toBeUndefined();
@@ -182,7 +186,7 @@ describe("getCommunityEntrenos -- lista blanca de campos, nunca datos personales
         const { getCommunityEntrenos } = await import("./community.js");
         const res = mockRes();
 
-        await getCommunityEntrenos({}, res);
+        await getCommunityEntrenos({ userId: 1 }, res);
 
         const { entrenos } = res.json.mock.calls[0][0];
 
@@ -208,7 +212,7 @@ describe("getCommunityEntrenos -- lista blanca de campos, nunca datos personales
         const { getCommunityEntrenos } = await import("./community.js");
         const res = mockRes();
 
-        await getCommunityEntrenos({}, res);
+        await getCommunityEntrenos({ userId: 1 }, res);
 
         const { entrenos } = res.json.mock.calls[0][0];
 
@@ -227,7 +231,7 @@ describe("getCommunityEntrenos -- lista blanca de campos, nunca datos personales
         const { getCommunityEntrenos } = await import("./community.js");
         const res = mockRes();
 
-        await getCommunityEntrenos({}, res);
+        await getCommunityEntrenos({ userId: 1 }, res);
 
         const { entrenos } = res.json.mock.calls[0][0];
 
@@ -245,7 +249,7 @@ describe("getCommunityEntrenos -- lista blanca de campos, nunca datos personales
         const { getCommunityEntrenos } = await import("./community.js");
         const res = mockRes();
 
-        await getCommunityEntrenos({}, res);
+        await getCommunityEntrenos({ userId: 1 }, res);
 
         const { entrenos } = res.json.mock.calls[0][0];
         expect(entrenos[0].alias).toBe("Rafa Runner");
@@ -262,10 +266,52 @@ describe("getCommunityEntrenos -- lista blanca de campos, nunca datos personales
         const { getCommunityEntrenos } = await import("./community.js");
         const res = mockRes();
 
-        await getCommunityEntrenos({}, res);
+        await getCommunityEntrenos({ userId: 1 }, res);
 
         const { entrenos } = res.json.mock.calls[0][0];
         expect(entrenos[0].alias).toBe("novia");
+
+    });
+
+    it("likesCount/likedByMe (Fase 3b) van SIEMPRE, incluso a 0/false -- no son un dato que esconder como avgHr/z2", async () => {
+
+        executeMock.mockResolvedValue([[
+            { email: "a@example.com", data: { id: "w1", type: "long" }, likes_count: 0, liked_by_me: 0 }
+        ]]);
+
+        const { getCommunityEntrenos } = await import("./community.js");
+        const res = mockRes();
+
+        await getCommunityEntrenos({ userId: 1 }, res);
+
+        const { entrenos } = res.json.mock.calls[0][0];
+        expect(entrenos[0].likesCount).toBe(0);
+        expect(entrenos[0].likedByMe).toBe(false);
+
+    });
+
+    it("likesCount refleja varios usuarios distintos dando like al mismo entreno, likedByMe distingue si soy uno de ellos", async () => {
+
+        executeMock.mockResolvedValue([[
+            // La query real agrega con LEFT JOIN + GROUP BY -- aquí se simula
+            // ya agregada (como llegaría de MariaDB), no fila por cada like.
+            { email: "a@example.com", data: { id: "w1", type: "long" }, likes_count: 3, liked_by_me: 1 },
+            { email: "b@example.com", data: { id: "w2", type: "long" }, likes_count: 2, liked_by_me: 0 }
+        ]]);
+
+        const { getCommunityEntrenos } = await import("./community.js");
+        const res = mockRes();
+
+        await getCommunityEntrenos({ userId: 7 }, res);
+
+        const { entrenos } = res.json.mock.calls[0][0];
+
+        expect(entrenos[0]).toMatchObject({ likesCount: 3, likedByMe: true });
+        expect(entrenos[1]).toMatchObject({ likesCount: 2, likedByMe: false });
+
+        // El userId de quien pregunta va como parámetro real de la query
+        // (para el MAX(CASE WHEN wl.user_id = ? ...) que calcula likedByMe).
+        expect(executeMock).toHaveBeenCalledWith(expect.any(String), [7]);
 
     });
 
@@ -372,6 +418,102 @@ describe("GET /api/community/entrenos/:id -- detalle completo, de CUALQUIER usua
         expect(serialized).not.toContain("icloud.com");
         expect(serialized.toLowerCase()).not.toContain("password");
         expect(serialized.toLowerCase()).not.toContain("token");
+
+    });
+
+});
+
+describe("POST /api/community/entrenos/:id/like -- dar like a CUALQUIER entreno", () => {
+
+    afterEach(() => {
+        executeMock.mockReset();
+    });
+
+    it("inserta el like real (workout_id + user_id de quien pregunta) y devuelve el conteo actualizado", async () => {
+
+        executeMock
+            .mockResolvedValueOnce([{}]) // INSERT
+            .mockResolvedValueOnce([[{ total: 1 }]]); // COUNT tras el insert
+
+        const { likeEntreno } = await import("./community.js");
+        const req = { params: { id: "w1" }, userId: 5 };
+        const res = mockRes();
+
+        await likeEntreno(req, res);
+
+        expect(executeMock).toHaveBeenNthCalledWith(1, expect.stringContaining("INSERT INTO workout_likes"), ["w1", 5]);
+        expect(res.json).toHaveBeenCalledWith({ liked: true, likesCount: 1 });
+
+    });
+
+    it("un segundo like del MISMO usuario al MISMO entreno no rompe -- la restricción real es el UNIQUE de la base de datos (ER_DUP_ENTRY), tratado como éxito idempotente", async () => {
+
+        const dupError = new Error("Duplicate entry");
+        dupError.code = "ER_DUP_ENTRY";
+
+        executeMock
+            .mockRejectedValueOnce(dupError) // INSERT choca con el UNIQUE real
+            .mockResolvedValueOnce([[{ total: 1 }]]); // el like ya existía, sigue siendo 1
+
+        const { likeEntreno } = await import("./community.js");
+        const req = { params: { id: "w1" }, userId: 5 };
+        const res = mockRes();
+
+        await expect(likeEntreno(req, res)).resolves.not.toThrow();
+        expect(res.json).toHaveBeenCalledWith({ liked: true, likesCount: 1 });
+
+    });
+
+    it("un error real de base de datos (no ER_DUP_ENTRY) sí se propaga, no se traga en silencio", async () => {
+
+        const realError = new Error("connection lost");
+        executeMock.mockRejectedValueOnce(realError);
+
+        const { likeEntreno } = await import("./community.js");
+        const req = { params: { id: "w1" }, userId: 5 };
+        const res = mockRes();
+
+        await expect(likeEntreno(req, res)).rejects.toThrow("connection lost");
+
+    });
+
+});
+
+describe("DELETE /api/community/entrenos/:id/like -- quitar el like propio", () => {
+
+    afterEach(() => {
+        executeMock.mockReset();
+    });
+
+    it("borra solo el like de quien pregunta (workout_id + su propio user_id) y devuelve el conteo actualizado", async () => {
+
+        executeMock
+            .mockResolvedValueOnce([{}]) // DELETE
+            .mockResolvedValueOnce([[{ total: 2 }]]); // otros 2 usuarios seguían con like
+
+        const { unlikeEntreno } = await import("./community.js");
+        const req = { params: { id: "w1" }, userId: 5 };
+        const res = mockRes();
+
+        await unlikeEntreno(req, res);
+
+        expect(executeMock).toHaveBeenNthCalledWith(1, expect.stringContaining("DELETE FROM workout_likes"), ["w1", 5]);
+        expect(res.json).toHaveBeenCalledWith({ liked: false, likesCount: 2 });
+
+    });
+
+    it("quitar un like que ya no existía no rompe -- DELETE es idempotente por definición", async () => {
+
+        executeMock
+            .mockResolvedValueOnce([{ affectedRows: 0 }])
+            .mockResolvedValueOnce([[{ total: 0 }]]);
+
+        const { unlikeEntreno } = await import("./community.js");
+        const req = { params: { id: "w1" }, userId: 5 };
+        const res = mockRes();
+
+        await expect(unlikeEntreno(req, res)).resolves.not.toThrow();
+        expect(res.json).toHaveBeenCalledWith({ liked: false, likesCount: 0 });
 
     });
 

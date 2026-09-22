@@ -158,17 +158,35 @@ function resolveAlias(row) {
 // servidor Express de verdad -- mismo patrón que routes/tiles.js.
 //
 // Sin filtro de fecha a propósito (pedido explícito de esta fase) -- cada
-// pantalla que consuma esto (Fase 1 Mapas, Fase 2 Ranking) decide su
-// propia ventana de tiempo en el cliente.
+// pantalla que consuma esto (Actividad, Ranking) decide su propia ventana
+// de tiempo en el cliente.
+//
+// likesCount/likedByMe (Fase 3b) -- únicos 2 campos que SIEMPRE van en la
+// respuesta (a diferencia de avgHr/z2TimeInZonePercent/routeTrace, que solo
+// aparecen si hay dato real): 0 likes y "no le he dado like" son estados
+// reales y válidos de cualquier entreno, no una ausencia de dato que
+// esconder -- omitirlos obligaría al frontend a tratar "sin campo" como
+// "cero likes", una inferencia frágil que esta ruta puede evitar sin más
+// coste. LEFT JOIN + GROUP BY en vez de una subconsulta por entreno -- una
+// sola pasada por toda la lista, sin N+1 consultas.
 export async function getCommunityEntrenos(req, res) {
 
     const [rows] = await pool.execute(
-        `SELECT u.email AS email, u.alias_publico AS alias_publico, w.data AS data
+        `SELECT u.email AS email, u.alias_publico AS alias_publico, w.data AS data,
+                COUNT(wl.id) AS likes_count,
+                MAX(CASE WHEN wl.user_id = ? THEN 1 ELSE 0 END) AS liked_by_me
          FROM workouts w
-         JOIN users u ON u.id = w.user_id`
+         JOIN users u ON u.id = w.user_id
+         LEFT JOIN workout_likes wl ON wl.workout_id = w.id
+         GROUP BY w.user_id, w.id, u.email, u.alias_publico, w.data`,
+        [req.userId]
     );
 
-    const entrenos = rows.map(row => toPublicEntreno(resolveAlias(row), row.data));
+    const entrenos = rows.map(row => ({
+        ...toPublicEntreno(resolveAlias(row), row.data),
+        likesCount: row.likes_count,
+        likedByMe: !!row.liked_by_me
+    }));
 
     res.json({ entrenos });
 
@@ -208,3 +226,62 @@ export async function getCommunityEntrenoDetail(req, res) {
 }
 
 communityRouter.get("/entrenos/:id", getCommunityEntrenoDetail);
+
+async function countLikes(workoutId) {
+
+    const [[row]] = await pool.execute(
+        "SELECT COUNT(*) AS total FROM workout_likes WHERE workout_id = ?",
+        [workoutId]
+    );
+
+    return row.total;
+
+}
+
+// Dar like a CUALQUIER entreno, de CUALQUIER usuario, incluido el propio --
+// mismo criterio de apertura que el resto de esta ruta (a diferencia de
+// /api/sync). La restricción real de "no duplicar" vive en la base de
+// datos (UNIQUE (workout_id, user_id), ver migrations/005_workout_likes.sql),
+// no aquí -- un segundo POST del mismo usuario al mismo entreno choca con
+// ese UNIQUE (ER_DUP_ENTRY) y se trata como éxito idempotente, nunca como
+// error: el frontend hace un update optimista y puede reintentar sin miedo
+// a duplicar un like real.
+export async function likeEntreno(req, res) {
+
+    try {
+
+        await pool.execute(
+            "INSERT INTO workout_likes (workout_id, user_id) VALUES (?, ?)",
+            [req.params.id, req.userId]
+        );
+
+    } catch (err) {
+
+        if (err.code !== "ER_DUP_ENTRY") throw err;
+
+    }
+
+    res.json({ liked: true, likesCount: await countLikes(req.params.id) });
+
+}
+
+// Quitar el like propio -- DELETE explícito en vez de un toggle dentro del
+// POST de arriba: dos verbos REST separados, cada uno con su propia
+// semántica clara (crear/borrar), sin que el cliente tenga que saber de
+// antemano en qué estado está el like para decidir qué mandar. Sin dato que
+// afectar (no había like tuyo, o el entreno no existe) -- DELETE sigue
+// siendo idempotente por definición, no hace falta comprobar antes de
+// borrar ni devolver 404 por un like que ya no existe.
+export async function unlikeEntreno(req, res) {
+
+    await pool.execute(
+        "DELETE FROM workout_likes WHERE workout_id = ? AND user_id = ?",
+        [req.params.id, req.userId]
+    );
+
+    res.json({ liked: false, likesCount: await countLikes(req.params.id) });
+
+}
+
+communityRouter.post("/entrenos/:id/like", likeEntreno);
+communityRouter.delete("/entrenos/:id/like", unlikeEntreno);
