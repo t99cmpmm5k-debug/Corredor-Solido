@@ -52,16 +52,15 @@ function toPublicEntreno(alias, workout) {
 
 }
 
-// alias público a partir del email -- el esquema actual (migrations/
-// 001_init.sql) no tiene ningún campo de nombre/alias propio, solo email.
-// Exponer el email completo violaría el requisito explícito de esta fase
-// ("excluir... email"), así que se usa la parte local (antes de la @) como
-// alias de andar por casa -- decisión de diseño dada la falta de un campo
-// mejor, no un dato ya pensado para mostrarse en público. Si esto pasa de
-// dos usuarios (Fase 2, ranking con más gente), probablemente merezca su
-// propio campo real en la tabla users.
-function aliasFromEmail(email) {
-    return email.split("@")[0];
+// alias público real (migrations/004_alias_publico.sql) si el usuario ya
+// lo rellenó en Perfil -- si no (NULL, todavía sin configurar), cae a la
+// parte local del email (antes de la @) como alias provisional de andar
+// por casa, para que nadie se quede sin ningún nombre visible mientras no
+// lo configura. Exponer el email completo violaría el requisito explícito
+// de esta fase ("excluir... email"), así que ni en el fallback se manda
+// nunca el email entero, solo su parte local.
+function resolveAlias(row) {
+    return row.alias_publico || row.email.split("@")[0];
 }
 
 // Exportado aparte del wiring de la ruta (communityRouter.get de más abajo)
@@ -75,12 +74,12 @@ function aliasFromEmail(email) {
 export async function getCommunityEntrenos(req, res) {
 
     const [rows] = await pool.execute(
-        `SELECT u.email AS email, w.data AS data
+        `SELECT u.email AS email, u.alias_publico AS alias_publico, w.data AS data
          FROM workouts w
          JOIN users u ON u.id = w.user_id`
     );
 
-    const entrenos = rows.map(row => toPublicEntreno(aliasFromEmail(row.email), row.data));
+    const entrenos = rows.map(row => toPublicEntreno(resolveAlias(row), row.data));
 
     res.json({ entrenos });
 

@@ -318,6 +318,33 @@
 
 }
 
+/* Alias público (Comunidad) -- mismo lenguaje visual que
+   .reference-route-form input (Running), input sin controlar leído del
+   DOM al guardar (ver handleSaveAliasPublico en initProfileEvents.js). */
+.profile-input{
+
+    padding:12px 14px;
+
+    border-radius:var(--radius-sm);
+
+    background:color-mix(in srgb, var(--color-surface) 70%, transparent);
+
+    border:1px solid var(--card-border);
+
+    color:var(--text-primary);
+
+    font-size:.95rem;
+
+    outline:none;
+
+}
+
+.profile-input::placeholder{
+
+    color:var(--color-text-muted);
+
+}
+
 .profile-button{
 
     display:flex;

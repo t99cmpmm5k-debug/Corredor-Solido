@@ -4,12 +4,18 @@ import { hashPassword, verifyPassword, signToken } from "../authUtils.js";
 import { generateAuthToken, hashAuthToken } from "../tokenUtils.js";
 import { sendVerificationEmail, sendPasswordResetEmail } from "../email.js";
 import { emailRateLimit } from "../middleware/rateLimit.js";
+import { requireAuth } from "../middleware/requireAuth.js";
 
 export const authRouter = Router();
 
 const MIN_PASSWORD_LENGTH = 8;
 const VERIFICATION_TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000;
+
+// Alias público (Comunidad) -- longitud razonable, sin más validación de
+// formato (pedido explícito de esta fase).
+const ALIAS_MIN_LENGTH = 2;
+const ALIAS_MAX_LENGTH = 50;
 
 function isValidEmail(email) {
     return typeof email === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -268,3 +274,44 @@ authRouter.post("/restablecer", async (req, res) => {
     res.json({ ok: true });
 
 });
+
+// Perfil propio -- primeras dos rutas protegidas por requireAuth de todo
+// este router (las de arriba son todas pre-login, deliberadamente
+// públicas). req.userId sale del JWT ya verificado, nunca del cuerpo de
+// la petición -- por diseño, con esto es IMPOSIBLE leer o modificar el
+// perfil de otro usuario, no hace falta ninguna comprobación aparte de
+// "¿es el mismo id?" en el propio WHERE.
+//
+// Handlers exportados aparte del wiring de la ruta para poder testearlos
+// con un pool mockeado y un req/res simulados, sin montar un servidor
+// Express de verdad -- mismo patrón que routes/tiles.js y routes/community.js.
+export async function getPerfil(req, res) {
+
+    const [rows] = await pool.execute("SELECT alias_publico FROM users WHERE id = ?", [req.userId]);
+
+    res.json({ aliasPublico: rows[0]?.alias_publico ?? null });
+
+}
+
+export async function updatePerfil(req, res) {
+
+    const { aliasPublico } = req.body ?? {};
+
+    if (typeof aliasPublico !== "string") {
+        return res.status(400).json({ error: "Alias no válido." });
+    }
+
+    const trimmed = aliasPublico.trim();
+
+    if (trimmed.length < ALIAS_MIN_LENGTH || trimmed.length > ALIAS_MAX_LENGTH) {
+        return res.status(400).json({ error: `El alias debe tener entre ${ALIAS_MIN_LENGTH} y ${ALIAS_MAX_LENGTH} caracteres.` });
+    }
+
+    await pool.execute("UPDATE users SET alias_publico = ? WHERE id = ?", [trimmed, req.userId]);
+
+    res.json({ aliasPublico: trimmed });
+
+}
+
+authRouter.get("/perfil", requireAuth, getPerfil);
+authRouter.patch("/perfil", requireAuth, updatePerfil);

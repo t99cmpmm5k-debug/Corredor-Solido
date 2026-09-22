@@ -1,8 +1,9 @@
 import { navigate, rerender } from "../../core/router.js";
 import { exportData, importDataFromFile } from "../../utils/backup.js";
-import { setFeedback } from "./profileStore.js";
-import { clearToken } from "../../data/authStore.js";
+import { setFeedback, loadMyAlias, setMyAlias } from "./profileStore.js";
+import { clearToken, getToken } from "../../data/authStore.js";
 import { runSync } from "../../data/syncManager.js";
+import { actualizarAliasPublico } from "../../data/authApi.js";
 import { Login } from "../Auth/Auth.js";
 
 function handleExport() {
@@ -64,7 +65,51 @@ function handleSyncNow() {
 
 }
 
+// Input sin controlar, leído del DOM al guardar -- mismo patrón que
+// saveNewRoute() en Running/initRunningEvents.js (nunca wirear un input de
+// texto libre a rerender() en cada tecla: sin vDOM, cada rerender()
+// reemplaza app.innerHTML entero y cierra el teclado del móvil a media
+// palabra, bug real ya corregido en otro sitio -- ver
+// feedback_controlled_input_rerender_bug).
+function handleSaveAliasPublico() {
+
+    const value = document.querySelector('[data-field="alias-publico"]')?.value.trim();
+    if (!value) return;
+
+    setFeedback(null);
+    rerender();
+
+    actualizarAliasPublico(getToken(), value).then(data => {
+
+        setMyAlias(data.aliasPublico);
+        setFeedback({ type: "success", text: "Alias público guardado." });
+        rerender();
+
+    }).catch(err => {
+
+        setFeedback({ type: "error", text: err.message || "No se pudo guardar el alias." });
+        rerender();
+
+    });
+
+}
+
 export function initProfileEvents() {
+
+    // Solo pide el alias actual la primera vez que de verdad se visita
+    // Perfil (esta función corre tras CUALQUIER render de la app, ver
+    // core/render.js) -- loadMyAlias() es idempotente (una sola petición
+    // real por sesión, mismo criterio que loadHourlyWeather()), así que
+    // esto nunca dispara una segunda petición si ya se cargó antes.
+    if (document.querySelector(".profile")) {
+        loadMyAlias();
+    }
+
+    const aliasButton = document.querySelector('[data-action="save-alias-publico"]');
+
+    if (aliasButton) {
+        aliasButton.addEventListener("click", handleSaveAliasPublico);
+    }
 
     const syncButton = document.querySelector('[data-action="sync-now"]');
 

@@ -11,6 +11,8 @@ mis datos" en el cliente (`src/utils/backup.js` del frontend).
    ```
    mysql -u TU_USUARIO -p TU_BASE_DE_DATOS < migrations/001_init.sql
    mysql -u TU_USUARIO -p TU_BASE_DE_DATOS < migrations/002_auth_tokens.sql
+   mysql -u TU_USUARIO -p TU_BASE_DE_DATOS < migrations/003_tombstones.sql
+   mysql -u TU_USUARIO -p TU_BASE_DE_DATOS < migrations/004_alias_publico.sql
    ```
 3. Copia `.env.example` a `.env` y rellena los valores reales (credenciales
    de la base de datos ya creadas en Hestia, un `JWT_SECRET` largo y
@@ -29,7 +31,9 @@ mis datos" en el cliente (`src/utils/backup.js` del frontend).
 - `GET /api/sync` (header `Authorization: Bearer <token>`) — devuelve todo lo guardado del usuario
 - `POST /api/sync` (mismo header) — recibe `{ workouts, shoes, plannedSessions, gymSessions, referenceRoutes }` (el mismo JSON de "Exportar mis datos") y lo guarda/fusiona por `id`
 - `GET /api/tiles/satellite/:z/:y/:x` (sin auth — Leaflet la carga como `<img>`, no puede mandar el JWT) — proxy de relay puro hacia Esri World Imagery (`ver src/routes/tiles.js`): guarda `ESRI_API_KEY` solo en este servidor, nunca en el frontend, y no persiste ningún tile en el propio VPS (ver el comentario de esa ruta sobre los términos de Esri). Sin `ESRI_API_KEY` configurada responde `503` en vez de romper el arranque — es una capa visual opcional.
-- `GET /api/community/entrenos` (header `Authorization: Bearer <token>`) — Fase 0 de la feature "Comunidad": entrenos de **todos** los usuarios registrados (no solo el propio), reducidos a una lista blanca de campos (`ver src/routes/community.js`) — nunca email/password/tokens. Sin filtro de fecha (lo decide cada pantalla que lo consuma). Estructura de cada entreno: `{ alias, id, type, date, distanceKm, avgPaceSecPerKm, durationSec, routeTrace?, avgHr? }` — `routeTrace` solo si el entreno tiene GPS real (2+ puntos), `avgHr` solo si `type === "easy"` (Z2). `alias` es la parte local del email (antes de la `@`) — el esquema no tiene un campo de nombre propio todavía.
+- `GET /api/community/entrenos` (header `Authorization: Bearer <token>`) — Fase 0 de la feature "Comunidad": entrenos de **todos** los usuarios registrados (no solo el propio), reducidos a una lista blanca de campos (`ver src/routes/community.js`) — nunca email/password/tokens. Sin filtro de fecha (lo decide cada pantalla que lo consuma). Estructura de cada entreno: `{ alias, id, type, date, distanceKm, avgPaceSecPerKm, durationSec, routeTrace?, avgHr? }` — `routeTrace` solo si el entreno tiene GPS real (2+ puntos), `avgHr` solo si `type === "easy"` (Z2). `alias` es `alias_publico` (ver más abajo) si el usuario ya lo configuró en Perfil, o si no la parte local de su email (antes de la `@`) como respaldo provisional.
+- `GET /api/auth/perfil` (header `Authorization: Bearer <token>`) — `{ aliasPublico }` (`null` si todavía no se ha configurado) del usuario del propio token, nunca de otro.
+- `PATCH /api/auth/perfil` (mismo header) — `{ aliasPublico }` → `{ aliasPublico }` (ya recortado). Guarda el alias público (Comunidad, `migrations/004_alias_publico.sql`) del usuario del propio token — no hay forma de editar el de otro, `req.userId` sale siempre del JWT verificado, nunca del cuerpo de la petición. Validación: 2-50 caracteres tras `trim()`, `400` si no cumple.
 
 Los tokens de `verificar`/`restablecer` son opacos de un solo uso (no JWT),
 guardados con hash en `auth_tokens` (`purpose` distingue cuál es cuál) —

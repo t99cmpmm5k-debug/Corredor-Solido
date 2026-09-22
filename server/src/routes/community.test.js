@@ -166,4 +166,37 @@ describe("getCommunityEntrenos -- lista blanca de campos, nunca datos personales
 
     });
 
+    it("con alias_publico ya configurado, lo usa en vez del derivado del email", async () => {
+
+        executeMock.mockResolvedValue([[
+            { email: "rafasanrom10@icloud.com", alias_publico: "Rafa Runner", data: { id: "w1", type: "long" } }
+        ]]);
+
+        const { getCommunityEntrenos } = await import("./community.js");
+        const res = mockRes();
+
+        await getCommunityEntrenos({}, res);
+
+        const { entrenos } = res.json.mock.calls[0][0];
+        expect(entrenos[0].alias).toBe("Rafa Runner");
+        expect(JSON.stringify(res.json.mock.calls[0][0])).not.toContain("icloud.com");
+
+    });
+
+    it("sin alias_publico (NULL, todavía sin configurar en Perfil), cae al derivado del email -- nadie se queda sin alias visible", async () => {
+
+        executeMock.mockResolvedValue([[
+            { email: "novia@example.com", alias_publico: null, data: { id: "w1", type: "long" } }
+        ]]);
+
+        const { getCommunityEntrenos } = await import("./community.js");
+        const res = mockRes();
+
+        await getCommunityEntrenos({}, res);
+
+        const { entrenos } = res.json.mock.calls[0][0];
+        expect(entrenos[0].alias).toBe("novia");
+
+    });
+
 });

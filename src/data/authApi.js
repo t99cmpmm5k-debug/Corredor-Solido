@@ -3,16 +3,23 @@
 // local para desarrollo todavía.
 const API_BASE_URL = "https://api.corredorsolido.es";
 
-async function authRequest(path, body) {
+// token opcional -- las rutas de antes de iniciar sesión (registro/login/
+// verificar/recuperar/restablecer) nunca lo llevan; /perfil (ver más abajo)
+// sí, con el mismo header Bearer que ya usa syncApi.js. method GET no
+// manda body (undefined, no "{}").
+async function authRequest(path, body, { method = "POST", token = null } = {}) {
 
     let res;
 
     try {
 
         res = await fetch(`${API_BASE_URL}/api/auth/${path}`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(body)
+            method,
+            headers: {
+                "Content-Type": "application/json",
+                ...(token ? { "Authorization": `Bearer ${token}` } : {})
+            },
+            body: body ? JSON.stringify(body) : undefined
         });
 
     } catch {
@@ -76,5 +83,20 @@ export function recuperar(email) {
 export function restablecer(token, nuevaPassword) {
 
     return authRequest("restablecer", { token, nuevaPassword });
+
+}
+
+// authToken: el JWT de sesión (getToken() de authStore.js) -- nombrado
+// distinto al `token` de arriba (el de un solo uso de verificar/
+// restablecer) para no confundir los dos conceptos.
+export function getPerfil(authToken) {
+
+    return authRequest("perfil", null, { method: "GET", token: authToken });
+
+}
+
+export function actualizarAliasPublico(authToken, aliasPublico) {
+
+    return authRequest("perfil", { aliasPublico }, { method: "PATCH", token: authToken });
 
 }

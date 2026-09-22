@@ -1,0 +1,11 @@
+-- Alias público (Comunidad) -- nombre que ven los demás usuarios en
+-- GET /api/community/entrenos, en vez de derivar uno de la parte local
+-- del email (p. ej. "rafasanrom10" de "rafasanrom10@icloud.com" --
+-- exponía parcialmente el email real). NULL hasta que el usuario lo
+-- rellena en Perfil; el fallback al email sigue existiendo mientras
+-- tanto -- ver routes/community.js.
+--
+-- Columna nueva, NULL por defecto -- no toca ninguna fila ni columna
+-- existente (misma política de nunca romper el esquema ya establecida,
+-- ver 001_init.sql/002_auth_tokens.sql/003_tombstones.sql).
+ALTER TABLE users ADD COLUMN alias_publico VARCHAR(50) NULL;
