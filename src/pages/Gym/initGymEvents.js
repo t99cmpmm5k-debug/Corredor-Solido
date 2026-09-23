@@ -4,6 +4,12 @@ import { getRoutineById, createRoutine, updateRoutine, deleteRoutine, getGymDay 
 import { addCustomExercise } from "../../data/customExerciseStore.js";
 import { getAllExercises } from "./exerciseSearch.js";
 import { ExercisePickerResults } from "./components/GymRoutineBuilder.js";
+import {
+    addBodyCompositionEntry,
+    updateBodyCompositionEntry,
+    deleteBodyCompositionEntry,
+    parseBodyCompositionForm
+} from "../../data/bodyCompositionStore.js";
 
 import {
     getActiveSessionId,
@@ -35,7 +41,12 @@ import {
     setExerciseCompletionOverlay,
     clearExerciseCompletionOverlay,
     isRestCriticalNotified,
-    setRestCriticalNotified
+    setRestCriticalNotified,
+    setHomeTab,
+    getBodyCompEditingId,
+    setBodyCompEditingId,
+    getBodyCompPendingDeleteId,
+    setBodyCompPendingDeleteId
 } from "./gymStore.js";
 
 import {
@@ -210,6 +221,40 @@ export function openGymDay(dayId, { completed = false } = {}) {
     }
 
     setHighlightedDayId(dayId);
+    rerender();
+
+}
+
+// Composición corporal: inputs sin controlar, leídos del DOM solo al
+// pulsar Guardar (mismo criterio que save-new-shoe en Running) -- nunca un
+// rerender() por tecla, que cerraría el teclado del móvil.
+function saveBodyCompositionEntry() {
+
+    const read = field => document.querySelector(`.gym-bodycomp-form [data-field="${field}"]`)?.value ?? "";
+
+    const { fields, error } = parseBodyCompositionForm({
+        date: read("date"),
+        weightKg: read("weightKg"),
+        bodyFatPercent: read("bodyFatPercent"),
+        waterPercent: read("waterPercent"),
+        musclePercent: read("musclePercent")
+    });
+
+    // El error se pinta en sitio, sin rerender(): los inputs no están
+    // controlados y repintar borraría todo lo que el usuario ya había
+    // escrito solo por un campo mal.
+    if (error) {
+        const box = document.querySelector("[data-bodycomp-error]");
+        if (box) { box.textContent = error; box.hidden = false; }
+        return;
+    }
+
+    const editingId = getBodyCompEditingId();
+
+    if (editingId) updateBodyCompositionEntry(editingId, fields);
+    else addBodyCompositionEntry(fields);
+
+    setBodyCompEditingId(null);
     rerender();
 
 }
@@ -772,6 +817,53 @@ export function initGymEvents() {
     document.querySelectorAll('[data-action="close-exercise-detail"]').forEach(button => {
 
         button.addEventListener("click", closeExerciseDetail);
+
+    });
+
+    document.querySelectorAll('[data-action="set-gym-home-tab"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+            setHomeTab(button.dataset.tab);
+            rerender();
+        });
+
+    });
+
+    document.querySelector('[data-action="save-bodycomp-entry"]')?.addEventListener("click", saveBodyCompositionEntry);
+
+    document.querySelector('[data-action="cancel-bodycomp-edit"]')?.addEventListener("click", () => {
+        setBodyCompEditingId(null);
+        rerender();
+    });
+
+    document.querySelectorAll('[data-action="edit-bodycomp-entry"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+            setBodyCompEditingId(button.dataset.entryId);
+            rerender({ resetScroll: true });
+        });
+
+    });
+
+    // Borrado en dos toques ("pulsa otra vez para confirmar") en la propia
+    // fila, en vez del confirm() nativo del navegador (ver CLAUDE.md).
+    document.querySelectorAll('[data-action="delete-bodycomp-entry"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+
+            const id = button.dataset.entryId;
+
+            if (getBodyCompPendingDeleteId() === id) {
+                if (getBodyCompEditingId() === id) setBodyCompEditingId(null);
+                deleteBodyCompositionEntry(id);
+                setBodyCompPendingDeleteId(null);
+            } else {
+                setBodyCompPendingDeleteId(id);
+            }
+
+            rerender();
+
+        });
 
     });
 

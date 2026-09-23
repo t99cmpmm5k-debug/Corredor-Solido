@@ -110,3 +110,28 @@ describe("/api/sync -- rutinas de gimnasio", () => {
     });
 
 });
+
+describe("/api/sync -- composición corporal", () => {
+
+    afterEach(() => {
+        executeMock.mockReset();
+    });
+
+    it("bodyComposition participa en el sync con su propia tabla, upsert por id y tombstones", async () => {
+
+        const { SYNC_TABLES } = await import("../syncTables.js");
+        expect(SYNC_TABLES.bodyComposition).toBe("body_composition");
+
+        executeMock.mockResolvedValue([{}]);
+        const { postSync } = await import("./sync.js");
+
+        const entry = { id: "b1", date: "2026-09-23", weightKg: 72.5, bodyFatPercent: null };
+        await postSync({ userId: 7, body: { bodyComposition: [entry], tombstones: [{ id: "bodyComposition:b0", storeKey: "bodyComposition", recordId: "b0" }] } }, mockRes());
+
+        const insert = executeMock.mock.calls.find(([sql]) => sql.includes("INSERT INTO body_composition"));
+        expect(insert[1]).toEqual([7, "b1", JSON.stringify(entry)]);
+        expect(executeMock.mock.calls.some(([sql, params]) => sql.startsWith("DELETE FROM body_composition") && params[1] === "b0")).toBe(true);
+
+    });
+
+});

@@ -20,7 +20,15 @@ const store = {
 
     exerciseCompletionOverlay: null,
 
-    restCriticalNotified: false
+    restCriticalNotified: false,
+
+    // Pantalla principal de Gimnasio: "rutinas" | "composicion".
+    homeTab: "rutinas",
+
+    // Composición corporal: registro en edición (null = formulario de
+    // alta) y borrado pendiente de confirmar con un segundo toque.
+    bodyCompEditingId: null,
+    bodyCompPendingDeleteId: null
 
 };
 
@@ -298,5 +306,44 @@ export function isRestCriticalNotified() {
 export function setRestCriticalNotified(value) {
 
     store.restCriticalNotified = value;
+
+}
+
+export function getHomeTab() {
+
+    return store.homeTab;
+
+}
+
+export function setHomeTab(tab) {
+
+    store.homeTab = tab;
+    store.bodyCompEditingId = null;
+    store.bodyCompPendingDeleteId = null;
+
+}
+
+export function getBodyCompEditingId() {
+
+    return store.bodyCompEditingId;
+
+}
+
+export function setBodyCompEditingId(id) {
+
+    store.bodyCompEditingId = id;
+    store.bodyCompPendingDeleteId = null;
+
+}
+
+export function getBodyCompPendingDeleteId() {
+
+    return store.bodyCompPendingDeleteId;
+
+}
+
+export function setBodyCompPendingDeleteId(id) {
+
+    store.bodyCompPendingDeleteId = id;
 
 }

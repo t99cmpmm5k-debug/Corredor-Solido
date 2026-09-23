@@ -8,18 +8,20 @@ import { getGymSessions, restoreGymSession, deleteSession as deleteGymSession } 
 import { getReferenceRoutes, restoreReferenceRoute, deleteReferenceRoute } from "../data/referenceRouteStore.js";
 import { getRoutines as getGymRoutines, restoreRoutine as restoreGymRoutine, deleteRoutine as deleteGymRoutine } from "../data/gymRoutineStore.js";
 import { isSeedRoutineAwaitingDecision } from "../data/legacyGymSeedCleanup.js";
+import { getBodyCompositionEntries, restoreBodyCompositionEntry, deleteBodyCompositionEntry } from "../data/bodyCompositionStore.js";
 import { getTombstones, restoreTombstone } from "../data/tombstoneStore.js";
 import { notifyDataChanged } from "../data/changeEvents.js";
 
 // Dispatch de una tombstone (ver tombstoneStore.js) a la deleteX() real de
-// su store de origen -- solo estos 5 participan en el sync (SYNC_TABLES
+// su store de origen -- solo estos 6 participan en el sync (SYNC_TABLES
 // del backend), así que son los únicos que pueden generar tombstones.
 const TOMBSTONE_DELETERS = {
     workouts: deleteWorkout,
     plannedSessions: deletePlannedSession,
     gymSessions: deleteGymSession,
     referenceRoutes: deleteReferenceRoute,
-    gymRoutines: deleteGymRoutine
+    gymRoutines: deleteGymRoutine,
+    bodyComposition: deleteBodyCompositionEntry
 };
 
 const SCHEMA_VERSION = 1;
@@ -43,7 +45,7 @@ function setLastExportAt(iso) {
 
 }
 
-// Los 6 stores reales de la app, más las tombstones (borrados pendientes
+// Los 7 stores reales de la app, más las tombstones (borrados pendientes
 // de propagar, no un store de datos), sin envoltorio -- misma forma que
 // espera POST /api/sync (server/src/syncTables.js: SYNC_KEYS). exportData()
 // añade schemaVersion/exportedAt encima de esto para el archivo de
@@ -71,6 +73,9 @@ export function getSyncableData() {
         // (ver legacyGymSeedCleanup.js) -- esas no salen del dispositivo
         // hasta que conteste el aviso.
         gymRoutines: getGymRoutines().filter(routine => !isSeedRoutineAwaitingDecision(routine)),
+        // Composición corporal (Gimnasio) -- en el sync y el backup desde el
+        // primer día, para no repetir el agujero de las rutinas.
+        bodyComposition: getBodyCompositionEntries(),
         // No es un store de datos reales -- son los borrados pendientes de
         // propagar (ver tombstoneStore.js). Va en el mismo payload que el
         // resto para que el POST /api/sync los guarde con el mismo pipeline
@@ -104,12 +109,12 @@ export function exportData() {
 
 }
 
-// Aplica un lote de los 6 stores reales (workouts/shoes/plannedSessions/
-// gymSessions/referenceRoutes/gymRoutines) más las tombstones, contra los stores en
+// Aplica un lote de los 7 stores reales (workouts/shoes/plannedSessions/
+// gymSessions/referenceRoutes/gymRoutines/bodyComposition) más las tombstones, contra los stores en
 // memoria + IndexedDB -- compartido entre importData() (backup manual, con
 // schemaVersion) y syncManager.js (merge de un pull, sin ese envoltorio:
 // ver el comentario de getSyncableData() arriba sobre la diferencia de
-// forma). Único sitio con la lista de los 6 stores que participan aquí,
+// forma). Único sitio con la lista de los 7 stores que participan aquí,
 // para no repetirla en dos módulos que tendrían que recordar mantenerse en
 // sincronía.
 export function applyRestoreBatch(payload) {
@@ -125,6 +130,7 @@ export function applyRestoreBatch(payload) {
     (payload.referenceRoutes || []).forEach(restoreReferenceRoute);
     // Mismo "|| []": ni los backups ni el servidor traían rutinas antes.
     (payload.gymRoutines || []).forEach(restoreGymRoutine);
+    (payload.bodyComposition || []).forEach(restoreBodyCompositionEntry);
 
     // Las tombstones se aplican DESPUÉS de restaurar los 4 stores de
     // arriba, nunca antes -- así un borrado siempre gana si por lo que sea
@@ -164,7 +170,7 @@ export function importDataFromFile(file) {
 
 }
 
-// Antes solo miraba workouts/gymSessions -- extendido a los 6 stores
+// Antes solo miraba workouts/gymSessions -- extendido a los 7 stores
 // reales (ver getSyncableData()), para el recordatorio de backup de más
 // abajo. "tombstones" se excluye a propósito -- no son datos que perder,
 // son borrados ya hechos; alguien que borró todo su histórico no debería
@@ -203,6 +209,7 @@ export function getDataSummary() {
         workouts: getWorkouts().length,
         gymSessions: getGymSessions().length,
         gymRoutines: getGymRoutines().length,
+        bodyComposition: getBodyCompositionEntries().length,
         referenceRoutes: getReferenceRoutes().length,
         shoes: getShoes().length,
         plannedSessions: getPlannedSessions().length

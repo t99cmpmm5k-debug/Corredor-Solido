@@ -412,3 +412,34 @@ describe("backup.js / sync -- rutinas de gimnasio (antes solo en el dispositivo)
     });
 
 });
+
+describe("backup.js / sync -- composición corporal (en el sync desde el primer día)", () => {
+
+    beforeEach(() => {
+        resetFakeIndexedDB();
+        vi.resetModules();
+    });
+
+    it("los registros entran en getSyncableData() y importData() los restaura con su id, sin inventar campos", async () => {
+
+        const store = await import("../data/bodyCompositionStore.js");
+        await store.hydrate();
+        const backup = await import("./backup.js");
+
+        const entry = store.addBodyCompositionEntry({ date: "2026-09-23", weightKg: 72.1, bodyFatPercent: null, waterPercent: null, musclePercent: null });
+        expect(backup.getSyncableData().bodyComposition.map(e => e.id)).toEqual([entry.id]);
+        expect(backup.getDataSummary().bodyComposition).toBe(1);
+
+        vi.resetModules();
+        resetFakeIndexedDB();
+        const fresh = await import("../data/bodyCompositionStore.js");
+        await fresh.hydrate();
+        const freshBackup = await import("./backup.js");
+
+        freshBackup.importData({ schemaVersion: 1, exportedAt: "2026-09-23T00:00:00.000Z", bodyComposition: [entry] });
+
+        expect(fresh.getBodyCompositionEntries()).toEqual([entry]);
+
+    });
+
+});

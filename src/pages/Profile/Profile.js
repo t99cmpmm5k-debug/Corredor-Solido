@@ -79,7 +79,7 @@ function DataSummaryRow(icon, label, count) {
 
 // Resumen de solo lectura de lo que hay guardado en IndexedDB (Perfil,
 // Capa 3) -- ningún cálculo, `summary` ya viene contado por
-// getDataSummary() (backup.js), un store real = una fila. Mismos 6 stores
+// getDataSummary() (backup.js), un store real = una fila. Mismos 7 stores
 // que ahora entran en el backup completo (ver el fix de gymSessions en
 // backup.js) -- si mañana se añade un store nuevo con datos propios del
 // usuario, debería sumarse aquí Y a exportData()/importData() a la vez,
@@ -99,6 +99,8 @@ function DataSummaryCard(summary) {
                 ${DataSummaryRow("solar:dumbbell-large-bold-duotone", "Sesiones de gimnasio", summary.gymSessions)}
 
                 ${DataSummaryRow("solar:clipboard-list-bold-duotone", "Rutinas de gimnasio", summary.gymRoutines)}
+
+                ${DataSummaryRow("solar:scale-bold-duotone", "Registros de composición corporal", summary.bodyComposition)}
 
                 ${DataSummaryRow("solar:map-point-bold-duotone", "Recorridos de referencia", summary.referenceRoutes)}
 

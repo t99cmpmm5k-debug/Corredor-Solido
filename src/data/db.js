@@ -1,7 +1,7 @@
 import { SEED_RACES } from "./seedRaces.js";
 
 const DB_NAME = "corredor-solido";
-const DB_VERSION = 12;
+const DB_VERSION = 13;
 
 // Bookkeeping en meta (misma store que lastExportAt, ver backup.js) — se
 // escribe una sola vez, la primera vez que esta instalación pasa por
@@ -107,7 +107,8 @@ export const STORES = {
     customExercises: "customExercises",
     referenceRoutes: "referenceRoutes",
     routeSuggestionDismissals: "routeSuggestionDismissals",
-    tombstones: "tombstones"
+    tombstones: "tombstones",
+    bodyComposition: "bodyComposition"
 
 };
 
@@ -332,6 +333,16 @@ function upgrade(db, transaction) {
     if (!db.objectStoreNames.contains(STORES.tombstones)) {
 
         db.createObjectStore(STORES.tombstones, { keyPath: "id" });
+
+    }
+
+    // Composición corporal (Gimnasio): registros manuales con fecha (peso
+    // obligatorio; % grasa/agua/músculo opcionales) -- ver
+    // bodyCompositionStore.js. Participa en el sync y el backup desde el
+    // primer día.
+    if (!db.objectStoreNames.contains(STORES.bodyComposition)) {
+
+        db.createObjectStore(STORES.bodyComposition, { keyPath: "id" });
 
     }
 

@@ -1,0 +1,257 @@
+/* Composición corporal (Gimnasio) -- solo lo propio de esta pestaña: el
+   formulario reutiliza .gym-builder-field/.gym-builder-exercise-fields del
+   constructor de rutinas, y el gráfico .gym-detail-chart del detalle de
+   ejercicio. */
+
+.gym-bodycomp{
+
+    display:flex;
+    flex-direction:column;
+    gap:18px;
+
+}
+
+.gym-bodycomp-form,
+.gym-bodycomp-history{
+
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+
+    padding:20px;
+
+    border-radius:var(--radius-lg);
+    border:1px solid var(--card-border);
+    background:color-mix(in srgb, var(--card-background) 80%, transparent);
+
+}
+
+.gym-bodycomp-title{
+
+    margin:0;
+    color:var(--text-primary);
+    font-size:.9rem;
+    font-weight:800;
+    letter-spacing:.05em;
+    text-transform:uppercase;
+
+}
+
+/* 4 campos: 2 × 2 en vez de las 3 columnas de series/reps/peso. */
+.gym-bodycomp-fields{
+
+    grid-template-columns:repeat(2, 1fr);
+    gap:12px;
+
+}
+
+.gym-bodycomp-fields span small{
+
+    text-transform:none;
+    opacity:.7;
+
+}
+
+.gym-bodycomp-fields input{
+
+    padding:12px 14px;
+    font-size:1rem;
+
+}
+
+.gym-builder-field input[type="date"]{
+
+    min-height:46px;
+    width:100%;
+    box-sizing:border-box;
+    -webkit-appearance:none;
+    appearance:none;
+
+}
+
+.gym-bodycomp-form-actions{
+
+    display:flex;
+    gap:10px;
+
+}
+
+.gym-bodycomp-form-actions .gym-finish-button{
+
+    flex:1;
+
+}
+
+.gym-bodycomp-cancel{
+
+    flex:0 0 auto;
+    padding:0 20px;
+
+    border-radius:var(--radius-md);
+    border:1px solid var(--card-border);
+    background:transparent;
+    color:var(--text-primary);
+
+    font:inherit;
+    font-weight:600;
+
+    cursor:pointer;
+
+}
+
+.gym-bodycomp-chart-summary{
+
+    margin:-10px 0 14px;
+    color:var(--text-secondary);
+    font-size:.82rem;
+
+}
+
+.gym-bodycomp-axis-y{
+
+    position:absolute;
+    left:0;
+    z-index:1;
+
+    color:var(--text-secondary);
+    font-size:.68rem;
+    font-weight:600;
+
+}
+
+.gym-bodycomp-axis-y--max{ top:0; }
+.gym-bodycomp-axis-y--min{ bottom:0; }
+
+.gym-bodycomp-entry{
+
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+
+    padding:14px 0;
+    border-top:1px solid var(--card-border);
+
+}
+
+.gym-bodycomp-entry:first-of-type{
+
+    border-top:none;
+    padding-top:0;
+
+}
+
+.gym-bodycomp-entry-head{
+
+    display:flex;
+    align-items:center;
+    gap:10px;
+
+}
+
+.gym-bodycomp-entry-date{
+
+    flex:1;
+    color:var(--text-secondary);
+    font-size:.85rem;
+    font-weight:600;
+
+}
+
+.gym-bodycomp-entry-weight{
+
+    color:var(--text-primary);
+    font-size:1.1rem;
+    font-weight:800;
+
+}
+
+.gym-bodycomp-icon-button{
+
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+
+    min-width:36px;
+    height:36px;
+    padding:0 8px;
+
+    border:1px solid var(--card-border);
+    border-radius:999px;
+    background:transparent;
+    color:var(--text-secondary);
+
+    font:inherit;
+    font-size:.78rem;
+    font-weight:700;
+
+    cursor:pointer;
+
+}
+
+.gym-bodycomp-icon-button iconify-icon{
+
+    font-size:18px;
+
+}
+
+.gym-bodycomp-delete.is-confirming{
+
+    border-color:var(--color-danger);
+    background:var(--color-danger);
+    color:#fff;
+
+}
+
+.gym-bodycomp-metrics{
+
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    gap:8px;
+
+}
+
+.gym-bodycomp-metric{
+
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+
+    padding:8px 10px;
+    border-radius:var(--radius-sm);
+    background:color-mix(in srgb, var(--card-background) 60%, transparent);
+
+}
+
+.gym-bodycomp-metric small{
+
+    color:var(--text-secondary);
+    font-size:.68rem;
+    text-transform:uppercase;
+
+}
+
+.gym-bodycomp-metric strong{
+
+    color:var(--text-primary);
+    font-size:.95rem;
+
+}
+
+.gym-bodycomp-metric.is-empty strong{
+
+    color:var(--text-secondary);
+    font-weight:500;
+
+}
+
+.gym-home-tabs{
+
+    margin-bottom:18px;
+
+}
+
+.gym-bodycomp-form [data-bodycomp-error][hidden]{
+
+    display:none;
+
+}

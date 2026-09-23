@@ -3,13 +3,14 @@ import "./Gym.css";
 import { BottomNavigation } from "../../components/Navigation/BottomNavigation.js";
 import { getRoutines, getGymDay } from "../../data/gymRoutineStore.js";
 import { getSessionById, getGymSessions, getExerciseSessionHistory } from "../../data/gymSessionStore.js";
-import { getStep, getActiveSessionId, getDetailExerciseId, getDetailTab, getDetailExpandedSessionId, getWeekSummaryExpanded, getHighlightedDayId, getRoutineMenuOpenId } from "./gymStore.js";
+import { getStep, getActiveSessionId, getDetailExerciseId, getDetailTab, getDetailExpandedSessionId, getWeekSummaryExpanded, getHighlightedDayId, getRoutineMenuOpenId, getHomeTab } from "./gymStore.js";
 import { GymSessionView } from "./components/GymSessionView.js";
 import { GymSessionSummaryView } from "./components/GymSessionSummaryView.js";
 import { GymExerciseDetailView } from "./components/GymExerciseDetailView.js";
 import { GymRoutineBuilder } from "./components/GymRoutineBuilder.js";
 import { GymHomeSummary } from "./components/GymHomeSummary.js";
 import { GymHeader } from "./components/GymHeader.js";
+import { GymBodyComposition } from "./components/GymBodyComposition.js";
 import { isBuilderOpen } from "./gymRoutineBuilderStore.js";
 import { hasWeeklySchedule, getTodayGymDay, getUpcomingGymDays, getWeekProgress, getWeekSessions } from "./gymSchedule.js";
 import { formatISODate } from "../../utils/date.js";
@@ -165,10 +166,29 @@ function GymHomeSummarySection(days) {
 
 }
 
+// Pestañas de la pantalla principal -- mismo selector (.gym-detail-tabs)
+// que HISTORIAL/GRÁFICAS del detalle de ejercicio, sin un estilo nuevo.
+function GymHomeTabs(activeTab) {
+
+    return `
+
+        <div class="gym-detail-tabs gym-home-tabs">
+
+            <button class="gym-detail-tab ${activeTab === "rutinas" ? "is-active" : ""}" data-action="set-gym-home-tab" data-tab="rutinas">RUTINAS</button>
+
+            <button class="gym-detail-tab ${activeTab === "composicion" ? "is-active" : ""}" data-action="set-gym-home-tab" data-tab="composicion">COMPOSICIÓN CORPORAL</button>
+
+        </div>
+
+    `;
+
+}
+
 function GymDaySelect() {
 
     const routines = getRoutines();
     const allDays = routines.flatMap(r => r.days);
+    const tab = getHomeTab();
 
     return `
 
@@ -176,13 +196,19 @@ function GymDaySelect() {
 
             ${GymHeader()}
 
-            ${GymHomeSummarySection(allDays)}
+            ${GymHomeTabs(tab)}
 
-            <div class="gym-routine-list">
+            ${tab === "composicion" ? GymBodyComposition() : `
 
-                ${routines.length ? routines.map(RoutineCard).join("") : GymRoutinesEmptyState()}
+                ${GymHomeSummarySection(allDays)}
 
-            </div>
+                <div class="gym-routine-list">
+
+                    ${routines.length ? routines.map(RoutineCard).join("") : GymRoutinesEmptyState()}
+
+                </div>
+
+            `}
 
         </div>
 
