@@ -141,10 +141,35 @@ function DayEditor(day, routineId, routines) {
 // resto, ningún ejercicio queda inalcanzable.
 const PICKER_RESULTS_LIMIT = 60;
 
-function ExercisePicker(picker) {
+// Solo el contenido de .gym-picker-results -- lo reutiliza el buscador
+// (initGymEvents.js) para refrescar la lista EN SITIO mientras se escribe,
+// sin rerender() de toda la página (ver el porqué allí).
+export function ExercisePickerResults(picker) {
 
     const results = searchExercises(picker.query, picker.filter);
     const shown = results.slice(0, PICKER_RESULTS_LIMIT);
+
+    return `
+
+        ${shown.length ? shown.map(exercise => `
+
+            <button class="gym-picker-result" data-action="pick-exercise" data-day-id="${picker.dayId}" data-exercise-id="${exercise.id}">
+
+                <span>${exercise.name}</span>
+
+                <span class="gym-picker-result-muscle">${exercise.muscleGroup ?? ""}</span>
+
+            </button>
+
+        `).join("") : `<p class="gym-picker-empty">Ningún ejercicio coincide con la búsqueda.</p>`}
+
+        ${results.length > PICKER_RESULTS_LIMIT ? `<p class="gym-picker-more">Y ${results.length - PICKER_RESULTS_LIMIT} más — afina la búsqueda para verlos.</p>` : ""}
+
+    `;
+
+}
+
+function ExercisePicker(picker) {
 
     return `
 
@@ -187,19 +212,7 @@ function ExercisePicker(picker) {
 
                 <div class="gym-picker-results">
 
-                    ${shown.length ? shown.map(exercise => `
-
-                        <button class="gym-picker-result" data-action="pick-exercise" data-day-id="${picker.dayId}" data-exercise-id="${exercise.id}">
-
-                            <span>${exercise.name}</span>
-
-                            <span class="gym-picker-result-muscle">${exercise.muscleGroup ?? ""}</span>
-
-                        </button>
-
-                    `).join("") : `<p class="gym-picker-empty">Ningún ejercicio coincide con la búsqueda.</p>`}
-
-                    ${results.length > PICKER_RESULTS_LIMIT ? `<p class="gym-picker-more">Y ${results.length - PICKER_RESULTS_LIMIT} más — afina la búsqueda para verlos.</p>` : ""}
+                    ${ExercisePickerResults(picker)}
 
                 </div>
 

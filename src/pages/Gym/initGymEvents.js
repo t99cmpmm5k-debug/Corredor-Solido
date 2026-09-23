@@ -3,6 +3,7 @@ import { startSession, updateSet, updateExerciseNotes, finishSession, getSession
 import { getRoutineById, createRoutine, updateRoutine, deleteRoutine, getGymDay } from "../../data/gymRoutineStore.js";
 import { addCustomExercise } from "../../data/customExerciseStore.js";
 import { getAllExercises } from "./exerciseSearch.js";
+import { ExercisePickerResults } from "./components/GymRoutineBuilder.js";
 
 import {
     getActiveSessionId,
@@ -62,6 +63,12 @@ const WEIGHT_STEP = 2.5;
 const REPS_STEP = 1;
 
 const GYM_BUILDER_HISTORY_STATE = { gymBuilder: true };
+
+// Pausa tras la última tecla antes de refrescar los resultados del buscador
+// de ejercicios (ver el listener de set-picker-query).
+const PICKER_SEARCH_DEBOUNCE_MS = 150;
+let pickerSearchTimer = null;
+
 const GYM_EXERCISE_DETAIL_HISTORY_STATE = { gymExerciseDetail: true };
 
 // Igual que openPlanImport() en initPlanEvents.js — su propia entrada de
@@ -994,13 +1001,36 @@ export function initGymEvents() {
 
     });
 
+    // Bug real (2026-09-23): el buscador era un input controlado -- cada
+    // tecla hacía rerender() de TODO #app (constructor + buscador + hasta 60
+    // resultados, iconos y los eventos de todas las páginas): escritura
+    // lenta, y la lista se sustituía entera también entre el toque y el
+    // click de un resultado (en iOS, tocar fuera del campo confirma la
+    // palabra del autocorrector y dispara otro "input"), así que el click
+    // caía sobre el ejercicio que acabara en esa posición. Ahora el campo no
+    // se repinta nunca mientras se escribe: solo se refresca
+    // .gym-picker-results en sitio, tras una pausa corta, y en cuanto el
+    // dedo toca la lista se cancela cualquier refresco pendiente -- lo que
+    // hay bajo el dedo ya no puede cambiar. La query se sigue guardando en
+    // el store para que otro rerender() (p. ej. un filtro) la conserve.
     const pickerSearchInput = document.querySelector('[data-action="set-picker-query"]');
-    if (pickerSearchInput) {
+    const pickerResults = document.querySelector(".gym-picker-results");
+
+    if (pickerSearchInput && pickerResults) {
 
         pickerSearchInput.addEventListener("input", () => {
+
             setPickerQuery(pickerSearchInput.value);
-            rerender();
+
+            clearTimeout(pickerSearchTimer);
+            pickerSearchTimer = setTimeout(() => {
+                const picker = getBuilderState()?.picker;
+                if (picker && pickerResults.isConnected) pickerResults.innerHTML = ExercisePickerResults(picker);
+            }, PICKER_SEARCH_DEBOUNCE_MS);
+
         });
+
+        pickerResults.addEventListener("pointerdown", () => clearTimeout(pickerSearchTimer));
 
     }
 
@@ -1013,17 +1043,19 @@ export function initGymEvents() {
 
     });
 
-    document.querySelectorAll('[data-action="pick-exercise"]').forEach(button => {
+    // Delegado en el contenedor: los botones se sustituyen al refrescar la
+    // búsqueda en sitio (ver arriba) y perderían un listener propio.
+    pickerResults?.addEventListener("click", event => {
 
-        button.addEventListener("click", () => {
+        const button = event.target.closest('[data-action="pick-exercise"]');
+        if (!button) return;
 
-            const exercise = getAllExercises().find(e => e.id === button.dataset.exerciseId);
-            if (!exercise) return;
+        const exercise = getAllExercises().find(e => e.id === button.dataset.exerciseId);
+        if (!exercise) return;
 
-            addExerciseToDay(button.dataset.dayId, exercise);
-            rerender();
-
-        });
+        clearTimeout(pickerSearchTimer);
+        addExerciseToDay(button.dataset.dayId, exercise);
+        rerender();
 
     });
 
