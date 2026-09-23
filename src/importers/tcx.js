@@ -98,6 +98,16 @@ function weightedAverage(entries) {
 
 }
 
+// Zepp firma sus TCX con <Author><Name>Zepp</Name> y un <Creator> Amazfit
+// (ver el archivo real); Garmin Connect firma <Author> "Connect Api".
+function isZeppExport(doc) {
+
+    const author = textOf(doc.getElementsByTagName("Author")[0], "Name") ?? "";
+    const creator = textOf(doc.getElementsByTagName("Creator")[0], "Name") ?? "";
+    return /zepp/i.test(author) || /amazfit|zepp/i.test(creator);
+
+}
+
 function maxOf(values) {
 
     const real = values.filter(v => v != null);
@@ -286,14 +296,25 @@ export function parseTcxWorkout(xmlText) {
     })));
     const maxHr = maxOf(lapEls.map(lap => nestedValueOf(lap, "MaximumHeartRateBpm")));
 
-    // Ya vienen en SPM real (dobladas) a nivel de Lap — verificado
-    // contra el archivo real, solo los valores por Trackpoint van por
-    // pierna (ver parseTrackpoints).
+    // Bug real (2026-09-23): el esquema ActivityExtension/v2 define
+    // AvgRunCadence/MaxRunCadence por pierna (zancadas/min), y así lo
+    // exporta Garmin Connect -- verificado contra un TCX real de un
+    // Forerunner 970 con AvgRunCadence 86-88 por Lap mientras Garmin
+    // Connect muestra 175 ppm para ese mismo entreno. Zepp se aparta del
+    // esquema y ya lo trae doblado (verificado contra su archivo real: la
+    // media por Trackpoint ×2 cuadra con su AvgRunCadence). Se dobla por
+    // defecto y solo se exime a Zepp; se dobla cada Lap ANTES de ponderar
+    // para no perder la resolución impar (175, no solo pares).
+    const lapCadenceFactor = isZeppExport(doc) ? 1 : 2;
+    const lapCadence = (lap, tag) => {
+        const v = nsTagValue(lap, tag);
+        return v != null ? v * lapCadenceFactor : null;
+    };
     const avgCadence = weightedAverage(lapEls.map(lap => ({
-        value: nsTagValue(lap, "AvgRunCadence"),
+        value: lapCadence(lap, "AvgRunCadence"),
         weight: numberOf(lap, "TotalTimeSeconds") ?? 0
     })));
-    const maxCadence = maxOf(lapEls.map(lap => nsTagValue(lap, "maxRunCadence")));
+    const maxCadence = maxOf(lapEls.map(lap => lapCadence(lap, "maxRunCadence")));
 
     // Puntos GPS de TODOS los Laps -- de aquí salen elevación, splits y la
     // traza de recorrido de la actividad completa, no solo del primer Lap.

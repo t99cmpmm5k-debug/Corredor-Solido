@@ -122,8 +122,8 @@ function buildRealMultiLapTcx() {
     ];
 
     // <ns3:MaxRunCadence> con "M" mayúscula tal cual el archivo real -- el
-    // código original solo buscaba "maxRunCadence" (m minúscula) y esta
-    // variante de Zepp lo dejaba en null en silencio, un segundo bug
+    // código original solo buscaba "maxRunCadence" (m minúscula, la de
+    // Zepp) y esta variante lo dejaba en null en silencio, un segundo bug
     // distinto encontrado al revisar los campos derivados.
     const lapXml = laps.map(lap => `
         <Lap StartTime="${lap.start}">
@@ -201,12 +201,16 @@ describe("parseTcxWorkout — regresión: TCX real con 6 Laps irregulares (parad
 
     });
 
-    it("agrega cadencia media (ponderada) y máxima de todos los Laps, incluida la variante <ns3:MaxRunCadence> en mayúscula", () => {
+    // Este fixture sale de un TCX real de Garmin Connect (Forerunner 970):
+    // su AvgRunCadence/MaxRunCadence va por pierna, como define el esquema
+    // -- antes se daba por bueno 86/93, la mitad de lo que muestra Garmin
+    // (bug real 2026-09-23). Sin <Author> Zepp, se dobla cada Lap.
+    it("agrega cadencia media (ponderada) y máxima de todos los Laps doblando la cadencia por pierna de Garmin, incluida la variante <ns3:MaxRunCadence> en mayúscula", () => {
 
         const workout = parseTcxWorkout(buildRealMultiLapTcx());
 
-        expect(workout.avgCadence).toBe(86);
-        expect(workout.maxCadence).toBe(93);
+        expect(workout.avgCadence).toBe(172);
+        expect(workout.maxCadence).toBe(186);
 
     });
 
@@ -275,7 +279,7 @@ describe("parseTcxWorkout", () => {
 
     });
 
-    it("usa la cadencia de Lap tal cual (ya viene doblada) sin multiplicar otra vez", () => {
+    it("TCX de Zepp: usa la cadencia de Lap tal cual (ya viene doblada) sin multiplicar otra vez", () => {
 
         const workout = parseTcxWorkout(buildTcx());
 
