@@ -70,7 +70,23 @@ describe("detectHeuristicIntervals", () => {
 
     });
 
-    it("sin velocidad de sensor la deriva del GPS, tolerando timestamps repetidos como en los archivos reales de Zepp", () => {
+    it("con GPS y sensor a la vez usa la velocidad del GPS (el sensor alarga las series al tardar en bajar)", () => {
+
+        const points = profile(SERIES_4X3);
+        let lat = 37.58;
+        points.forEach(p => { lat += p.speed / 111320; p.lat = lat; p.lon = -1.73; });
+
+        expect(detectHeuristicIntervals(points).speedSource).toBe("gps");
+
+    });
+
+    it("sin posiciones (cinta) recurre a la velocidad del sensor", () => {
+
+        expect(detectHeuristicIntervals(profile(SERIES_4X3)).speedSource).toBe("sensor");
+
+    });
+
+    it("deriva la velocidad del GPS tolerando timestamps repetidos como en los archivos reales de Zepp", () => {
 
         // Recta hacia el norte: 1 m ≈ 1/111320 grados de latitud.
         const points = [];

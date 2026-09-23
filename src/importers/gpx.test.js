@@ -154,3 +154,28 @@ describe("parseGpxWorkout", () => {
     });
 
 });
+
+describe("parseGpxWorkout — fecha de la actividad", () => {
+
+    // Regresión (2026-09-23): Zepp pone en <metadata><time> el momento de la
+    // EXPORTACIÓN -- un GPX real de una sesión del 10-09 exportado el 23-09
+    // se guardaba como entreno del 23-09.
+    it("usa la hora del primer punto, no la <metadata><time> de exportación", () => {
+
+        const xml = buildGpx().replace("<time>2026-05-05T17:29:00.000Z</time>", "<time>2026-09-23T10:51:30Z</time>");
+        const workout = parseGpxWorkout(xml);
+
+        expect(workout.date).toBe("2026-05-05");
+
+    });
+
+    it("sin hora en ningún punto, recurre a la de metadata", () => {
+
+        const xml = buildGpx().replace(/<time>2026-05-05T17:29:0\dZ<\/time>/g, "");
+        const workout = parseGpxWorkout(xml);
+
+        expect(workout.date).toBe("2026-05-05");
+
+    });
+
+});

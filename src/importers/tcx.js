@@ -137,7 +137,7 @@ function parseTrackpoints(lapEl) {
             cadence: cadenceRaw != null ? cadenceRaw * 2 : null,
             // Velocidad del sensor por punto (<ns3:TPX><ns3:Speed>, m/s) --
             // la trae Zepp; solo la usa la detección heurística de
-            // intervalos (intervalHeuristic.js), que sin ella la deriva del GPS.
+            // intervalos (intervalHeuristic.js), y solo si el archivo no trae GPS.
             speed: nsTagValue(tp, "Speed")
         };
 

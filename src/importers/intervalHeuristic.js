@@ -10,10 +10,14 @@
 // RunningDetailView.js).
 //
 // Método, a propósito simple y con umbrales con nombre:
-// 1) Velocidad por segundo: la del sensor si el archivo la trae por punto
-//    (ns3:speed / ns3:Speed), si no derivada de la distancia GPS acumulada
-//    (ver gpsGridSpeed). Rejilla fija de 1s -- los archivos reales traen
-//    timestamps repetidos y huecos sueltos.
+// 1) Velocidad por segundo derivada de la distancia GPS acumulada (ver
+//    gpsGridSpeed); la del sensor (ns3:speed / ns3:Speed) solo si el
+//    archivo no trae posiciones (p. ej. cinta). Verificado con las dos
+//    sesiones reales de Zepp: el ritmo por serie sale igual con ambas
+//    (±7 s/km), pero la del sensor tarda en bajar y alarga cada serie 5-13 s
+//    más allá de lo programado; con GPS el error medio es de 3-4 s.
+//    Rejilla fija de 1s -- los archivos reales traen timestamps repetidos y
+//    huecos sueltos.
 // 2) Media móvil centrada (SMOOTHING_WINDOW_SEC) -- quita el ruido sin
 //    desplazar los cambios de ritmo (una ventana centrada es simétrica).
 // 3) Dos niveles de ritmo de la propia sesión (k-means de 2 grupos sobre la
@@ -33,9 +37,9 @@ const MIN_LEVEL_RATIO = 1.15;
 // Por debajo, parado (semáforo, reloj esperando GPS) -- no cuenta para
 // calcular los dos niveles de ritmo.
 const STOPPED_SPEED_MS = 0.5;
-// Proporción mínima de puntos con velocidad de sensor para fiarse de ella
-// en vez de derivarla del GPS.
-const SENSOR_SPEED_MIN_COVERAGE = 0.8;
+// Proporción mínima de puntos con posición para derivar la velocidad del
+// GPS; por debajo, se recurre a la del sensor.
+const GPS_MIN_COVERAGE = 0.8;
 
 function toSeconds(date) {
 
@@ -43,10 +47,10 @@ function toSeconds(date) {
 
 }
 
-function usesSensorSpeed(points) {
+function hasGpsTrack(points) {
 
-    const withSensor = points.filter(p => p.speed != null).length;
-    return points.length > 0 && withSensor / points.length >= SENSOR_SPEED_MIN_COVERAGE;
+    const withPosition = points.filter(p => p.lat != null && p.lon != null).length;
+    return points.length > 0 && withPosition / points.length >= GPS_MIN_COVERAGE;
 
 }
 
@@ -214,7 +218,7 @@ export function detectHeuristicIntervals(points) {
     const timed = (points || []).filter(p => toSeconds(p.time) != null);
     if (timed.length < MIN_WORK_SEC * MIN_WORK_SEGMENTS) return null;
 
-    const source = usesSensorSpeed(timed) ? "sensor" : "gps";
+    const source = hasGpsTrack(timed) ? "gps" : "sensor";
     const base = gridBase(timed);
     const grid = { hr: base.hr, speed: source === "sensor" ? sensorGridSpeed(timed, base) : gpsGridSpeed(timed, base) };
     const smooth = movingAverage(grid.speed, SMOOTHING_WINDOW_SEC);

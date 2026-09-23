@@ -80,7 +80,7 @@ function parseTrackpoints(trkEl) {
             cadence: cadenceRaw != null ? cadenceRaw * 2 : null,
             // Velocidad del sensor por punto (TrackPointExtension speed, m/s)
             // -- la trae Zepp; solo la usa la detección heurística de
-            // intervalos (intervalHeuristic.js), que sin ella la deriva del GPS.
+            // intervalos (intervalHeuristic.js), y solo si el archivo no trae GPS.
             speed: nsChildValue(tp, "gpxtpx", "speed")
         };
 
@@ -246,10 +246,16 @@ export function parseGpxWorkout(xmlText) {
     // comentario junto a sortPointsByTimeStable en geoTrace.js.
     const points = sortPointsByTimeStable(rawPoints);
 
+    // Bug real (2026-09-23): la fecha salía de <metadata><time>, que según el
+    // estándar GPX es la fecha de CREACIÓN del archivo, no la de la
+    // actividad -- Zepp la rellena con el momento de la exportación (un GPX
+    // real de una sesión del 10-09 exportado el 23-09 se guardaba como del
+    // 23-09). El primer punto con hora es cuándo se empezó a correr; la de
+    // metadata solo queda de respaldo si ningún punto trae hora.
     const metadataEl = doc.getElementsByTagName("metadata")[0];
     const metaTime = textOf(metadataEl, "time");
     const firstPointTime = points.find(p => p.time)?.time ?? null;
-    const startDate = metaTime ? new Date(metaTime) : firstPointTime;
+    const startDate = firstPointTime ?? (metaTime ? new Date(metaTime) : null);
 
     const timedPoints = points.filter(p => p.time);
     const durationSec = timedPoints.length >= 2
