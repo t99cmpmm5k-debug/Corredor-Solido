@@ -6,10 +6,9 @@ function resetFakeIndexedDB() {
     globalThis.indexedDB = new IDBFactory();
 }
 
-// Toda instalación fresca hidrata con las 3 rutinas por defecto ya
-// sembradas (ver migración en db.test.js) -- estos tests comprueban el
-// CRUD por encima de esa base real, no en un vacío artificial.
-const DEFAULT_ROUTINE_COUNT = 3;
+// Una instalación fresca arranca SIN rutinas (la antigua siembra de las 3
+// rutinas por defecto se retiró el 2026-09-23, ver db.js/db.test.js).
+const DEFAULT_ROUTINE_COUNT = 0;
 
 describe("gymRoutineStore — CRUD real (crear/editar/borrar), ya no un único puntero de rutina activa", () => {
 
@@ -18,7 +17,7 @@ describe("gymRoutineStore — CRUD real (crear/editar/borrar), ya no un único p
         vi.resetModules();
     });
 
-    it("crea una rutina y queda disponible en getRoutines(), junto a las 3 por defecto", async () => {
+    it("crea una rutina y queda disponible en getRoutines()", async () => {
 
         const { hydrate, createRoutine, getRoutines } = await import("./gymRoutineStore.js");
         await hydrate();
@@ -74,7 +73,7 @@ describe("gymRoutineStore — CRUD real (crear/editar/borrar), ya no un único p
 
     });
 
-    it("editar una rutina no toca las demás (incluidas las 3 por defecto)", async () => {
+    it("editar una rutina no toca las demás", async () => {
 
         const { hydrate, createRoutine, updateRoutine, getRoutines } = await import("./gymRoutineStore.js");
         await hydrate();
@@ -109,22 +108,24 @@ describe("gymRoutineStore — CRUD real (crear/editar/borrar), ya no un único p
 
     });
 
-    it("borrar una de las 3 rutinas por defecto la quita de verdad y no vuelve tras re-hidratar", async () => {
+    it("borrar una rutina entre varias la quita de verdad y no vuelve tras re-hidratar", async () => {
 
-        const { hydrate, getRoutines, deleteRoutine } = await import("./gymRoutineStore.js");
+        const { hydrate, getRoutines, createRoutine, deleteRoutine } = await import("./gymRoutineStore.js");
         await hydrate();
 
-        const [defaultRoutine] = getRoutines();
-        deleteRoutine(defaultRoutine.id);
+        const first = await createRoutine({ name: "Torso", days: [], progressionNote: "" });
+        await createRoutine({ name: "Pierna", days: [], progressionNote: "" });
 
-        expect(getRoutines()).toHaveLength(DEFAULT_ROUTINE_COUNT - 1);
+        deleteRoutine(first.id);
+
+        expect(getRoutines()).toHaveLength(1);
 
         vi.resetModules();
         const { hydrate: hydrateAgain, getRoutines: getRoutinesAgain } = await import("./gymRoutineStore.js");
         await hydrateAgain();
 
-        expect(getRoutinesAgain()).toHaveLength(DEFAULT_ROUTINE_COUNT - 1);
-        expect(getRoutinesAgain().some(r => r.id === defaultRoutine.id)).toBe(false);
+        expect(getRoutinesAgain()).toHaveLength(1);
+        expect(getRoutinesAgain().some(r => r.id === first.id)).toBe(false);
 
     });
 
@@ -237,8 +238,6 @@ describe("gymRoutineStore — CRUD real (crear/editar/borrar), ya no un único p
         expect(getGymDay("dia-b")?.title).toBe("Día B");
         expect(getGymDay("no-existe")).toBeNull();
 
-        // Sigue encontrando también los días de las 3 rutinas por defecto.
-        expect(getGymDay("day1")?.title).toBe("Torso Completo");
 
     });
 

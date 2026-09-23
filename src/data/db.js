@@ -1,5 +1,4 @@
 import { SEED_RACES } from "./seedRaces.js";
-import { gymDays as DEFAULT_GYM_DAYS } from "./gymData.js";
 
 const DB_NAME = "corredor-solido";
 const DB_VERSION = 12;
@@ -112,57 +111,14 @@ export const STORES = {
 
 };
 
-// Rediseño de Gimnasio (constructor manual + gestión de rutinas): las 3
-// rutinas que hasta ahora eran un fallback hardcodeado en gymData.js (sin
-// registro real en gymRoutines, sin editar/borrar posible) pasan a ser
-// registros reales y gestionables -- una rutina por día por defecto, mismo
-// id de día/ejercicio que ya tenían (day1/day2/day3, press-banca...) para
-// que el histórico de sesiones ya guardado (gymSessionStore, indexado por
-// esos mismos ids) las siga encontrando sin romperse. Solo si gymRoutines
-// está vacía en este momento -- un usuario que ya importó algo por PDF no
-// recibe estas 3 de más.
-const GYM_DEFAULT_ROUTINES_SEEDED_KEY = "gymDefaultRoutinesSeeded";
-
-function seedDefaultGymRoutinesIfNeeded(transaction) {
-
-    const metaStore = transaction.objectStore(STORES.meta);
-    const getRequest = metaStore.get(GYM_DEFAULT_ROUTINES_SEEDED_KEY);
-
-    getRequest.onsuccess = () => {
-
-        if (getRequest.result) return;
-
-        const routinesStore = transaction.objectStore(STORES.gymRoutines);
-        const countRequest = routinesStore.count();
-
-        countRequest.onsuccess = () => {
-
-            if (countRequest.result === 0) {
-
-                const now = new Date().toISOString();
-
-                DEFAULT_GYM_DAYS.forEach(day => {
-
-                    routinesStore.put({
-                        id: `default-${day.id}`,
-                        name: day.title,
-                        days: [day],
-                        progressionNote: "",
-                        createdAt: now,
-                        updatedAt: now
-                    });
-
-                });
-
-            }
-
-            metaStore.put({ key: GYM_DEFAULT_ROUTINES_SEEDED_KEY, value: true });
-
-        };
-
-    };
-
-}
+// Bug real (2026-09-23): aquí vivía seedDefaultGymRoutinesIfNeeded(), que
+// en cada instalación nueva sembraba en gymRoutines las 3 rutinas de
+// gymData.js -- la rutina personal de Rafa, hardcodeada de antes de que
+// existiera el constructor manual. Con cuentas de usuario, CUALQUIER
+// usuario nuevo arrancaba con esa misma rutina fija. Retirada: una
+// instalación nueva arranca con gymRoutines vacía (estado vacío en
+// Gym.js). Las instalaciones que ya recibieron la siembra conservan esas
+// rutinas como registros normales (editables/borrables) -- no se tocan.
 
 let dbPromise = null;
 let storageAvailable = true;
@@ -380,7 +336,6 @@ function upgrade(db, transaction) {
     }
 
     seedPlannedRacesIfNeeded(transaction);
-    seedDefaultGymRoutinesIfNeeded(transaction);
 
 }
 

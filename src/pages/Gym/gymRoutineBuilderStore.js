@@ -187,7 +187,7 @@ export function removeExerciseFromDay(dayId, exerciseId) {
 
 // field: "sets" | "targetReps" | "targetWeight". targetWeight en null (o
 // cadena vacía) vuelve el ejercicio "sin peso" (weightUnit a null,
-// mismo criterio que gymData.js: null = corporal/controlado/series de
+// mismo criterio que las rutinas guardadas: null = corporal/controlado/series de
 // tiempo, no aparece columna Peso en la sesión) -- con un valor, se fija
 // a "kg", único que ofrece el constructor por ahora.
 export function updateExerciseField(dayId, exerciseId, field, rawValue) {

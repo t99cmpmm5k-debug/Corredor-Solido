@@ -713,3 +713,29 @@
     margin-bottom:8px;
 
 }
+
+.gym-routine-empty-title{
+
+    color:var(--text-primary);
+    font-weight:600;
+    margin-bottom:4px;
+
+}
+
+.gym-routine-empty-cta{
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    margin-top:18px;
+
+}
+
+.gym-routine-empty-cta iconify-icon{
+
+    font-size:20px;
+    color:inherit;
+    margin-bottom:0;
+
+}

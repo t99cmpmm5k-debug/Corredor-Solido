@@ -114,7 +114,17 @@ function GymRoutinesEmptyState() {
 
             <iconify-icon icon="solar:dumbbell-large-bold-duotone"></iconify-icon>
 
-            <p>Todavía no tienes ninguna rutina. Crea la primera con el botón de arriba.</p>
+            <p class="gym-routine-empty-title">Aún no tienes ninguna rutina</p>
+
+            <p>Crea la primera con sus ejercicios, series, repeticiones y peso.</p>
+
+            <button class="gym-finish-button gym-routine-empty-cta" data-action="open-routine-builder">
+
+                <iconify-icon icon="solar:add-circle-bold-duotone"></iconify-icon>
+
+                Crear rutina
+
+            </button>
 
         </div>
 

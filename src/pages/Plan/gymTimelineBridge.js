@@ -9,9 +9,9 @@
 // Corrección 2026-08-25: la primera versión de este archivo adivinaba el
 // día de la semana escaneando el texto libre de day.title -- resultó
 // incorrecto. day.weekday SÍ está poblado de verdad en las rutinas reales
-// del usuario (viene de antes de este rediseño; el seed de fábrica en
-// db.js/gymData.js no lo pone, pero eso solo afecta a una instalación
-// nueva, no a datos ya existentes) y es exactamente lo que ya usa
+// del usuario (viene de antes de este rediseño; el antiguo seed de fábrica
+// de db.js -- retirado el 2026-09-23 -- no lo ponía, pero solo afectaba a
+// instalaciones nuevas, no a datos ya existentes) y es lo que ya usa
 // "Próximos entrenamientos" en Gimnasio (getTodayGymDay(), en
 // gymSchedule.js). Se reutiliza esa misma función tal cual -- ni se
 // duplica su criterio de weekday/dedupe, ni se vuelve a inventar uno por
