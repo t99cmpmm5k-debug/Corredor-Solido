@@ -53,10 +53,14 @@ function detectFromSegmentType(splits) {
 
     if (!indices.length) return null;
 
+    // Los tramos work/rest de un archivo sin vueltas reales (Zepp, ver
+    // src/importers/intervalHeuristic.js) son una estimación por velocidad,
+    // no la estructura leída del reloj -- cada uno ya llega con
+    // isHeuristic: true.
     return {
         startIndex: indices[0],
         endIndex: indices[indices.length - 1],
-        isHeuristic: false
+        isHeuristic: splits.some(split => split.isHeuristic === true)
     };
 
 }

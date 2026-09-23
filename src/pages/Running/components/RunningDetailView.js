@@ -339,7 +339,7 @@ function IntervalsOnlyToggle(intervalRange, showOnlyIntervals) {
 
             <span>${showOnlyIntervals ? "Ver entreno completo" : "Ver solo intervalos"}</span>
 
-            ${intervalRange.isHeuristic ? `<iconify-icon icon="solar:cloud-bold-duotone" class="pace-chart-intervals-toggle-badge" title="Calentamiento/enfriamiento detectados automáticamente por ritmo -- no es un dato leído del reloj"></iconify-icon>` : ""}
+            ${intervalRange.isHeuristic ? `<iconify-icon icon="solar:cloud-bold-duotone" class="pace-chart-intervals-toggle-badge" title="Intervalos detectados automáticamente por ritmo -- no es un dato leído del reloj"></iconify-icon>` : ""}
 
         </button>
 
@@ -436,7 +436,8 @@ function RunningPaceChart(splits, avgPaceRef, avgHrRef, metricMode = "both", wor
                         const isRest = split.segmentType === "rest";
                         const isFastest = !isRest && hasVariation && split.paceSecPerKm === fastestPace;
                         const isSlowest = !isRest && hasVariation && split.paceSecPerKm === slowestPace;
-                        const isPartial = index === lastIndex && split.distanceKm != null && split.distanceKm < 1;
+                        // Un tramo de series/descanso mide lo que mide, no es un km a medias.
+                        const isPartial = index === lastIndex && split.segmentType == null && split.distanceKm != null && split.distanceKm < 1;
 
                         return `
 

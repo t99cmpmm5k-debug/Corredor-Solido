@@ -31,7 +31,10 @@ const TITLE_PATTERNS = [
     { type: "easy", pattern: /\brodaje\b|\bsuave\b|\brecuperaci[oó]n\b/i }
 ];
 
-function matchTitle(title) {
+// Exportada para los importadores de archivo (tcx.js/gpx.js): deciden si un
+// entreno se declara de Series por su etiqueta antes de intentar la
+// detección heurística de intervalos (intervalHeuristic.js).
+export function matchTitle(title) {
 
     if (!title) return null;
 

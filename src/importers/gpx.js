@@ -1,5 +1,6 @@
 import { formatISODate } from "../utils/date.js";
-import { inferWorkoutType } from "./classifyWorkoutType.js";
+import { inferWorkoutType, matchTitle } from "./classifyWorkoutType.js";
+import { detectHeuristicIntervals } from "./intervalHeuristic.js";
 import { haversineMeters, buildRouteTrace, sortPointsByTimeStable } from "./geoTrace.js";
 
 const TRACKPOINT_EXTENSION_NS = "http://www.garmin.com/xmlschemas/TrackPointExtension/v1";
@@ -76,7 +77,11 @@ function parseTrackpoints(trkEl) {
             // tcx.js) — mismo factor x2, verificado contra un GPX real
             // (Strava/Garmin, 4 jul 2026) comparando contra Garmin Connect:
             // coincide exacto (170 spm media / 186 spm máxima en ambos).
-            cadence: cadenceRaw != null ? cadenceRaw * 2 : null
+            cadence: cadenceRaw != null ? cadenceRaw * 2 : null,
+            // Velocidad del sensor por punto (TrackPointExtension speed, m/s)
+            // -- la trae Zepp; solo la usa la detección heurística de
+            // intervalos (intervalHeuristic.js), que sin ella la deriva del GPS.
+            speed: nsChildValue(tp, "gpxtpx", "speed")
         };
 
     });
@@ -266,7 +271,13 @@ export function parseGpxWorkout(xmlText) {
     // de Zepp en TCX, ver tcx.js) — se deja pasar tal cual a
     // inferWorkoutType(), que ya ignora lo que no reconoce.
     const title = textOf(trkEl, "name");
-    const splits = computeSplits(points);
+
+    // GPX no tiene concepto de vuelta: un entreno de Series (p. ej. Zepp,
+    // <name>20260910193655 Series</name>) llega siempre como un tramo
+    // continuo -- intervalos estimados por velocidad (intervalHeuristic.js,
+    // tramos marcados isHeuristic); sin patrón claro, splits por km.
+    const heuristic = matchTitle(title) === "series" ? detectHeuristicIntervals(points) : null;
+    const splits = heuristic?.splits ?? computeSplits(points);
 
     const { type, confidence: typeConfidence } = inferWorkoutType({ title, distanceKm, splits });
 

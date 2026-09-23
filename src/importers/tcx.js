@@ -1,5 +1,6 @@
 import { formatISODate } from "../utils/date.js";
-import { inferWorkoutType } from "./classifyWorkoutType.js";
+import { inferWorkoutType, matchTitle } from "./classifyWorkoutType.js";
+import { detectHeuristicIntervals } from "./intervalHeuristic.js";
 import { haversineMeters, buildRouteTrace, sortPointsByTimeStable } from "./geoTrace.js";
 
 const ACTIVITY_EXTENSION_NS = "http://www.garmin.com/xmlschemas/ActivityExtension/v2";
@@ -133,7 +134,11 @@ function parseTrackpoints(lapEl) {
             // verificado contra un archivo real: la media de estos valores
             // ×2 coincide con AvgRunCadence del Lap (que ya viene doblado),
             // y el máximo ×2 coincide exacto con maxRunCadence.
-            cadence: cadenceRaw != null ? cadenceRaw * 2 : null
+            cadence: cadenceRaw != null ? cadenceRaw * 2 : null,
+            // Velocidad del sensor por punto (<ns3:TPX><ns3:Speed>, m/s) --
+            // la trae Zepp; solo la usa la detección heurística de
+            // intervalos (intervalHeuristic.js), que sin ella la deriva del GPS.
+            speed: nsTagValue(tp, "Speed")
         };
 
     });
@@ -329,10 +334,20 @@ export function parseTcxWorkout(xmlText) {
     // pantallas de Garmin (aquí es una etiqueta fija del modo de registro,
     // p. ej. "A pie·Instructor Zepp") — se deja en null a propósito y se
     // deja que inferWorkoutType() caiga a su heurística de distancia/splits.
+    // Excepción: el modo "Series" de Zepp (<Notes>Series</Notes>, verificado
+    // en un archivo real) sí dice qué entreno fue -- clasifica el tipo.
     const title = null;
-    const splits = computeSplits(points);
+    const notes = textOf(activityEl, "Notes");
+    const isSeriesByNotes = matchTitle(notes) === "series";
 
-    const { type, confidence: typeConfidence } = inferWorkoutType({ title, distanceKm, splits });
+    // Series sin vueltas reales (Zepp exporta toda la sesión en un único
+    // <Lap>, aunque el reloj guiara 4×3'/2'): intervalos estimados por
+    // velocidad (intervalHeuristic.js, tramos marcados isHeuristic). Con
+    // varias vueltas no se entra aquí; sin patrón claro, splits por km.
+    const heuristic = isSeriesByNotes && lapEls.length === 1 ? detectHeuristicIntervals(points) : null;
+    const splits = heuristic?.splits ?? computeSplits(points);
+
+    const { type, confidence: typeConfidence } = inferWorkoutType({ title: isSeriesByNotes ? notes : title, distanceKm, splits });
 
     const fields = {
         date: startDate ? formatISODate(startDate) : null,

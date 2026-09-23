@@ -328,3 +328,58 @@ describe("parseTcxWorkout", () => {
     });
 
 });
+
+describe("parseTcxWorkout — Series de Zepp sin vueltas reales (intervalos estimados)", () => {
+
+    // Misma forma que el TCX real de Zepp del 17-09 (<Notes>Series</Notes>,
+    // un único <Lap>, velocidad de sensor en <ns3:TPX><ns3:Speed>), con
+    // una sesión corta de 3×2'/1' para no generar miles de puntos.
+    function buildSeriesTcx({ laps = 1 } = {}) {
+
+        const blocks = [[180, 2.0], [120, 2.7], [60, 1.8], [120, 2.7], [60, 1.8], [120, 2.7], [180, 2.0]];
+        const start = Date.parse("2026-09-17T16:52:47Z");
+        const trackpoints = [];
+        let t = 0, lat = 37.58;
+
+        blocks.forEach(([seconds, speed]) => {
+            for (let i = 0; i < seconds; i++, t++) {
+                lat += speed / 111320;
+                trackpoints.push(`<Trackpoint><Time>${new Date(start + t * 1000).toISOString()}</Time><Position><LatitudeDegrees>${lat}</LatitudeDegrees><LongitudeDegrees>-1.73</LongitudeDegrees></Position><HeartRateBpm><Value>140</Value></HeartRateBpm><Extensions><ns3:TPX><ns3:Speed>${speed}</ns3:Speed></ns3:TPX></Extensions></Trackpoint>`);
+            }
+        });
+
+        const perLap = Math.ceil(trackpoints.length / laps);
+        const lapXml = Array.from({ length: laps }, (_, i) => `
+            <Lap StartTime="2026-09-17T16:52:47Z">
+                <TotalTimeSeconds>${t / laps}</TotalTimeSeconds>
+                <DistanceMeters>${2000 / laps}</DistanceMeters>
+                <Track>${trackpoints.slice(i * perLap, (i + 1) * perLap).join("")}</Track>
+            </Lap>`).join("");
+
+        return `<?xml version="1.0" encoding="utf-8"?>
+<TrainingCenterDatabase xmlns="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2" xmlns:ns3="http://www.garmin.com/xmlschemas/ActivityExtension/v2">
+    <Activities><Activity Sport="Running"><Id>2026-09-17T16:52:47Z</Id><Notes>Series</Notes>${lapXml}</Activity></Activities>
+    <Author><Name>Zepp</Name></Author>
+</TrainingCenterDatabase>`;
+
+    }
+
+    it("con un único Lap y <Notes>Series</Notes>, los splits son los intervalos estimados (work/rest, isHeuristic) y el tipo es series", () => {
+
+        const workout = parseTcxWorkout(buildSeriesTcx());
+
+        expect(workout.type).toBe("series");
+        expect(workout.splits.map(s => s.segmentType)).toEqual(["work", "rest", "work", "rest", "work"]);
+        expect(workout.splits.every(s => s.isHeuristic === true)).toBe(true);
+
+    });
+
+    it("con varias vueltas reales no pasa por la detección heurística", () => {
+
+        const workout = parseTcxWorkout(buildSeriesTcx({ laps: 3 }));
+
+        expect(workout.splits.some(s => s.segmentType)).toBe(false);
+
+    });
+
+});
