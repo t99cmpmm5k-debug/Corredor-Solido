@@ -34,6 +34,7 @@ import { hydrateSyncMeta, initContinuousSync } from "./data/syncManager.js";
 import { loadHourlyWeather } from "./pages/Home/homeWeatherStore.js";
 import { loadCurrentWeather } from "./pages/Home/currentWeatherStore.js";
 import { initUpdateNotifier } from "./pwa/updateNotifier.js";
+import { initSeedRoutineCleanup } from "./components/SeedRoutineCleanup/SeedRoutineCleanup.js";
 
 // TEMPORAL - QUITAR ANTES DE PRODUCCIÓN
 import { mountThemeSwitcher } from "./dev/ThemeSwitcher.js";
@@ -105,6 +106,15 @@ function boot() {
         // snapshot en blanco (inofensivo -- el push es upsert, nunca borra
         // -- pero inútil).
         ready.then(() => initContinuousSync());
+
+        // Aviso único para limpiar las rutinas semilla heredadas (ver
+        // legacyGymSeedCleanup.js) -- necesita las rutinas ya hidratadas, y
+        // solo con sesión iniciada: en Login/verificación se quedaría encima
+        // de una pantalla que no es la app. Sin sesión no se marca nada, así
+        // que se propone en la primera apertura ya logueado.
+        ready.then(() => {
+            if (isLoggedIn()) initSeedRoutineCleanup(() => rerender());
+        });
 
         // Desactivado a propósito mientras se usa la app en real esta semana
         // (probando el tema automático por hora) — con el selector delante
