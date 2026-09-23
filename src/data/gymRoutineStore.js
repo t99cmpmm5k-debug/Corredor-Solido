@@ -1,10 +1,15 @@
 // Rutinas de gimnasio guardadas -- store CRUD real (antes solo existía
-// "importar" + un único puntero de "rutina activa"; ver CLAUDE.md). Todas
+// "importar" + un único puntero de "rutina activa"; ver CLAUDE.md). Desde
+// 2026-09-23 participan en el sync con el backend y en el backup JSON
+// (antes solo vivían en el IndexedDB del dispositivo, ver
+// getSyncableData() en backup.js). Todas
 // las rutinas guardadas viven aquí y son igual de gestionables (ver/editar/
 // borrar) — ya no hay concepto de "activa", la pantalla de Gimnasio lista
 // todas a la vez (ver Gym.js).
 import { STORES, getAll, put, remove } from "./db.js";
 import { generateId } from "../utils/id.js";
+import { notifyDataChanged } from "./changeEvents.js";
+import { recordTombstone } from "./tombstoneStore.js";
 
 // Patrón habitual del usuario (lunes/miércoles/viernes) -- valor por
 // defecto SUGERIDO solo para una rutina NUEVA que no trae ningún día
@@ -124,7 +129,10 @@ export function createRoutine({ name, days, progressionNote }) {
 
     routines.push(routine);
 
-    return put(STORES.gymRoutines, routine).then(() => routine);
+    return put(STORES.gymRoutines, routine).then(() => {
+        notifyDataChanged();
+        return routine;
+    });
 
 }
 
@@ -139,6 +147,7 @@ export function updateRoutine(id, { name, days, progressionNote }) {
     routine.updatedAt = new Date().toISOString();
 
     upsertInto(routine);
+    notifyDataChanged();
 
     return routine;
 
@@ -180,5 +189,16 @@ export function deleteRoutine(id) {
     routines.splice(index, 1);
 
     remove(STORES.gymRoutines, id).catch(() => {});
+    recordTombstone("gymRoutines", id);
+    notifyDataChanged();
+
+}
+
+// Restauración desde el sync o un backup (conserva el id original, sin
+// notificar: no es un cambio del usuario) -- mismo patrón que
+// restoreReferenceRoute()/restoreGymSession().
+export function restoreRoutine(routine) {
+
+    return upsertInto(routine);
 
 }

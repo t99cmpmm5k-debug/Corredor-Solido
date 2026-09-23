@@ -5,7 +5,8 @@ import {
     loadSeedCleanupState,
     getPendingSeedRoutines,
     markSeedCleanupDone,
-    resolveSeedCleanup
+    resolveSeedCleanup,
+    stampKeptDecisions
 } from "../../data/legacyGymSeedCleanup.js";
 
 // Aviso único de limpieza de rutinas semilla (ver legacyGymSeedCleanup.js).
@@ -113,6 +114,8 @@ function showSeedCleanupDialog(candidates, state, onResolved) {
 export function initSeedRoutineCleanup(onResolved) {
 
     return loadSeedCleanupState().then(state => {
+
+        stampKeptDecisions(getRoutines(), state);
 
         if (state.done) return;
 

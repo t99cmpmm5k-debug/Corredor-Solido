@@ -35,6 +35,7 @@ import { loadHourlyWeather } from "./pages/Home/homeWeatherStore.js";
 import { loadCurrentWeather } from "./pages/Home/currentWeatherStore.js";
 import { initUpdateNotifier } from "./pwa/updateNotifier.js";
 import { initSeedRoutineCleanup } from "./components/SeedRoutineCleanup/SeedRoutineCleanup.js";
+import { hydrateSeedCleanupState } from "./data/legacyGymSeedCleanup.js";
 
 // TEMPORAL - QUITAR ANTES DE PRODUCCIÓN
 import { mountThemeSwitcher } from "./dev/ThemeSwitcher.js";
@@ -47,7 +48,7 @@ function boot() {
 
     let readyBeforeTimeout = false;
 
-    const ready = Promise.all([hydrate(), hydrateGymSessions(), hydrateGymRoutine(), hydrateCustomExercises(), hydrateReferenceRoutes(), hydrateRouteSuggestionDismissals(), hydrateTombstones(), hydrateBackupMeta(), hydrateSyncMeta()])
+    const ready = Promise.all([hydrate(), hydrateGymSessions(), hydrateGymRoutine(), hydrateCustomExercises(), hydrateReferenceRoutes(), hydrateRouteSuggestionDismissals(), hydrateTombstones(), hydrateBackupMeta(), hydrateSyncMeta(), hydrateSeedCleanupState()])
         .then(() => { readyBeforeTimeout = true; });
 
     const timedOut = new Promise(resolve => setTimeout(resolve, HYDRATE_TIMEOUT_MS));

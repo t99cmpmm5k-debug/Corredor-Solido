@@ -295,3 +295,120 @@ describe("getBackupStatus() -- recordatorio de 14 días con fecha real de últim
     });
 
 });
+
+describe("backup.js / sync -- rutinas de gimnasio (antes solo en el dispositivo)", () => {
+
+    beforeEach(() => {
+        resetFakeIndexedDB();
+        vi.resetModules();
+    });
+
+    async function setup() {
+
+        const routineStore = await import("../data/gymRoutineStore.js");
+        const cleanup = await import("../data/legacyGymSeedCleanup.js");
+        const tombstones = await import("../data/tombstoneStore.js");
+        await routineStore.hydrate();
+        await tombstones.hydrate();
+        const backup = await import("./backup.js");
+        return { routineStore, cleanup, tombstones, backup };
+
+    }
+
+    async function seedRoutine(overrides = {}) {
+        const { LEGACY_SEED_DAYS } = await import("../data/legacyGymSeed.js");
+        const [day] = LEGACY_SEED_DAYS;
+        return { id: `default-${day.id}`, name: day.title, days: [structuredClone(day)], progressionNote: "", ...overrides };
+    }
+
+    it("una rutina creada a mano entra en getSyncableData() (push al servidor y export JSON)", async () => {
+
+        const { routineStore, backup } = await setup();
+        const routine = await routineStore.createRoutine({ name: "Torso", days: [{ id: "d1", title: "Día 1", exercises: [] }], progressionNote: "" });
+
+        expect(backup.getSyncableData().gymRoutines.map(r => r.id)).toEqual([routine.id]);
+
+    });
+
+    it("importData() restaura las rutinas en un estado limpio, con su id original", async () => {
+
+        const { routineStore, backup } = await setup();
+        const routine = { id: "r-abc", name: "Pierna", days: [{ id: "d1", title: "Día 1", exercises: [] }], progressionNote: "" };
+
+        backup.importData({ schemaVersion: 1, exportedAt: "2026-09-23T00:00:00.000Z", gymRoutines: [routine] });
+
+        expect(routineStore.getRoutineById("r-abc")).toMatchObject({ name: "Pierna" });
+
+    });
+
+    it("borrar una rutina deja una tombstone de gymRoutines, y aplicarla desde un pull la borra", async () => {
+
+        const { routineStore, tombstones, backup } = await setup();
+        const routine = await routineStore.createRoutine({ name: "A borrar", days: [], progressionNote: "" });
+
+        routineStore.deleteRoutine(routine.id);
+        expect(tombstones.getTombstones().map(t => t.id)).toContain(`gymRoutines:${routine.id}`);
+
+        backup.applyRestoreBatch({ gymRoutines: [{ id: "r-remote", name: "Remota", days: [], progressionNote: "" }] });
+        backup.applyRestoreBatch({ tombstones: [{ id: "gymRoutines:r-remote", storeKey: "gymRoutines", recordId: "r-remote" }] });
+        expect(routineStore.getRoutineById("r-remote")).toBeNull();
+
+    });
+
+    it("crear, editar y borrar una rutina disparan la sincronización como cualquier otro cambio", async () => {
+
+        const { routineStore } = await setup();
+        const { onDataChanged } = await import("../data/changeEvents.js");
+        const listener = vi.fn();
+        onDataChanged(listener);
+
+        const routine = await routineStore.createRoutine({ name: "R", days: [], progressionNote: "" });
+        routineStore.updateRoutine(routine.id, { name: "R2", days: [], progressionNote: "" });
+        routineStore.deleteRoutine(routine.id);
+
+        expect(listener).toHaveBeenCalledTimes(3);
+
+    });
+
+    it("una rutina semilla sin decidir en el aviso de limpieza NO sale del dispositivo", async () => {
+
+        const { routineStore, cleanup, backup } = await setup();
+        routineStore.restoreRoutine(await seedRoutine());
+        await cleanup.hydrateSeedCleanupState();
+
+        expect(backup.getSyncableData().gymRoutines).toHaveLength(0);
+
+    });
+
+    it("una semilla conservada sí se sube, con la decisión dentro de la propia rutina (un móvil nuevo no vuelve a preguntar)", async () => {
+
+        const { routineStore, cleanup, backup } = await setup();
+        const seed = await seedRoutine();
+        routineStore.restoreRoutine(seed);
+
+        const state = await cleanup.loadSeedCleanupState();
+        const pending = cleanup.getPendingSeedRoutines(routineStore.getRoutines(), state);
+        await cleanup.resolveSeedCleanup(pending, [], state);
+
+        const synced = backup.getSyncableData().gymRoutines;
+        expect(synced.map(r => r.id)).toEqual([seed.id]);
+        expect(synced[0].seedCleanupDecision).toBe("kept");
+
+        // Otro dispositivo, estado de limpieza vacío: no la vuelve a proponer.
+        expect(cleanup.getPendingSeedRoutines(synced, { done: false, decisions: {} })).toHaveLength(0);
+
+    });
+
+    it("una semilla conservada antes de este cambio (decisión solo en el meta local) se sella en la rutina", async () => {
+
+        const { routineStore, cleanup, backup } = await setup();
+        routineStore.restoreRoutine(await seedRoutine());
+
+        cleanup.stampKeptDecisions(routineStore.getRoutines(), { done: true, decisions: { "default-day1": "kept" } });
+
+        expect(routineStore.getRoutineById("default-day1").seedCleanupDecision).toBe("kept");
+        expect(backup.getSyncableData().gymRoutines).toHaveLength(1);
+
+    });
+
+});

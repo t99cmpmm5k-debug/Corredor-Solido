@@ -9,8 +9,8 @@ import { STORES, getAll, put } from "./db.js";
 //
 // `id` es compuesto ("storeKey:recordId"), no el id del registro
 // original -- así conviven en una sola store/tabla las tombstones de los
-// 4 stores borrables que participan en el sync (workouts, plannedSessions,
-// gymSessions, referenceRoutes). plannedRaces/gymRoutines/customExercises
+// 5 stores borrables que participan en el sync (workouts, plannedSessions,
+// gymSessions, referenceRoutes, gymRoutines). plannedRaces/customExercises
 // no generan tombstones porque no están en SYNC_TABLES (server/src/
 // syncTables.js) y por tanto no pueden resucitar así.
 const tombstones = [];
