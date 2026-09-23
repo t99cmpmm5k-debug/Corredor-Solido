@@ -103,9 +103,14 @@ export function isPlausibleCandidatePair(workoutA, workoutB) {
 // estén ya agrupados en ningún recorrido de referencia (`groupedWorkoutIds`,
 // resuelto por quien llame a partir de referenceRouteStore.js) y cuyo par
 // no se haya descartado antes (`dismissedPairKeys`, de routeSuggestionStore.js).
-export function findRouteSuggestions(workouts, groupedWorkoutIds, dismissedPairKeys, pairKeyFn) {
+//
+// `excludedWorkoutIds` (opcional): entrenos sueltos que ya tienen una
+// sugerencia "Añadir a recorrido existente" (findExistingRouteMatches) --
+// no se proponen además como par nuevo, para no enseñar dos tarjetas
+// contradictorias ("crea uno nuevo" y "únelo a X") para el mismo entreno.
+export function findRouteSuggestions(workouts, groupedWorkoutIds, dismissedPairKeys, pairKeyFn, excludedWorkoutIds = new Set()) {
 
-    const candidates = workouts.filter(w => w.routeTrace?.length >= 2 && !groupedWorkoutIds.has(w.id));
+    const candidates = workouts.filter(w => w.routeTrace?.length >= 2 && !groupedWorkoutIds.has(w.id) && !excludedWorkoutIds.has(w.id));
     const suggestions = [];
 
     for (let i = 0; i < candidates.length; i++) {
@@ -125,5 +130,67 @@ export function findRouteSuggestions(workouts, groupedWorkoutIds, dismissedPairK
     }
 
     return suggestions;
+
+}
+
+// Clave de descarte de una sugerencia "entreno -> recorrido existente" --
+// reutiliza la misma store de descartes por par (routeSuggestionStore.js)
+// con el recorrido como segundo miembro del par; el prefijo evita cualquier
+// choque con un id de entreno real.
+export function existingRouteMatchPartnerId(routeId) {
+
+    return `route:${routeId}`;
+
+}
+
+// Bug real (2026-09-23): findRouteSuggestions() solo compara entrenos
+// sueltos ENTRE SÍ -- un entreno nuevo de un recorrido que ya existía como
+// recorrido de referencia nunca podía detectarse, porque todos sus
+// entrenos anteriores ya estaban agrupados y quedaban fuera de la
+// comparación. Aquí se compara cada entreno suelto contra los entrenos ya
+// asociados a cada recorrido existente, con exactamente los mismos filtros
+// (isPlausibleCandidatePair + areRoutesSimilar) -- basta con que encaje con
+// UNO de ellos. Si encaja con varios recorridos, se queda el de mayor
+// similitud (un entreno solo puede pertenecer a uno).
+export function findExistingRouteMatches(workouts, routes, dismissedPairKeys, pairKeyFn) {
+
+    const byId = new Map(workouts.map(w => [w.id, w]));
+    const groupedWorkoutIds = new Set(routes.flatMap(r => r.workoutIds));
+
+    const routeMembers = routes.map(route => ({
+        route,
+        members: route.workoutIds.map(id => byId.get(id)).filter(w => w?.routeTrace?.length >= 2)
+    })).filter(r => r.members.length);
+
+    const matches = [];
+
+    workouts
+        .filter(w => w.routeTrace?.length >= 2 && !groupedWorkoutIds.has(w.id))
+        .forEach(workout => {
+
+            let best = null;
+
+            routeMembers.forEach(({ route, members }) => {
+
+                if (dismissedPairKeys.has(pairKeyFn(workout.id, existingRouteMatchPartnerId(route.id)))) return;
+
+                members.forEach(member => {
+
+                    if (!isPlausibleCandidatePair(workout, member)) return;
+
+                    const { similarity } = computeRouteCoverage(workout.routeTrace, member.routeTrace);
+                    if (similarity < ROUTE_SIMILARITY_THRESHOLD) return;
+
+                    if (!best || similarity > best.similarity) best = { workout, route, matchedWorkout: member, similarity };
+
+                });
+
+            });
+
+            if (best) matches.push(best);
+
+        });
+
+    return matches;
 
 }

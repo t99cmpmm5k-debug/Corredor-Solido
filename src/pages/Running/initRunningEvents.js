@@ -2,6 +2,7 @@ import { rerender } from "../../core/router.js";
 import { addWorkout, addShoe, deleteWorkout, findSimilarWorkout, updateWorkoutType, updateWorkoutShoe, updateWorkoutDayState, retireShoe, updateShoe, getWorkouts } from "../../data/workoutStore.js";
 import { createReferenceRoute, deleteReferenceRoute, assignWorkoutToRoute, unassignWorkoutFromReferenceRoutes, getReferenceRouteById } from "../../data/referenceRouteStore.js";
 import { dismissRouteSuggestion } from "../../data/routeSuggestionStore.js";
+import { existingRouteMatchPartnerId } from "./referenceRouteGeometry.js";
 import { resolveRouteWorkouts } from "./referenceRouteEfficiency.js";
 import { parseGarminScreenshots, warmUpWorker } from "../../importers/garmin-engine/recognize.js";
 import { readShoePhotoAsDataUrl } from "./shoePhoto.js";
@@ -1150,6 +1151,25 @@ export function initRunningEvents() {
 
         button.addEventListener("click", () => {
             dismissSuggestion(button.dataset.workoutA, button.dataset.workoutB);
+        });
+
+    });
+
+    // Sugerencia "entreno suelto -> recorrido ya existente" (ExistingRouteMatchCard):
+    // aceptar asigna directamente, descartar se recuerda por par entreno/recorrido.
+    document.querySelectorAll('[data-action="accept-existing-route-match"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+            assignWorkoutToRoute(button.dataset.routeId, button.dataset.workoutId);
+            rerender();
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="dismiss-existing-route-match"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+            dismissSuggestion(button.dataset.workoutId, existingRouteMatchPartnerId(button.dataset.routeId));
         });
 
     });

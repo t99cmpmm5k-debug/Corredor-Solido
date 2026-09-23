@@ -4,6 +4,8 @@ import {
     areRoutesSimilar,
     isPlausibleCandidatePair,
     findRouteSuggestions,
+    findExistingRouteMatches,
+    existingRouteMatchPartnerId,
     ROUTE_MATCH_TOLERANCE_METERS,
     ROUTE_SIMILARITY_THRESHOLD
 } from "./referenceRouteGeometry.js";
@@ -196,6 +198,84 @@ describe("findRouteSuggestions", () => {
         const suggestions = findRouteSuggestions([a, b], new Set(), new Set(), pairKeyFn);
 
         expect(suggestions).toHaveLength(0);
+
+    });
+
+});
+
+describe("findExistingRouteMatches", () => {
+
+    function workoutWithTrace(id, trace, overrides = {}) {
+        return { id, startLat: trace[0].lat, startLon: trace[0].lon, distanceKm: 10, routeTrace: trace, ...overrides };
+    }
+
+    const pairKeyFn = (a, b) => [a, b].sort().join("::");
+
+    // Regresión (2026-09-23): el recorrido ya existía con sus entrenos
+    // agrupados -- findRouteSuggestions() los excluye a todos y el entreno
+    // nuevo se quedaba sin nadie con quien compararse.
+    it("empareja un entreno suelto con un recorrido ya creado aunque todos sus entrenos estén agrupados", () => {
+
+        const trace = straightTrace(37.5800, -1.7300, 60, 0.0001);
+        const old1 = workoutWithTrace("old1", trace);
+        const old2 = workoutWithTrace("old2", trace);
+        const fresh = workoutWithTrace("new", trace);
+        const route = { id: "r1", name: "8K referencia", workoutIds: ["old1", "old2"] };
+
+        expect(findRouteSuggestions([old1, old2, fresh], new Set(route.workoutIds), new Set(), pairKeyFn)).toHaveLength(0);
+
+        const matches = findExistingRouteMatches([old1, old2, fresh], [route], new Set(), pairKeyFn);
+
+        expect(matches).toHaveLength(1);
+        expect(matches[0].workout.id).toBe("new");
+        expect(matches[0].route.id).toBe("r1");
+
+    });
+
+    it("aplica los mismos prefiltros: inicio a más de 500m o distancia fuera del 30% no empareja", () => {
+
+        const trace = straightTrace(37.5800, -1.7300, 60, 0.0001);
+        const old = workoutWithTrace("old", trace);
+        const route = { id: "r1", name: "R", workoutIds: ["old"] };
+
+        const farStart = workoutWithTrace("new", trace, { startLat: 37.5900 });
+        const longer = workoutWithTrace("new2", trace, { distanceKm: 14 });
+
+        expect(findExistingRouteMatches([old, farStart, longer], [route], new Set(), pairKeyFn)).toHaveLength(0);
+
+    });
+
+    it("no empareja un trazado distinto ni repite un par entreno/recorrido descartado", () => {
+
+        const trace = straightTrace(37.5800, -1.7300, 60, 0.0001);
+        const other = straightTrace(37.5800, -1.7290, 60, 0.0001);
+        const old = workoutWithTrace("old", trace);
+        const route = { id: "r1", name: "R", workoutIds: ["old"] };
+
+        expect(findExistingRouteMatches([old, workoutWithTrace("new", other)], [route], new Set(), pairKeyFn)).toHaveLength(0);
+
+        const dismissed = new Set([pairKeyFn("new", existingRouteMatchPartnerId("r1"))]);
+        expect(findExistingRouteMatches([old, workoutWithTrace("new", trace)], [route], dismissed, pairKeyFn)).toHaveLength(0);
+
+    });
+
+    it("ignora recorridos cuyos entrenos no tienen traza (OCR)", () => {
+
+        const trace = straightTrace(37.5800, -1.7300, 60, 0.0001);
+        const ocrOld = { id: "old", startLat: null, startLon: null, distanceKm: 10, routeTrace: null };
+        const route = { id: "r1", name: "R", workoutIds: ["old"] };
+
+        expect(findExistingRouteMatches([ocrOld, workoutWithTrace("new", trace)], [route], new Set(), pairKeyFn)).toHaveLength(0);
+
+    });
+
+    it("un entreno emparejado con un recorrido existente no se propone además como par nuevo", () => {
+
+        const trace = straightTrace(37.5800, -1.7300, 60, 0.0001);
+        const a = workoutWithTrace("a", trace);
+        const b = workoutWithTrace("b", trace);
+
+        expect(findRouteSuggestions([a, b], new Set(), new Set(), pairKeyFn, new Set(["a"]))).toHaveLength(0);
 
     });
 

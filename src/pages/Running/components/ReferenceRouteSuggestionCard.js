@@ -90,3 +90,51 @@ export function ReferenceRouteSuggestionCard(workoutA, workoutB, confirmingSugge
     `;
 
 }
+
+// Variante "entreno suelto -> recorrido ya existente" (findExistingRouteMatches
+// en referenceRouteGeometry.js) -- aquí no hay nombre que pedir, el recorrido
+// ya existe: "Añadir" asigna directamente con assignWorkoutToRoute(), igual
+// que el <select> del menú "···" de cada entreno.
+export function ExistingRouteMatchCard(workout, route, matchedWorkout) {
+
+    return `
+
+        <div class="route-suggestion-card">
+
+            <div class="route-suggestion-header">
+
+                <iconify-icon icon="solar:point-on-map-perspective-bold-duotone"></iconify-icon>
+
+                <p>Recorrido de referencia detectado</p>
+
+            </div>
+
+            <p class="route-suggestion-workouts">
+
+                <strong>${workoutLabel(workout)}</strong> parece el recorrido <strong>«${route.name}»</strong> -- su trazado GPS coincide con el de ${workoutLabel(matchedWorkout)}.
+
+            </p>
+
+            <div class="route-suggestion-actions">
+
+                <button
+                    class="wizard-secondary-button"
+                    data-action="dismiss-existing-route-match"
+                    data-workout-id="${workout.id}"
+                    data-route-id="${route.id}"
+                >Descartar</button>
+
+                <button
+                    class="wizard-secondary-button route-suggestion-confirm"
+                    data-action="accept-existing-route-match"
+                    data-workout-id="${workout.id}"
+                    data-route-id="${route.id}"
+                >Añadir a «${route.name}»</button>
+
+            </div>
+
+        </div>
+
+    `;
+
+}

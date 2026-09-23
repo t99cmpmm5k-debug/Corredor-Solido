@@ -4,9 +4,9 @@ import { getReferenceRoutes } from "../../../data/referenceRouteStore.js";
 import { getWorkouts } from "../../../data/workoutStore.js";
 import { getDismissedPairKeys, routeSuggestionPairKey } from "../../../data/routeSuggestionStore.js";
 import { resolveRouteWorkouts } from "../referenceRouteEfficiency.js";
-import { findRouteSuggestions } from "../referenceRouteGeometry.js";
+import { findRouteSuggestions, findExistingRouteMatches } from "../referenceRouteGeometry.js";
 import { ReferenceRouteCard } from "./ReferenceRouteCard.js";
-import { ReferenceRouteSuggestionCard } from "./ReferenceRouteSuggestionCard.js";
+import { ReferenceRouteSuggestionCard, ExistingRouteMatchCard } from "./ReferenceRouteSuggestionCard.js";
 
 // Input SIN controlar (mismo patrón que brand/model en el alta de
 // zapatilla, RunningShoeStep.js) -- initRunningEvents.js lee su .value
@@ -91,7 +91,10 @@ export function ReferenceRoutesListView(creatingRoute, routeMenuOpenId, confirmi
     const allWorkouts = getWorkouts();
 
     const groupedWorkoutIds = new Set(routes.flatMap(r => r.workoutIds));
-    const suggestions = findRouteSuggestions(allWorkouts, groupedWorkoutIds, getDismissedPairKeys(), routeSuggestionPairKey);
+    const dismissedPairKeys = getDismissedPairKeys();
+    const existingRouteMatches = findExistingRouteMatches(allWorkouts, routes, dismissedPairKeys, routeSuggestionPairKey);
+    const matchedWorkoutIds = new Set(existingRouteMatches.map(m => m.workout.id));
+    const suggestions = findRouteSuggestions(allWorkouts, groupedWorkoutIds, dismissedPairKeys, routeSuggestionPairKey, matchedWorkoutIds);
 
     return `
 
@@ -115,9 +118,11 @@ export function ReferenceRoutesListView(creatingRoute, routeMenuOpenId, confirmi
 
             </p>
 
-            ${suggestions.length ? `
+            ${existingRouteMatches.length || suggestions.length ? `
 
                 <div class="route-suggestions-list">
+
+                    ${existingRouteMatches.map(m => ExistingRouteMatchCard(m.workout, m.route, m.matchedWorkout)).join("")}
 
                     ${suggestions.map(s => ReferenceRouteSuggestionCard(s.workoutA, s.workoutB, confirmingSuggestion)).join("")}
 
