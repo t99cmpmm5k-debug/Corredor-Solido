@@ -1,7 +1,7 @@
 import { SEED_RACES } from "./seedRaces.js";
 
 const DB_NAME = "corredor-solido";
-const DB_VERSION = 13;
+const DB_VERSION = 14;
 
 // Bookkeeping en meta (misma store que lastExportAt, ver backup.js) — se
 // escribe una sola vez, la primera vez que esta instalación pasa por
@@ -108,7 +108,8 @@ export const STORES = {
     referenceRoutes: "referenceRoutes",
     routeSuggestionDismissals: "routeSuggestionDismissals",
     tombstones: "tombstones",
-    bodyComposition: "bodyComposition"
+    bodyComposition: "bodyComposition",
+    nutritionEntries: "nutritionEntries"
 
 };
 
@@ -343,6 +344,15 @@ function upgrade(db, transaction) {
     if (!db.objectStoreNames.contains(STORES.bodyComposition)) {
 
         db.createObjectStore(STORES.bodyComposition, { keyPath: "id" });
+
+    }
+
+    // Nutrición (Gimnasio): un registro por alimento añadido a un día --
+    // ver nutritionStore.js. Participa en el sync y el backup desde el
+    // primer día.
+    if (!db.objectStoreNames.contains(STORES.nutritionEntries)) {
+
+        db.createObjectStore(STORES.nutritionEntries, { keyPath: "id" });
 
     }
 

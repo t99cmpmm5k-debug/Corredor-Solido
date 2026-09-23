@@ -443,3 +443,35 @@ describe("backup.js / sync -- composición corporal (en el sync desde el primer 
     });
 
 });
+
+describe("backup.js / sync -- nutrición (en el sync desde el primer día)", () => {
+
+    beforeEach(() => {
+        resetFakeIndexedDB();
+        vi.resetModules();
+    });
+
+    it("los alimentos entran en getSyncableData() y importData() los restaura con su id", async () => {
+
+        const store = await import("../data/nutritionStore.js");
+        await store.hydrate();
+        const backup = await import("./backup.js");
+
+        const product = { code: "1", name: "Plátano", brand: null, unit: "g", per100: { kcal: 90, protein: 1.2, carbs: 20, fat: null }, serving: null };
+        const entry = store.addNutritionEntry({ date: "2026-09-24", meal: "snack", product, grams: 120 });
+        expect(backup.getSyncableData().nutritionEntries.map(e => e.id)).toEqual([entry.id]);
+        expect(backup.getDataSummary().nutritionEntries).toBe(1);
+
+        vi.resetModules();
+        resetFakeIndexedDB();
+        const fresh = await import("../data/nutritionStore.js");
+        await fresh.hydrate();
+        const freshBackup = await import("./backup.js");
+
+        freshBackup.importData({ schemaVersion: 1, exportedAt: "2026-09-24T00:00:00.000Z", nutritionEntries: [entry] });
+
+        expect(fresh.getNutritionEntries()).toEqual([entry]);
+
+    });
+
+});

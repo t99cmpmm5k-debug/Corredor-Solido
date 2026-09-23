@@ -1,0 +1,324 @@
+/* Nutrición (Gimnasio) -- solo lo propio de esta pestaña: las tarjetas,
+   métricas, filas y botones son los de Composición corporal
+   (GymBodyComposition.css), el buscador y los resultados los del buscador
+   de ejercicios (.gym-picker-search/.gym-picker-result) y el selector de
+   raciones/gramos el de pestañas (.gym-detail-tabs). */
+
+.gym-nutrition-day{
+
+    display:flex;
+    align-items:center;
+    gap:12px;
+
+}
+
+.gym-nutrition-day-label{
+
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:2px;
+
+}
+
+.gym-nutrition-day-label strong{
+
+    color:var(--text-primary);
+    font-size:1rem;
+    font-weight:800;
+    text-transform:capitalize;
+
+}
+
+.gym-nutrition-day-label span{
+
+    color:var(--text-secondary);
+    font-size:.78rem;
+    font-weight:600;
+
+}
+
+.gym-nutrition-day .gym-bodycomp-icon-button:disabled{
+
+    opacity:.35;
+    cursor:default;
+
+}
+
+.gym-nutrition-kcal{
+
+    display:flex;
+    align-items:baseline;
+    gap:6px;
+
+}
+
+.gym-nutrition-kcal strong{
+
+    color:var(--text-primary);
+    font-size:2.4rem;
+    font-weight:800;
+    line-height:1;
+
+}
+
+.gym-nutrition-kcal span{
+
+    color:var(--text-secondary);
+    font-size:.9rem;
+    font-weight:700;
+
+}
+
+.gym-nutrition-note,
+.gym-nutrition-source{
+
+    margin:0;
+    color:var(--text-secondary);
+    font-size:.76rem;
+
+}
+
+.gym-nutrition-source{
+
+    text-align:right;
+    opacity:.8;
+
+}
+
+.gym-nutrition-search-form{
+
+    display:flex;
+    flex-direction:column;
+
+}
+
+.gym-nutrition-search-form .gym-picker-search{
+
+    font-size:1rem;
+
+}
+
+.gym-nutrition-results{
+
+    max-height:340px;
+
+}
+
+/* Botones: sin esto no heredan la tipografía de la app. */
+.gym-nutrition-result{
+
+    font-family:inherit;
+
+}
+
+.gym-nutrition-result-name{
+
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+    min-width:0;
+
+}
+
+.gym-nutrition-result-name small{
+
+    color:var(--text-secondary);
+    font-size:.72rem;
+
+}
+
+.gym-nutrition-error,
+.gym-nutrition-empty{
+
+    display:flex;
+    flex-direction:column;
+    align-items:flex-start;
+    gap:10px;
+
+}
+
+.gym-nutrition-error p{
+
+    margin:0;
+
+}
+
+.gym-nutrition-empty{
+
+    align-items:center;
+
+}
+
+.gym-nutrition-error .gym-bodycomp-cancel,
+.gym-nutrition-empty .gym-bodycomp-cancel{
+
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    min-height:40px;
+
+}
+
+.gym-nutrition-quantity{
+
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+
+}
+
+.gym-nutrition-quantity [data-nutrition-error][hidden]{
+
+    display:none;
+
+}
+
+.gym-nutrition-product{
+
+    display:flex;
+    flex-direction:column;
+    gap:3px;
+
+}
+
+.gym-nutrition-product strong{
+
+    color:var(--text-primary);
+    font-size:1rem;
+    font-weight:800;
+
+}
+
+.gym-nutrition-product span,
+.gym-nutrition-product small{
+
+    color:var(--text-secondary);
+    font-size:.8rem;
+
+}
+
+.gym-nutrition-select{
+
+    min-height:46px;
+    padding:0 12px;
+
+    border-radius:var(--radius-sm);
+    border:1px solid var(--card-border);
+    background:color-mix(in srgb, var(--card-background) 40%, black 10%);
+    color:var(--text-primary);
+
+    font:inherit;
+    font-size:1rem;
+
+    /* Sin esto, WebKit pinta el select nativo con fondo claro y el texto
+       (blanco, del tema) no se lee. Flecha propia en su lugar. */
+    -webkit-appearance:none;
+    appearance:none;
+    padding-right:36px;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%239fb3c8' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;
+    background-position:right 14px center;
+
+}
+
+.gym-nutrition-preview{
+
+    margin:0;
+    padding:10px 12px;
+    border-radius:var(--radius-sm);
+    background:color-mix(in srgb, var(--card-background) 60%, transparent);
+
+    color:var(--text-primary);
+    font-size:.88rem;
+    font-weight:600;
+
+}
+
+.gym-nutrition-preview:empty{
+
+    display:none;
+
+}
+
+.gym-nutrition-meal + .gym-nutrition-meal{
+
+    margin-top:6px;
+
+}
+
+.gym-nutrition-meal-title{
+
+    display:flex;
+    justify-content:space-between;
+    margin:0 0 4px;
+
+    color:var(--color-primary);
+    font-size:.78rem;
+    font-weight:800;
+    letter-spacing:.05em;
+    text-transform:uppercase;
+
+}
+
+.gym-nutrition-meal-title span{
+
+    color:var(--text-secondary);
+
+}
+
+.gym-nutrition-meal .gym-bodycomp-entry:first-of-type{
+
+    border-top:none;
+    padding-top:4px;
+
+}
+
+.gym-nutrition-entry{
+
+    gap:4px;
+
+}
+
+.gym-nutrition-entry-name{
+
+    flex:1;
+    min-width:0;
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+
+}
+
+.gym-nutrition-entry-name strong{
+
+    color:var(--text-primary);
+    font-size:.92rem;
+    font-weight:700;
+
+}
+
+.gym-nutrition-entry-name small{
+
+    color:var(--text-secondary);
+    font-size:.74rem;
+
+}
+
+.gym-nutrition-entry-kcal{
+
+    flex-shrink:0;
+    color:var(--text-primary);
+    font-size:.95rem;
+    font-weight:800;
+
+}
+
+.gym-nutrition-entry-macros{
+
+    margin:0;
+    color:var(--text-secondary);
+    font-size:.78rem;
+
+}

@@ -4,6 +4,7 @@ import { getRoutineById, createRoutine, updateRoutine, deleteRoutine, getGymDay 
 import { addCustomExercise } from "../../data/customExerciseStore.js";
 import { getAllExercises } from "./exerciseSearch.js";
 import { ExercisePickerResults } from "./components/GymRoutineBuilder.js";
+import { initGymNutritionEvents } from "./initGymNutritionEvents.js";
 import {
     addBodyCompositionEntry,
     updateBodyCompositionEntry,
@@ -597,6 +598,8 @@ function scrollToHighlightedDay() {
 }
 
 export function initGymEvents() {
+
+    initGymNutritionEvents();
 
     const highlightedDayId = getHighlightedDayId();
 

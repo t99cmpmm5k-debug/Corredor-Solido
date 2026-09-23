@@ -22,13 +22,23 @@ const store = {
 
     restCriticalNotified: false,
 
-    // Pantalla principal de Gimnasio: "rutinas" | "composicion".
+    // Pantalla principal de Gimnasio: "rutinas" | "composicion" | "nutricion".
     homeTab: "rutinas",
 
     // Composición corporal: registro en edición (null = formulario de
     // alta) y borrado pendiente de confirmar con un segundo toque.
     bodyCompEditingId: null,
-    bodyCompPendingDeleteId: null
+    bodyCompPendingDeleteId: null,
+
+    // Nutrición: día visto (null = hoy), texto y resultado de la búsqueda
+    // en Open Food Facts (se guardan aquí para que un rerender() los
+    // conserve, pero el input NO está controlado -- ver initGymEvents.js),
+    // producto elegido pendiente de cantidad y borrado por confirmar.
+    nutritionDate: null,
+    nutritionQuery: "",
+    nutritionSearch: { status: "idle", query: "", products: [], reason: null },
+    nutritionSelectedProduct: null,
+    nutritionPendingDeleteId: null
 
 };
 
@@ -320,6 +330,7 @@ export function setHomeTab(tab) {
     store.homeTab = tab;
     store.bodyCompEditingId = null;
     store.bodyCompPendingDeleteId = null;
+    store.nutritionPendingDeleteId = null;
 
 }
 
@@ -345,5 +356,67 @@ export function getBodyCompPendingDeleteId() {
 export function setBodyCompPendingDeleteId(id) {
 
     store.bodyCompPendingDeleteId = id;
+
+}
+
+export function getNutritionDate() {
+
+    return store.nutritionDate;
+
+}
+
+export function setNutritionDate(date) {
+
+    store.nutritionDate = date;
+    store.nutritionPendingDeleteId = null;
+
+}
+
+export function getNutritionQuery() {
+
+    return store.nutritionQuery;
+
+}
+
+export function setNutritionQuery(query) {
+
+    store.nutritionQuery = query;
+
+}
+
+export function getNutritionSearch() {
+
+    return store.nutritionSearch;
+
+}
+
+export function setNutritionSearch(search) {
+
+    store.nutritionSearch = search;
+
+}
+
+export function getNutritionSelectedProduct() {
+
+    return store.nutritionSelectedProduct;
+
+}
+
+export function setNutritionSelectedProduct(product) {
+
+    store.nutritionSelectedProduct = product;
+    store.nutritionPendingDeleteId = null;
+
+}
+
+export function getNutritionPendingDeleteId() {
+
+    return store.nutritionPendingDeleteId;
+
+}
+
+export function setNutritionPendingDeleteId(id) {
+
+    store.nutritionPendingDeleteId = id;
 
 }

@@ -11,6 +11,7 @@ import { GymRoutineBuilder } from "./components/GymRoutineBuilder.js";
 import { GymHomeSummary } from "./components/GymHomeSummary.js";
 import { GymHeader } from "./components/GymHeader.js";
 import { GymBodyComposition } from "./components/GymBodyComposition.js";
+import { GymNutrition } from "./components/GymNutrition.js";
 import { isBuilderOpen } from "./gymRoutineBuilderStore.js";
 import { hasWeeklySchedule, getTodayGymDay, getUpcomingGymDays, getWeekProgress, getWeekSessions } from "./gymSchedule.js";
 import { formatISODate } from "../../utils/date.js";
@@ -178,6 +179,8 @@ function GymHomeTabs(activeTab) {
 
             <button class="gym-detail-tab ${activeTab === "composicion" ? "is-active" : ""}" data-action="set-gym-home-tab" data-tab="composicion">COMPOSICIÓN CORPORAL</button>
 
+            <button class="gym-detail-tab ${activeTab === "nutricion" ? "is-active" : ""}" data-action="set-gym-home-tab" data-tab="nutricion">NUTRICIÓN</button>
+
         </div>
 
     `;
@@ -198,7 +201,7 @@ function GymDaySelect() {
 
             ${GymHomeTabs(tab)}
 
-            ${tab === "composicion" ? GymBodyComposition() : `
+            ${tab === "composicion" ? GymBodyComposition() : tab === "nutricion" ? GymNutrition() : `
 
                 ${GymHomeSummarySection(allDays)}
 

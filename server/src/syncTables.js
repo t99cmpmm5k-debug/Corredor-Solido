@@ -12,6 +12,7 @@ export const SYNC_TABLES = {
     referenceRoutes: "reference_routes",
     gymRoutines: "gym_routines",
     bodyComposition: "body_composition",
+    nutritionEntries: "nutrition_entries",
     // No es un store de datos reales -- son los borrados pendientes de
     // propagar (ver src/data/tombstoneStore.js del cliente). Se guarda con
     // el mismo pipeline genérico de arriba, pero además dispara un DELETE

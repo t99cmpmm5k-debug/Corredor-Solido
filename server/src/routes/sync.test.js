@@ -135,3 +135,28 @@ describe("/api/sync -- composición corporal", () => {
     });
 
 });
+
+describe("/api/sync -- nutrición", () => {
+
+    afterEach(() => {
+        executeMock.mockReset();
+    });
+
+    it("nutritionEntries participa en el sync con su propia tabla, upsert por id y tombstones", async () => {
+
+        const { SYNC_TABLES } = await import("../syncTables.js");
+        expect(SYNC_TABLES.nutritionEntries).toBe("nutrition_entries");
+
+        executeMock.mockResolvedValue([{}]);
+        const { postSync } = await import("./sync.js");
+
+        const entry = { id: "n1", date: "2026-09-24", meal: "desayuno", name: "Yogur griego", grams: 125, kcal: 151, protein: 5.8, carbs: 4, fat: null };
+        await postSync({ userId: 7, body: { nutritionEntries: [entry], tombstones: [{ id: "nutritionEntries:n0", storeKey: "nutritionEntries", recordId: "n0" }] } }, mockRes());
+
+        const insert = executeMock.mock.calls.find(([sql]) => sql.includes("INSERT INTO nutrition_entries"));
+        expect(insert[1]).toEqual([7, "n1", JSON.stringify(entry)]);
+        expect(executeMock.mock.calls.some(([sql, params]) => sql.startsWith("DELETE FROM nutrition_entries") && params[1] === "n0")).toBe(true);
+
+    });
+
+});
