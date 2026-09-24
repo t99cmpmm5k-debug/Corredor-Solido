@@ -1494,48 +1494,6 @@
 
 }
 
-/* Aviso de meses ocultados (2026-09-24): solo se pinta como tarjeta el mes
-   más reciente (ver MAX_VISIBLE_HISTORY_MONTHS en Running.js) -- este
-   botón, mismo destino que "Ver tabla ordenable" de arriba
-   (data-action="open-history-table"), es la puerta a los meses más
-   antiguos. Centrado y sutil (texto secundario, sin borde) a propósito:
-   no es una acción principal, solo evita que parezca que esos entrenos
-   desaparecieron. */
-.history-older-hint{
-
-    display:flex;
-
-    align-items:center;
-
-    justify-content:center;
-
-    gap:6px;
-
-    width:100%;
-
-    padding:10px;
-
-    border:none;
-
-    border-radius:var(--radius-md);
-
-    background:none;
-
-    color:var(--text-secondary);
-
-    font:inherit;
-
-    font-size:.78rem;
-
-    cursor:pointer;
-
-}
-
-.history-older-hint iconify-icon{
-
-    font-size:15px;
-
-}
 
 .running-history-expand iconify-icon{
 

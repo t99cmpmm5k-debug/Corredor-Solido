@@ -268,45 +268,22 @@ function groupSummaryText(summary) {
 
 }
 
-// Cuántos grupos de MES (no semana) se pintan como tarjeta propia antes de
-// mandar el resto a la tabla ordenable -- a petición de Rafa (2026-09-24):
-// con varios meses de historial, la lista de tarjetas plegables se llenaba
-// de meses antiguos casi nunca abiertos, mucho antes de llegar a algo
-// consultable. `groups` ya viene ordenado de más reciente a más antiguo
-// (ver buildHistoryGroups()), así que quedarse con los primeros
-// MAX_VISIBLE_HISTORY_MONTHS grupos "month-*" es quedarse con los más
-// recientes -- "Esta semana"/"Semana pasada" nunca cuentan para este tope,
-// son casi siempre lo primero que se quiere ver. Los entrenos de los
-// meses ocultados no se pierden: siguen en `filtered`, así que
-// RunningFullTableView() (el mismo "Ver tabla ordenable" de siempre) ya
-// los tenía y los sigue teniendo -- este helper solo decide qué se pinta
-// como tarjeta aquí, nunca qué datos existen.
-const MAX_VISIBLE_HISTORY_MONTHS = 1;
+// Los grupos de MES (no semana) ya no se pintan como tarjeta propia en la
+// pantalla principal -- pulido 2026-09-24, segunda vuelta: la primera
+// ronda dejaba ver el mes más reciente como tarjeta (además de Esta
+// semana/Semana pasada), pero Rafa pidió que ni ese se quede -- solo
+// semana actual y anterior aquí, cualquier mes entero va siempre a la
+// tabla ordenable (RunningFullTableView, botón "Ver tabla ordenable" justo
+// debajo). `groups` ya viene ordenado de más reciente a más antiguo (ver
+// buildHistoryGroups()), pero el orden no importa aquí -- ningún grupo
+// "month-*" sobrevive al filtro. Los entrenos de esos meses no se pierden:
+// siguen en `filtered`, y RunningFullTableView() (getWorkouts() sin
+// recorte de fecha, solo el filtro de tipo + orden por columna) ya los
+// tenía y los sigue teniendo -- este helper solo decide qué se pinta como
+// tarjeta aquí, nunca qué datos existen.
+function visibleHistoryGroupsOf(groups) {
 
-function splitVisibleHistoryGroups(groups) {
-
-    let monthsShown = 0;
-    const visible = [];
-    let hiddenCount = 0;
-
-    for (const group of groups) {
-
-        const isMonthGroup = group.key.startsWith("month-");
-
-        if (!isMonthGroup || monthsShown < MAX_VISIBLE_HISTORY_MONTHS) {
-
-            visible.push(group);
-            if (isMonthGroup) monthsShown++;
-
-        } else {
-
-            hiddenCount++;
-
-        }
-
-    }
-
-    return { visible, hiddenCount };
+    return groups.filter(group => !group.key.startsWith("month-"));
 
 }
 
@@ -1384,7 +1361,7 @@ function RunningIdleView() {
     // ordenado de más reciente a más antiguo (ver `sorted` arriba), orden
     // del que depende buildHistoryGroups() para ordenar los grupos entre sí.
     const historyGroups = buildHistoryGroups(filtered);
-    const { visible: visibleHistoryGroups, hiddenCount: hiddenHistoryMonths } = splitVisibleHistoryGroups(historyGroups);
+    const visibleHistoryGroups = visibleHistoryGroupsOf(historyGroups);
 
     // Insight sobre la lista (ver runningListInsight.js), sobre el
     // conjunto YA filtrado (mismo que se ve debajo).
@@ -1482,24 +1459,6 @@ function RunningIdleView() {
 
                     ${RunningListInsightCard(listInsight)}
 
-                    <div class="running-history-header">
-
-                        <!-- Renombrado (retoque de cierre): "Ver tabla completa" no
-                             decía qué la hacía distinta de la lista de tarjetas de
-                             abajo. RunningFullTableView() SÍ aporta algo real y
-                             propio -- columnas ordenables (sort-history-table) y
-                             un layout más cómodo en horizontal -- así que se
-                             mantiene, solo con un nombre que refleje eso. -->
-                        <button class="running-history-expand" data-action="open-history-table">
-
-                            <iconify-icon icon="solar:full-screen-bold-duotone"></iconify-icon>
-
-                            Ver tabla ordenable
-
-                        </button>
-
-                    </div>
-
                     <div class="history-groups">
 
                         ${visibleHistoryGroups.map(group => {
@@ -1513,17 +1472,31 @@ function RunningIdleView() {
 
                     </div>
 
-                    ${hiddenHistoryMonths > 0 ? `
+                    <div class="running-history-header">
 
-                        <button class="history-older-hint" data-action="open-history-table">
+                        <!-- Bajado justo debajo de Esta semana/Semana pasada
+                             (2026-09-24, segunda vuelta): con los acordeones
+                             mensuales quitados de esta pantalla, este botón pasa
+                             a ser la única puerta a cualquier entreno más
+                             antiguo -- tiene que quedar justo donde antes
+                             empezaba el mes más reciente, no arriba del todo
+                             escondido tras los filtros. Nombre igual que el
+                             retoque de cierre anterior: "Ver tabla completa" no
+                             decía qué la hacía distinta de la lista de tarjetas
+                             de arriba; RunningFullTableView() SÍ aporta algo
+                             real y propio -- columnas ordenables
+                             (sort-history-table) y un layout más cómodo en
+                             horizontal, con TODOS los entrenos (getWorkouts(),
+                             sin recorte de fecha), no solo los antiguos. -->
+                        <button class="running-history-expand" data-action="open-history-table">
 
                             <iconify-icon icon="solar:full-screen-bold-duotone"></iconify-icon>
 
-                            ${hiddenHistoryMonths === 1 ? "1 mes anterior" : `${hiddenHistoryMonths} meses anteriores`} en la tabla ordenable
+                            Ver tabla ordenable
 
                         </button>
 
-                    ` : ""}
+                    </div>
 
                 `}
 
