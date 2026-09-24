@@ -57,7 +57,7 @@ describe("parseDietCsv -- plantilla válida", () => {
 
     it("acepta BOM, finales de línea CRLF, separador ; (Excel en español) y campos entre comillas", () => {
 
-        const excel = "﻿" + REAL_EXCERPT
+        const excel = "\uFEFF" + REAL_EXCERPT
             .replace(/,/g, ";")
             .replace("LUNES;09:00;1;2 huevos + 150 ml claras + avena 35 g + plátano 120 g + nueces 15 g;", 'LUNES;09:00;1;"2 huevos; ""caseros"" + 150 ml claras + avena 35 g + plátano 120 g + nueces 15 g";')
             .replace(/\n/g, "\r\n");

@@ -113,7 +113,7 @@ export function parseDietCsv(rawText) {
     if (typeof rawText !== "string" || !rawText.trim()) return { errors: [{ line: null, message: "El archivo está vacío." }] };
     if (rawText.length > MAX_BYTES) return { errors: [{ line: null, message: "El archivo es demasiado grande para ser una dieta (máximo 1 MB)." }] };
 
-    const text = rawText.replace(/^﻿/, "");
+    const text = rawText.replace(/^\uFEFF/, "");
     const firstLine = text.split(/\r?\n/, 1)[0];
     const delimiter = detectDelimiter(firstLine);
 
@@ -156,7 +156,7 @@ export function parseDietCsv(rawText) {
 
         // "Ajuste", "hidratación"... escrito distinto de la palabra
         // reservada: casi seguro un error, pero no se corrige solo.
-        const reservedLike = RESERVED_MOMENTS.find(r => r !== momento && r === momento.toUpperCase().normalize("NFD").replace(/[̀-ͯ]/g, ""));
+        const reservedLike = RESERVED_MOMENTS.find(r => r !== momento && r === momento.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""));
         if (reservedLike) {
             fail(line, `el momento «${momento}» se parece a la palabra especial ${reservedLike}, pero tiene que escribirse exactamente «${reservedLike}».`);
             continue;
