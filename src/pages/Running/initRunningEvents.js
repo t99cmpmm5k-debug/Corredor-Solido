@@ -47,6 +47,11 @@ import {
     toggleHistoryGroup,
     setAnalysisOpen,
     setEvolutionTab,
+    isAcwrInfoOpen,
+    setAcwrInfoOpen,
+    isAcwrBarLegendOpen,
+    setAcwrBarLegendOpen,
+    setAcwrRecommendationOpen,
     getWarningsExpanded,
     setWarningsExpanded,
     setChartMetricMode,
@@ -678,6 +683,26 @@ export function initRunningEvents() {
             rerender();
         });
 
+    });
+
+    // ACWR compactado: icono "i" (texto explicativo) y barra de zonas
+    // (rangos de referencia) son toggles propios, fuera de <details> --
+    // el icono es un <button>, y la barra necesita seguir mostrando sus
+    // segmentos de color siempre, solo los NÚMEROS se ocultan/muestran.
+    document.querySelector('[data-action="toggle-acwr-info"]')?.addEventListener("click", () => {
+        setAcwrInfoOpen(!isAcwrInfoOpen());
+        rerender();
+    });
+
+    document.querySelector('[data-action="toggle-acwr-bar-legend"]')?.addEventListener("click", () => {
+        setAcwrBarLegendOpen(!isAcwrBarLegendOpen());
+        rerender();
+    });
+
+    // Recomendación de ACWR: mismo patrón <details> que "Análisis" de
+    // arriba, su estado se recuerda igual.
+    document.querySelector("[data-acwr-recommendation]")?.addEventListener("toggle", event => {
+        setAcwrRecommendationOpen(event.currentTarget.open);
     });
 
     document.querySelectorAll('[data-action="filter-by-type"]').forEach(button => {

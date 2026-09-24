@@ -16,28 +16,16 @@ describe("buildListInsight -- tarjeta de insight rotatorio sobre la lista de Run
 
     });
 
-    it("con entrenos reales este mes, la variante de conteo+km es al menos una opción real (nunca inventa cifras)", () => {
+    // La variante de conteo+km del mes en curso se quitó de la rotación
+    // (2026-09-24): repetía el mismo dato que MonthlyKmWidget.js ya
+    // muestra en Inicio -- ver comentario de buildListInsight().
+    it("con entrenos reales pero sin ritmo ni zapatilla, ninguna variante tiene dato real -- null", () => {
 
         const filteredWorkouts = [w("2026-08-01", 8), w("2026-08-10", 10)];
 
         const result = buildListInsight({ filteredWorkouts, allWorkouts: filteredWorkouts, shoes: [], now: NOW });
 
-        expect(result).not.toBeNull();
-        expect(result.text).toMatch(/entreno/);
-
-    });
-
-    it("entrenos de otro mes no cuentan para 'este mes'", () => {
-
-        const filteredWorkouts = [w("2026-06-01", 8, 300)];
-
-        // Sin ritmo real en agosto y sin zapatillas -- la única variante
-        // posible (mejor ritmo) sí tiene dato real (300 s/km), la de
-        // conteo mensual no debería colarse con un entreno de junio.
-        const result = buildListInsight({ filteredWorkouts, allWorkouts: filteredWorkouts, shoes: [], now: NOW });
-
-        expect(result).not.toBeNull();
-        expect(result.text).toContain("mejor ritmo");
+        expect(result).toBeNull();
 
     });
 

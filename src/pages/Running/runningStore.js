@@ -209,6 +209,51 @@ export function setEvolutionTab(tab) {
 
 }
 
+// Compactado de ACWR (pulido 2026-09-24): el texto explicativo del icono
+// "i", los rangos de la barra de zonas y la recomendación completa
+// arrancan cerrados y se acuerdan de si se abrieron -- mismo motivo que
+// analysisOpen de arriba (que un rerender por cualquier otro motivo no
+// los cierre).
+let acwrInfoOpen = false;
+let acwrBarLegendOpen = false;
+let acwrRecommendationOpen = false;
+
+export function isAcwrInfoOpen() {
+
+    return acwrInfoOpen;
+
+}
+
+export function setAcwrInfoOpen(open) {
+
+    acwrInfoOpen = open;
+
+}
+
+export function isAcwrBarLegendOpen() {
+
+    return acwrBarLegendOpen;
+
+}
+
+export function setAcwrBarLegendOpen(open) {
+
+    acwrBarLegendOpen = open;
+
+}
+
+export function isAcwrRecommendationOpen() {
+
+    return acwrRecommendationOpen;
+
+}
+
+export function setAcwrRecommendationOpen(open) {
+
+    acwrRecommendationOpen = open;
+
+}
+
 export function getWizardStep() {
 
     return wizard.step;

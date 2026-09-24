@@ -1,5 +1,4 @@
 import { formatSecondsAsClock, formatShoeName } from "../../utils/format.js";
-import { formatKm } from "./components/RunningShoesScreen.js";
 
 // Tarjeta de insight rotatorio sobre la lista de entrenos (distinta del
 // insight de progreso de RunningTypeSummary, que solo compara ritmo
@@ -12,26 +11,6 @@ function dayOfYear(date) {
 
     const start = new Date(date.getFullYear(), 0, 0);
     return Math.floor((date - start) / 86400000);
-
-}
-
-// Entrenos + km reales del mes en curso, del conjunto YA filtrado por
-// tipo (mismo conjunto que se ve en la lista de abajo) -- "este mes" es
-// un periodo real y estable, no arbitrario.
-function monthlyCountKmVariant(filteredWorkouts, now) {
-
-    const monthPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-    const thisMonth = filteredWorkouts.filter(w => w.date?.startsWith(monthPrefix));
-
-    if (!thisMonth.length) return null;
-
-    const totalKm = thisMonth.reduce((sum, w) => sum + (w.distanceKm || 0), 0);
-    if (totalKm <= 0) return null;
-
-    return {
-        icon: "solar:calendar-mark-bold-duotone",
-        text: `Llevas ${thisMonth.length} entreno${thisMonth.length === 1 ? "" : "s"} y ${formatKm(totalKm)} acumulados este mes.`
-    };
 
 }
 
@@ -95,10 +74,18 @@ function topShoeShareVariant(allWorkouts, shoes) {
 
 // null si ninguna variante tiene datos reales suficientes -- el llamador
 // no debe pintar nada en ese caso, nunca un texto de relleno.
+//
+// La variante de conteo+km del mes en curso ("Llevas X entrenos y X km
+// acumulados este mes") se quitó de la rotación (2026-09-24, pulido de
+// Running): con el filtro "Todos" activo repetía tal cual el mismo dato
+// que ya muestra MonthlyKmWidget.js en Inicio (misma fuente, getWorkouts()
+// -- ver monthlyKm.js). Solo con un tipo concreto seleccionado aportaba
+// algo que Inicio no tiene (el total del mes SOLO de ese tipo), pero es un
+// matiz que solo se veía 1 de cada 3 días de rotación y con un filtro
+// activo -- no compensaba mantener una tercera variante para eso.
 export function buildListInsight({ filteredWorkouts, allWorkouts, shoes, now = new Date() }) {
 
     const variants = [
-        monthlyCountKmVariant(filteredWorkouts, now),
         bestPaceVariant(filteredWorkouts),
         topShoeShareVariant(allWorkouts, shoes)
     ].filter(Boolean);

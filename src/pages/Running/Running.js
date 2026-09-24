@@ -54,7 +54,10 @@ import {
     getRouteSortColumn,
     getRouteSortDirection,
     isAnalysisOpen,
-    getEvolutionTab
+    getEvolutionTab,
+    isAcwrInfoOpen,
+    isAcwrBarLegendOpen,
+    isAcwrRecommendationOpen
 } from "./runningStore.js";
 
 import { RunningUploadStep } from "./components/RunningUploadStep.js";
@@ -1068,19 +1071,31 @@ const ACWR_BAR_STOP_HIGH = ratioToBarPercent(ACWR_ZONE_THRESHOLDS.high);
 // como marcador móvil -- el marcador se recorta al dominio visual
 // (ratioToBarPercent) pero sigue mostrando el valor real en su etiqueta,
 // nunca un valor recortado como si fuera el real.
-function AcwrZoneBar(ratio) {
+//
+// Compactada (pulido 2026-09-24): los números de corte (0.80/1.30/1.50) y
+// las 4 etiquetas de zona se ocultan por defecto -- ya se ve "Carga
+// óptima" en el badge de arriba (AcwrCard) y el propio color de la barra +
+// el valor exacto junto al punto blanco bastan para leerla de un vistazo,
+// así que repetir la etiqueta de zona aquí abajo era redundante. Los
+// números/etiquetas de referencia siguen accesibles tocando la barra
+// (legendOpen, ver runningStore.js).
+function AcwrZoneBar(ratio, legendOpen) {
 
     const markerPercent = ratioToBarPercent(ratio);
 
     return `
 
-        <div class="acwr-zone-bar-wrap">
+        <button type="button" class="acwr-zone-bar-wrap" data-action="toggle-acwr-bar-legend" aria-expanded="${legendOpen}" aria-label="Rangos de la barra de carga">
 
-            <div class="acwr-zone-bar-thresholds">
-                <span style="left:${ACWR_BAR_STOP_LOW}%">${formatAcwrRatio(ACWR_ZONE_THRESHOLDS.low)}</span>
-                <span style="left:${ACWR_BAR_STOP_OPTIMAL}%">${formatAcwrRatio(ACWR_ZONE_THRESHOLDS.optimal)}</span>
-                <span style="left:${ACWR_BAR_STOP_HIGH}%">${formatAcwrRatio(ACWR_ZONE_THRESHOLDS.high)}</span>
-            </div>
+            ${legendOpen ? `
+
+                <div class="acwr-zone-bar-thresholds">
+                    <span style="left:${ACWR_BAR_STOP_LOW}%">${formatAcwrRatio(ACWR_ZONE_THRESHOLDS.low)}</span>
+                    <span style="left:${ACWR_BAR_STOP_OPTIMAL}%">${formatAcwrRatio(ACWR_ZONE_THRESHOLDS.optimal)}</span>
+                    <span style="left:${ACWR_BAR_STOP_HIGH}%">${formatAcwrRatio(ACWR_ZONE_THRESHOLDS.high)}</span>
+                </div>
+
+            ` : ""}
 
             <div class="acwr-zone-bar">
 
@@ -1094,14 +1109,22 @@ function AcwrZoneBar(ratio) {
 
             </div>
 
-            <div class="acwr-zone-bar-labels">
-                <span>Baja</span>
-                <span>Óptima</span>
-                <span>Alta</span>
-                <span>Muy alta</span>
-            </div>
+            ${legendOpen ? `
 
-        </div>
+                <div class="acwr-zone-bar-labels">
+                    <span>Baja</span>
+                    <span>Óptima</span>
+                    <span>Alta</span>
+                    <span>Muy alta</span>
+                </div>
+
+            ` : `
+
+                <span class="acwr-zone-bar-hint">Toca para ver los rangos</span>
+
+            `}
+
+        </button>
 
     `;
 
@@ -1160,22 +1183,46 @@ function AcwrCompareSection(insight) {
 
 }
 
-function AcwrRecommendationCard(zone) {
+// Resumen de una línea por zona -- versión corta de buildAcwrRecommendation()
+// (utils/acwr.js) para el <summary> siempre visible; el texto completo
+// (con el matiz de escucha corporal en Alta/Muy alta) solo aparece al
+// expandir. Presentación pura, no toca el cálculo ni la recomendación
+// real -- ver buildAcwrRecommendation() para la fuente de verdad.
+const ACWR_RECOMMENDATION_SUMMARY_BY_ZONE = {
+    detrained: "Buen momento para retomar el ritmo con normalidad.",
+    optimal: "Carga saludable respecto a tu base de las últimas 4 semanas.",
+    moderateRisk: "Mantén o reduce la carga antes de aumentarla.",
+    highRisk: "Dale prioridad al descanso antes de sumar más carga."
+};
+
+// Mismo patrón <details> que "Ver análisis detallado" y las secciones de
+// Mi dieta (Nutrición) -- cerrada por defecto, con su estado recordado
+// (ver isAcwrRecommendationOpen en runningStore.js) para que un rerender
+// no la cierre sola.
+function AcwrRecommendationSection(zone) {
 
     return `
 
-        <div class="acwr-recommendation">
+        <details class="acwr-recommendation" data-acwr-recommendation ${isAcwrRecommendationOpen() ? "open" : ""}>
 
-            <span class="acwr-recommendation-icon">
-                <iconify-icon icon="solar:lightbulb-bold-duotone"></iconify-icon>
-            </span>
+            <summary>
 
-            <div class="acwr-recommendation-body">
-                <span class="acwr-recommendation-title">Recomendación</span>
-                <p>${buildAcwrRecommendation(zone)}</p>
-            </div>
+                <span class="acwr-recommendation-icon">
+                    <iconify-icon icon="solar:lightbulb-bold-duotone"></iconify-icon>
+                </span>
 
-        </div>
+                <div class="acwr-recommendation-body">
+                    <span class="acwr-recommendation-title">Recomendación</span>
+                    <p>${ACWR_RECOMMENDATION_SUMMARY_BY_ZONE[zone.id]}</p>
+                </div>
+
+                <iconify-icon class="acwr-recommendation-chevron" icon="solar:alt-arrow-down-linear"></iconify-icon>
+
+            </summary>
+
+            <p class="acwr-recommendation-full">${buildAcwrRecommendation(zone)}</p>
+
+        </details>
 
     `;
 
@@ -1214,6 +1261,7 @@ function AcwrCard(insight) {
     }
 
     const { ratio, zone } = insight;
+    const infoOpen = isAcwrInfoOpen();
 
     return `
 
@@ -1232,16 +1280,19 @@ function AcwrCard(insight) {
                         <span class="acwr-card-chip">ACWR</span>
                     </span>
 
-                    <span class="acwr-card-sublabel">Calculado solo con running</span>
-                    <span class="acwr-card-sublabel acwr-card-sublabel--muted">La carga de gimnasio se añadirá cuando haya suficientes datos registrados.</span>
-
                 </div>
 
-                <span class="acwr-card-info-icon" title="Compara tu carga de los últimos 7 días con tu media de las últimas 4 semanas.">
+                <button type="button" class="acwr-card-info-icon" data-action="toggle-acwr-info" aria-expanded="${infoOpen}" aria-label="Qué significa ACWR">
                     <iconify-icon icon="solar:info-circle-bold-duotone"></iconify-icon>
-                </span>
+                </button>
 
             </div>
+
+            ${infoOpen ? `
+
+                <p class="acwr-card-info-panel">Compara tu carga de los últimos 7 días con tu media de las últimas 4 semanas. Calculado solo con running -- la carga de gimnasio se añadirá cuando haya suficientes datos registrados.</p>
+
+            ` : ""}
 
             <div class="acwr-card-body">
 
@@ -1251,11 +1302,11 @@ function AcwrCard(insight) {
 
             </div>
 
-            ${AcwrZoneBar(ratio)}
+            ${AcwrZoneBar(ratio, isAcwrBarLegendOpen())}
 
             ${AcwrCompareSection(insight)}
 
-            ${AcwrRecommendationCard(zone)}
+            ${AcwrRecommendationSection(zone)}
 
         </div>
 
