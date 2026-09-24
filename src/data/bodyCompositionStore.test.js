@@ -87,3 +87,51 @@ describe("bodyCompositionStore", () => {
     });
 
 });
+
+describe("getLatestBodyComposition / getBodyCompositionSeries", () => {
+
+    beforeEach(() => {
+        resetFakeIndexedDB();
+        vi.resetModules();
+    });
+
+    it("compara cada métrica con el anterior que la tenga; sin valor o sin anterior, sin comparación", async () => {
+
+        const store = await import("./bodyCompositionStore.js");
+        await store.hydrate();
+
+        store.addBodyCompositionEntry({ date: "2026-09-10", weightKg: 81.7, bodyFatPercent: 17.3, waterPercent: null, musclePercent: 43.8 });
+        store.addBodyCompositionEntry({ date: "2026-09-17", weightKg: 81.2, bodyFatPercent: null, waterPercent: null, musclePercent: null });
+        store.addBodyCompositionEntry({ date: "2026-09-24", weightKg: 80.9, bodyFatPercent: 16.2, waterPercent: 61.3, musclePercent: null });
+
+        const { date, metrics } = store.getLatestBodyComposition();
+
+        expect(date).toBe("2026-09-24");
+        expect(metrics.weightKg).toEqual({ value: 80.9, previousValue: 81.2, previousDate: "2026-09-17", delta: -0.3 });
+        // El 17 no tiene % grasa: se compara con el 10.
+        expect(metrics.bodyFatPercent).toEqual({ value: 16.2, previousValue: 17.3, previousDate: "2026-09-10", delta: -1.1 });
+        // Primer registro con agua: sin nada con qué comparar.
+        expect(metrics.waterPercent).toEqual({ value: 61.3, previousValue: null, previousDate: null, delta: null });
+        // Sin valor hoy: sin comparación aunque haya uno antes.
+        expect(metrics.musclePercent).toEqual({ value: null, previousValue: null, previousDate: null, delta: null });
+
+    });
+
+    it("serie de los últimos 30 días, en orden y solo con registros que tienen esa métrica", async () => {
+
+        const store = await import("./bodyCompositionStore.js");
+        await store.hydrate();
+
+        store.addBodyCompositionEntry({ date: "2026-08-25", weightKg: 82, bodyFatPercent: null, waterPercent: null, musclePercent: null });
+        store.addBodyCompositionEntry({ date: "2026-08-26", weightKg: 81.9, bodyFatPercent: 17, waterPercent: null, musclePercent: null });
+        store.addBodyCompositionEntry({ date: "2026-09-24", weightKg: 80.9, bodyFatPercent: null, waterPercent: null, musclePercent: null });
+
+        expect(store.getBodyCompositionSeries("weightKg", "2026-09-24")).toEqual([
+            { date: "2026-08-26", value: 81.9 },
+            { date: "2026-09-24", value: 80.9 }
+        ]);
+        expect(store.getBodyCompositionSeries("bodyFatPercent", "2026-09-24")).toEqual([{ date: "2026-08-26", value: 17 }]);
+
+    });
+
+});

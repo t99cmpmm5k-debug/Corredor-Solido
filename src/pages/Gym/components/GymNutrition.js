@@ -49,7 +49,9 @@ export function getViewedNutritionDate() {
 function DayNavigator(date, { allowFuture = false } = {}) {
 
     const today = formatISODate(new Date());
-    const label = date === today ? "Hoy" : date === addDays(today, -1) ? "Ayer" : date === addDays(today, 1) ? "Mañana" : formatWeekday(date);
+    // Mockup: día de la semana y, debajo, la fecha con el año; "Hoy" delante
+    // de la fecha cuando lo es, para no perder esa referencia.
+    const dateLine = `${formatDayMonth(date)} ${date.slice(0, 4)}`;
 
     return `
 
@@ -60,8 +62,8 @@ function DayNavigator(date, { allowFuture = false } = {}) {
             </button>
 
             <div class="gym-nutrition-day-label">
-                <strong>${label}</strong>
-                <span>${formatDayMonth(date)}</span>
+                <strong>${formatWeekday(date)}</strong>
+                <span>${date === today ? "Hoy · " : ""}${dateLine}</span>
             </div>
 
             <button class="gym-bodycomp-icon-button" data-action="nutrition-day" data-date="${addDays(date, 1)}" aria-label="Día siguiente" ${!allowFuture && date >= today ? "disabled" : ""}>
@@ -373,17 +375,17 @@ function DayLog(entries) {
 
 }
 
-// Mi dieta (importada por PDF) | Registro libre (Open Food Facts) --
-// mismo selector que las pestañas de Gimnasio, bajo el navegador de día
-// que comparten las dos vistas.
-function ViewTabs(view) {
+// El mockup de Nutrición (2026-09-24) no tiene selector Mi dieta |
+// Registro libre: Mi dieta es la vista de la pestaña, y el registro libre
+// (Open Food Facts) se abre desde "Gestionar dieta" -- con este enlace
+// para volver.
+function BackToDiet() {
 
     return `
 
-        <div class="gym-detail-tabs">
-            <button class="gym-detail-tab ${view === "dieta" ? "is-active" : ""}" data-action="set-nutrition-view" data-view="dieta">MI DIETA</button>
-            <button class="gym-detail-tab ${view === "registro" ? "is-active" : ""}" data-action="set-nutrition-view" data-view="registro">REGISTRO LIBRE</button>
-        </div>
+        <button class="gym-bc-link gym-nutrition-back" data-action="set-nutrition-view" data-view="dieta">
+            <iconify-icon icon="solar:alt-arrow-left-linear"></iconify-icon> Mi dieta
+        </button>
 
     `;
 
@@ -400,7 +402,6 @@ export function GymNutrition() {
 
             <div class="gym-bodycomp gym-nutrition">
                 ${DayNavigator(date, { allowFuture: true })}
-                ${ViewTabs(view)}
                 ${GymDiet(date)}
             </div>
 
@@ -418,9 +419,9 @@ export function GymNutrition() {
 
         <div class="gym-bodycomp gym-nutrition">
 
-            ${DayNavigator(logDate)}
+            ${BackToDiet()}
 
-            ${ViewTabs(view)}
+            ${DayNavigator(logDate)}
 
             ${DailySummary(entries)}
 

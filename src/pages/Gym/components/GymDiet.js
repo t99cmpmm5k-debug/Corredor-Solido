@@ -6,16 +6,18 @@ import {
     getEatenForDate,
     getWeekendLongRunDay,
     computeDayCompliance,
-    getComplianceHistory
+    getWeekCompliance
 } from "../../../data/dietStore.js";
-import { formatISODate, formatDayMonth, getDayAbbreviation, getWeekStartDate, addDays } from "../../../utils/date.js";
-import { getDietImport, isDietWeekendPickerOpen, isDietDeletePending } from "../gymStore.js";
+import { formatISODate, formatDayMonth, getWeekStartDate, addDays, parseISODate } from "../../../utils/date.js";
+import { getMealImages, splitMealText } from "../dietDisplay.js";
+import { getDietImport, isDietWeekendPickerOpen, isDietDeletePending, isDietSectionOpen } from "../gymStore.js";
 
-// "Mi dieta" (Nutrición, Gimnasio): la dieta de la plantilla CSV (ver
-// utils/dietCsv.js) día a día, con qué opción se comió de cada comida, el
-// selector semanal de fin de semana, y el cumplimiento. Mismo lenguaje
-// visual que Composición corporal. El texto de la dieta se muestra tal
-// cual viene en el CSV.
+// "Mi dieta" (Nutrición, Gimnasio) con la estructura del mockup de
+// rediseño (2026-09-24): anillo de cumplimiento con la fila de la semana,
+// cabecera del tipo de día con hidratación/ajuste aparte, y una tarjeta por
+// comida con su casilla, sus opciones y una imagen. El texto de la dieta
+// es el del CSV tal cual (ver utils/dietCsv.js); lo único añadido son
+// etiquetas fijas de la interfaz.
 
 // Texto del CSV -- siempre escapado.
 function escapeHtml(text) {
@@ -28,15 +30,17 @@ function escapeHtml(text) {
 
 }
 
-const DAY_LABELS = {
-    LUNES: "Lunes",
-    MARTES: "Martes",
-    MIERCOLES: "Miércoles",
-    JUEVES: "Jueves",
-    VIERNES: "Viernes",
-    TIRADA_LARGA: "Tirada larga",
-    DESCANSO: "Descanso"
+const DAY_INFO = {
+    LUNES: { title: "Lunes", subtitle: "Plan nutricional del lunes", icon: "solar:calendar-bold-duotone" },
+    MARTES: { title: "Martes", subtitle: "Plan nutricional del martes", icon: "solar:calendar-bold-duotone" },
+    MIERCOLES: { title: "Miércoles", subtitle: "Plan nutricional del miércoles", icon: "solar:calendar-bold-duotone" },
+    JUEVES: { title: "Jueves", subtitle: "Plan nutricional del jueves", icon: "solar:calendar-bold-duotone" },
+    VIERNES: { title: "Viernes", subtitle: "Plan nutricional del viernes", icon: "solar:calendar-bold-duotone" },
+    TIRADA_LARGA: { title: "Tirada larga", subtitle: "Plan nutricional para tu tirada larga", icon: "solar:running-round-bold-duotone" },
+    DESCANSO: { title: "Descanso", subtitle: "Plan nutricional para tu día de descanso", icon: "solar:sofa-2-bold-duotone" }
 };
+
+const WEEK_LETTERS = ["L", "M", "X", "J", "V", "S", "D"];
 
 // Sin "accept" a propósito: en iOS deja en gris archivos válidos (ver
 // project_ios_file_input_no_accept). El contenido lo valida el parser.
@@ -61,6 +65,19 @@ function TemplateButton() {
         <button class="gym-bodycomp-cancel gym-diet-file" data-action="diet-download-template">
             <iconify-icon icon="solar:download-minimalistic-bold-duotone"></iconify-icon>
             <span>Descargar plantilla</span>
+        </button>
+
+    `;
+
+}
+
+function FreeLogButton() {
+
+    return `
+
+        <button class="gym-bodycomp-cancel gym-diet-file" data-action="set-nutrition-view" data-view="registro">
+            <iconify-icon icon="solar:magnifer-linear"></iconify-icon>
+            <span>Registro libre de alimentos</span>
         </button>
 
     `;
@@ -101,6 +118,7 @@ function EmptyState(state) {
             <div class="gym-diet-actions">
                 ${CsvPicker("Elegir CSV", { primary: true })}
                 ${TemplateButton()}
+                ${FreeLogButton()}
             </div>
 
         </section>
@@ -135,27 +153,86 @@ function WeekendPicker(date, current) {
 
 }
 
-function ComplianceCard(compliance, history) {
+// ---- Cumplimiento: anillo + semana -----------------------------------------------
+
+const RING = { size: 104, stroke: 10 };
+
+function Ring(percent) {
+
+    const r = (RING.size - RING.stroke) / 2;
+    const circumference = 2 * Math.PI * r;
+    const filled = circumference * (percent ?? 0) / 100;
 
     return `
 
-        <section class="gym-bodycomp-form gym-diet-compliance">
+        <div class="gym-diet-ring">
+            <svg viewBox="0 0 ${RING.size} ${RING.size}" aria-hidden="true">
+                <defs>
+                    <linearGradient id="gym-diet-ring-gradient" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0%" stop-color="var(--color-primary)"></stop>
+                        <stop offset="100%" stop-color="var(--color-success)"></stop>
+                    </linearGradient>
+                </defs>
+                <circle class="gym-diet-ring-track" cx="${RING.size / 2}" cy="${RING.size / 2}" r="${r}"></circle>
+                <circle class="gym-diet-ring-value" cx="${RING.size / 2}" cy="${RING.size / 2}" r="${r}"
+                    stroke-dasharray="${filled.toFixed(2)} ${circumference.toFixed(2)}"
+                    transform="rotate(-90 ${RING.size / 2} ${RING.size / 2})"></circle>
+            </svg>
+            <strong>${percent == null ? "—" : `${percent}%`}</strong>
+        </div>
 
-            <h3 class="gym-bodycomp-title">Cumplimiento</h3>
+    `;
 
-            <div class="gym-nutrition-kcal">
-                <strong>${compliance ? `${compliance.percent}%` : "—"}</strong>
-                <span>${compliance ? `${compliance.done} de ${compliance.total} comidas` : "sin menú este día"}</span>
-            </div>
+}
 
-            <div class="gym-diet-history" aria-label="Últimos 7 días">
-                ${history.map(day => `
-                    <span class="gym-diet-history-day ${day.percent == null ? "is-empty" : ""}">
-                        <span class="gym-diet-history-bar"><span style="height:${day.percent ?? 0}%"></span></span>
-                        <small>${getDayAbbreviation(day.date)}</small>
-                        <b>${day.percent == null ? "—" : `${day.percent}%`}</b>
-                    </span>
-                `).join("")}
+// Estado de cada día de la semana: completo (todas las comidas), parcial
+// (anillo proporcional), sin nada, futuro, y el día que se está viendo.
+function WeekDay(day, index, viewedDate) {
+
+    const complete = day.percent === 100;
+    const partial = !complete && day.percent > 0;
+    const classes = [
+        "gym-diet-weekday",
+        complete ? "is-complete" : "",
+        partial ? "is-partial" : "",
+        day.future ? "is-future" : "",
+        day.date === viewedDate ? "is-selected" : ""
+    ].filter(Boolean).join(" ");
+
+    return `
+
+        <button class="${classes}" data-action="nutrition-day" data-date="${day.date}" aria-label="${day.date}${day.percent != null ? `: ${day.percent}%` : ""}" style="--day-percent:${day.percent ?? 0}">
+            <small>${WEEK_LETTERS[index]}</small>
+            <span class="gym-diet-weekday-number">${parseISODate(day.date).getDate()}</span>
+            <span class="gym-diet-weekday-dot">${complete ? `<iconify-icon icon="mdi:check-bold"></iconify-icon>` : ""}</span>
+        </button>
+
+    `;
+
+}
+
+function ComplianceCard(date, compliance) {
+
+    const today = formatISODate(new Date());
+    const week = getWeekCompliance(date, today);
+
+    return `
+
+        <section class="gym-bodycomp-card gym-diet-compliance">
+
+            <h3 class="gym-bc-title">${date === today ? "Cumplimiento de hoy" : "Cumplimiento del día"}</h3>
+
+            <div class="gym-diet-compliance-body">
+
+                <div class="gym-diet-ring-block">
+                    ${Ring(compliance?.percent ?? null)}
+                    <span>${compliance ? `${compliance.done} de ${compliance.total} comidas` : "Sin menú este día"}</span>
+                </div>
+
+                <div class="gym-diet-week" aria-label="Semana">
+                    ${week.map((day, i) => WeekDay(day, i, date)).join("")}
+                </div>
+
             </div>
 
         </section>
@@ -163,6 +240,8 @@ function ComplianceCard(compliance, history) {
     `;
 
 }
+
+// ---- Día y comidas -----------------------------------------------------------------
 
 // HIDRATACION y AJUSTE: información del día, no comida -- sin casillas y
 // con su propio estilo.
@@ -173,67 +252,33 @@ function DayInfo(day) {
     return `
 
         <div class="gym-diet-info">
-            ${day.hydration ? `<p><iconify-icon icon="solar:waterdrop-bold-duotone"></iconify-icon><span><b>Hidratación</b> ${escapeHtml(day.hydration)}</span></p>` : ""}
-            ${day.adjustment ? `<p><iconify-icon icon="solar:info-circle-bold-duotone"></iconify-icon><span><b>Ajuste</b> ${escapeHtml(day.adjustment)}</span></p>` : ""}
+            ${day.hydration ? `<p><iconify-icon icon="solar:waterdrop-bold-duotone"></iconify-icon><b>Hidratación</b><span>${escapeHtml(day.hydration)}</span></p>` : ""}
+            ${day.adjustment ? `<p><iconify-icon icon="solar:info-circle-bold-duotone"></iconify-icon><b>Ajuste</b><span>${escapeHtml(day.adjustment)}</span></p>` : ""}
         </div>
 
     `;
 
 }
 
-// Una comida: sus opciones, y cuál se comió. Con una sola opción es una
-// casilla; con varias, se elige una (tocar otra cambia la elegida, tocar
-// la elegida la desmarca).
-function MealBlock(meal, eatenKey) {
+function DayHeader(dayKey, day) {
 
-    const multiple = meal.options.length > 1;
-
-    return `
-
-        <div class="gym-diet-meal">
-
-            <h4 class="gym-nutrition-meal-title">${escapeHtml(meal.moment)}${multiple ? ` <span>elige 1 de ${meal.options.length}</span>` : ""}</h4>
-
-            ${meal.options.map(option => {
-
-                const eaten = eatenKey === option.key;
-
-                return `
-
-                    <button class="gym-diet-item ${eaten ? "is-checked" : ""} ${multiple ? "is-choice" : ""}" data-action="diet-toggle-meal" data-meal-key="${escapeHtml(meal.key)}" data-option-key="${escapeHtml(option.key)}" aria-pressed="${eaten}">
-                        <span class="gym-diet-check" aria-hidden="true">${eaten ? `<iconify-icon icon="solar:check-square-bold"></iconify-icon>` : ""}</span>
-                        <span>${multiple ? `<small>Opción ${option.number}</small>` : ""}${escapeHtml(option.text)}</span>
-                    </button>
-
-                `;
-
-            }).join("")}
-
-        </div>
-
-    `;
-
-}
-
-function DayMenu(plan, date) {
-
-    const { dayKey } = resolveDietDay(date);
-    const day = plan.days[dayKey];
-    const eaten = getEatenForDate(date);
+    const info = DAY_INFO[dayKey];
     const weekend = dayKey === "TIRADA_LARGA" || dayKey === "DESCANSO";
 
     return `
 
-        <section class="gym-bodycomp-history gym-diet-day">
+        <section class="gym-bodycomp-card gym-diet-day-card">
 
             <div class="gym-diet-day-head">
-                <h3 class="gym-bodycomp-title">${DAY_LABELS[dayKey]}</h3>
-                ${weekend ? `<button class="gym-diet-edit" data-action="diet-weekend-change">Cambiar</button>` : ""}
+                <iconify-icon class="gym-diet-day-icon" icon="${info.icon}"></iconify-icon>
+                <div>
+                    <h3>${info.title}</h3>
+                    <p>${info.subtitle}</p>
+                </div>
+                ${weekend ? `<button class="gym-diet-change" data-action="diet-weekend-change">Cambiar <iconify-icon icon="solar:alt-arrow-down-linear"></iconify-icon></button>` : ""}
             </div>
 
             ${DayInfo(day)}
-
-            ${day.meals.map(meal => MealBlock(meal, eaten[meal.key])).join("")}
 
         </section>
 
@@ -241,34 +286,105 @@ function DayMenu(plan, date) {
 
 }
 
-// REGLAS_GENERALES: aparte, fuera del checklist de cualquier día.
+function MealPhoto(text) {
+
+    const images = getMealImages(text);
+
+    return `
+
+        <div class="gym-meal-photo ${images.length > 1 ? "is-pair" : ""}" aria-hidden="true">
+            ${images.map(image => `<img src="${image.src}" alt="">`).join("")}
+        </div>
+
+    `;
+
+}
+
+// Una tarjeta por comida. Una opción: la casilla la marca. Varias: se
+// elige con los radios cuál se comió (y la casilla, ya marcada, la
+// desmarca); con ninguna elegida, la casilla pide elegir antes.
+function MealCard(meal, eatenKey) {
+
+    const multiple = meal.options.length > 1;
+    const eaten = meal.options.find(o => o.key === eatenKey) ?? null;
+    const shown = eaten ?? meal.options[0];
+
+    const body = multiple ? `
+
+        <p class="gym-meal-choose">Elige 1 opción:</p>
+
+        <div class="gym-meal-options" role="radiogroup" aria-label="${escapeHtml(meal.moment)}">
+            ${meal.options.map(option => `
+                <button class="gym-meal-option ${option.key === eatenKey ? "is-selected" : ""}" role="radio" aria-checked="${option.key === eatenKey}" data-action="diet-toggle-meal" data-meal-key="${escapeHtml(meal.key)}" data-option-key="${escapeHtml(option.key)}">
+                    <span class="gym-meal-radio" aria-hidden="true"></span>
+                    <span><b>Opción ${option.number}:</b> ${escapeHtml(option.text)}</span>
+                </button>
+            `).join("")}
+        </div>
+
+        <p class="gym-meal-hint" data-meal-hint hidden>Toca la opción que has comido.</p>
+
+    ` : (() => {
+
+        const { main, detail } = splitMealText(meal.options[0].text);
+        return `
+            <p class="gym-meal-main">${escapeHtml(main)}</p>
+            ${detail ? `<p class="gym-meal-detail">${escapeHtml(detail)}</p>` : ""}
+        `;
+
+    })();
+
+    return `
+
+        <article class="gym-meal-card ${eaten ? "is-eaten" : ""}">
+
+            <button class="gym-meal-check" role="checkbox" aria-checked="${Boolean(eaten)}" aria-label="${escapeHtml(meal.moment)}: ${eaten ? "comido" : "sin marcar"}"
+                data-action="diet-meal-check" data-meal-key="${escapeHtml(meal.key)}" data-option-key="${escapeHtml((eaten ?? meal.options[0]).key)}" data-multiple="${multiple}" data-eaten="${Boolean(eaten)}">
+                ${eaten ? `<iconify-icon icon="mdi:check-bold"></iconify-icon>` : ""}
+            </button>
+
+            <div class="gym-meal-body">
+                <h4 class="gym-meal-moment">${escapeHtml(meal.moment)}</h4>
+                ${body}
+            </div>
+
+            ${MealPhoto(shown.text)}
+
+        </article>
+
+    `;
+
+}
+
+// ---- Secundario: notas generales y gestión --------------------------------------------
+
+// REGLAS_GENERALES: aparte y plegables, fuera del checklist de cualquier día.
 function GeneralRules(plan) {
 
     if (!plan.generalRules.length) return "";
 
     return `
 
-        <section class="gym-bodycomp-form gym-diet-rules">
-
-            <h3 class="gym-bodycomp-title">Notas generales</h3>
-
-            <ol>
+        <details class="gym-bodycomp-card gym-diet-section" data-diet-section="rules" ${isDietSectionOpen("rules") ? "open" : ""}>
+            <summary><h3 class="gym-bc-title">Notas generales</h3><iconify-icon icon="solar:alt-arrow-down-linear"></iconify-icon></summary>
+            <ol class="gym-diet-rules">
                 ${plan.generalRules.map(rule => `<li>${escapeHtml(rule.text)}</li>`).join("")}
             </ol>
-
-        </section>
+        </details>
 
     `;
 
 }
 
-function PlanFooter(plan, state) {
+function Manage(plan, state) {
 
     const deletePending = isDietDeletePending();
+    const open = isDietSectionOpen("manage") || state.errors.length > 0 || deletePending;
 
     return `
 
-        <section class="gym-bodycomp-form gym-diet-footer">
+        <details class="gym-bodycomp-card gym-diet-section" data-diet-section="manage" ${open ? "open" : ""}>
+            <summary><h3 class="gym-bc-title"><iconify-icon icon="solar:menu-dots-bold"></iconify-icon> Gestionar dieta</h3><iconify-icon icon="solar:alt-arrow-down-linear"></iconify-icon></summary>
 
             <p class="gym-diet-source">${plan.sourceFileName ? escapeHtml(plan.sourceFileName) : "Dieta"} · importada el ${new Date(plan.importedAt).toLocaleDateString("es-ES")}</p>
 
@@ -277,10 +393,10 @@ function PlanFooter(plan, state) {
             <div class="gym-diet-actions">
                 ${CsvPicker("Importar otra dieta")}
                 ${TemplateButton()}
+                ${FreeLogButton()}
                 <button class="gym-bodycomp-cancel ${deletePending ? "gym-diet-danger" : ""}" data-action="diet-delete">${deletePending ? "¿Borrar la dieta?" : "Borrar dieta"}</button>
             </div>
-
-        </section>
+        </details>
 
     `;
 
@@ -299,25 +415,31 @@ export function GymDiet(date) {
     // que se usa esa semana), o al pulsar "Cambiar".
     const showPicker = !longRunDay || isDietWeekendPickerOpen();
 
-    const compliance = dayKey ? computeDayCompliance(plan.days[dayKey], getEatenForDate(date)) : null;
-    const history = getComplianceHistory(formatISODate(new Date()), 7);
+    const day = dayKey ? plan.days[dayKey] : null;
+    const eaten = getEatenForDate(date);
+    const compliance = day ? computeDayCompliance(day, eaten) : null;
 
     return `
 
         ${showPicker ? WeekendPicker(date, longRunDay) : ""}
 
-        ${ComplianceCard(compliance, history)}
+        ${ComplianceCard(date, compliance)}
 
         ${needsWeekendChoice ? `
             <div class="gym-detail-empty">
                 <iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon>
                 <p>Elige arriba qué día del fin de semana haces la tirada larga para ver el menú de hoy.</p>
             </div>
-        ` : DayMenu(plan, date)}
+        ` : `
+            ${DayHeader(dayKey, day)}
+            <div class="gym-meal-list">
+                ${day.meals.map(meal => MealCard(meal, eaten[meal.key])).join("")}
+            </div>
+        `}
 
         ${GeneralRules(plan)}
 
-        ${PlanFooter(plan, state)}
+        ${Manage(plan, state)}
 
     `;
 

@@ -237,3 +237,25 @@ export function restoreDietWeekend(weekend) {
     return upsert(weekends, STORES.dietWeekends, weekend);
 
 }
+
+// Fila de días del anillo de cumplimiento: lunes a domingo de la semana de
+// `date`, cada uno con su % (null si no hay menú con el que comparar) y si
+// es futuro respecto a `today`.
+export function getWeekCompliance(date, today) {
+
+    const monday = getWeekStartDate(date);
+    const active = getActiveDietPlan();
+
+    return Array.from({ length: 7 }, (_, i) => {
+
+        const day = addDays(monday, i);
+        const record = checks.find(c => c.id === day);
+        const plan = record ? plans.find(p => p.id === record.planId) : active;
+        const { dayKey } = resolveDietDay(day);
+        const compliance = plan && dayKey ? computeDayCompliance(plan.days[dayKey], record?.eaten ?? {}) : null;
+
+        return { date: day, percent: compliance?.percent ?? null, future: day > today };
+
+    });
+
+}

@@ -150,6 +150,9 @@
 
     letter-spacing:.04em;
 
+    /* Los <button> no heredan la tipografía de la app por defecto. */
+    font-family:inherit;
+
     cursor:pointer;
 
 }

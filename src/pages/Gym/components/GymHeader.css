@@ -4,17 +4,12 @@
 
     overflow:hidden;
 
-    /* Subido de 220 a 340px (cierre de Gimnasio, Fase 3, 2026-08-29): con
-       220px + justify-content:flex-end, el título/botón "+" quedaban a
-       solo ~68px del borde superior real -- demasiado cerca de la isla
-       dinámica/notch (~59px de env(safe-area-inset-top) en los modelos
-       con Dynamic Island, corriendo como PWA instalada). El contenido
-       sigue anclado abajo (mismo padding-bottom:90px), así que crecer
-       min-height solo añade más foto/degradado arriba del texto -- lo
-       aleja de la isla sin tocar layout ni tipografía. Verificado con
-       Playwright forzando cada inset real, ver GymHeader.js/comentario de
-       object-position más abajo. */
-    min-height:340px;
+    /* Hero compacto del mockup (2026-09-24): "GYM" + subtítulo y justo
+       debajo el selector de pestañas. La distancia a la isla dinámica/
+       notch no la da la altura sino el padding-top con
+       env(safe-area-inset-top) de abajo (ver el arreglo de 2026-08-29,
+       project_hero_coach_text_clipping_fix) -- se conserva tal cual. */
+    min-height:calc(150px + env(safe-area-inset-top));
 
     display:flex;
 
@@ -22,23 +17,14 @@
 
     justify-content:flex-end;
 
-    /* padding-bottom grande a propósito: deja un colchón de foto/degradado
-       libre de texto para que el contenido de abajo (.gym-content) pueda
-       superponerse sin tapar el título -- mismo papel que el
-       padding-bottom:90px de RunningHeader.css. */
-    padding:24px 20px 90px;
+    padding:24px 20px 26px;
 
-    /* 24 -> 28px (mismo motivo que min-height arriba): un colchón real de
-       texto propio, no solo el hueco que ya dejaba justify-content:flex-end
-       -- por si el contenido llegase a crecer (rutina con nombre largo). */
     padding-top:calc(28px + env(safe-area-inset-top));
 
     /* Cancela el padding que .gym-content le mete desde fuera (24px +
        safe-area arriba, 24px a los lados) para que la foto llegue a los 3
-       bordes reales de la pantalla -- sigue atada al padding-top de
-       .gym-content (Gym.css), no al de aquí arriba, son dos valores
-       independientes que antes coincidían en 24px por casualidad. */
-    margin:calc(-1 * (24px + env(safe-area-inset-top))) -24px 0;
+       bordes reales de la pantalla. */
+    margin:calc(-1 * (24px + env(safe-area-inset-top))) -24px 14px;
 
     isolation:isolate;
 
@@ -47,7 +33,7 @@
 }
 
 /* ==========================
-   IMAGEN
+   IMAGEN (según pestaña)
 ========================== */
 
 .gym-background-image{
@@ -62,42 +48,21 @@
 
     object-fit:cover;
 
-    /* Las 4 fotos son verticales (retrato, atleta de espaldas) -- centrar
-       el recorte un poco por encima del centro mantiene torso/hombros
-       visibles en la franja horizontal recortada, en vez de cortar por la
-       cintura. Valor por defecto (night, y rain/winter que no tienen foto
-       propia -- ver assets/gym/index.js): con 30% la cabeza ya cae por
-       debajo de la isla dinámica en esa foto en concreto. */
-    object-position:center 30%;
-
     z-index:0;
 
 }
 
-/* Punto focal por foto (cierre de Gimnasio, Fase 3, 2026-08-29): con
-   min-height:340px + el mismo 30% de arriba, la cabeza del atleta quedaba
-   detrás de la isla dinámica/notch en morning/day/evening -- cada foto
-   encuadra al atleta a una altura distinta dentro del propio retrato, así
-   que un único porcentaje no vale para las 4. Verificado con Playwright,
-   superponiendo el hueco real de la isla (~11-59px, 126px de ancho,
-   centrada) sobre capturas con varios valores de object-position hasta
-   que la cabeza quedaba clara. night no se toca -- ya estaba bien con el
-   30% de por defecto. */
-.gym-background-image[data-theme-id="sunrise"]{
+/* Boxeador a la derecha, como la silueta del mockup. */
+.gym-background-image[data-hero="training"]{
 
-    object-position:center 10%;
+    object-position:78% 30%;
 
 }
 
-.gym-background-image[data-theme-id="day"]{
+/* Cuenco de pollo, arroz y verduras: el centro del plato. */
+.gym-background-image[data-hero="nutrition"]{
 
-    object-position:center 10%;
-
-}
-
-.gym-background-image[data-theme-id="sunset"]{
-
-    object-position:center 0%;
+    object-position:center 45%;
 
 }
 
@@ -111,55 +76,22 @@
 
     inset:0;
 
+    /* Oscuro a la izquierda (donde va el texto) y abajo, la foto se ve a
+       la derecha -- composición del mockup. Blanco fijo en el texto, así
+       que el velo no depende del tema. */
     background:
-
-        /* Velo fijo (no depende del tema), mismo motivo que
-           .plan-overlay/.running-overlay: sin esto, una foto clara deja el
-           título casi ilegible. */
-        linear-gradient(
-            180deg,
-            rgba(0,0,0,.55) 0px,
-            rgba(0,0,0,.38) 160px,
-            rgba(0,0,0,.15) 260px,
-            transparent 320px
-        ),
-
-        linear-gradient(
-            180deg,
-            var(--hero-overlay-top) 0%,
-            var(--hero-overlay-middle) 40%,
-            var(--hero-overlay-bottom) 100%
-        );
+        linear-gradient(90deg, rgba(4,10,22,.88) 0%, rgba(4,10,22,.6) 45%, rgba(4,10,22,.15) 100%),
+        linear-gradient(180deg, rgba(0,0,0,.35) 0%, transparent 45%);
 
     z-index:1;
 
 }
 
-/* ==========================
-   GLOW
-========================== */
-
-.gym-header-glow{
-
-    position:absolute;
-
-    inset:0;
+.gym-header[data-hero="nutrition"] .gym-header-overlay{
 
     background:
-
-        radial-gradient(
-
-            circle at 50% 48%,
-
-            color-mix(in srgb, var(--color-glow) 34%, transparent),
-
-            color-mix(in srgb, var(--color-glow) 10%, transparent) 20%,
-
-            transparent 42%
-
-        );
-
-    z-index:2;
+        linear-gradient(90deg, rgba(4,10,22,.9) 0%, rgba(4,10,22,.65) 45%, rgba(4,10,22,.25) 100%),
+        linear-gradient(180deg, rgba(0,0,0,.35) 0%, transparent 45%);
 
 }
 
@@ -175,7 +107,7 @@
     right:0;
     bottom:0;
 
-    height:55%;
+    height:45%;
 
     pointer-events:none;
 
@@ -183,8 +115,7 @@
         linear-gradient(
             180deg,
             transparent 0%,
-            color-mix(in srgb, var(--color-background) 40%, transparent) 45%,
-            color-mix(in srgb, var(--color-background) 80%, transparent) 75%,
+            color-mix(in srgb, var(--color-background) 70%, transparent) 70%,
             var(--color-background) 100%
         );
 
@@ -222,52 +153,44 @@
 
     flex-direction:column;
 
-    gap:8px;
+    gap:4px;
 
 }
 
 /* Texto sobre la foto: blanco fijo + text-shadow, mismo criterio que el
-   resto de heroes por foto (Plan/Running/Carreras) -- no puede depender de
-   --text-primary porque varía por tema y algunas fotos lo dejan casi
-   ilegible. Sin el estilo "segunda línea en color" del Hero de Inicio
-   (.hero-title span) a propósito: ese lenguaje visual es la firma del
-   saludo dinámico de Inicio, aquí el texto es fijo y no debe leerse como
-   el mismo componente. */
+   resto de heroes por foto (Plan/Running/Carreras). */
 .gym-header h1{
 
     margin:0;
 
     color:#FFFFFF;
 
-    font-size:1.9rem;
+    font-size:2.6rem;
 
-    line-height:1.05;
+    line-height:1;
 
     font-weight:900;
 
-    letter-spacing:-.02em;
+    letter-spacing:-.01em;
 
-    text-shadow:
-        0 4px 12px rgba(0,0,0,.45),
-        0 12px 32px rgba(0,0,0,.55);
+    text-shadow:0 4px 18px rgba(0,0,0,.55);
 
 }
 
 .gym-header-subtitle{
 
-    margin-top:2px;
+    margin:0;
 
-    color:rgba(255,255,255,.75);
+    color:rgba(255,255,255,.85);
 
-    font-size:.82rem;
+    font-size:1.05rem;
 
     text-shadow:0 2px 6px rgba(0,0,0,.45);
 
 }
 
 /* ==========================
-   BOTÓN + (sustituye a "Nueva rutina" del hero, mismo patrón que
-   .plan-add-button en PlanHeader.css)
+   BOTÓN + (nueva rutina, solo en Rutinas)
 ========================== */
 
 .gym-add-button{

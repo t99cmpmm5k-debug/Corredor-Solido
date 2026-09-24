@@ -136,3 +136,31 @@ describe("dietStore", () => {
     });
 
 });
+
+describe("getWeekCompliance", () => {
+
+    beforeEach(() => {
+        resetFakeIndexedDB();
+        vi.resetModules();
+    });
+
+    it("lunes a domingo de la semana, con su % y si es futuro", async () => {
+
+        const store = await import("./dietStore.js");
+        await store.hydrate();
+        const plan = store.importDietPlan(PARSED);
+
+        store.toggleMealEaten(MONDAY, plan.id, "LUNES|09:00", "LUNES|09:00|1");
+        store.toggleMealEaten(MONDAY, plan.id, "LUNES|21:00", "LUNES|21:00|1");
+
+        const week = store.getWeekCompliance("2026-09-24", "2026-09-24");
+
+        expect(week.map(d => d.date)).toEqual(["2026-09-21", "2026-09-22", "2026-09-23", "2026-09-24", "2026-09-25", "2026-09-26", "2026-09-27"]);
+        expect(week[0]).toEqual({ date: MONDAY, percent: 100, future: false });
+        expect(week[4].future).toBe(true);
+        // Fin de semana sin elegir: sin menú con el que comparar.
+        expect(week[5].percent).toBeNull();
+
+    });
+
+});

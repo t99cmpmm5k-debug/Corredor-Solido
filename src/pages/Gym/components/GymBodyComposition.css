@@ -99,29 +99,6 @@
 
 }
 
-.gym-bodycomp-chart-summary{
-
-    margin:-10px 0 14px;
-    color:var(--text-secondary);
-    font-size:.82rem;
-
-}
-
-.gym-bodycomp-axis-y{
-
-    position:absolute;
-    left:0;
-    z-index:1;
-
-    color:var(--text-secondary);
-    font-size:.68rem;
-    font-weight:600;
-
-}
-
-.gym-bodycomp-axis-y--max{ top:0; }
-.gym-bodycomp-axis-y--min{ bottom:0; }
-
 .gym-bodycomp-entry{
 
     display:flex;
@@ -145,23 +122,6 @@
     display:flex;
     align-items:center;
     gap:10px;
-
-}
-
-.gym-bodycomp-entry-date{
-
-    flex:1;
-    color:var(--text-secondary);
-    font-size:.85rem;
-    font-weight:600;
-
-}
-
-.gym-bodycomp-entry-weight{
-
-    color:var(--text-primary);
-    font-size:1.1rem;
-    font-weight:800;
 
 }
 
@@ -237,13 +197,6 @@
 
 }
 
-.gym-bodycomp-metric.is-empty strong{
-
-    color:var(--text-secondary);
-    font-weight:500;
-
-}
-
 .gym-home-tabs{
 
     margin-bottom:18px;
@@ -253,5 +206,444 @@
 .gym-bodycomp-form [data-bodycomp-error][hidden]{
 
     display:none;
+
+}
+
+/* ==========================================================
+   Rediseño según el mockup (2026-09-24): tarjetas Último
+   registro / Evolución / Nuevo registro / Historial.
+========================================================== */
+
+.gym-bodycomp-card{
+
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+
+    padding:18px 16px;
+
+    border-radius:var(--radius-lg);
+    border:1px solid var(--card-border);
+    background:color-mix(in srgb, var(--card-background) 80%, transparent);
+
+}
+
+.gym-bc-head{
+
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+
+}
+
+.gym-bc-head h3{
+
+    min-width:0;
+    margin:0;
+    color:var(--text-primary);
+    font-size:1.08rem;
+    font-weight:800;
+    white-space:nowrap;
+
+}
+
+.gym-bc-head h3 small{
+
+    color:var(--text-secondary);
+    font-size:.72rem;
+    font-weight:500;
+
+}
+
+.gym-bc-head > span{
+
+    color:var(--text-secondary);
+    font-size:.82rem;
+
+}
+
+.gym-bc-empty{
+
+    margin:0;
+    color:var(--text-secondary);
+    font-size:.86rem;
+
+}
+
+/* Último registro: 4 tarjetas en fila. */
+.gym-bc-tiles{
+
+    display:grid;
+    grid-template-columns:repeat(4, 1fr);
+    gap:8px;
+
+}
+
+.gym-bc-tile{
+
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:2px;
+    min-width:0;
+
+    padding:12px 4px 10px;
+
+    border-radius:var(--radius-md);
+    border:1px solid var(--card-border);
+    background:color-mix(in srgb, var(--card-background) 55%, transparent);
+
+    text-align:center;
+
+}
+
+.gym-bc-tile iconify-icon{
+
+    color:var(--color-primary);
+    font-size:20px;
+    margin-bottom:4px;
+
+}
+
+.gym-bc-tile-label{
+
+    color:var(--text-secondary);
+    font-size:.66rem;
+    font-weight:700;
+    letter-spacing:.04em;
+    text-transform:uppercase;
+
+}
+
+.gym-bc-tile strong{
+
+    color:var(--text-primary);
+    font-size:1.45rem;
+    font-weight:800;
+    line-height:1.15;
+
+}
+
+.gym-bc-tile-unit{
+
+    color:var(--text-secondary);
+    font-size:.72rem;
+
+}
+
+.gym-bc-tile.is-empty strong{
+
+    color:var(--text-secondary);
+
+}
+
+.gym-bc-delta{
+
+    margin-top:6px;
+    color:var(--text-secondary);
+    font-size:.72rem;
+    font-weight:700;
+    line-height:1.3;
+
+}
+
+.gym-bc-delta.is-good{
+
+    color:var(--color-success);
+
+}
+
+.gym-bc-delta span{
+
+    display:block;
+    color:var(--text-secondary);
+    font-weight:500;
+
+}
+
+.gym-bc-delta.is-empty{
+
+    font-weight:500;
+
+}
+
+/* Evolución: desplegable de medida y gráfico. */
+.gym-bc-select{
+
+    position:relative;
+    display:inline-flex;
+    align-items:center;
+
+}
+
+.gym-bc-select select{
+
+    -webkit-appearance:none;
+    appearance:none;
+
+    padding:5px 26px 5px 10px;
+
+    border-radius:999px;
+    border:1px solid var(--card-border);
+    background:transparent;
+    color:var(--text-primary);
+
+    font:inherit;
+    font-size:.78rem;
+
+}
+
+.gym-bc-select iconify-icon{
+
+    position:absolute;
+    right:10px;
+    pointer-events:none;
+    color:var(--text-secondary);
+    font-size:14px;
+
+}
+
+.gym-bc-chart{
+
+    width:100%;
+    height:auto;
+    overflow:visible;
+
+}
+
+.gym-bc-grid{
+
+    stroke:color-mix(in srgb, var(--card-border) 70%, transparent);
+    stroke-width:.6;
+
+}
+
+.gym-bc-axis{
+
+    fill:var(--text-secondary);
+    font-size:8.5px;
+
+}
+
+.gym-bc-line{
+
+    fill:none;
+    stroke:var(--color-primary);
+    stroke-width:2;
+    stroke-linejoin:round;
+    stroke-linecap:round;
+
+}
+
+.gym-bc-dot{
+
+    fill:var(--color-primary);
+    stroke:var(--color-background);
+    stroke-width:1.5;
+
+}
+
+/* Nuevo registro: fecha con icono en la cabecera, 4 campos en fila. */
+.gym-bc-date{
+
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    color:var(--text-secondary);
+
+}
+
+.gym-bc-date input{
+
+    -webkit-appearance:none;
+    appearance:none;
+
+    width:7.6em;
+
+    padding:0;
+    border:none;
+    background:transparent;
+    color:var(--text-secondary);
+
+    font:inherit;
+    font-size:.8rem;
+    text-align:right;
+
+}
+
+.gym-bc-date iconify-icon{
+
+    font-size:18px;
+
+}
+
+.gym-bc-fields{
+
+    display:grid;
+    grid-template-columns:repeat(4, 1fr);
+    gap:8px;
+
+}
+
+.gym-bc-fields label{
+
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    min-width:0;
+
+}
+
+.gym-bc-fields span{
+
+    color:var(--text-secondary);
+    font-size:.72rem;
+    white-space:nowrap;
+
+}
+
+.gym-bc-fields input{
+
+    width:100%;
+    box-sizing:border-box;
+    min-height:44px;
+    padding:10px;
+
+    border-radius:var(--radius-sm);
+    border:1px solid var(--card-border);
+    background:color-mix(in srgb, var(--card-background) 40%, black 10%);
+    color:var(--text-primary);
+
+    font:inherit;
+    font-size:1rem;
+
+}
+
+.gym-bc-save{
+
+    flex:1;
+    min-height:46px;
+
+    border:none;
+    border-radius:var(--radius-md);
+    background:var(--color-primary);
+    color:#fff;
+
+    font:inherit;
+    font-size:1rem;
+    font-weight:700;
+
+    cursor:pointer;
+
+}
+
+.gym-bc-delete{
+
+    align-self:center;
+    padding:6px 12px;
+
+    border:none;
+    border-radius:999px;
+    background:transparent;
+    color:var(--color-danger);
+
+    font:inherit;
+    font-size:.82rem;
+    font-weight:700;
+
+    cursor:pointer;
+
+}
+
+.gym-bc-delete.is-confirming{
+
+    background:var(--color-danger);
+    color:#fff;
+
+}
+
+/* Historial: filas compactas. */
+.gym-bc-link{
+
+    display:inline-flex;
+    align-items:center;
+    gap:2px;
+
+    padding:0;
+    border:none;
+    background:none;
+    color:var(--text-secondary);
+
+    font:inherit;
+    font-size:.82rem;
+
+    cursor:pointer;
+
+}
+
+.gym-bc-rows{
+
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+
+}
+
+.gym-bc-row{
+
+    display:grid;
+    /* Columnas de ancho fijo para que peso/grasa/agua/músculo queden
+       alineados entre filas aunque alguna tenga "—". */
+    grid-template-columns:16px minmax(0, 1fr) 3.9em 3em 3em 3em 12px;
+    align-items:center;
+    gap:5px;
+
+    padding:12px 8px;
+
+    border-radius:var(--radius-md);
+    border:1px solid var(--card-border);
+    background:color-mix(in srgb, var(--card-background) 55%, transparent);
+    color:var(--text-primary);
+
+    font:inherit;
+    font-size:.72rem;
+    text-align:left;
+    white-space:nowrap;
+
+    cursor:pointer;
+
+}
+
+.gym-bc-row.is-editing{
+
+    border-color:var(--color-primary);
+
+}
+
+.gym-bc-row iconify-icon{
+
+    color:var(--color-primary);
+    font-size:16px;
+
+}
+
+.gym-bc-row iconify-icon:last-child{
+
+    color:var(--text-secondary);
+    font-size:14px;
+
+}
+
+.gym-bc-row-date{
+
+    overflow:hidden;
+    text-overflow:ellipsis;
+
+}
+
+.gym-bc-row > span:not(.gym-bc-row-date){
+
+    text-align:right;
 
 }

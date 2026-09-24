@@ -29,6 +29,10 @@ const store = {
     // alta) y borrado pendiente de confirmar con un segundo toque.
     bodyCompEditingId: null,
     bodyCompPendingDeleteId: null,
+    // Métrica del gráfico de Evolución y si el historial se ve entero
+    // ("Ver todo") o solo los últimos registros.
+    bodyCompChartMetric: "weightKg",
+    bodyCompHistoryExpanded: false,
 
     // Nutrición: día visto (null = hoy), texto y resultado de la búsqueda
     // en Open Food Facts (se guardan aquí para que un rerender() los
@@ -47,7 +51,11 @@ const store = {
     nutritionView: "dieta",
     dietImport: { errors: [], fileName: null },
     dietWeekendPickerOpen: false,
-    dietDeletePending: false
+    dietDeletePending: false,
+    // Secciones plegables de Mi dieta (Notas generales, Gestionar): su
+    // estado vive aquí para que marcar una comida (rerender) no las cierre.
+    dietRulesOpen: false,
+    dietManageOpen: false
 
 };
 
@@ -477,5 +485,42 @@ export function isDietDeletePending() {
 export function setDietDeletePending(value) {
 
     store.dietDeletePending = value;
+
+}
+
+export function getBodyCompChartMetric() {
+
+    return store.bodyCompChartMetric;
+
+}
+
+export function setBodyCompChartMetric(metric) {
+
+    store.bodyCompChartMetric = metric;
+
+}
+
+export function isBodyCompHistoryExpanded() {
+
+    return store.bodyCompHistoryExpanded;
+
+}
+
+export function setBodyCompHistoryExpanded(value) {
+
+    store.bodyCompHistoryExpanded = value;
+
+}
+
+export function isDietSectionOpen(section) {
+
+    return section === "rules" ? store.dietRulesOpen : store.dietManageOpen;
+
+}
+
+export function setDietSectionOpen(section, open) {
+
+    if (section === "rules") store.dietRulesOpen = open;
+    else store.dietManageOpen = open;
 
 }

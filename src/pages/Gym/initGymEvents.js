@@ -47,7 +47,10 @@ import {
     getBodyCompEditingId,
     setBodyCompEditingId,
     getBodyCompPendingDeleteId,
-    setBodyCompPendingDeleteId
+    setBodyCompPendingDeleteId,
+    setBodyCompChartMetric,
+    isBodyCompHistoryExpanded,
+    setBodyCompHistoryExpanded
 } from "./gymStore.js";
 
 import {
@@ -841,15 +844,29 @@ export function initGymEvents() {
 
     document.querySelectorAll('[data-action="edit-bodycomp-entry"]').forEach(button => {
 
+        // Se edita desde el historial (abajo del todo): se lleva la vista
+        // al formulario, que está más arriba, no al principio de la página.
         button.addEventListener("click", () => {
             setBodyCompEditingId(button.dataset.entryId);
-            rerender({ resetScroll: true });
+            rerender();
+            document.querySelector(".gym-bodycomp-form")?.scrollIntoView({ block: "start", behavior: "smooth" });
         });
 
     });
 
-    // Borrado en dos toques ("pulsa otra vez para confirmar") en la propia
-    // fila, en vez del confirm() nativo del navegador (ver CLAUDE.md).
+    // Un <select>, no texto libre: repintar al cambiar no pierde nada.
+    document.querySelector('[data-action="bodycomp-chart-metric"]')?.addEventListener("change", event => {
+        setBodyCompChartMetric(event.target.value);
+        rerender();
+    });
+
+    document.querySelector('[data-action="bodycomp-history-toggle"]')?.addEventListener("click", () => {
+        setBodyCompHistoryExpanded(!isBodyCompHistoryExpanded());
+        rerender();
+    });
+
+    // Borrado en dos toques ("pulsa otra vez para confirmar"), ahora en el
+    // formulario de edición, en vez del confirm() nativo (ver CLAUDE.md).
     document.querySelectorAll('[data-action="delete-bodycomp-entry"]').forEach(button => {
 
         button.addEventListener("click", () => {

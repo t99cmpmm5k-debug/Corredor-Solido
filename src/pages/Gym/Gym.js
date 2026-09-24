@@ -197,7 +197,7 @@ function GymDaySelect() {
 
         <div class="gym-content">
 
-            ${GymHeader()}
+            ${GymHeader(tab)}
 
             ${GymHomeTabs(tab)}
 

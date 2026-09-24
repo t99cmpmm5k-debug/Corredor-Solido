@@ -2,7 +2,7 @@ import { rerender } from "../../core/router.js";
 import { parseDietCsv, buildDietCsvTemplate } from "../../utils/dietCsv.js";
 import { getActiveDietPlan, importDietPlan, toggleMealEaten, setWeekendLongRunDay, deleteDietPlan } from "../../data/dietStore.js";
 import { getViewedNutritionDate } from "./components/GymNutrition.js";
-import { setDietImport, setDietWeekendPickerOpen, isDietDeletePending, setDietDeletePending } from "./gymStore.js";
+import { setDietImport, setDietWeekendPickerOpen, isDietDeletePending, setDietDeletePending, setDietSectionOpen } from "./gymStore.js";
 
 // Eventos de "Mi dieta" (ver GymDiet.js).
 
@@ -90,6 +90,35 @@ export function initGymDietEvents() {
             rerender();
         });
 
+    });
+
+    // Casilla de la tarjeta. Con una sola opción, la marca/desmarca. Con
+    // varias: marcada, la desmarca; sin marcar, NO elige una por su cuenta
+    // -- pide tocar la opción comida (aviso en sitio, sin rerender).
+    document.querySelectorAll('[data-action="diet-meal-check"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+
+            const plan = getActiveDietPlan();
+            if (!plan) return;
+
+            if (button.dataset.multiple === "true" && button.dataset.eaten !== "true") {
+                const hint = button.closest(".gym-meal-card")?.querySelector("[data-meal-hint]");
+                if (hint) hint.hidden = false;
+                return;
+            }
+
+            toggleMealEaten(getViewedNutritionDate(), plan.id, button.dataset.mealKey, button.dataset.optionKey);
+            rerender();
+
+        });
+
+    });
+
+    // Notas generales / Gestionar: recordar si están abiertas, para que
+    // marcar una comida (rerender) no las cierre.
+    document.querySelectorAll("[data-diet-section]").forEach(details => {
+        details.addEventListener("toggle", () => setDietSectionOpen(details.dataset.dietSection, details.open));
     });
 
     // Borrar la dieta en dos toques, sin confirm() nativo.

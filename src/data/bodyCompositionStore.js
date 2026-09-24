@@ -10,6 +10,7 @@ import { STORES, getAll, put, remove } from "./db.js";
 import { generateId } from "../utils/id.js";
 import { notifyDataChanged } from "./changeEvents.js";
 import { recordTombstone } from "./tombstoneStore.js";
+import { addDays } from "../utils/date.js";
 
 const entries = [];
 
@@ -151,5 +152,51 @@ export function parseBodyCompositionForm(raw) {
     }
 
     return { fields };
+
+}
+
+export const BODY_METRICS = ["weightKg", "bodyFatPercent", "waterPercent", "musclePercent"];
+
+// "Último registro": el valor de cada métrica en el registro más reciente,
+// comparado con el registro ANTERIOR que tenga esa misma métrica (una
+// báscula normal no da % grasa, así que el anterior con % puede ser otro
+// que el anterior con peso). Sin valor o sin anterior: sin comparación --
+// nunca se compara contra un valor que no existe.
+export function getLatestBodyComposition() {
+
+    const entries = getBodyCompositionEntries();
+    const latest = entries[0];
+    if (!latest) return null;
+
+    const metrics = {};
+
+    for (const metric of BODY_METRICS) {
+
+        const value = latest[metric];
+        const previous = value == null ? null : entries.slice(1).find(e => e[metric] != null) ?? null;
+
+        metrics[metric] = {
+            value,
+            previousValue: previous?.[metric] ?? null,
+            previousDate: previous?.date ?? null,
+            delta: previous ? Math.round((value - previous[metric]) * 10) / 10 : null
+        };
+
+    }
+
+    return { date: latest.date, metrics };
+
+}
+
+// Puntos de una métrica en los últimos `days` días hasta `today`
+// (incluido), en orden de fecha -- solo registros con esa métrica.
+export function getBodyCompositionSeries(metric, today, days = 30) {
+
+    const fromIso = addDays(today, -(days - 1));
+
+    return getBodyCompositionEntries()
+        .filter(e => e[metric] != null && e.date >= fromIso && e.date <= today)
+        .sort((a, b) => a.date.localeCompare(b.date) || (a.createdAt ?? "").localeCompare(b.createdAt ?? ""))
+        .map(e => ({ date: e.date, value: e[metric] }));
 
 }
