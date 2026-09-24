@@ -5,6 +5,7 @@ import { authRouter } from "./routes/auth.js";
 import { syncRouter } from "./routes/sync.js";
 import { tilesRouter } from "./routes/tiles.js";
 import { communityRouter } from "./routes/community.js";
+import { extractRouter } from "./routes/extract.js";
 
 const REQUIRED_ENV_VARS = ["DB_HOST", "DB_NAME", "DB_USER", "DB_PASSWORD", "JWT_SECRET", "RESEND_API_KEY", "EMAIL_FROM", "FRONTEND_URL"];
 
@@ -33,6 +34,7 @@ app.use("/api/auth", authRouter);
 app.use("/api/sync", syncRouter);
 app.use("/api/tiles", tilesRouter);
 app.use("/api/community", communityRouter);
+app.use("/api/extract-document", extractRouter);
 
 // Handler de errores al final -- cualquier throw sin capturar en una ruta
 // (fallo de conexión a la BBDD, etc.) cae aquí en vez de tumbar el proceso
