@@ -23,26 +23,6 @@
 
 }
 
-.profile-header h1{
-
-    color:var(--text-primary);
-
-    font-size:1.6rem;
-
-    font-weight:800;
-
-}
-
-.profile-placeholder-note{
-
-    color:var(--text-secondary);
-
-    font-size:.85rem;
-
-    line-height:1.5;
-
-}
-
 .profile-build-id{
 
     color:var(--text-secondary);
@@ -422,5 +402,354 @@
     font-size:.76rem;
 
     line-height:1.4;
+
+}
+
+/*==========================
+    TARJETAS DE LA PANTALLA PRINCIPAL
+    (Tu resumen / Tu progreso / Equipamiento / Comunidad) -- mismo
+    lenguaje que .profile-summary-card (glass + borde sutil, sin el
+    tinte de --color-primary reforzado de .profile-backup-card, que es
+    para la acción principal de Ajustes).
+==========================*/
+
+.profile-card{
+
+    padding:20px;
+
+    border-radius:26px;
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:14px;
+
+    background:color-mix(in srgb, var(--card-background) 80%, transparent);
+
+    backdrop-filter:blur(16px);
+    -webkit-backdrop-filter:blur(16px);
+
+    border:1px solid var(--card-border);
+
+}
+
+.profile-card-header{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+
+}
+
+.profile-card-header-icon{
+
+    flex-shrink:0;
+
+    width:36px;
+
+    height:36px;
+
+    border-radius:50%;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    background:color-mix(in srgb, var(--color-primary) 22%, transparent);
+
+    color:var(--color-primary);
+
+    font-size:18px;
+
+}
+
+.profile-card-header-label{
+
+    color:var(--text-primary);
+
+    font-size:.95rem;
+
+    font-weight:800;
+
+}
+
+.profile-card-hint{
+
+    margin:0;
+
+    color:var(--text-secondary);
+
+    font-size:.76rem;
+
+    line-height:1.4;
+
+}
+
+.profile-empty-hint{
+
+    margin:0;
+
+    color:var(--text-secondary);
+
+    font-size:.85rem;
+
+}
+
+/* Fila de 4 estadísticas -- mismo recorte visual que
+   .running-summary-stats/.running-summary-item (Running.css), clases
+   propias (ver el porqué en ProfileSettingsView.css). */
+.profile-stats-row{
+
+    display:flex;
+
+}
+
+.profile-stat{
+
+    flex:1;
+
+    min-width:0;
+
+    display:flex;
+
+    flex-direction:column;
+
+    align-items:center;
+
+    gap:4px;
+
+    border-right:1px solid color-mix(in srgb, var(--card-border) 70%, transparent);
+
+}
+
+.profile-stat:last-child{
+
+    border-right:none;
+
+}
+
+.profile-stat iconify-icon{
+
+    font-size:18px;
+
+    color:var(--color-primary);
+
+}
+
+/* Sin white-space:nowrap a propósito (a diferencia de la primera versión
+   de esta regla): "TU PROGRESO" mete valores más largos que "TU RESUMEN"
+   (p. ej. "5:40 → 5:38" de Evolución Z2) -- en una columna de ~90px eso
+   desbordaba y se montaba encima de la columna vecina (bug real, visto en
+   WebKit al verificar). Envolver a 2 líneas dentro de su propia columna
+   es sencillo y no cambia ningún dato mostrado. */
+.profile-stat-value{
+
+    color:var(--text-primary);
+
+    font-size:.88rem;
+
+    font-weight:800;
+
+    text-align:center;
+
+    line-height:1.2;
+
+}
+
+.profile-stat-label{
+
+    color:var(--text-secondary);
+
+    font-size:.7rem;
+
+    text-align:center;
+
+}
+
+/*==========================
+    COMUNIDAD (alias + visibilidad placeholder)
+==========================*/
+
+.profile-community-row{
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:space-between;
+
+    gap:12px;
+
+}
+
+.profile-community-row-text{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:2px;
+
+    min-width:0;
+
+}
+
+.profile-community-row-label{
+
+    color:var(--text-secondary);
+
+    font-size:.7rem;
+
+    text-transform:uppercase;
+
+    letter-spacing:.05em;
+
+    font-weight:700;
+
+}
+
+.profile-community-row-value{
+
+    color:var(--text-primary);
+
+    font-size:.9rem;
+
+    font-weight:700;
+
+    overflow:hidden;
+
+    text-overflow:ellipsis;
+
+    white-space:nowrap;
+
+}
+
+.profile-link-button{
+
+    flex-shrink:0;
+
+    padding:6px 12px;
+
+    border-radius:999px;
+
+    background:none;
+
+    border:1px solid color-mix(in srgb, var(--color-primary) 30%, transparent);
+
+    color:var(--color-primary);
+
+    font-size:.76rem;
+
+    font-weight:700;
+
+    cursor:pointer;
+
+}
+
+/* Placeholder visual, sin lógica real (ver comentario de
+   ProfileCommunitySection en Profile.js) -- "Privado" deliberadamente sin
+   cursor:pointer ni estado hover, para no sugerir que responde al toque. */
+.profile-visibility-toggle{
+
+    flex-shrink:0;
+
+    display:flex;
+
+    padding:3px;
+
+    border-radius:999px;
+
+    background:color-mix(in srgb, var(--card-background) 60%, transparent);
+
+    border:1px solid var(--card-border);
+
+}
+
+.profile-visibility-option{
+
+    padding:5px 12px;
+
+    border-radius:999px;
+
+    font-size:.72rem;
+
+    font-weight:700;
+
+}
+
+.profile-visibility-option.is-active{
+
+    background:color-mix(in srgb, var(--color-primary) 26%, transparent);
+
+    color:var(--color-primary);
+
+}
+
+.profile-visibility-option.is-disabled{
+
+    color:var(--color-text-muted);
+
+    opacity:.6;
+
+}
+
+/*==========================
+    ENTRADA A AJUSTES
+==========================*/
+
+.profile-settings-entry{
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:space-between;
+
+    padding:16px 18px;
+
+    border-radius:var(--radius-lg);
+
+    background:color-mix(in srgb, var(--card-background) 70%, transparent);
+
+    border:1px solid var(--card-border);
+
+    color:var(--text-primary);
+
+    font-size:.9rem;
+
+    font-weight:700;
+
+    cursor:pointer;
+
+}
+
+.profile-settings-entry span{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+
+}
+
+.profile-settings-entry iconify-icon:first-child{
+
+    color:var(--color-primary);
+
+    font-size:20px;
+
+}
+
+.profile-settings-entry > iconify-icon{
+
+    color:var(--text-secondary);
+
+    font-size:18px;
 
 }

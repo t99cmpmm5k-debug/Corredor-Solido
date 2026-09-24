@@ -105,7 +105,11 @@ function closeDetail() {
 
 }
 
-function openShoes() {
+// Exportada: Profile.js (sección "Equipamiento") la reutiliza para su
+// propio botón "Gestionar zapatillas" -- mismo patrón que openDetail()
+// (Carreras: navigate(Running) + openDetail(id)) para saltar de otra
+// página a un paso concreto de Running.
+export function openShoes() {
 
     // Estado limpio siempre que se entra — sin esto, quedarse a medias
     // editando/añadiendo una zapatilla y volver a entrar dejaría el

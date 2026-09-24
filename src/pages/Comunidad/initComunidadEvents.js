@@ -9,7 +9,7 @@ import { mountRouteMap, unmountRouteMap, hasRouteTrace } from "../../components/
 import { ROUTE_COLOR_NORMAL, buildPaceColorSegments, buildKmMarkers } from "../Running/routeMapPaceColoring.js";
 import { chartSplits, MIN_SPLITS_FOR_CHART } from "../Running/components/RunningDetailView.js";
 import { buildCommunityFeedCards } from "./communityFeedData.js";
-import { loadMyAlias } from "../Profile/profileStore.js";
+import { loadMyProfile } from "../Profile/profileStore.js";
 
 // Un mapa pequeño POR TARJETA con GPS en el feed de Actividad -- array, no
 // una única instancia, con la misma destrucción explícita en cada render
@@ -167,7 +167,7 @@ export function initComunidadEvents() {
     // solo al entrar en Ranking) para que ya esté lista si el usuario
     // cambia de tab.
     if (document.querySelector(".comunidad")) {
-        loadMyAlias();
+        loadMyProfile();
     }
 
     document.querySelectorAll('[data-action="select-comunidad-tab"]').forEach(button => {

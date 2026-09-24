@@ -1,0 +1,78 @@
+/* Pantalla secundaria "Ajustes y datos" -- mismo padding/estructura que
+   .profile-content (Profile.css), clases propias en vez de reutilizar las
+   de Running.css (.running-wizard/.wizard-header/.wizard-close): cada
+   página define su propia versión de este patrón de "pantalla secundaria
+   con cierre propio" (ver .carreras-wizard en Carreras.css), no hay una
+   clase global compartida entre páginas para esto. */
+.profile-settings{
+
+    padding:24px;
+
+    padding-top:calc(24px + env(safe-area-inset-top));
+
+    padding-bottom:calc(var(--bottom-nav-clearance) + env(safe-area-inset-bottom));
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:18px;
+
+}
+
+.profile-settings-header{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:12px;
+
+}
+
+.profile-settings-header h2{
+
+    margin:0;
+
+    color:var(--text-primary);
+
+    font-size:1.3rem;
+
+    font-weight:800;
+
+}
+
+.profile-settings-close{
+
+    width:44px;
+
+    height:44px;
+
+    flex-shrink:0;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    border-radius:50%;
+
+    border:1px solid color-mix(in srgb, var(--card-border) 14%, transparent);
+
+    background:color-mix(in srgb, var(--card-background) 55%, transparent);
+
+    backdrop-filter:blur(18px);
+    -webkit-backdrop-filter:blur(18px);
+
+    cursor:pointer;
+
+}
+
+.profile-settings-close iconify-icon{
+
+    font-size:24px;
+
+    color:var(--text-secondary);
+
+}

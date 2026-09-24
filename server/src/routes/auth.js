@@ -17,6 +17,12 @@ const RESET_TOKEN_TTL_MS = 60 * 60 * 1000;
 const ALIAS_MIN_LENGTH = 2;
 const ALIAS_MAX_LENGTH = 50;
 
+// Localidad (Perfil, rediseño 2026-09-25) -- texto libre y opcional
+// (puede vaciarse: "" borra la que hubiera), solo un tope de longitud
+// razonable, sin mínimo (a diferencia del alias, aquí no hay nada que
+// "demasiado corto" deba rechazar).
+const LOCALIDAD_MAX_LENGTH = 100;
+
 function isValidEmail(email) {
     return typeof email === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
@@ -285,31 +291,90 @@ authRouter.post("/restablecer", async (req, res) => {
 // Handlers exportados aparte del wiring de la ruta para poder testearlos
 // con un pool mockeado y un req/res simulados, sin montar un servidor
 // Express de verdad -- mismo patrón que routes/tiles.js y routes/community.js.
+// createdAt siempre como ISO string -- mysql2 puede devolver el TIMESTAMP
+// como Date o como string según la conexión/driver; normalizarlo aquí
+// evita que Perfil (frontend) tenga que saber cuál de las dos formas le
+// llegó para sacar el año de "Corredor sólido desde AAAA".
 export async function getPerfil(req, res) {
 
-    const [rows] = await pool.execute("SELECT alias_publico FROM users WHERE id = ?", [req.userId]);
+    const [rows] = await pool.execute("SELECT alias_publico, localidad, created_at FROM users WHERE id = ?", [req.userId]);
+    const row = rows[0];
 
-    res.json({ aliasPublico: rows[0]?.alias_publico ?? null });
+    res.json({
+        aliasPublico: row?.alias_publico ?? null,
+        localidad: row?.localidad ?? null,
+        createdAt: row?.created_at ? new Date(row.created_at).toISOString() : null
+    });
 
 }
 
+// Alias y localidad se actualizan independientemente (Perfil, rediseño
+// 2026-09-25: el hero edita los dos a la vez, pero un PATCH solo con uno
+// de los dos -- p. ej. borrar la localidad sin tocar el alias -- también
+// tiene que funcionar) -- ambos son opcionales en el body, pero al menos
+// uno tiene que venir, si no no hay nada que actualizar. Cada campo
+// presente se valida y se guarda por separado; ninguno de los dos se toca
+// si el otro falla su propia validación (falla entero antes de tocar la
+// base de datos, mismo criterio de "todo o nada" que ya tenía esta ruta).
 export async function updatePerfil(req, res) {
 
-    const { aliasPublico } = req.body ?? {};
+    const { aliasPublico, localidad } = req.body ?? {};
+    const hasAlias = aliasPublico !== undefined;
+    const hasLocalidad = localidad !== undefined;
 
-    if (typeof aliasPublico !== "string") {
-        return res.status(400).json({ error: "Alias no válido." });
+    if (!hasAlias && !hasLocalidad) {
+        return res.status(400).json({ error: "Nada que actualizar." });
     }
 
-    const trimmed = aliasPublico.trim();
+    let trimmedAlias, trimmedLocalidad;
 
-    if (trimmed.length < ALIAS_MIN_LENGTH || trimmed.length > ALIAS_MAX_LENGTH) {
-        return res.status(400).json({ error: `El alias debe tener entre ${ALIAS_MIN_LENGTH} y ${ALIAS_MAX_LENGTH} caracteres.` });
+    if (hasAlias) {
+
+        if (typeof aliasPublico !== "string") {
+            return res.status(400).json({ error: "Alias no válido." });
+        }
+
+        trimmedAlias = aliasPublico.trim();
+
+        if (trimmedAlias.length < ALIAS_MIN_LENGTH || trimmedAlias.length > ALIAS_MAX_LENGTH) {
+            return res.status(400).json({ error: `El alias debe tener entre ${ALIAS_MIN_LENGTH} y ${ALIAS_MAX_LENGTH} caracteres.` });
+        }
+
     }
 
-    await pool.execute("UPDATE users SET alias_publico = ? WHERE id = ?", [trimmed, req.userId]);
+    if (hasLocalidad) {
 
-    res.json({ aliasPublico: trimmed });
+        if (typeof localidad !== "string") {
+            return res.status(400).json({ error: "Localidad no válida." });
+        }
+
+        trimmedLocalidad = localidad.trim();
+
+        if (trimmedLocalidad.length > LOCALIDAD_MAX_LENGTH) {
+            return res.status(400).json({ error: `La localidad no puede superar los ${LOCALIDAD_MAX_LENGTH} caracteres.` });
+        }
+
+    }
+
+    const fields = [];
+    const values = [];
+
+    if (hasAlias) { fields.push("alias_publico = ?"); values.push(trimmedAlias); }
+    // "" (vaciar el campo desde Editar perfil) se guarda como NULL, no
+    // como cadena vacía -- mismo "sin dato real" que el resto de la app,
+    // nunca una cadena vacía que luego el hero tendría que tratar como
+    // "no hay localidad" en un sitio aparte.
+    if (hasLocalidad) { fields.push("localidad = ?"); values.push(trimmedLocalidad || null); }
+
+    values.push(req.userId);
+
+    await pool.execute(`UPDATE users SET ${fields.join(", ")} WHERE id = ?`, values);
+
+    const responseBody = {};
+    if (hasAlias) responseBody.aliasPublico = trimmedAlias;
+    if (hasLocalidad) responseBody.localidad = trimmedLocalidad || null;
+
+    res.json(responseBody);
 
 }
 

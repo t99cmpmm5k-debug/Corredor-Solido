@@ -843,7 +843,23 @@ function RunningAnalysisSection(content) {
 // carreras — versión compacta de RunningShoesScreen.js (que sigue siendo
 // la única pantalla para añadir/retirar/subir foto). "" si no hay ninguna
 // zapatilla, igual que RunningProgressCard: nada que mostrar, nada inventado.
-function RunningShoeMileageSummary(shoes) {
+// Exportada: Profile.js (sección "Equipamiento", rediseño 2026-09-25) la
+// reutiliza tal cual -- ni la duplica ni la reimplementa -- para no tener
+// dos fuentes de verdad de "qué es el kilometraje de una zapatilla".
+//
+// `action` parametrizable a propósito: initRunningEvents.js engancha
+// TODOS los "[data-action='open-shoes']" del documento con
+// querySelectorAll, sin distinguir de qué página vienen (se llama en
+// CADA render de la app, no solo en Running, ver core/render.js) -- si
+// Profile.js pintara el mismo data-action tal cual, ese wiring genérico
+// también lo engancharía y dispararía openShoes() (cambia el wizardStep
+// de Running y hace rerender(), que en Profile no pinta nada porque
+// Profile no mira ese estado) A LA VEZ que el propio handler de
+// Profile (navigate(Running) + openShoes(), initProfileEvents.js) -- dos
+// pushState por un solo toque, uno de ellos fantasma. Con un action
+// distinto desde Profile, el querySelectorAll de Running ya no lo
+// encuentra, y solo corre el handler propio de Profile.
+export function RunningShoeMileageSummary(shoes, { action = "open-shoes" } = {}) {
 
     const active = shoes.filter(s => s.status !== "retired");
     if (!active.length) return "";
@@ -859,7 +875,7 @@ function RunningShoeMileageSummary(shoes) {
 
     return `
 
-        <div class="shoe-mileage-summary" data-action="open-shoes">
+        <div class="shoe-mileage-summary" data-action="${action}">
 
             <div class="shoe-mileage-header">
 

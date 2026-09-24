@@ -5,7 +5,7 @@ const getComunidadTabMock = vi.fn();
 const getComunidadEntrenosMock = vi.fn();
 const getComunidadRouteDetailMock = vi.fn();
 const getComunidadRouteDetailErrorMock = vi.fn();
-const getMyAliasMock = vi.fn();
+const getMyProfileMock = vi.fn();
 const getComunidadActivityTypeFilterMock = vi.fn();
 const getComunidadRankingPeriodMock = vi.fn();
 const isComunidadDetailMapExpandedMock = vi.fn();
@@ -22,7 +22,7 @@ vi.mock("./comunidadStore.js", () => ({
 }));
 
 vi.mock("../Profile/profileStore.js", () => ({
-    getMyAlias: () => getMyAliasMock()
+    getMyProfile: () => getMyProfileMock()
 }));
 
 // Bug real corregido: el mapa fullscreen del detalle (RouteMapFullscreenOverlay)
@@ -45,7 +45,7 @@ describe("Comunidad -- feed de Actividad y detalle son mutuamente excluyentes", 
         });
         getComunidadRouteDetailMock.mockReset().mockReturnValue({ status: "closed" });
         getComunidadRouteDetailErrorMock.mockReset().mockReturnValue(null);
-        getMyAliasMock.mockReset().mockReturnValue({ status: "idle", value: null });
+        getMyProfileMock.mockReset().mockReturnValue({ status: "idle", aliasPublico: null, localidad: null, createdAt: null });
         getComunidadActivityTypeFilterMock.mockReset().mockReturnValue("");
         isComunidadDetailMapExpandedMock.mockReset().mockReturnValue(false);
     });
@@ -151,7 +151,7 @@ describe("Comunidad -- pestaña Ranking (Fase 2)", () => {
             status: "ready",
             entrenos: [{ alias: "Rafa", id: "w1", type: "long", date: "2026-09-20", distanceKm: 20 }]
         });
-        getMyAliasMock.mockReset().mockReturnValue({ status: "ready", value: "Rafa" });
+        getMyProfileMock.mockReset().mockReturnValue({ status: "ready", aliasPublico: "Rafa", localidad: null, createdAt: null });
 
         const { Comunidad } = await import("./Comunidad.js");
         const html = Comunidad();
@@ -169,7 +169,7 @@ describe("Comunidad -- pestaña Ranking (Fase 2)", () => {
             status: "ready",
             entrenos: [{ alias: "Ana", id: "w1", type: "long", date: "2026-09-20", distanceKm: 20 }]
         });
-        getMyAliasMock.mockReset().mockReturnValue({ status: "idle", value: null });
+        getMyProfileMock.mockReset().mockReturnValue({ status: "idle", aliasPublico: null, localidad: null, createdAt: null });
 
         const { Comunidad } = await import("./Comunidad.js");
         const html = Comunidad();
@@ -186,7 +186,7 @@ describe("Comunidad -- pestaña Actividad (Fase 3a)", () => {
         getComunidadTabMock.mockReset().mockReturnValue("actividad");
         getComunidadRouteDetailMock.mockReset().mockReturnValue({ status: "closed" });
         getComunidadRouteDetailErrorMock.mockReset().mockReturnValue(null);
-        getMyAliasMock.mockReset().mockReturnValue({ status: "idle", value: null });
+        getMyProfileMock.mockReset().mockReturnValue({ status: "idle", aliasPublico: null, localidad: null, createdAt: null });
         getComunidadActivityTypeFilterMock.mockReset().mockReturnValue("");
     });
 

@@ -95,8 +95,18 @@ export function getPerfil(authToken) {
 
 }
 
-export function actualizarAliasPublico(authToken, aliasPublico) {
+// aliasPublico/localidad, cada uno opcional (Perfil, rediseño 2026-09-25:
+// el hero edita los dos a la vez, pero el mecanismo tiene que servir
+// también para tocar solo uno) -- solo se manda al body el campo que de
+// verdad se pasó, nunca `undefined` explícito (el backend distingue "no
+// venía este campo" de "se mandó vacío", ver updatePerfil() en
+// server/src/routes/auth.js).
+export function actualizarPerfil(authToken, { aliasPublico, localidad } = {}) {
 
-    return authRequest("perfil", { aliasPublico }, { method: "PATCH", token: authToken });
+    const body = {};
+    if (aliasPublico !== undefined) body.aliasPublico = aliasPublico;
+    if (localidad !== undefined) body.localidad = localidad;
+
+    return authRequest("perfil", body, { method: "PATCH", token: authToken });
 
 }

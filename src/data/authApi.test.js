@@ -4,7 +4,7 @@ function jsonResponse(body, ok = true, status = 200) {
     return { ok, status, json: () => Promise.resolve(body) };
 }
 
-describe("getPerfil/actualizarAliasPublico -- cliente de GET/PATCH /api/auth/perfil", () => {
+describe("getPerfil/actualizarPerfil -- cliente de GET/PATCH /api/auth/perfil", () => {
 
     afterEach(() => {
         vi.unstubAllGlobals();
@@ -28,13 +28,13 @@ describe("getPerfil/actualizarAliasPublico -- cliente de GET/PATCH /api/auth/per
 
     });
 
-    it("actualizarAliasPublico manda PATCH con el alias en el cuerpo y el Authorization Bearer", async () => {
+    it("actualizarPerfil manda PATCH solo con el alias en el cuerpo si es lo único que se pasa", async () => {
 
         const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ aliasPublico: "Rafa Runner" }));
         vi.stubGlobal("fetch", fetchMock);
 
-        const { actualizarAliasPublico } = await import("./authApi.js");
-        const result = await actualizarAliasPublico("token-real", "Rafa Runner");
+        const { actualizarPerfil } = await import("./authApi.js");
+        const result = await actualizarPerfil("token-real", { aliasPublico: "Rafa Runner" });
 
         expect(result).toEqual({ aliasPublico: "Rafa Runner" });
 
@@ -45,13 +45,39 @@ describe("getPerfil/actualizarAliasPublico -- cliente de GET/PATCH /api/auth/per
 
     });
 
+    it("actualizarPerfil manda PATCH solo con la localidad si es lo único que se pasa -- sin aliasPublico en el body", async () => {
+
+        const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ localidad: "Murcia" }));
+        vi.stubGlobal("fetch", fetchMock);
+
+        const { actualizarPerfil } = await import("./authApi.js");
+        await actualizarPerfil("token-real", { localidad: "Murcia" });
+
+        const [, options] = fetchMock.mock.calls[0];
+        expect(JSON.parse(options.body)).toEqual({ localidad: "Murcia" });
+
+    });
+
+    it("actualizarPerfil manda los dos campos juntos cuando los dos se pasan", async () => {
+
+        const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ aliasPublico: "Rafa", localidad: "Murcia" }));
+        vi.stubGlobal("fetch", fetchMock);
+
+        const { actualizarPerfil } = await import("./authApi.js");
+        await actualizarPerfil("token-real", { aliasPublico: "Rafa", localidad: "Murcia" });
+
+        const [, options] = fetchMock.mock.calls[0];
+        expect(JSON.parse(options.body)).toEqual({ aliasPublico: "Rafa", localidad: "Murcia" });
+
+    });
+
     it("con un 400 real del servidor (alias inválido), lanza con el mensaje real del backend", async () => {
 
         vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ error: "El alias debe tener entre 2 y 50 caracteres." }, false, 400)));
 
-        const { actualizarAliasPublico } = await import("./authApi.js");
+        const { actualizarPerfil } = await import("./authApi.js");
 
-        await expect(actualizarAliasPublico("token-real", "A")).rejects.toThrow("El alias debe tener entre 2 y 50 caracteres.");
+        await expect(actualizarPerfil("token-real", { aliasPublico: "A" })).rejects.toThrow("El alias debe tener entre 2 y 50 caracteres.");
 
     });
 

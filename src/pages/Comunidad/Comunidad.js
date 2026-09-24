@@ -13,7 +13,7 @@ import { chartSplits, MIN_SPLITS_FOR_CHART } from "../Running/components/Running
 import { RUNNING_WORKOUT_TYPES } from "../../data/runningWorkoutTypes.js";
 import { formatDayMonth } from "../../utils/date.js";
 import { formatKm, formatSecondsAsClock } from "../../utils/format.js";
-import { getMyAlias } from "../Profile/profileStore.js";
+import { getMyProfile } from "../Profile/profileStore.js";
 
 const TAB_LABELS = {
     actividad: "Actividad",
@@ -319,13 +319,15 @@ function ComunidadRouteDetailOverlay() {
 // Las 2 pestañas son ya funcionales, sobre LA MISMA lista de entrenos ya
 // cargada (getComunidadEntrenos(), una única petición real por sesión) --
 // ninguna dispara una llamada propia al backend. Ranking añade el alias
-// propio (getMyAlias(), Profile/profileStore.js) para resaltar la fila del
-// usuario -- null si todavía no configuró uno en Perfil, caso en el que
-// simplemente no se resalta ninguna fila (nunca se adivina cuál sería).
-// Actividad añade su propio filtro por tipo (comunidadStore.js).
+// propio (getMyProfile(), Profile/profileStore.js -- perfil real completo
+// desde el rediseño de Perfil, aquí solo interesa aliasPublico) para
+// resaltar la fila del usuario -- null si todavía no configuró uno en
+// Perfil, caso en el que simplemente no se resalta ninguna fila (nunca se
+// adivina cuál sería). Actividad añade su propio filtro por tipo
+// (comunidadStore.js).
 function ComunidadTabContent(activeTab) {
 
-    if (activeTab === "ranking") return ComunidadRankingView(getComunidadEntrenos(), getMyAlias().value ?? null, getComunidadRankingPeriod());
+    if (activeTab === "ranking") return ComunidadRankingView(getComunidadEntrenos(), getMyProfile().aliasPublico ?? null, getComunidadRankingPeriod());
 
     return ComunidadActividadView(getComunidadEntrenos(), getComunidadActivityTypeFilter());
 

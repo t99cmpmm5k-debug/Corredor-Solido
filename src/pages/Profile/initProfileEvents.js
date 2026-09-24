@@ -1,10 +1,12 @@
 import { navigate, rerender } from "../../core/router.js";
 import { exportData, importDataFromFile } from "../../utils/backup.js";
-import { setFeedback, loadMyAlias, setMyAlias } from "./profileStore.js";
+import { setFeedback, loadMyProfile, setMyProfile, isEditOpen, setEditOpen, setEditError, getProfileStep, setProfileStep } from "./profileStore.js";
 import { clearToken, getToken } from "../../data/authStore.js";
 import { runSync } from "../../data/syncManager.js";
-import { actualizarAliasPublico } from "../../data/authApi.js";
+import { actualizarPerfil } from "../../data/authApi.js";
 import { Login } from "../Auth/Auth.js";
+import { Running } from "../Running/Running.js";
+import { openShoes } from "../Running/initRunningEvents.js";
 
 function handleExport() {
 
@@ -55,7 +57,7 @@ function handleSyncNow() {
         // "unauthorized" ya lo resuelve runSync() por su cuenta
         // (clearToken() + navigate(Login), ver syncManager.js) -- para
         // cuando la promesa resuelve ya estamos en otra pantalla, así que
-        // no hay banner de Perfil que mostrar ni falta re-renderizar aquí.
+        // no hay banner de Ajustes que mostrar ni falta re-renderizar aquí.
         if (status === "unauthorized") return;
 
         setFeedback(SYNC_STATUS_FEEDBACK[status] || null);
@@ -65,51 +67,125 @@ function handleSyncNow() {
 
 }
 
-// Input sin controlar, leído del DOM al guardar -- mismo patrón que
-// saveNewRoute() en Running/initRunningEvents.js (nunca wirear un input de
-// texto libre a rerender() en cada tecla: sin vDOM, cada rerender()
-// reemplaza app.innerHTML entero y cierra el teclado del móvil a media
-// palabra, bug real ya corregido en otro sitio -- ver
-// feedback_controlled_input_rerender_bug).
-function handleSaveAliasPublico() {
+// "Editar perfil" (hero) -- alias y localidad SIEMPRE juntos en el mismo
+// PATCH (ver actualizarPerfil en authApi.js), aunque solo se haya tocado
+// uno de los dos: localidad "" (campo vaciado y guardado) se envía tal
+// cual -- el backend la guarda como NULL, no como cadena vacía (ver
+// updatePerfil en server/src/routes/auth.js). Alias vacío no llega a
+// mandarse -- comprobación local mínima, el resto de validación (longitud
+// mín/máx) la hace el servidor y su mensaje real se muestra tal cual.
+function handleSaveProfile() {
 
-    const value = document.querySelector('[data-field="alias-publico"]')?.value.trim();
-    if (!value) return;
+    const alias = document.querySelector('[data-field="edit-alias"]')?.value.trim() ?? "";
+    const localidad = document.querySelector('[data-field="edit-localidad"]')?.value.trim() ?? "";
 
-    setFeedback(null);
+    if (!alias) {
+        setEditError("El alias no puede estar vacío.");
+        rerender();
+        return;
+    }
+
+    setEditError(null);
     rerender();
 
-    actualizarAliasPublico(getToken(), value).then(data => {
+    actualizarPerfil(getToken(), { aliasPublico: alias, localidad }).then(data => {
 
-        setMyAlias(data.aliasPublico);
-        setFeedback({ type: "success", text: "Alias público guardado." });
+        setMyProfile(data);
+        setEditOpen(false);
         rerender();
 
     }).catch(err => {
 
-        setFeedback({ type: "error", text: err.message || "No se pudo guardar el alias." });
+        setEditError(err.message || "No se pudo guardar el perfil.");
         rerender();
 
     });
 
 }
 
+const SETTINGS_HISTORY_STATE = { profileSettings: true };
+
+function openProfileSettings() {
+
+    setProfileStep("settings");
+
+    // Sin esto, el gesto de atrás del móvil no tiene una entrada de
+    // historial propia que consumir y se sale directo de la app -- mismo
+    // patrón que openDetail()/openShoes() en Running/initRunningEvents.js.
+    history.pushState(SETTINGS_HISTORY_STATE, "");
+
+    rerender();
+
+}
+
+function closeProfileSettings() {
+
+    if (history.state?.profileSettings) {
+        history.back();
+        return;
+    }
+
+    setProfileStep("idle");
+    rerender();
+
+}
+
+// Registrado una sola vez a nivel de módulo (no dentro de
+// initProfileEvents, que se vuelve a llamar en cada render) -- mismo
+// motivo que el listener equivalente de Running: si no, se acumularía un
+// listener de window por cada rerender.
+window.addEventListener("popstate", () => {
+
+    if (getProfileStep() === "settings") {
+        setProfileStep("idle");
+        rerender();
+    }
+
+});
+
 export function initProfileEvents() {
 
-    // Solo pide el alias actual la primera vez que de verdad se visita
+    // Solo pide el perfil real la primera vez que de verdad se visita
     // Perfil (esta función corre tras CUALQUIER render de la app, ver
-    // core/render.js) -- loadMyAlias() es idempotente (una sola petición
-    // real por sesión, mismo criterio que loadHourlyWeather()), así que
-    // esto nunca dispara una segunda petición si ya se cargó antes.
+    // core/render.js) -- loadMyProfile() es idempotente (una sola
+    // petición real por sesión, mismo criterio que loadHourlyWeather()),
+    // así que esto nunca dispara una segunda petición si ya se cargó antes.
     if (document.querySelector(".profile")) {
-        loadMyAlias();
+        loadMyProfile();
     }
 
-    const aliasButton = document.querySelector('[data-action="save-alias-publico"]');
+    document.querySelector('[data-action="toggle-edit-profile"]')?.addEventListener("click", () => {
+        setEditOpen(!isEditOpen());
+        rerender();
+    });
 
-    if (aliasButton) {
-        aliasButton.addEventListener("click", handleSaveAliasPublico);
-    }
+    // Botón "Editar" de la sección Comunidad -- abre el mismo formulario
+    // del hero (nunca lo cierra, a diferencia del toggle de arriba) y baja
+    // el scroll hasta él, porque vive lejos de este botón (ver comentario
+    // de ProfileCommunitySection en Profile.js).
+    document.querySelector('[data-action="edit-profile-from-community"]')?.addEventListener("click", () => {
+        setEditOpen(true);
+        rerender();
+        document.querySelector(".profile-hero")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+
+    document.querySelector('[data-action="cancel-edit-profile"]')?.addEventListener("click", () => {
+        setEditOpen(false);
+        rerender();
+    });
+
+    document.querySelector('[data-action="save-edit-profile"]')?.addEventListener("click", handleSaveProfile);
+
+    // Botón propio de Equipamiento (Perfil) -- distinto de
+    // "[data-action='open-shoes']" (el de Running) a propósito, ver el
+    // comentario junto a RunningShoeMileageSummary() en Running.js.
+    document.querySelector('[data-action="profile-open-shoes"]')?.addEventListener("click", () => {
+        navigate(Running);
+        openShoes();
+    });
+
+    document.querySelector('[data-action="open-profile-settings"]')?.addEventListener("click", openProfileSettings);
+    document.querySelector('[data-action="close-profile-settings"]')?.addEventListener("click", closeProfileSettings);
 
     const syncButton = document.querySelector('[data-action="sync-now"]');
 

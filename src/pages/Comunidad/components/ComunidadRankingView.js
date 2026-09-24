@@ -250,7 +250,7 @@ function ComunidadRankingTable(title, subtitle, rows, formatValue, myAlias, { sh
 
 // entrenosState: {status, entrenos} de comunidadStore.js -- LA MISMA lista
 // ya cargada para Actividad (sin ninguna llamada nueva al backend); myAlias:
-// string|null (getMyAlias().value); period: "week"/"month"/"all"
+// string|null (getMyProfile().aliasPublico); period: "week"/"month"/"all"
 // (getComunidadRankingPeriod(), comunidadStore.js).
 export function ComunidadRankingView(entrenosState, myAlias, period = "week") {
 
