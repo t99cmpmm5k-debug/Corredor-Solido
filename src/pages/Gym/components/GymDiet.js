@@ -84,6 +84,29 @@ function FreeLogButton() {
 
 }
 
+// Hora del intento: dos intentos seguidos con el mismo archivo y los
+// mismos errores se distinguen en pantalla.
+function AttemptTime(state) {
+
+    return state.attemptAt ? ` <span class="gym-diet-attempt">(${new Date(state.attemptAt).toLocaleTimeString("es-ES")})</span>` : "";
+
+}
+
+function ImportSuccess(state) {
+
+    if (state.importedFileName == null) return "";
+
+    return `
+
+        <div class="gym-diet-success" role="status" data-diet-import-feedback>
+            <iconify-icon icon="solar:check-circle-bold-duotone"></iconify-icon>
+            <p><strong>Dieta importada</strong>${state.importedFileName ? `: «${escapeHtml(state.importedFileName)}»` : ""}${AttemptTime(state)}</p>
+        </div>
+
+    `;
+
+}
+
 // Todos los errores del CSV rechazado, con su línea: no se importa nada
 // hasta que el archivo encaja entero.
 function ImportErrors(state) {
@@ -92,8 +115,8 @@ function ImportErrors(state) {
 
     return `
 
-        <div class="gym-builder-error gym-diet-errors" role="alert">
-            <p><strong>No se ha importado ${state.fileName ? `«${escapeHtml(state.fileName)}»` : "el archivo"}</strong>: no sigue la plantilla. Corrige esto y vuelve a elegirlo:</p>
+        <div class="gym-builder-error gym-diet-errors" role="alert" data-diet-import-feedback>
+            <p><strong>No se ha importado ${state.fileName ? `«${escapeHtml(state.fileName)}»` : "el archivo"}</strong>${AttemptTime(state)}: no sigue la plantilla. Corrige esto y vuelve a elegirlo:</p>
             <ul>
                 ${state.errors.map(e => `<li>${e.line ? `<b>Línea ${e.line}</b>: ` : ""}${escapeHtml(e.message)}</li>`).join("")}
             </ul>
@@ -420,6 +443,8 @@ export function GymDiet(date) {
     const compliance = day ? computeDayCompliance(day, eaten) : null;
 
     return `
+
+        ${ImportSuccess(state)}
 
         ${showPicker ? WeekendPicker(date, longRunDay) : ""}
 

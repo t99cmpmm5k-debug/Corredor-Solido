@@ -490,8 +490,7 @@ describe("backup.js / sync -- dieta de la plantilla CSV (en el sync desde el pri
         await store.hydrate();
         const backup = await import("./backup.js");
 
-        const csv = ["dia,momento,opcion,alimento,notas", ...["LUNES", "MARTES", "MIERCOLES", "JUEVES", "VIERNES", "TIRADA_LARGA", "DESCANSO"].map(d => `${d},09:00,1,avena 35 g,`)].join("
-");
+        const csv = ["dia,momento,opcion,alimento,notas", ...["LUNES", "MARTES", "MIERCOLES", "JUEVES", "VIERNES", "TIRADA_LARGA", "DESCANSO"].map(d => `${d},09:00,1,avena 35 g,`)].join(String.fromCharCode(10));
         const plan = store.importDietPlan(parseDietCsv(csv).plan);
         store.toggleMealEaten("2026-09-24", plan.id, "JUEVES|09:00", "JUEVES|09:00|1");
         store.setWeekendLongRunDay("2026-09-24", "domingo");

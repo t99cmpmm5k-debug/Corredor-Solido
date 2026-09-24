@@ -49,7 +49,7 @@ const store = {
     // selector de fin de semana reabierto con "Cambiar", y el borrado de la
     // dieta por confirmar con un segundo toque.
     nutritionView: "dieta",
-    dietImport: { errors: [], fileName: null },
+    dietImport: { errors: [], fileName: null, importedFileName: null, attemptAt: null },
     dietWeekendPickerOpen: false,
     dietDeletePending: false,
     // Secciones plegables de Mi dieta (Notas generales, Gestionar): su
@@ -447,6 +447,8 @@ export function getNutritionView() {
 export function setNutritionView(view) {
 
     store.nutritionView = view;
+    // El aviso de "Dieta importada" no sobrevive a cambiar de vista.
+    store.dietImport = { ...store.dietImport, importedFileName: null };
     store.dietWeekendPickerOpen = false;
     store.dietDeletePending = false;
 
@@ -460,7 +462,7 @@ export function getDietImport() {
 
 export function setDietImport(state) {
 
-    store.dietImport = { errors: [], fileName: null, ...state };
+    store.dietImport = { errors: [], fileName: null, importedFileName: null, attemptAt: null, ...state };
 
 }
 

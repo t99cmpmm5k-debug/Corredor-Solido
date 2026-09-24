@@ -6,31 +6,50 @@ import { setDietImport, setDietWeekendPickerOpen, isDietDeletePending, setDietDe
 
 // Eventos de "Mi dieta" (ver GymDiet.js).
 
+// Cada intento deja SIEMPRE un resultado visible y distinto del anterior:
+// los errores llevan la hora del intento (reintentar con un archivo que
+// sigue fallando igual, mismo nombre incluido, pintaba exactamente la
+// misma pantalla y parecía que no pasaba nada), el éxito un aviso propio,
+// y se lleva la vista hasta él ("Gestionar dieta" queda abajo del todo).
 async function importCsvFile(file) {
 
-    let text;
+    const fileName = file.name || null;
+    const attemptAt = new Date().toISOString();
 
     try {
-        text = await file.text();
-    } catch {
-        setDietImport({ errors: [{ line: null, message: "No se ha podido leer el archivo." }], fileName: file.name });
+
+        let text;
+
+        try {
+            text = await file.text();
+        } catch {
+            setDietImport({ errors: [{ line: null, message: "No se ha podido leer el archivo." }], fileName, attemptAt });
+            return;
+        }
+
+        const { plan, errors } = parseDietCsv(text);
+
+        // Rechazado entero: se explican todos los errores y no se toca nada
+        // (la dieta anterior, si la hay, sigue activa).
+        if (errors) {
+            setDietImport({ errors, fileName, attemptAt });
+        } else {
+            importDietPlan(plan, { fileName });
+            setDietImport({ importedFileName: fileName ?? "", attemptAt });
+            setDietDeletePending(false);
+        }
+
+    } catch (err) {
+
+        console.error("Error inesperado al importar la dieta", err);
+        setDietImport({ errors: [{ line: null, message: "Ha fallado algo inesperado al importar el archivo. Vuelve a intentarlo." }], fileName, attemptAt });
+
+    } finally {
+
         rerender();
-        return;
+        document.querySelector("[data-diet-import-feedback]")?.scrollIntoView({ block: "center", behavior: "smooth" });
+
     }
-
-    const { plan, errors } = parseDietCsv(text);
-
-    // Rechazado entero: se explican todos los errores y no se toca nada
-    // (la dieta anterior, si la hay, sigue activa).
-    if (errors) {
-        setDietImport({ errors, fileName: file.name });
-    } else {
-        importDietPlan(plan, { fileName: file.name || null });
-        setDietImport({});
-        setDietDeletePending(false);
-    }
-
-    rerender();
 
 }
 
@@ -56,6 +75,9 @@ export function initGymDietEvents() {
 
         input.addEventListener("change", () => {
             const file = input.files?.[0];
+            // Vaciado ya: si no, volver a elegir el mismo archivo no
+            // dispara "change".
+            input.value = "";
             if (file) importCsvFile(file);
         });
 

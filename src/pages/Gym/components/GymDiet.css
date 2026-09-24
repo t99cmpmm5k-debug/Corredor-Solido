@@ -75,6 +75,41 @@
 
 }
 
+.gym-diet-attempt{
+
+    font-weight:400;
+    opacity:.75;
+
+}
+
+.gym-diet-success{
+
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:12px 16px;
+    border-radius:var(--radius-md);
+    background:color-mix(in srgb, var(--color-success) 14%, transparent);
+    border:1px solid color-mix(in srgb, var(--color-success) 35%, transparent);
+    color:var(--text-primary);
+    font-size:.88rem;
+
+}
+
+.gym-diet-success iconify-icon{
+
+    flex-shrink:0;
+    font-size:1.3rem;
+    color:var(--color-success);
+
+}
+
+.gym-diet-success p{
+
+    margin:0;
+
+}
+
 .gym-diet-weekend .gym-bodycomp-title{
 
     display:flex;
