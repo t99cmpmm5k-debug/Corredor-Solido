@@ -1,24 +1,26 @@
 import "./GymHeader.css";
 
-import { GYM_HERO_IMAGES } from "../../../assets/gym/index.js";
+import { themeManager } from "../../../theme/themeManager.js";
+import { GYM_IMAGES, GYM_NUTRITION_IMAGE } from "../../../assets/gym/index.js";
 
-// Hero de Gimnasio (mockup de rediseño, 2026-09-24): "GYM" + "Más fuerte.
-// Más sólido." sobre una foto que depende de la PESTAÑA activa, no de la
-// hora -- mismo patrón de hero con foto que Comunidad/Running, cambiando
-// solo qué decide la foto. Entrenamiento para Rutinas y Composición
-// corporal, un plato de comida para Nutrición.
+// Hero de Gimnasio: "GYM" + "Más fuerte. Más sólido." sobre una foto.
+// - Rutinas y Composición corporal: la foto-por-tema propia de Gimnasio,
+//   mismo mecanismo que PlanHeader.js/RunningHeader.js (themeManager decide
+//   el tema según la hora, GYM_IMAGES la foto).
+// - Nutrición: una foto fija de un plato de comida, a cualquier hora.
 export function GymHeader(tab = "rutinas") {
 
-    const hero = tab === "nutricion" ? "nutrition" : "training";
+    const nutrition = tab === "nutricion";
+    const theme = themeManager.getTheme();
 
     return `
 
-        <header class="gym-header" data-hero="${hero}">
+        <header class="gym-header" data-hero="${nutrition ? "nutrition" : "theme"}">
 
             <img
                 class="gym-background-image"
-                data-hero="${hero}"
-                src="${GYM_HERO_IMAGES[hero]}"
+                ${nutrition ? `data-hero="nutrition"` : `data-theme-id="${theme.id}"`}
+                src="${nutrition ? GYM_NUTRITION_IMAGE : GYM_IMAGES[theme.id]}"
                 alt=""
             >
 

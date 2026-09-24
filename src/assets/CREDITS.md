@@ -1,11 +1,11 @@
 # Créditos de imágenes
 
-## Gimnasio — hero por pestaña (`src/assets/gym/`)
+## Gimnasio — hero de Nutrición (`src/assets/gym/`)
 
-- `gym-hero-training.jpg` (Rutinas / Composición corporal): *James J. Corbett with punching bag*, Paul Thompson (Library of Congress, cph.19131). **Dominio público.** Recortado y redimensionado.
-  https://commons.wikimedia.org/wiki/File:James_J._Corbett_with_punching_bag_cph.19131.jpg
-- `gym-hero-nutrition.jpg` (Nutrición): *Poke Bowl Kuřecí Maso*, Mojmir Churavy. **CC0.** Recortado y redimensionado.
+- `gym-hero-nutrition.jpg`: *Poke Bowl Kuřecí Maso*, Mojmir Churavy. **CC0.** Recortado y redimensionado.
   https://commons.wikimedia.org/wiki/File:Poke_Bowl_Kureci_Maso_Zlaty_Klas_2025.jpg
+
+(Rutinas y Composición corporal usan las fotos por hora propias de Gimnasio, `gym-hero-morning/day/evening/night.jpg`, anteriores a este archivo.)
 
 ## Nutrición — imágenes de las tarjetas de comida (`src/assets/food/`)
 

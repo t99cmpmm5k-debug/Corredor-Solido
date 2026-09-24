@@ -52,10 +52,11 @@
 
 }
 
-/* Boxeador a la derecha, como la silueta del mockup. */
-.gym-background-image[data-hero="training"]{
+/* Foto por tema (Rutinas y Composición corporal). Las 4 son retratos a
+   lo ancho: solo se puede elegir qué franja VERTICAL se ve. */
+.gym-background-image[data-theme-id]{
 
-    object-position:78% 30%;
+    object-position:center 0%;
 
 }
 
@@ -233,5 +234,13 @@
     transform:scale(1.05);
 
     border-color:var(--color-primary);
+
+}
+
+/* night: con 0% el atleta queda casi fuera de cuadro (solo se ve el
+   foco); con 30% la cabeza cae detrás de la isla dinámica. */
+.gym-background-image[data-theme-id="night"]{
+
+    object-position:center 14%;
 
 }
