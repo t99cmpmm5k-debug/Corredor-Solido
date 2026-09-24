@@ -2697,3 +2697,170 @@
     cursor:pointer;
 
 }
+
+/* =========================
+   SECCIÓN "ANÁLISIS" (plegable)
+========================= */
+
+/* Mismo patrón que las secciones plegables de Mi dieta (GymDiet.css):
+   <details> nativo, marcador oculto y flecha que gira al abrir. */
+.running-analysis-section{
+
+    border-radius:var(--radius-lg);
+
+    background:color-mix(in srgb, var(--card-background) 70%, transparent);
+
+    border:1px solid var(--card-border);
+
+}
+
+.running-analysis-section summary{
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:space-between;
+
+    gap:10px;
+
+    padding:14px 16px;
+
+    list-style:none;
+
+    cursor:pointer;
+
+}
+
+.running-analysis-section summary::-webkit-details-marker{
+
+    display:none;
+
+}
+
+.running-analysis-title{
+
+    display:inline-flex;
+
+    align-items:center;
+
+    gap:8px;
+
+    font-size:.8rem;
+
+    font-weight:800;
+
+    letter-spacing:.08em;
+
+    text-transform:uppercase;
+
+    color:var(--text-primary);
+
+}
+
+.running-analysis-title iconify-icon{
+
+    font-size:1.15rem;
+
+    color:var(--color-primary);
+
+}
+
+/* Tamaño explícito: como elemento flex del <summary> el icono se quedaba
+   en 0×0 en WebKit (mismo arreglo que .gym-diet-section). */
+.running-analysis-section summary > iconify-icon{
+
+    flex-shrink:0;
+
+    display:inline-flex;
+
+    width:20px;
+
+    height:20px;
+
+    font-size:20px;
+
+    color:var(--text-secondary);
+
+    transition:transform .2s;
+
+}
+
+.running-analysis-section[open] summary > iconify-icon{
+
+    transform:rotate(180deg);
+
+}
+
+.running-analysis-body{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:16px;
+
+    padding:0 12px 12px;
+
+}
+
+/* Pestañas de la tarjeta "Evolución" (Z2 | Series | Tempo). */
+.running-evolution-tabs{
+
+    display:flex;
+
+    gap:6px;
+
+    padding:4px;
+
+    margin-bottom:-6px;
+
+    border-radius:999px;
+
+    background:color-mix(in srgb, var(--card-background) 70%, transparent);
+
+    border:1px solid var(--card-border);
+
+}
+
+.running-evolution-tab{
+
+    flex:1;
+
+    padding:8px 10px;
+
+    border:none;
+
+    border-radius:999px;
+
+    background:transparent;
+
+    color:var(--text-secondary);
+
+    font:inherit;
+
+    font-size:.8rem;
+
+    font-weight:700;
+
+    cursor:pointer;
+
+}
+
+.running-evolution-tab.is-active{
+
+    background:color-mix(in srgb, var(--color-primary) 28%, transparent);
+
+    color:var(--text-primary);
+
+    box-shadow:0 0 12px color-mix(in srgb, var(--color-glow) 35%, transparent);
+
+}
+
+.shoe-mileage-more{
+
+    font-size:.75rem;
+
+    color:var(--text-secondary);
+
+}

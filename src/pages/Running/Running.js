@@ -52,7 +52,9 @@ import {
     getRouteMenuOpenId,
     getConfirmingSuggestion,
     getRouteSortColumn,
-    getRouteSortDirection
+    getRouteSortDirection,
+    isAnalysisOpen,
+    getEvolutionTab
 } from "./runningStore.js";
 
 import { RunningUploadStep } from "./components/RunningUploadStep.js";
@@ -610,7 +612,7 @@ function formatEvolutionPace(avgPaceSecPerKm) {
 // un único tipo de esfuerzo homogéneo.
 //
 // EVOLUTION_TYPE_CONFIG.easy es literalmente el texto que ya existía --
-// Z2EvolutionCard() sigue llamando a TypeEvolutionCard() con esta misma
+// la pestaña Z2 de EvolutionTabsCard() sigue llamando a TypeEvolutionCard() con esta misma
 // config, mismo aspecto y comportamiento que antes de generalizar.
 const EVOLUTION_TYPE_CONFIG = {
 
@@ -646,7 +648,7 @@ const EVOLUTION_TYPE_CONFIG = {
 // Series y Tempo se ocultan por completo sin historial suficiente (en vez
 // de mostrar su mensaje "Necesitas más...", ver RunningIdleView) para no
 // saturar la pantalla con varios bloques casi vacíos a la vez -- Z2 es la
-// excepción deliberada (ver Z2EvolutionCard): es el tipo con más volumen
+// excepción deliberada (ver EvolutionTabsCard): es el tipo con más volumen
 // esperado y el más consolidado de los tres, así que se mantiene siempre
 // visible tal cual estaba antes de esta generalización.
 const EXTRA_EVOLUTION_TYPES = ["series", "tempo"];
@@ -745,13 +747,75 @@ function TypeEvolutionCard(evolution, config) {
 
 }
 
-// Con menos de 2 Rodajes (Z2) reales no hay nada que comparar -- se dice
-// así en vez de ocultar el bloque entero (mismo criterio que el resto de
-// tarjetas "no disponible" de esta pantalla, ver AcwrCard). A diferencia
-// de Series/Tempo (ver EXTRA_EVOLUTION_TYPES), Z2 nunca se oculta -- sin
-// cambios respecto a como estaba antes de generalizar el motor.
-function Z2EvolutionCard(evolution) {
-    return TypeEvolutionCard(evolution, EVOLUTION_TYPE_CONFIG.easy);
+const EVOLUTION_TAB_LABELS = { easy: "Z2", series: "Series", tempo: "Tempo" };
+
+// Una sola tarjeta "Evolución" con pestañas en vez de las tres apiladas.
+// Mismas reglas de siempre para qué aparece: Z2 siempre (aunque sea con su
+// "Necesitas más..."), Series/Tempo solo con historial suficiente. Con
+// una sola pestaña posible no se pinta el selector. Si la pestaña guardada
+// ya no está disponible, se cae a Z2.
+function EvolutionTabsCard(z2Evolution, extraEvolutions, activeTab) {
+
+    const tabs = [{ type: "easy", evolution: z2Evolution }, ...extraEvolutions];
+    const current = tabs.find(t => t.type === activeTab) ?? tabs[0];
+
+    return `
+
+        ${tabs.length > 1 ? `
+
+            <div class="running-evolution-tabs" role="tablist" aria-label="Evolución">
+
+                ${tabs.map(({ type }) => `
+
+                    <button class="running-evolution-tab ${type === current.type ? "is-active" : ""}" role="tab" aria-selected="${type === current.type}" data-action="set-evolution-tab" data-tab="${type}">${EVOLUTION_TAB_LABELS[type]}</button>
+
+                `).join("")}
+
+            </div>
+
+        ` : ""}
+
+        ${TypeEvolutionCard(current.evolution, EVOLUTION_TYPE_CONFIG[current.type])}
+
+    `;
+
+}
+
+// Sección plegable "Análisis" (cerrada por defecto): lo menos consultado de
+// la lista, para que los entrenos queden justo después de ACWR. Mismo
+// patrón que "Notas generales" de Nutrición (GymDiet.js): <details> nativo
+// con su estado recordado en el store (evento "toggle", ver
+// initRunningEvents.js) para que un rerender no la cierre.
+function RunningAnalysisSection(content) {
+
+    return `
+
+        <details class="running-analysis-section" data-running-analysis ${isAnalysisOpen() ? "open" : ""}>
+
+            <summary>
+
+                <span class="running-analysis-title">
+
+                    <iconify-icon icon="solar:chart-2-bold-duotone"></iconify-icon>
+
+                    Ver análisis detallado
+
+                </span>
+
+                <iconify-icon icon="solar:alt-arrow-down-linear"></iconify-icon>
+
+            </summary>
+
+            <div class="running-analysis-body">
+
+                ${content}
+
+            </div>
+
+        </details>
+
+    `;
+
 }
 
 // Resumen de kilometraje embebido en Running, debajo de la lista de
@@ -766,6 +830,11 @@ function RunningShoeMileageSummary(shoes) {
     // "Todas las zapatillas juntas" incluye las retiradas, igual que en
     // RunningShoesScreen — ese kilometraje se corrió igual.
     const totalKm = shoes.reduce((sum, s) => sum + getShoeTotalKm(s.id), 0);
+
+    // Vista compacta: solo la zapatilla activa con más km. El detalle de
+    // todas vive únicamente en "Gestionar zapatillas" (RunningShoesScreen).
+    const mostUsed = active.reduce((best, s) => getShoeTotalKm(s.id) > getShoeTotalKm(best.id) ? s : best);
+    const others = active.length - 1;
 
     return `
 
@@ -793,7 +862,9 @@ function RunningShoeMileageSummary(shoes) {
 
             </span>
 
-            ${active.map(shoe => ShoeMileageRow(shoe, getShoeTotalKm(shoe.id))).join("")}
+            ${ShoeMileageRow(mostUsed, getShoeTotalKm(mostUsed.id))}
+
+            ${others > 0 ? `<span class="shoe-mileage-more">+${others} ${others === 1 ? "zapatilla activa más" : "zapatillas activas más"}</span>` : ""}
 
         </div>
 
@@ -1302,14 +1373,6 @@ function RunningIdleView() {
 
                 ${AcwrCard(acwrInsight)}
 
-                ${ReferenceRoutesEntryCard(routes)}
-
-                ${WeeklyProgressChart(weeklyProgress)}
-
-                ${Z2EvolutionCard(z2Evolution)}
-
-                ${extraEvolutions.map(({ type, evolution }) => TypeEvolutionCard(evolution, EVOLUTION_TYPE_CONFIG[type])).join("")}
-
                 ${RunningTypeFilters(typeFilter, workouts)}
 
                 ${filtered.length === 0 ? `
@@ -1358,6 +1421,16 @@ function RunningIdleView() {
                     </div>
 
                 `}
+
+                ${RunningAnalysisSection(`
+
+                    ${ReferenceRoutesEntryCard(routes)}
+
+                    ${WeeklyProgressChart(weeklyProgress)}
+
+                    ${EvolutionTabsCard(z2Evolution, extraEvolutions, getEvolutionTab())}
+
+                `)}
 
                 ${RunningShoeMileageSummary(shoes)}
 

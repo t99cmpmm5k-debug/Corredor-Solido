@@ -177,6 +177,38 @@ export function toggleHistoryGroup(key, currentlyOpen) {
 
 }
 
+// Sección plegable "Análisis" de la lista (cerrada por defecto) y pestaña
+// activa de su tarjeta "Evolución" (easy | series | tempo). Fuera de
+// `wizard` por el mismo motivo que historyGroupOverrides: cualquier
+// rerender (abrir un menú, cambiar de chip) no debe cerrarla ni volver a
+// Z2.
+let analysisOpen = false;
+let evolutionTab = "easy";
+
+export function isAnalysisOpen() {
+
+    return analysisOpen;
+
+}
+
+export function setAnalysisOpen(open) {
+
+    analysisOpen = open;
+
+}
+
+export function getEvolutionTab() {
+
+    return evolutionTab;
+
+}
+
+export function setEvolutionTab(tab) {
+
+    evolutionTab = tab;
+
+}
+
 export function getWizardStep() {
 
     return wizard.step;

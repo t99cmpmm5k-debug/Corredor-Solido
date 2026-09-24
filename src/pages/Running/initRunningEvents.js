@@ -45,6 +45,8 @@ import {
     getHistoryMenuOpenId,
     setHistoryMenuOpenId,
     toggleHistoryGroup,
+    setAnalysisOpen,
+    setEvolutionTab,
     getWarningsExpanded,
     setWarningsExpanded,
     setChartMetricMode,
@@ -658,6 +660,21 @@ export function initRunningEvents() {
         button.addEventListener("click", () => {
             resetWizard();
             setWizardStep("upload");
+            rerender();
+        });
+
+    });
+
+    // "Análisis": recordar si está abierta para que un rerender no la
+    // cierre (mismo patrón que las secciones de Mi dieta).
+    document.querySelector("[data-running-analysis]")?.addEventListener("toggle", event => {
+        setAnalysisOpen(event.currentTarget.open);
+    });
+
+    document.querySelectorAll('[data-action="set-evolution-tab"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+            setEvolutionTab(button.dataset.tab);
             rerender();
         });
 
