@@ -1,6 +1,6 @@
 import { formatISODate } from "../utils/date.js";
 import { inferWorkoutType, matchTitle } from "./classifyWorkoutType.js";
-import { detectHeuristicIntervals } from "./intervalHeuristic.js";
+import { detectHeuristicIntervals, twoLevels } from "./intervalHeuristic.js";
 import { haversineMeters, buildRouteTrace, sortPointsByTimeStable } from "./geoTrace.js";
 
 const ACTIVITY_EXTENSION_NS = "http://www.garmin.com/xmlschemas/ActivityExtension/v2";
@@ -246,6 +246,127 @@ function computeSplits(points) {
 
 }
 
+// Vueltas MANUALES reales de Garmin (pista, "Series": Rafa marca cada
+// repetición/descanso con el botón de vuelta del reloj) -- distinto del
+// autolap automático por distancia (<TriggerMethod>Distance</TriggerMethod>,
+// el de Rodaje/Tirada larga, ya cubierto arriba re-derivando splits de
+// ~1km de los Trackpoints con computeSplits(): cortar por km ahí da el
+// mismo resultado que las vueltas nativas de Garmin, así que nunca hizo
+// falta leerlas). En una sesión de Series por km sí importa la diferencia:
+// cortar por km mezclaría trabajo y descanso en bloques de ~1km sin
+// relación con las repeticiones reales (bug real, ver commit).
+//
+// TriggerMethod es un ELEMENTO hijo del Lap (<TriggerMethod>Manual
+// </TriggerMethod>), no un atributo -- ver el fixture real
+// buildRealMultiLapTcx() de tcx.test.js. Ese mismo fixture es la prueba de
+// por qué "todas las vueltas son manuales" NO basta como único criterio:
+// es un rodaje normal con paradas de semáforo, TriggerMethod Manual en
+// TODAS sus vueltas, y NO una sesión de series -- classifyManualLaps()
+// exige además que las vueltas de descanso se parezcan entre sí (ver más
+// abajo) precisamente para descartar casos así.
+function isManualLapSeries(lapEls) {
+
+    return lapEls.length > 1 && lapEls.every(lap => textOf(lap, "TriggerMethod") === "Manual");
+
+}
+
+// Como mínimo 2 vueltas de trabajo Y 2 de descanso reales para que tenga
+// sentido hablar de una sesión de series estructurada -- una sola
+// repetición, o una única parada suelta, no lo son.
+const MIN_MANUAL_WORK_LAPS = 2;
+const MIN_MANUAL_REST_LAPS = 2;
+
+// Separación mínima (ritmo lento ÷ ritmo rápido) para fiarse del patrón --
+// mismo umbral y mismo motivo que MIN_LEVEL_RATIO de intervalHeuristic.js
+// (evita clasificar como "series" un Fartlek suave con vueltas parecidas
+// entre sí), valor propio porque aquí se agrupan vueltas discretas reales,
+// no velocidad continua suavizada -- no tiene por qué ser el mismo número.
+const MIN_MANUAL_LAP_PACE_RATIO = 1.15;
+
+// Cuánto pueden variar entre sí las vueltas de DESCANSO reales -- una
+// sesión de series de verdad repite (más o menos) el mismo descanso
+// programado cada vez (120,0s EXACTOS en el archivo real que verificó
+// esto). Una parada suelta de un rodaje normal no se parece nada a la
+// última vuelta remanente al parar el reloj (120,0s vs. 24,0s en
+// buildRealMultiLapTcx, el fixture de regresión de tcx.test.js -- casi 5×
+// de diferencia, aunque las dos caigan del lado "lento" del ritmo) --
+// exigir que las vueltas de descanso sean parecidas ENTRE SÍ es lo que de
+// verdad distingue un patrón de series real de un puñado de paradas
+// irregulares con el mismo TriggerMethod. Sin un segundo archivo real de
+// series que lo confirme, 1.5 es a propósito generoso (permite algo de
+// variación real entre descansos) mientras sigue siendo mucho más estricto
+// que ese 5× -- revisar contra un segundo archivo real si aparece.
+const MAX_REST_DURATION_SPREAD_RATIO = 1.5;
+
+// work/rest por el RITMO de cada vuelta real (duración ÷ distancia), no
+// por su duración ni su distancia en solitario -- mismo principio que la
+// heurística de Zepp (intervalHeuristic.js: separar rápido/lento en dos
+// niveles, twoLevels() reutilizada tal cual), aplicado aquí a las vueltas
+// discretas reales en vez de a la velocidad continua del GPS/sensor.
+//
+// Verificado con un archivo real de pista (activity_24485388688.tcx,
+// 2026-09-24, 7 vueltas manuales): las de descanso caen en 120,0 s EXACTOS
+// (Rafa suelta la vuelta al ver el crono llegar a 2:00) con ~220-290 m,
+// mientras las de trabajo miden ~1000 m en 258,7-262,9 s -- pero fijarse
+// solo en la DURACIÓN habría clasificado mal la última vuelta (515,7 m,
+// 136,4 s: corta en tiempo, parecida a las de descanso) que en realidad es
+// un último tramo de trabajo incompleto -- Rafa cortó la vuelta antes de
+// completar el km, no fue un descanso. Su RITMO (264 s/km) lo delata:
+// casi idéntico al de las vueltas de trabajo (258-263 s/km), muy lejos del
+// de descanso (420-546 s/km). El ritmo, no la duración ni la distancia por
+// separado, es la señal que clasifica las 7 vueltas correctamente; la
+// consistencia de duración ENTRE las vueltas de descanso (ver
+// MAX_REST_DURATION_SPREAD_RATIO) es la que descarta los falsos positivos.
+function classifyManualLaps(laps) {
+
+    if (laps.some(l => !(l.distanceKm > 0) || l.durationSec == null || l.durationSec <= 0)) return null;
+
+    const paces = laps.map(l => l.durationSec / l.distanceKm);
+
+    const [lowerPace, higherPace] = twoLevels(paces);
+    if (!(lowerPace > 0) || higherPace / lowerPace < MIN_MANUAL_LAP_PACE_RATIO) return null;
+
+    const threshold = (lowerPace + higherPace) / 2;
+    const classified = laps.map((lap, i) => ({ ...lap, segmentType: paces[i] <= threshold ? "work" : "rest" }));
+
+    const workLaps = classified.filter(l => l.segmentType === "work");
+    const restLaps = classified.filter(l => l.segmentType === "rest");
+    if (workLaps.length < MIN_MANUAL_WORK_LAPS || restLaps.length < MIN_MANUAL_REST_LAPS) return null;
+
+    const restDurations = restLaps.map(l => l.durationSec);
+    if (Math.max(...restDurations) / Math.min(...restDurations) > MAX_REST_DURATION_SPREAD_RATIO) return null;
+
+    return classified;
+
+}
+
+// laps reales de una sesión de Series -- cada <Lap> ES un tramo real (no
+// una interpolación de Trackpoints como computeSplits()), así que su
+// avgHr/maxHr salen directos del propio Lap, igual que hace
+// parseTcxWorkout() para los agregados del entreno completo.
+function buildManualLapSplits(lapEls) {
+
+    const laps = lapEls.map(lapEl => ({
+        distanceKm: (numberOf(lapEl, "DistanceMeters") ?? 0) / 1000,
+        durationSec: numberOf(lapEl, "TotalTimeSeconds"),
+        avgHr: nestedValueOf(lapEl, "AverageHeartRateBpm"),
+        maxHr: nestedValueOf(lapEl, "MaximumHeartRateBpm")
+    }));
+
+    const classified = classifyManualLaps(laps);
+    if (!classified) return null;
+
+    return classified.map((lap, index) => ({
+        lap: index + 1,
+        distanceKm: round2(lap.distanceKm),
+        paceSecPerKm: Math.round(lap.durationSec / lap.distanceKm),
+        avgHr: lap.avgHr,
+        maxHr: lap.maxHr,
+        segmentType: lap.segmentType
+    }));
+
+}
+
 export function parseTcxWorkout(xmlText) {
 
     const doc = new DOMParser().parseFromString(xmlText, "application/xml");
@@ -345,7 +466,15 @@ export function parseTcxWorkout(xmlText) {
     // velocidad (intervalHeuristic.js, tramos marcados isHeuristic). Con
     // varias vueltas no se entra aquí; sin patrón claro, splits por km.
     const heuristic = isSeriesByNotes && lapEls.length === 1 ? detectHeuristicIntervals(points) : null;
-    const splits = heuristic?.splits ?? computeSplits(points);
+
+    // Series CON vueltas reales manuales (Garmin, no Zepp): las vueltas del
+    // propio archivo, sin recortar por km ni estimar nada -- ver
+    // isManualLapSeries()/buildManualLapSplits() más arriba. Se prueba
+    // antes que computeSplits() pero después de la heurística de Zepp (que
+    // ya exige un único Lap, así que las dos ramas nunca compiten).
+    const manualLaps = !isZeppExport(doc) && isManualLapSeries(lapEls) ? buildManualLapSplits(lapEls) : null;
+
+    const splits = heuristic?.splits ?? manualLaps ?? computeSplits(points);
 
     const { type, confidence: typeConfidence } = inferWorkoutType({ title: isSeriesByNotes ? notes : title, distanceKm, splits });
 

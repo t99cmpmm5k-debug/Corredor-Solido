@@ -383,3 +383,173 @@ describe("parseTcxWorkout — Series de Zepp sin vueltas reales (intervalos esti
     });
 
 });
+
+// Vueltas MANUALES reales de Garmin (pista) -- a diferencia de
+// buildSeriesTcx() de arriba (Zepp, un único Lap, intervalos ESTIMADOS por
+// velocidad), aquí cada Lap es un tramo real ya marcado por el propio
+// Rafa con el botón de vuelta del reloj. Distancia/duración de cada Lap
+// son las reales de activity_24485388688.tcx (transcritas a mano en el
+// encargo -- 2026-09-24, primer archivo real de Series de Garmin
+// disponible): FC no incluida a propósito, no se transcribió del archivo
+// real, así que estos Laps se quedan sin ella en vez de inventar un
+// valor plausible (ver nestedValueOf -> null, sin <AverageHeartRateBpm>).
+function buildRealManualLapSeriesTcx(laps) {
+
+    let cursor = new Date("2026-09-24T18:00:00.000Z").getTime();
+
+    const lapXml = laps.map(({ dist, time, trigger }) => {
+
+        const start = new Date(cursor).toISOString();
+        cursor += time * 1000;
+        const end = new Date(cursor).toISOString();
+
+        return `
+        <Lap StartTime="${start}">
+            <TotalTimeSeconds>${time}</TotalTimeSeconds>
+            <DistanceMeters>${dist}</DistanceMeters>
+            <Intensity>Active</Intensity>
+            <TriggerMethod>${trigger}</TriggerMethod>
+            <Track>
+                <Trackpoint><Time>${start}</Time></Trackpoint>
+                <Trackpoint><Time>${end}</Time></Trackpoint>
+            </Track>
+        </Lap>`;
+
+    }).join("");
+
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<TrainingCenterDatabase xmlns="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2">
+    <Activities>
+        <Activity Sport="Running">
+            <Id>2026-09-24T18:00:00.000Z</Id>
+            ${lapXml}
+        </Activity>
+    </Activities>
+    <Author xsi:type="Application_t"><Name>Connect Api</Name></Author>
+</TrainingCenterDatabase>`;
+
+}
+
+// Las 7 vueltas reales de activity_24485388688.tcx, del encargo
+// (2026-09-24): 3 repeticiones de ~1000m + descanso de 2min entre cada
+// una, más un último tramo más corto (probablemente el último parcial sin
+// completar la vuelta al terminar la sesión).
+const REAL_TRACK_LAPS = [
+    { dist: 1000.0, time: 258.7, trigger: "Manual" }, // Lap 1: trabajo
+    { dist: 285.9, time: 120.0, trigger: "Manual" },  // Lap 2: descanso
+    { dist: 1000.0, time: 260.7, trigger: "Manual" }, // Lap 3: trabajo
+    { dist: 268.1, time: 120.0, trigger: "Manual" },  // Lap 4: descanso
+    { dist: 1000.0, time: 262.9, trigger: "Manual" }, // Lap 5: trabajo
+    { dist: 219.6, time: 120.0, trigger: "Manual" },  // Lap 6: descanso
+    { dist: 515.7, time: 136.4, trigger: "Manual" }   // Lap 7: trabajo (tramo final)
+];
+
+describe("parseTcxWorkout -- Series de Garmin con vueltas MANUALES reales (activity_24485388688.tcx)", () => {
+
+    it("usa las 7 vueltas reales como splits, no splits por km -- 7 tramos, no 5 (los del corte por km que mostraba antes la app)", () => {
+
+        const workout = parseTcxWorkout(buildRealManualLapSeriesTcx(REAL_TRACK_LAPS));
+
+        expect(workout.splits).toHaveLength(7);
+
+    });
+
+    it("clasifica work/rest por el RITMO real de cada vuelta -- 4 de trabajo (incluida la última, más corta) y 3 de descanso", () => {
+
+        const workout = parseTcxWorkout(buildRealManualLapSeriesTcx(REAL_TRACK_LAPS));
+
+        expect(workout.splits.map(s => s.segmentType)).toEqual(["work", "rest", "work", "rest", "work", "rest", "work"]);
+
+    });
+
+    // 515,7m/136,4s = 264 s/km, casi idéntico a las otras 3 vueltas de
+    // trabajo (258,7-262,9 s/km) -- es la prueba de que el criterio de
+    // ritmo (no la duración de 136,4s, mucho más corta que las otras
+    // vueltas de trabajo) es el que la clasifica bien.
+    it("la última vuelta (más corta) se clasifica como trabajo, no se excluye ni se confunde con descanso", () => {
+
+        const workout = parseTcxWorkout(buildRealManualLapSeriesTcx(REAL_TRACK_LAPS));
+        const last = workout.splits[6];
+
+        expect(last.segmentType).toBe("work");
+        expect(last.distanceKm).toBe(0.52);
+        expect(last.paceSecPerKm).toBe(Math.round(136.4 / 0.5157));
+
+    });
+
+    it("ritmo real de cada vuelta de trabajo (no un split por km recalculado)", () => {
+
+        const workout = parseTcxWorkout(buildRealManualLapSeriesTcx(REAL_TRACK_LAPS));
+        const workSplits = workout.splits.filter(s => s.segmentType === "work");
+
+        expect(workSplits.map(s => s.paceSecPerKm)).toEqual([259, 261, 263, 264]);
+
+    });
+
+    it("sin isHeuristic -- son vueltas reales marcadas por el propio Rafa, no una estimación", () => {
+
+        const workout = parseTcxWorkout(buildRealManualLapSeriesTcx(REAL_TRACK_LAPS));
+
+        expect(workout.splits.every(s => s.isHeuristic == null)).toBe(true);
+
+    });
+
+    it("clasifica el tipo como series (por el patrón de los splits, sin título/Notes)", () => {
+
+        const workout = parseTcxWorkout(buildRealManualLapSeriesTcx(REAL_TRACK_LAPS));
+
+        expect(workout.type).toBe("series");
+
+    });
+
+    it("sin FC transcrita en el encargo, avgHr/maxHr de cada vuelta quedan null -- nunca inventados", () => {
+
+        const workout = parseTcxWorkout(buildRealManualLapSeriesTcx(REAL_TRACK_LAPS));
+
+        expect(workout.splits.every(s => s.avgHr == null && s.maxHr == null)).toBe(true);
+
+    });
+
+    it("con solo 1 vuelta de descanso, no hay patrón de series -- splits por km de siempre", () => {
+
+        const workout = parseTcxWorkout(buildRealManualLapSeriesTcx([
+            { dist: 1000.0, time: 260.0, trigger: "Manual" },
+            { dist: 280.0, time: 120.0, trigger: "Manual" },
+            { dist: 1000.0, time: 261.0, trigger: "Manual" }
+        ]));
+
+        expect(workout.splits.some(s => s.segmentType)).toBe(false);
+
+    });
+
+    // Mismo espíritu que el fixture de regresión buildRealMultiLapTcx()
+    // de arriba (rodaje normal, paradas de semáforo, TriggerMethod Manual
+    // en TODAS las vueltas) -- una parada suelta (120s) y el remanente al
+    // parar el reloj (24s) no se parecen nada entre sí, así que NO deben
+    // agruparse como si fueran el mismo descanso programado repetido.
+    it("vueltas de descanso muy distintas entre sí (parada suelta + remanente final) no se confunden con una sesión de series", () => {
+
+        const workout = parseTcxWorkout(buildRealManualLapSeriesTcx([
+            { dist: 1000.0, time: 282.37, trigger: "Manual" },
+            { dist: 1000.0, time: 281.637, trigger: "Manual" },
+            { dist: 222.47, time: 120.0, trigger: "Manual" },
+            { dist: 1000.0, time: 281.161, trigger: "Manual" },
+            { dist: 1000.0, time: 280.574, trigger: "Manual" },
+            { dist: 35.25, time: 24.029, trigger: "Manual" }
+        ]));
+
+        expect(workout.splits.some(s => s.segmentType)).toBe(false);
+
+    });
+
+    it("con autolap por distancia (no manual), sigue usando splits por km -- no es una sesión de series", () => {
+
+        const workout = parseTcxWorkout(buildRealManualLapSeriesTcx(
+            REAL_TRACK_LAPS.map(lap => ({ ...lap, trigger: "Distance" }))
+        ));
+
+        expect(workout.splits.some(s => s.segmentType)).toBe(false);
+
+    });
+
+});

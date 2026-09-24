@@ -151,8 +151,12 @@ function percentile(sorted, q) {
 
 }
 
-// k-means 1D con 2 grupos -- devuelve [lento, rápido].
-function twoLevels(values) {
+// k-means 1D con 2 grupos -- devuelve [valor bajo, valor alto] (aquí,
+// velocidad: [lento, rápido]). Exportada: tcx.js la reutiliza tal cual
+// para separar trabajo/descanso por RITMO en vueltas manuales reales de
+// Garmin (distinto caso de uso -- ver comentario junto a su uso allí --
+// pero el mismo agrupamiento en dos niveles, sin duplicar el algoritmo).
+export function twoLevels(values) {
 
     const sorted = [...values].sort((a, b) => a - b);
     let slow = percentile(sorted, 0.25), fast = percentile(sorted, 0.75);
