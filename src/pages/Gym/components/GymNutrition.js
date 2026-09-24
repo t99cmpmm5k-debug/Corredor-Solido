@@ -4,7 +4,8 @@ import "./GymNutrition.css";
 import { getNutritionEntriesForDate, sumNutrition, MEALS, defaultMealForHour } from "../../../data/nutritionStore.js";
 import { formatISODate, formatDayMonth, formatWeekday, addDays } from "../../../utils/date.js";
 import { formatKm } from "../../../utils/format.js";
-import { getNutritionDate, getNutritionQuery, getNutritionSearch, getNutritionSelectedProduct, getNutritionPendingDeleteId } from "../gymStore.js";
+import { getNutritionDate, getNutritionQuery, getNutritionSearch, getNutritionSelectedProduct, getNutritionPendingDeleteId, getNutritionView } from "../gymStore.js";
+import { GymDiet } from "./GymDiet.js";
 
 // Pestaña "Nutrición" de Gimnasio: resumen del día, buscador de alimentos
 // (Open Food Facts, ver services/openFoodFacts.js) y registro del día
@@ -43,10 +44,12 @@ export function getViewedNutritionDate() {
 
 }
 
-function DayNavigator(date) {
+// allowFuture: en Mi dieta se puede mirar el menú de los próximos días; en
+// el registro libre no tiene sentido apuntar lo que aún no se ha comido.
+function DayNavigator(date, { allowFuture = false } = {}) {
 
     const today = formatISODate(new Date());
-    const label = date === today ? "Hoy" : date === addDays(today, -1) ? "Ayer" : formatWeekday(date);
+    const label = date === today ? "Hoy" : date === addDays(today, -1) ? "Ayer" : date === addDays(today, 1) ? "Mañana" : formatWeekday(date);
 
     return `
 
@@ -61,7 +64,7 @@ function DayNavigator(date) {
                 <span>${formatDayMonth(date)}</span>
             </div>
 
-            <button class="gym-bodycomp-icon-button" data-action="nutrition-day" data-date="${addDays(date, 1)}" aria-label="Día siguiente" ${date >= today ? "disabled" : ""}>
+            <button class="gym-bodycomp-icon-button" data-action="nutrition-day" data-date="${addDays(date, 1)}" aria-label="Día siguiente" ${!allowFuture && date >= today ? "disabled" : ""}>
                 <iconify-icon icon="solar:alt-arrow-right-linear"></iconify-icon>
             </button>
 
@@ -370,16 +373,54 @@ function DayLog(entries) {
 
 }
 
+// Mi dieta (importada por PDF) | Registro libre (Open Food Facts) --
+// mismo selector que las pestañas de Gimnasio, bajo el navegador de día
+// que comparten las dos vistas.
+function ViewTabs(view) {
+
+    return `
+
+        <div class="gym-detail-tabs">
+            <button class="gym-detail-tab ${view === "dieta" ? "is-active" : ""}" data-action="set-nutrition-view" data-view="dieta">MI DIETA</button>
+            <button class="gym-detail-tab ${view === "registro" ? "is-active" : ""}" data-action="set-nutrition-view" data-view="registro">REGISTRO LIBRE</button>
+        </div>
+
+    `;
+
+}
+
 export function GymNutrition() {
 
     const date = getViewedNutritionDate();
-    const entries = getNutritionEntriesForDate(date);
+    const view = getNutritionView();
+
+    if (view === "dieta") {
+
+        return `
+
+            <div class="gym-bodycomp gym-nutrition">
+                ${DayNavigator(date, { allowFuture: true })}
+                ${ViewTabs(view)}
+                ${GymDiet(date)}
+            </div>
+
+        `;
+
+    }
+
+    // Venías de Mi dieta mirando un día futuro: el registro libre no admite
+    // fechas futuras, se queda en hoy.
+    const today = formatISODate(new Date());
+    const logDate = date > today ? today : date;
+    const entries = getNutritionEntriesForDate(logDate);
 
     return `
 
         <div class="gym-bodycomp gym-nutrition">
 
-            ${DayNavigator(date)}
+            ${DayNavigator(logDate)}
+
+            ${ViewTabs(view)}
 
             ${DailySummary(entries)}
 

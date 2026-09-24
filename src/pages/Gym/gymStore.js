@@ -38,7 +38,16 @@ const store = {
     nutritionQuery: "",
     nutritionSearch: { status: "idle", query: "", products: [], reason: null },
     nutritionSelectedProduct: null,
-    nutritionPendingDeleteId: null
+    nutritionPendingDeleteId: null,
+
+    // Nutrición: "dieta" (la de la plantilla CSV) | "registro" (buscador de
+    // Open Food Facts). Errores de la última importación de CSV, el
+    // selector de fin de semana reabierto con "Cambiar", y el borrado de la
+    // dieta por confirmar con un segundo toque.
+    nutritionView: "dieta",
+    dietImport: { errors: [], fileName: null },
+    dietWeekendPickerOpen: false,
+    dietDeletePending: false
 
 };
 
@@ -418,5 +427,55 @@ export function getNutritionPendingDeleteId() {
 export function setNutritionPendingDeleteId(id) {
 
     store.nutritionPendingDeleteId = id;
+
+}
+
+export function getNutritionView() {
+
+    return store.nutritionView;
+
+}
+
+export function setNutritionView(view) {
+
+    store.nutritionView = view;
+    store.dietWeekendPickerOpen = false;
+    store.dietDeletePending = false;
+
+}
+
+export function getDietImport() {
+
+    return store.dietImport;
+
+}
+
+export function setDietImport(state) {
+
+    store.dietImport = { errors: [], fileName: null, ...state };
+
+}
+
+export function isDietWeekendPickerOpen() {
+
+    return store.dietWeekendPickerOpen;
+
+}
+
+export function setDietWeekendPickerOpen(value) {
+
+    store.dietWeekendPickerOpen = value;
+
+}
+
+export function isDietDeletePending() {
+
+    return store.dietDeletePending;
+
+}
+
+export function setDietDeletePending(value) {
+
+    store.dietDeletePending = value;
 
 }

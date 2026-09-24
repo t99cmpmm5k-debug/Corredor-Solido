@@ -27,6 +27,7 @@ import { hydrate as hydrateGymSessions } from "./data/gymSessionStore.js";
 import { hydrate as hydrateGymRoutine } from "./data/gymRoutineStore.js";
 import { hydrate as hydrateBodyComposition } from "./data/bodyCompositionStore.js";
 import { hydrate as hydrateNutrition } from "./data/nutritionStore.js";
+import { hydrate as hydrateDiet } from "./data/dietStore.js";
 import { hydrate as hydrateCustomExercises } from "./data/customExerciseStore.js";
 import { hydrate as hydrateReferenceRoutes } from "./data/referenceRouteStore.js";
 import { hydrate as hydrateRouteSuggestionDismissals } from "./data/routeSuggestionStore.js";
@@ -50,7 +51,7 @@ function boot() {
 
     let readyBeforeTimeout = false;
 
-    const ready = Promise.all([hydrate(), hydrateGymSessions(), hydrateGymRoutine(), hydrateBodyComposition(), hydrateNutrition(), hydrateCustomExercises(), hydrateReferenceRoutes(), hydrateRouteSuggestionDismissals(), hydrateTombstones(), hydrateBackupMeta(), hydrateSyncMeta(), hydrateSeedCleanupState()])
+    const ready = Promise.all([hydrate(), hydrateGymSessions(), hydrateGymRoutine(), hydrateBodyComposition(), hydrateNutrition(), hydrateDiet(), hydrateCustomExercises(), hydrateReferenceRoutes(), hydrateRouteSuggestionDismissals(), hydrateTombstones(), hydrateBackupMeta(), hydrateSyncMeta(), hydrateSeedCleanupState()])
         .then(() => { readyBeforeTimeout = true; });
 
     const timedOut = new Promise(resolve => setTimeout(resolve, HYDRATE_TIMEOUT_MS));

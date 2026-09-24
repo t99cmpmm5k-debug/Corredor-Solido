@@ -2,6 +2,8 @@ import { rerender } from "../../core/router.js";
 import { searchFoods, macrosForAmount } from "../../services/openFoodFacts.js";
 import { addNutritionEntry, deleteNutritionEntry, parseAmount, MEALS } from "../../data/nutritionStore.js";
 import { formatKm } from "../../utils/format.js";
+import { formatISODate } from "../../utils/date.js";
+import { initGymDietEvents } from "./initGymDietEvents.js";
 import { NutritionSearchResults, getViewedNutritionDate } from "./components/GymNutrition.js";
 import {
     getNutritionQuery,
@@ -12,7 +14,8 @@ import {
     setNutritionSelectedProduct,
     setNutritionDate,
     getNutritionPendingDeleteId,
-    setNutritionPendingDeleteId
+    setNutritionPendingDeleteId,
+    setNutritionView
 } from "./gymStore.js";
 
 // Eventos de la pestaña Nutrición de Gimnasio (ver GymNutrition.js).
@@ -136,7 +139,8 @@ function addSelectedFood() {
     }
 
     addNutritionEntry({
-        date: getViewedNutritionDate(),
+        // Mismo tope que la vista: nunca en un día futuro.
+        date: [getViewedNutritionDate(), formatISODate(new Date())].sort()[0],
         meal: MEALS.some(m => m.id === meal) ? meal : "snack",
         product,
         grams,
@@ -149,6 +153,17 @@ function addSelectedFood() {
 }
 
 export function initGymNutritionEvents() {
+
+    initGymDietEvents();
+
+    document.querySelectorAll('[data-action="set-nutrition-view"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+            setNutritionView(button.dataset.view);
+            rerender();
+        });
+
+    });
 
     document.querySelectorAll('[data-action="nutrition-day"]').forEach(button => {
 

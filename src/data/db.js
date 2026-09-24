@@ -1,7 +1,7 @@
 import { SEED_RACES } from "./seedRaces.js";
 
 const DB_NAME = "corredor-solido";
-const DB_VERSION = 14;
+const DB_VERSION = 15;
 
 // Bookkeeping en meta (misma store que lastExportAt, ver backup.js) — se
 // escribe una sola vez, la primera vez que esta instalación pasa por
@@ -109,7 +109,10 @@ export const STORES = {
     routeSuggestionDismissals: "routeSuggestionDismissals",
     tombstones: "tombstones",
     bodyComposition: "bodyComposition",
-    nutritionEntries: "nutritionEntries"
+    nutritionEntries: "nutritionEntries",
+    dietPlans: "dietPlans",
+    dietChecks: "dietChecks",
+    dietWeekends: "dietWeekends"
 
 };
 
@@ -353,6 +356,15 @@ function upgrade(db, transaction) {
     if (!db.objectStoreNames.contains(STORES.nutritionEntries)) {
 
         db.createObjectStore(STORES.nutritionEntries, { keyPath: "id" });
+
+    }
+
+    // Dieta de la plantilla CSV, lo comido cada día (id = fecha) y qué día
+    // del fin de semana es la tirada larga (id = lunes de la semana) -- ver
+    // dietStore.js. En el sync y el backup desde el primer día.
+    for (const store of [STORES.dietPlans, STORES.dietChecks, STORES.dietWeekends]) {
+
+        if (!db.objectStoreNames.contains(store)) db.createObjectStore(store, { keyPath: "id" });
 
     }
 

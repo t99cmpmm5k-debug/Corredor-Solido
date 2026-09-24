@@ -475,3 +475,45 @@ describe("backup.js / sync -- nutrición (en el sync desde el primer día)", () 
     });
 
 });
+
+describe("backup.js / sync -- dieta de la plantilla CSV (en el sync desde el primer día)", () => {
+
+    beforeEach(() => {
+        resetFakeIndexedDB();
+        vi.resetModules();
+    });
+
+    it("dieta, días marcados y fines de semana elegidos entran en getSyncableData() e importData() los restaura", async () => {
+
+        const store = await import("../data/dietStore.js");
+        const { parseDietCsv } = await import("./dietCsv.js");
+        await store.hydrate();
+        const backup = await import("./backup.js");
+
+        const csv = ["dia,momento,opcion,alimento,notas", ...["LUNES", "MARTES", "MIERCOLES", "JUEVES", "VIERNES", "TIRADA_LARGA", "DESCANSO"].map(d => `${d},09:00,1,avena 35 g,`)].join("
+");
+        const plan = store.importDietPlan(parseDietCsv(csv).plan);
+        store.toggleMealEaten("2026-09-24", plan.id, "JUEVES|09:00", "JUEVES|09:00|1");
+        store.setWeekendLongRunDay("2026-09-24", "domingo");
+
+        const data = backup.getSyncableData();
+        expect(data.dietPlans.map(p => p.id)).toEqual([plan.id]);
+        expect(data.dietChecks.map(c => c.id)).toEqual(["2026-09-24"]);
+        expect(data.dietWeekends.map(w => w.id)).toEqual(["2026-09-21"]);
+        expect(backup.getDataSummary()).toMatchObject({ dietPlans: 1, dietChecks: 1, dietWeekends: 1 });
+
+        vi.resetModules();
+        resetFakeIndexedDB();
+        const fresh = await import("../data/dietStore.js");
+        await fresh.hydrate();
+        const freshBackup = await import("./backup.js");
+
+        freshBackup.importData({ schemaVersion: 1, exportedAt: "2026-09-24T00:00:00.000Z", dietPlans: data.dietPlans, dietChecks: data.dietChecks, dietWeekends: data.dietWeekends });
+
+        expect(fresh.getActiveDietPlan()).toEqual(plan);
+        expect(fresh.getEatenForDate("2026-09-24")).toEqual({ "JUEVES|09:00": "JUEVES|09:00|1" });
+        expect(fresh.getWeekendLongRunDay("2026-09-26")).toBe("domingo");
+
+    });
+
+});

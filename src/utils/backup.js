@@ -10,11 +10,12 @@ import { getRoutines as getGymRoutines, restoreRoutine as restoreGymRoutine, del
 import { isSeedRoutineAwaitingDecision } from "../data/legacyGymSeedCleanup.js";
 import { getBodyCompositionEntries, restoreBodyCompositionEntry, deleteBodyCompositionEntry } from "../data/bodyCompositionStore.js";
 import { getNutritionEntries, restoreNutritionEntry, deleteNutritionEntry } from "../data/nutritionStore.js";
+import { getDietPlans, getDietChecks, getDietWeekends, restoreDietPlan, restoreDietCheck, restoreDietWeekend, deleteDietPlan } from "../data/dietStore.js";
 import { getTombstones, restoreTombstone } from "../data/tombstoneStore.js";
 import { notifyDataChanged } from "../data/changeEvents.js";
 
 // Dispatch de una tombstone (ver tombstoneStore.js) a la deleteX() real de
-// su store de origen -- solo estos 7 participan en el sync (SYNC_TABLES
+// su store de origen -- solo estos 8 participan en el sync (SYNC_TABLES
 // del backend), así que son los únicos que pueden generar tombstones.
 const TOMBSTONE_DELETERS = {
     workouts: deleteWorkout,
@@ -23,7 +24,8 @@ const TOMBSTONE_DELETERS = {
     referenceRoutes: deleteReferenceRoute,
     gymRoutines: deleteGymRoutine,
     bodyComposition: deleteBodyCompositionEntry,
-    nutritionEntries: deleteNutritionEntry
+    nutritionEntries: deleteNutritionEntry,
+    dietPlans: deleteDietPlan
 };
 
 const SCHEMA_VERSION = 1;
@@ -47,7 +49,7 @@ function setLastExportAt(iso) {
 
 }
 
-// Los 8 stores reales de la app, más las tombstones (borrados pendientes
+// Los 11 stores reales de la app, más las tombstones (borrados pendientes
 // de propagar, no un store de datos), sin envoltorio -- misma forma que
 // espera POST /api/sync (server/src/syncTables.js: SYNC_KEYS). exportData()
 // añade schemaVersion/exportedAt encima de esto para el archivo de
@@ -80,6 +82,11 @@ export function getSyncableData() {
         bodyComposition: getBodyCompositionEntries(),
         // Nutrición (Gimnasio) -- igual, desde el primer día.
         nutritionEntries: getNutritionEntries(),
+        // Dieta (plantilla CSV), lo comido cada día y el fin de semana
+        // elegido cada semana -- igual, desde el primer día.
+        dietPlans: getDietPlans(),
+        dietChecks: getDietChecks(),
+        dietWeekends: getDietWeekends(),
         // No es un store de datos reales -- son los borrados pendientes de
         // propagar (ver tombstoneStore.js). Va en el mismo payload que el
         // resto para que el POST /api/sync los guarde con el mismo pipeline
@@ -113,12 +120,12 @@ export function exportData() {
 
 }
 
-// Aplica un lote de los 8 stores reales (workouts/shoes/plannedSessions/
-// gymSessions/referenceRoutes/gymRoutines/bodyComposition/nutritionEntries) más las tombstones, contra los stores en
+// Aplica un lote de los 11 stores reales (workouts/shoes/plannedSessions/
+// gymSessions/referenceRoutes/gymRoutines/bodyComposition/nutritionEntries/dietPlans/dietChecks/dietWeekends) más las tombstones, contra los stores en
 // memoria + IndexedDB -- compartido entre importData() (backup manual, con
 // schemaVersion) y syncManager.js (merge de un pull, sin ese envoltorio:
 // ver el comentario de getSyncableData() arriba sobre la diferencia de
-// forma). Único sitio con la lista de los 8 stores que participan aquí,
+// forma). Único sitio con la lista de los 11 stores que participan aquí,
 // para no repetirla en dos módulos que tendrían que recordar mantenerse en
 // sincronía.
 export function applyRestoreBatch(payload) {
@@ -136,6 +143,9 @@ export function applyRestoreBatch(payload) {
     (payload.gymRoutines || []).forEach(restoreGymRoutine);
     (payload.bodyComposition || []).forEach(restoreBodyCompositionEntry);
     (payload.nutritionEntries || []).forEach(restoreNutritionEntry);
+    (payload.dietPlans || []).forEach(restoreDietPlan);
+    (payload.dietChecks || []).forEach(restoreDietCheck);
+    (payload.dietWeekends || []).forEach(restoreDietWeekend);
 
     // Las tombstones se aplican DESPUÉS de restaurar los 4 stores de
     // arriba, nunca antes -- así un borrado siempre gana si por lo que sea
@@ -175,7 +185,7 @@ export function importDataFromFile(file) {
 
 }
 
-// Antes solo miraba workouts/gymSessions -- extendido a los 8 stores
+// Antes solo miraba workouts/gymSessions -- extendido a los 11 stores
 // reales (ver getSyncableData()), para el recordatorio de backup de más
 // abajo. "tombstones" se excluye a propósito -- no son datos que perder,
 // son borrados ya hechos; alguien que borró todo su histórico no debería
@@ -216,6 +226,9 @@ export function getDataSummary() {
         gymRoutines: getGymRoutines().length,
         bodyComposition: getBodyCompositionEntries().length,
         nutritionEntries: getNutritionEntries().length,
+        dietPlans: getDietPlans().length,
+        dietChecks: getDietChecks().length,
+        dietWeekends: getDietWeekends().length,
         referenceRoutes: getReferenceRoutes().length,
         shoes: getShoes().length,
         plannedSessions: getPlannedSessions().length

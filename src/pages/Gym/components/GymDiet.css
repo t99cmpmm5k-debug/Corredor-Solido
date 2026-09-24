@@ -1,0 +1,325 @@
+/* Mi dieta (Nutrición, Gimnasio) -- solo lo propio: tarjetas, métricas,
+   botones y títulos son los de Composición corporal/Nutrición
+   (GymBodyComposition.css, GymNutrition.css), y el selector de fin de
+   semana el de pestañas (.gym-detail-tabs). */
+
+.gym-diet-text{
+
+    margin:0;
+    color:var(--text-secondary);
+    font-size:.86rem;
+    line-height:1.45;
+
+}
+
+.gym-diet-text code{
+
+    color:var(--text-primary);
+    font-size:.8rem;
+
+}
+
+.gym-diet-file{
+
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    min-height:46px;
+    font-family:inherit;
+    cursor:pointer;
+
+}
+
+.gym-diet-file iconify-icon{
+
+    font-size:20px;
+
+}
+
+.gym-diet-actions{
+
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+
+}
+
+.gym-diet-actions > *{
+
+    flex:1 1 auto;
+    min-height:44px;
+
+}
+
+.gym-diet-danger{
+
+    border-color:var(--color-danger);
+    background:var(--color-danger);
+    color:#fff;
+
+}
+
+.gym-diet-errors p{
+
+    margin:0 0 8px;
+
+}
+
+.gym-diet-errors ul{
+
+    margin:0;
+    padding-left:18px;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    font-size:.84rem;
+
+}
+
+.gym-diet-weekend .gym-bodycomp-title{
+
+    display:flex;
+    align-items:center;
+    gap:8px;
+
+}
+
+.gym-diet-history{
+
+    display:grid;
+    grid-template-columns:repeat(7, 1fr);
+    gap:6px;
+
+}
+
+.gym-diet-history-day{
+
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:3px;
+
+}
+
+.gym-diet-history-bar{
+
+    display:flex;
+    align-items:flex-end;
+    width:100%;
+    height:48px;
+    border-radius:var(--radius-sm);
+    background:color-mix(in srgb, var(--card-background) 60%, transparent);
+    overflow:hidden;
+
+}
+
+.gym-diet-history-bar span{
+
+    width:100%;
+    background:var(--color-primary);
+
+}
+
+.gym-diet-history-day small{
+
+    color:var(--text-secondary);
+    font-size:.64rem;
+    font-weight:700;
+
+}
+
+.gym-diet-history-day b{
+
+    color:var(--text-primary);
+    font-size:.7rem;
+
+}
+
+.gym-diet-history-day.is-empty b{
+
+    color:var(--text-secondary);
+    font-weight:500;
+
+}
+
+.gym-diet-day-head{
+
+    display:flex;
+    align-items:center;
+    gap:8px;
+
+}
+
+.gym-diet-edit{
+
+    margin-left:auto;
+    padding:4px 10px;
+    border:1px solid var(--card-border);
+    border-radius:999px;
+    background:transparent;
+    color:var(--text-secondary);
+    font:inherit;
+    font-size:.74rem;
+    font-weight:700;
+    cursor:pointer;
+
+}
+
+/* Hidratación y ajuste: información, no comida -- caja tintada, sin
+   casillas. */
+.gym-diet-info{
+
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    padding:12px 14px;
+    border-radius:var(--radius-md);
+    background:color-mix(in srgb, var(--color-primary) 10%, transparent);
+    border:1px dashed color-mix(in srgb, var(--color-primary) 40%, transparent);
+
+}
+
+.gym-diet-info p{
+
+    display:flex;
+    align-items:flex-start;
+    gap:8px;
+    margin:0;
+    color:var(--text-primary);
+    font-size:.84rem;
+    line-height:1.4;
+
+}
+
+.gym-diet-info iconify-icon{
+
+    flex-shrink:0;
+    font-size:18px;
+    color:var(--color-primary);
+
+}
+
+.gym-diet-info b{
+
+    margin-right:4px;
+    color:var(--text-secondary);
+    font-size:.72rem;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+
+}
+
+.gym-diet-meal{
+
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+    padding-top:14px;
+    border-top:1px solid var(--card-border);
+
+}
+
+.gym-diet-meal .gym-nutrition-meal-title{
+
+    margin:0 0 2px;
+
+}
+
+.gym-diet-item{
+
+    display:flex;
+    align-items:flex-start;
+    gap:10px;
+    min-height:44px;
+    padding:8px 4px;
+
+    border:none;
+    border-radius:var(--radius-sm);
+    background:transparent;
+    color:var(--text-primary);
+    font:inherit;
+    font-size:.9rem;
+    line-height:1.4;
+    text-align:left;
+    cursor:pointer;
+
+}
+
+.gym-diet-item small{
+
+    display:block;
+    color:var(--text-secondary);
+    font-size:.7rem;
+    font-weight:700;
+    text-transform:uppercase;
+
+}
+
+.gym-diet-item.is-choice.is-checked{
+
+    background:color-mix(in srgb, var(--color-primary) 12%, transparent);
+
+}
+
+.gym-diet-check{
+
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    flex-shrink:0;
+    width:22px;
+    height:22px;
+    margin-top:1px;
+    border:2px solid var(--card-border);
+    border-radius:6px;
+
+}
+
+/* Varias opciones: casilla redonda, se elige una. */
+.gym-diet-item.is-choice .gym-diet-check{
+
+    border-radius:50%;
+
+}
+
+.gym-diet-item.is-checked .gym-diet-check{
+
+    border-color:var(--color-primary);
+    color:var(--color-primary);
+
+}
+
+.gym-diet-check iconify-icon{
+
+    font-size:24px;
+
+}
+
+.gym-diet-item.is-checked:not(.is-choice) > span:last-child{
+
+    color:var(--text-secondary);
+    text-decoration:line-through;
+
+}
+
+.gym-diet-rules ol{
+
+    margin:0;
+    padding-left:20px;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    color:var(--text-primary);
+    font-size:.86rem;
+    line-height:1.45;
+
+}
+
+.gym-diet-source{
+
+    margin:0;
+    color:var(--text-secondary);
+    font-size:.74rem;
+
+}

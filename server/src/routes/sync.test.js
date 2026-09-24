@@ -160,3 +160,30 @@ describe("/api/sync -- nutrición", () => {
     });
 
 });
+
+describe("/api/sync -- dieta", () => {
+
+    afterEach(() => {
+        executeMock.mockReset();
+    });
+
+    it("dietPlans, dietChecks y dietWeekends participan en el sync con sus propias tablas", async () => {
+
+        const { SYNC_TABLES } = await import("../syncTables.js");
+        expect(SYNC_TABLES.dietPlans).toBe("diet_plans");
+        expect(SYNC_TABLES.dietChecks).toBe("diet_checks");
+        expect(SYNC_TABLES.dietWeekends).toBe("diet_weekends");
+
+        executeMock.mockResolvedValue([{}]);
+        const { postSync } = await import("./sync.js");
+
+        const check = { id: "2026-09-24", date: "2026-09-24", planId: "p1", checkedItemIds: ["i1"] };
+        await postSync({ userId: 7, body: { dietChecks: [check], tombstones: [{ id: "dietPlans:p0", storeKey: "dietPlans", recordId: "p0" }] } }, mockRes());
+
+        const insert = executeMock.mock.calls.find(([sql]) => sql.includes("INSERT INTO diet_checks"));
+        expect(insert[1]).toEqual([7, "2026-09-24", JSON.stringify(check)]);
+        expect(executeMock.mock.calls.some(([sql, params]) => sql.startsWith("DELETE FROM diet_plans") && params[1] === "p0")).toBe(true);
+
+    });
+
+});
