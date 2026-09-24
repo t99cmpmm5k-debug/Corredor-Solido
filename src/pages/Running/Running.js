@@ -8,7 +8,6 @@ import { formatDayMonth } from "../../utils/date.js";
 import { formatSecondsAsClock, formatShoeName, formatKm as formatGroupKm } from "../../utils/format.js";
 import { buildTypeProgressInsight, buildProgressMessage, buildPaceComparison, buildComparisonMessage } from "./runningProgress.js";
 import { buildTypeSummary } from "./runningSummary.js";
-import { buildListInsight } from "./runningListInsight.js";
 import { buildZ2Evolution, buildTypeEvolution, EVOLUTION_GROUP_SIZE } from "./runningEvolution.js";
 import { buildWeeklyProgress } from "./runningWeeklyProgress.js";
 import { buildWorkoutTypeContext } from "./runningTypeContext.js";
@@ -1036,26 +1035,6 @@ function RunningTypeSummary(typeFilter, summary, insight, comparison) {
 
 }
 
-// Tarjeta de insight rotatorio sobre la lista (ver runningListInsight.js)
-// -- "" si ninguna variante tiene datos reales, nunca un texto de relleno.
-function RunningListInsightCard(insight) {
-
-    if (!insight) return "";
-
-    return `
-
-        <div class="running-list-insight">
-
-            <iconify-icon icon="${insight.icon}"></iconify-icon>
-
-            <p>${insight.text}</p>
-
-        </div>
-
-    `;
-
-}
-
 // Mensaje real por motivo de "no disponible" (ver buildAcwrInsight() en
 // utils/acwr.js) -- nunca un ratio a medias ni un "—" sin explicar por
 // qué. "no-recent-load" no debería darse con historial ya suficiente
@@ -1363,10 +1342,6 @@ function RunningIdleView() {
     const historyGroups = buildHistoryGroups(filtered);
     const visibleHistoryGroups = visibleHistoryGroupsOf(historyGroups);
 
-    // Insight sobre la lista (ver runningListInsight.js), sobre el
-    // conjunto YA filtrado (mismo que se ve debajo).
-    const listInsight = filtered.length ? buildListInsight({ filteredWorkouts: filtered }) : null;
-
     // ACWR mira SIEMPRE el conjunto real de entrenos (workouts), nunca el
     // filtrado por tipo -- es carga de entrenamiento total, no de "solo
     // rodajes" o "solo series".
@@ -1456,8 +1431,6 @@ function RunningIdleView() {
                     </div>
 
                 ` : `
-
-                    ${RunningListInsightCard(listInsight)}
 
                     <div class="history-groups">
 

@@ -1127,7 +1127,7 @@
 /* =========================
    EVOLUCIÓN Z2
    Solo Rodaje (Z2) por ahora -- ver runningEvolution.js. Mismo lenguaje
-   visual de tarjeta que .acwr-card/.running-list-insight.
+   visual de tarjeta que .acwr-card.
 ========================= */
 
 .z2-evolution-card{
@@ -1404,55 +1404,6 @@
     color:var(--color-text-muted);
 
     font-size:18px;
-
-}
-
-/* Insight rotatorio sobre la lista (ver runningListInsight.js/
-   RunningListInsightCard() en Running.js) -- una sola línea de texto real,
-   mismo lenguaje visual ligero que el resumen de progreso de
-   .running-summary-insight, en su propia tarjeta independiente. */
-.running-list-insight{
-
-    display:flex;
-
-    align-items:center;
-
-    gap:10px;
-
-    padding:12px 16px;
-
-    border-radius:var(--radius-lg);
-
-    background:color-mix(in srgb, var(--card-background) 70%, transparent);
-
-    /* Bloque único (no una fila repetida de lista) -- mismo borde con
-       tinte de color + sombra que las tarjetas destacadas de Inicio, ver
-       comentario igual en .acwr-card más arriba. */
-    border:1px solid color-mix(in srgb, var(--color-primary) 18%, transparent);
-
-    box-shadow:0 8px 20px rgba(0,0,0,.18);
-
-}
-
-.running-list-insight iconify-icon{
-
-    flex-shrink:0;
-
-    font-size:20px;
-
-    color:var(--color-primary);
-
-}
-
-.running-list-insight p{
-
-    margin:0;
-
-    color:var(--text-secondary);
-
-    font-size:.85rem;
-
-    line-height:1.4;
 
 }
 

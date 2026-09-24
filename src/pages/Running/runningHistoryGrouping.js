@@ -39,7 +39,7 @@ function buildGroupSummary(workouts) {
 // por dentro) en: semana actual, semana pasada, y un grupo por mes natural
 // para lo más antiguo (con el año añadido a la etiqueta solo si no es el
 // año en curso -- "Agosto" vs. "Agosto 2025"). `now` inyectable solo para
-// tests, mismo patrón que buildWeekInsight()/buildListInsight().
+// tests, mismo patrón que buildWeekInsight().
 export function buildHistoryGroups(workouts, { now = new Date() } = {}) {
 
     if (!workouts.length) return [];
