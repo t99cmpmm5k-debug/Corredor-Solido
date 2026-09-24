@@ -268,6 +268,48 @@ function groupSummaryText(summary) {
 
 }
 
+// Cuántos grupos de MES (no semana) se pintan como tarjeta propia antes de
+// mandar el resto a la tabla ordenable -- a petición de Rafa (2026-09-24):
+// con varios meses de historial, la lista de tarjetas plegables se llenaba
+// de meses antiguos casi nunca abiertos, mucho antes de llegar a algo
+// consultable. `groups` ya viene ordenado de más reciente a más antiguo
+// (ver buildHistoryGroups()), así que quedarse con los primeros
+// MAX_VISIBLE_HISTORY_MONTHS grupos "month-*" es quedarse con los más
+// recientes -- "Esta semana"/"Semana pasada" nunca cuentan para este tope,
+// son casi siempre lo primero que se quiere ver. Los entrenos de los
+// meses ocultados no se pierden: siguen en `filtered`, así que
+// RunningFullTableView() (el mismo "Ver tabla ordenable" de siempre) ya
+// los tenía y los sigue teniendo -- este helper solo decide qué se pinta
+// como tarjeta aquí, nunca qué datos existen.
+const MAX_VISIBLE_HISTORY_MONTHS = 1;
+
+function splitVisibleHistoryGroups(groups) {
+
+    let monthsShown = 0;
+    const visible = [];
+    let hiddenCount = 0;
+
+    for (const group of groups) {
+
+        const isMonthGroup = group.key.startsWith("month-");
+
+        if (!isMonthGroup || monthsShown < MAX_VISIBLE_HISTORY_MONTHS) {
+
+            visible.push(group);
+            if (isMonthGroup) monthsShown++;
+
+        } else {
+
+            hiddenCount++;
+
+        }
+
+    }
+
+    return { visible, hiddenCount };
+
+}
+
 // Cabecera plegable de un grupo (semana/mes) del historial -- plegar/
 // desplegar es puramente visual (isOpen decide si se pintan las tarjetas
 // de dentro), el estado en sí vive en runningStore.js (getHistoryGroupOverrides)
@@ -1342,11 +1384,11 @@ function RunningIdleView() {
     // ordenado de más reciente a más antiguo (ver `sorted` arriba), orden
     // del que depende buildHistoryGroups() para ordenar los grupos entre sí.
     const historyGroups = buildHistoryGroups(filtered);
+    const { visible: visibleHistoryGroups, hiddenCount: hiddenHistoryMonths } = splitVisibleHistoryGroups(historyGroups);
 
-    // Insight rotatorio sobre la lista (ver runningListInsight.js) --
-    // sobre el conjunto YA filtrado (mismo que se ve debajo), salvo el %
-    // de zapatilla, que siempre mira el total real de todos los entrenos.
-    const listInsight = filtered.length ? buildListInsight({ filteredWorkouts: filtered, allWorkouts: workouts, shoes }) : null;
+    // Insight sobre la lista (ver runningListInsight.js), sobre el
+    // conjunto YA filtrado (mismo que se ve debajo).
+    const listInsight = filtered.length ? buildListInsight({ filteredWorkouts: filtered }) : null;
 
     // ACWR mira SIEMPRE el conjunto real de entrenos (workouts), nunca el
     // filtrado por tipo -- es carga de entrenamiento total, no de "solo
@@ -1460,7 +1502,7 @@ function RunningIdleView() {
 
                     <div class="history-groups">
 
-                        ${historyGroups.map(group => {
+                        ${visibleHistoryGroups.map(group => {
 
                             const overrides = getHistoryGroupOverrides();
                             const isOpen = overrides[group.key] ?? group.defaultOpen;
@@ -1470,6 +1512,18 @@ function RunningIdleView() {
                         }).join("")}
 
                     </div>
+
+                    ${hiddenHistoryMonths > 0 ? `
+
+                        <button class="history-older-hint" data-action="open-history-table">
+
+                            <iconify-icon icon="solar:full-screen-bold-duotone"></iconify-icon>
+
+                            ${hiddenHistoryMonths === 1 ? "1 mes anterior" : `${hiddenHistoryMonths} meses anteriores`} en la tabla ordenable
+
+                        </button>
+
+                    ` : ""}
 
                 `}
 
