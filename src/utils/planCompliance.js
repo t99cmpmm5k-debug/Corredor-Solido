@@ -1,49 +1,53 @@
-import { getWeekStartDate, formatISODate, addDays } from "./date.js";
-
 // Único tipo de plannedSession que representa gimnasio (ver
 // planDayColor.js/PlanTimeline.js) -- todo lo demás en plannedSessions es
 // running (incluida "race", una carrera cuenta como sesión de running).
 const NON_RUNNING_TYPES = ["strength"];
 
-// "Cumplimiento del plan" (Inicio, Capa 2) -- compara lo planificado en
-// Plan para la semana real actual contra lo realmente corrido, SOLO
-// running (nunca gimnasio). Dos métricas separadas a propósito (nunca
-// mezcladas en un único %, ver requisito del pulido):
+// "Cumplimiento del plan" (Inicio) -- compara lo planificado en Plan para
+// la semana real actual contra lo realmente corrido, SOLO running (nunca
+// gimnasio). Dos métricas separadas a propósito (nunca mezcladas en un
+// único %, ver requisito del pulido):
 //
 // - sesiones: cuántas de las sesiones de running planificadas esta
 //   semana ya tienen un entreno real enlazado (session.status ===
 //   "completed", el mismo mecanismo de enlace que ya usa Plan/Running,
 //   ver getSessionStatus() en workoutStore.js).
-// - km: planificado (objetivo de esas sesiones) vs. realizado (TODOS
-//   los entrenos reales de esta semana, workouts -- no solo los
-//   enlazados a una sesión, para reflejar lo realmente corrido aunque
-//   incluya una carrera suelta sin sesión planificada).
+// - km: planificado (objetivo de esas sesiones) vs. realizado.
+//
+// FUENTE ÚNICA (corregido en el rediseño de Inicio, 2026-09-25): antes
+// `actualKm` sumaba TODOS los entrenos reales de la semana por rango de
+// fecha (workouts.filter(fecha-en-semana)), incluidos los NO enlazados a
+// ninguna sesión del plan -- eso hacía que "Cumplimiento del plan"
+// mostrara un km "realizado" distinto (mayor) del que ya mostraba "Esta
+// semana" (getWeekVolume() en workoutStore.js, que solo suma sesiones
+// CON status "completed"), un bug real visto en pantalla (8 km en un
+// sitio, 12,3 km en otro para la misma semana). Causa: dos definiciones
+// de "realizado" distintas para el mismo concepto. Ahora actualKm sale
+// SOLO de sesiones del plan completadas/enlazadas (igual criterio que
+// sessionsCompleted, mismo volume ya derivado por withDerivedFields()) --
+// una carrera real suelta sin sesión planificada sigue viéndose entera en
+// Running, pero ya no altera este %. Ya no hace falta el parámetro
+// `workouts` ni ningún rango de fechas -- todo sale de weekSessions.
 //
 // weekSessions ya viene derivado (status/volume/type, ver
 // withDerivedFields() en workoutStore.js) -- normalmente el resultado de
-// getCurrentWeekSessions(), NUNCA la semana que se esté navegando en
-// Plan (ver Home.js). referenceDate solo se pasa distinto de new Date()
-// en tests, para no depender del reloj real.
-export function buildPlanCompliance(weekSessions, workouts, referenceDate = new Date()) {
+// getCurrentWeekSessions(), NUNCA la semana que se esté navegando en Plan
+// (ver Home.js).
+export function buildPlanCompliance(weekSessions) {
 
     const runningSessions = (weekSessions ?? []).filter(s => !NON_RUNNING_TYPES.includes(s.type));
 
     // Semana de descanso o sin plan importado -- nunca un cálculo con
     // denominador cero ni un 0/0 inventado, el bloque entero se omite
-    // (ver PlanComplianceWidget.js).
+    // (ver Home.js).
     if (runningSessions.length === 0) {
         return { hasPlan: false, sessionsPlanned: 0, sessionsCompleted: 0, plannedKm: 0, actualKm: 0, kmPercent: null };
     }
 
-    const sessionsCompleted = runningSessions.filter(s => s.status === "completed").length;
+    const completedSessions = runningSessions.filter(s => s.status === "completed");
+    const sessionsCompleted = completedSessions.length;
     const plannedKm = runningSessions.reduce((sum, s) => sum + s.volume, 0);
-
-    const weekStart = getWeekStartDate(formatISODate(referenceDate));
-    const weekEnd = addDays(weekStart, 6);
-
-    const actualKm = (workouts ?? [])
-        .filter(w => w.date >= weekStart && w.date <= weekEnd)
-        .reduce((sum, w) => sum + (w.distanceKm || 0), 0);
+    const actualKm = completedSessions.reduce((sum, s) => sum + s.volume, 0);
 
     return {
         hasPlan: true,
@@ -53,8 +57,8 @@ export function buildPlanCompliance(weekSessions, workouts, referenceDate = new 
         actualKm,
         // null (no un 0% engañoso) si ninguna sesión de esta semana trae
         // un objetivo de km real (p. ej. semana solo de series/recovery
-        // sin distancia objetivo) -- PlanComplianceWidget.js omite el %
-        // en ese caso, no divide entre 0.
+        // sin distancia objetivo) -- Home.js omite el % en ese caso, no
+        // divide entre 0.
         kmPercent: plannedKm > 0 ? Math.round((actualKm / plannedKm) * 100) : null
     };
 
