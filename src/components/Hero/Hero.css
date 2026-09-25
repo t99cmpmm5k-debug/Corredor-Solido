@@ -392,6 +392,28 @@ text-shadow:
 
 }
 
+/* "Último entreno · X km ayer" (rediseño de Inicio, 2026-09-25) -- info
+   secundaria, siempre de menor peso que la frase del coach de arriba (sea
+   cual sea el titular de hoy): más pequeña, más apagada, con su propio
+   margen para separarla del resto de la voz del coach. */
+.hero-coach p.hero-last-workout{
+
+    margin-top:10px;
+
+    padding-top:8px;
+
+    border-top:1px solid rgba(255,255,255,.14);
+
+    color:rgba(255,255,255,.68);
+
+    font-size:.78rem;
+
+    font-weight:600;
+
+    text-shadow:none;
+
+}
+
 /* ==========================================================
    RESPONSIVE
 ========================================================== */

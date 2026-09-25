@@ -116,10 +116,11 @@
 
 }
 
-/* Mismo lenguaje visual para HOY y MAÑANA (ver dayPillLabel() en
-   NextGoalWidget.js) -- una sola cápsula, cambia el texto, no el
-   tratamiento. */
-.next-goal-day-pill{
+/* INSCRITO (confirmado -- verde, mismo acento "positivo/seguro" que ya
+   usa el resto de la app, p. ej. la zona óptima de ACWR) frente a
+   OBJETIVO (aspiracional -- azul estructural, el mismo de siempre) --
+   distinción real entre "ya vas" y "quieres ir", no decorativa. */
+.next-goal-badge{
 
     flex-shrink:0;
 
@@ -133,6 +134,20 @@
 
     letter-spacing:.04em;
 
+}
+
+.next-goal-badge--registered{
+
+    color:var(--color-success);
+
+    background:color-mix(in srgb, var(--color-success) 16%, transparent);
+
+    border:1px solid color-mix(in srgb, var(--color-success) 32%, transparent);
+
+}
+
+.next-goal-badge--goal{
+
     color:var(--color-primary);
 
     background:color-mix(in srgb, var(--color-primary) 16%, transparent);
@@ -141,12 +156,49 @@
 
 }
 
-.next-goal-subtitle{
+.next-goal-meta{
+
+    margin:0;
 
     font-size:.82rem;
 
     font-weight:600;
 
     color:var(--text-secondary);
+
+}
+
+.next-goal-meta strong{
+
+    color:var(--text-primary);
+
+}
+
+.next-goal-widget{
+
+    cursor:pointer;
+
+}
+
+/* A media columna (junto a Esta semana, ver .home-two-col en Home.css)
+   "TU PRÓXIMO OBJETIVO" ya no cabe en una fila junto al badge sin
+   envolver a 3 líneas apretadas (bug real visto al verificar: la etiqueta
+   sola, con el letter-spacing normal, ya ocupaba casi todo el ancho de la
+   columna) -- cabecera en columna aquí (etiqueta arriba, badge+flecha
+   debajo), mismo patrón que .home-two-col .week-summary-title en
+   WeekSummary.css para el mismo problema de ancho. */
+.home-two-col .next-goal-header{
+
+    flex-direction:column;
+
+    align-items:flex-start;
+
+    gap:6px;
+
+}
+
+.home-two-col .next-goal-label{
+
+    letter-spacing:.04em;
 
 }

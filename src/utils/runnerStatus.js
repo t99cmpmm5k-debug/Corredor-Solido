@@ -14,12 +14,17 @@ function daysUntil(dateISO, referenceDate) {
 
 }
 
-function raceDaysLabel(days) {
+// Misma prioridad Inscrito > Objetivo que "Tu próximo objetivo"
+// (NextGoalWidget.js, rediseño de Inicio 2026-09-25) -- ANTES esto y el
+// indicador "Próx. carrera" de abajo caían a upcoming[0] (la más
+// próxima del calendario general) si no había ninguna marcada, mismo
+// fallback ya quitado de NextGoalWidget.js por el mismo motivo: una
+// carrera solo "Siguiendo" no debe influir en Inicio. Se comparte aquí
+// para que la frase-resumen de más abajo nunca hable de una carrera que
+// la propia tarjeta de "Tu próximo objetivo" no mostraría.
+function priorityRace(upcomingRaces) {
 
-    if (days <= 0) return "Hoy";
-    if (days === 1) return "Mañana";
-
-    return `${days} días`;
+    return (upcomingRaces ?? []).find(r => r.isRegistered) ?? (upcomingRaces ?? []).find(r => r.isGoal) ?? null;
 
 }
 
@@ -37,21 +42,23 @@ function paceTrendLabel(evolution) {
 
 }
 
-// "Estado del corredor" (Inicio, Capa 2) -- 4 indicadores compactos, cada
-// uno leyendo un cálculo que YA EXISTE en otra pantalla, nunca uno nuevo:
+// "Estado del corredor" (Inicio) -- 3 indicadores compactos (simplificado
+// de 4 a 3 en el rediseño de Inicio, 2026-09-25: "Próx. carrera" se quita
+// de aquí, ya la cubre "Tu próximo objetivo" -- NextGoalWidget.js -- si
+// hay una carrera real marcada), cada uno leyendo un cálculo que YA
+// EXISTE en otra pantalla, nunca uno nuevo:
 //
 // - Carga: buildAcwrInsight() (ver utils/acwr.js, ya usado en Running).
 // - Z2: buildZ2Evolution() (ver pages/Running/runningEvolution.js).
 // - Semana: buildPlanCompliance() (ver utils/planCompliance.js, Inicio).
-// - Próxima carrera: getUpcomingPlannedRaces(), misma prioridad
-//   "marcada como objetivo, si no la más próxima" que ya usa
-//   NextGoalWidget.js -- mismo dato, mismo criterio de selección.
 //
 // Cualquier pieza sin dato disponible se omite del array por completo
 // (nunca un placeholder "sin datos") -- RunnerStatusWidget.js oculta la
-// tarjeta entera si el array queda vacío. referenceDate solo se pasa
-// distinto de new Date() en tests.
-export function buildRunnerStatusIndicators({ acwrInsight, z2Evolution, planCompliance, upcomingRaces }, referenceDate = new Date()) {
+// tarjeta entera si el array queda vacío. Recibe el mismo objeto
+// `runnerStatusInputs` que buildRunnerStatusSummary() de abajo (que sí
+// necesita upcomingRaces/referenceDate) -- Home.js arma uno solo, esta
+// función simplemente ignora los campos que no le hacen falta.
+export function buildRunnerStatusIndicators({ acwrInsight, z2Evolution, planCompliance }) {
 
     const indicators = [];
 
@@ -77,13 +84,13 @@ export function buildRunnerStatusIndicators({ acwrInsight, z2Evolution, planComp
 
     }
 
-    // Revisado (Capa 3, punto 4): a diferencia de PlanComplianceWidget.js y
-    // de la frase-resumen (planSummarySentence más abajo), este indicador
-    // se queda deliberadamente como número simple aunque supere el 100% --
-    // es una celda compacta de icono+valor+etiqueta en una fila junto a
-    // otras 3, sin sitio para una nota de contexto sin romper el formato.
-    // El matiz de "cumplir de más no es automáticamente mejor" sigue
-    // presente en la propia app (widget y frase-resumen), solo no aquí.
+    // Revisado (Capa 3, punto 4): a diferencia de la frase-resumen
+    // (planSummarySentence más abajo), este indicador se queda
+    // deliberadamente como número simple aunque supere el 100% -- es una
+    // celda compacta de icono+valor+etiqueta en una fila junto a otras 2,
+    // sin sitio para una nota de contexto sin romper el formato. El matiz
+    // de "cumplir de más no es automáticamente mejor" sigue presente en
+    // la propia frase-resumen, solo no aquí.
     if (planCompliance.hasPlan && planCompliance.kmPercent != null) {
 
         indicators.push({
@@ -91,19 +98,6 @@ export function buildRunnerStatusIndicators({ acwrInsight, z2Evolution, planComp
             icon: "solar:calendar-mark-bold-duotone",
             label: "Semana",
             value: `${planCompliance.kmPercent}%`
-        });
-
-    }
-
-    const race = (upcomingRaces ?? []).find(r => r.isGoal) ?? (upcomingRaces ?? [])[0] ?? null;
-
-    if (race) {
-
-        indicators.push({
-            key: "race",
-            icon: "solar:flag-2-bold-duotone",
-            label: "Próx. carrera",
-            value: raceDaysLabel(daysUntil(race.date, referenceDate))
         });
 
     }
@@ -148,7 +142,7 @@ function acwrSummarySentence(zoneId) {
 // Distinguir cumplimiento de carga (Capa 3, punto 4): cumplir de más no es
 // automáticamente "mejor" cuanto más alto sea el %, mismo criterio que ya
 // se aplica en ACWR -- classifyPlanOverage() (utils/planCompliance.js,
-// misma clasificación y mismo umbral que ya usa PlanComplianceWidget.js,
+// misma clasificación y mismo umbral que ya usa classifyPlanOverage() (planCompliance.js),
 // no uno nuevo) decide si el exceso es "alto"; solo entonces se cambia el
 // refuerzo incondicional por una frase informativa sin veredicto.
 function planSummarySentence(kmPercent) {
@@ -179,25 +173,25 @@ function z2SummarySentence(evolution) {
 
 // Frase-resumen bajo "Estado del corredor" (Inicio, Capa 3, primer punto
 // del documento de 35 propuestas) -- elige UNA sola interpretación, nunca
-// intenta combinar los 4 indicadores en una frase. Prioridad fija (usa la
-// primera que aplique, en este orden):
+// intenta combinarlas todas en una frase. Prioridad fija (usa la primera
+// que aplique, en este orden):
 //
-//   a) Carrera marcada a <= RACE_URGENT_DAYS_THRESHOLD días -- lo más
-//      accionable/urgente siempre gana, sea cual sea el resto de datos.
+//   a) Carrera Inscrita/Objetivo (mismo criterio que "Tu próximo
+//      objetivo", priorityRace() más arriba -- desde el rediseño de
+//      Inicio 2026-09-25 ya no cualquier carrera próxima) a
+//      <= RACE_URGENT_DAYS_THRESHOLD días -- lo más accionable/urgente
+//      siempre gana, sea cual sea el resto de datos.
 //   b) Carga (ACWR) en zona alta/muy alta -- aviso suave, mismo
 //      vocabulario que la propia tarjeta ACWR (nunca "riesgo").
 //   c) Cumplimiento del plan completado o cerca -- refuerzo positivo.
 //   d) Evolución Z2 -- dato de fondo si no hay nada más relevante que
 //      contar esta semana.
 //
-// null si ninguna regla aplica (mismos datos "no disponibles" que ya usa
-// buildRunnerStatusIndicators() -- por construcción, si las 4 fuentes
-// están vacías esto también devuelve null, sin necesidad de comprobarlo
-// aparte: no hay indicadores == ninguna condición de arriba puede ser
-// cierta). Nunca inventa ni calcula nada que esas 4 fuentes no traigan ya.
+// null si ninguna regla aplica. Nunca inventa ni calcula nada que esas
+// fuentes no traigan ya.
 export function buildRunnerStatusSummary({ acwrInsight, z2Evolution, planCompliance, upcomingRaces }, referenceDate = new Date()) {
 
-    const race = (upcomingRaces ?? []).find(r => r.isGoal) ?? (upcomingRaces ?? [])[0] ?? null;
+    const race = priorityRace(upcomingRaces);
 
     if (race) {
 

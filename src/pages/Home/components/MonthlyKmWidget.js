@@ -6,7 +6,9 @@ import { formatKm } from "../../../utils/format.js";
 // de "refuerzo visual discreto" a ocupar de verdad la mitad inferior de
 // la tarjeta, con la etiqueta de cada mes debajo -- antes solo llevaba
 // aria-label, sin texto visible.
-const MAX_BAR_HEIGHT = 64;
+// 64 -> 44 (rediseño de Inicio, 2026-09-25 -- punto 7: compactar esta
+// tarjeta ~25-30% de alto, ver también el CSS de .monthly-km-bar-track).
+const MAX_BAR_HEIGHT = 44;
 
 // Ajuste de los ajustes finales (B3): 18px (ronda de cierre anterior)
 // resultaba demasiado alto como suelo -- cualquier mes por debajo de

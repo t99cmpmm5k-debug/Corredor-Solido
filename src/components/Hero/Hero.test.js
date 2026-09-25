@@ -5,10 +5,11 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 
 let todaySession = null;
 let gymMatch = null;
+let workouts = [];
 
 vi.mock("../../data/workoutStore.js", () => ({
     getTodaySession: () => todaySession,
-    getWorkouts: () => []
+    getWorkouts: () => workouts
 }));
 
 vi.mock("../../pages/Plan/gymTimelineBridge.js", () => ({
@@ -24,15 +25,31 @@ describe("Hero -- estado finalizada / gimnasio de hoy", () => {
         gymMatch = null;
     });
 
-    it("sesión de running pendiente: usa el hero normal del tipo, no el de completada", () => {
+    // Rediseño de Inicio (2026-09-25): el titular deja de ser la frase
+    // poética de heroData[type].title ("Construye"/"base") y pasa a
+    // "HOY: <TIPO>" -- literal, usando el label ya existente en
+    // WORKOUT_TYPES ("Rodaje (Z2)" sin paréntesis, en mayúsculas).
+    it("sesión de running pendiente: titular 'HOY: RODAJE Z2', no el de completada", () => {
 
         todaySession = { type: "z2", status: "pending" };
 
         const html = Hero();
 
-        expect(html).toContain("Construye");
+        expect(html).toContain("HOY:");
+        expect(html).toContain("RODAJE Z2");
         expect(html).not.toContain("Sesión");
         expect(html).not.toContain("completada");
+
+    });
+
+    it("sesión de descanso del plan (recovery) pendiente: titular 'HOY: RECUPERA'", () => {
+
+        todaySession = { type: "recovery", status: "pending" };
+
+        const html = Hero();
+
+        expect(html).toContain("HOY:");
+        expect(html).toContain("RECUPERA");
 
     });
 
@@ -56,7 +73,8 @@ describe("Hero -- estado finalizada / gimnasio de hoy", () => {
         const html = Hero();
 
         expect(html).not.toContain("no tienes ningún entrenamiento planificado");
-        expect(html).toContain("fuerza");
+        expect(html).toContain("HOY:");
+        expect(html).toContain("FUERZA");
 
     });
 
@@ -80,6 +98,73 @@ describe("Hero -- estado finalizada / gimnasio de hoy", () => {
         const html = Hero();
 
         expect(html).toContain("no tienes ningún entrenamiento planificado");
+
+    });
+
+});
+
+// Línea secundaria "Último entreno · X km ayer" (rediseño de Inicio,
+// 2026-09-25) -- fechas relativas al reloj real (Hero() no recibe
+// referenceDate, mismo criterio que formatCurrentDate() dentro), para no
+// depender de una fecha de test fija que se quede desfasada.
+describe("Hero -- línea secundaria 'Último entreno' (independiente del titular de hoy)", () => {
+
+    function isoDaysAgo(days) {
+        const d = new Date();
+        d.setDate(d.getDate() - days);
+        return d.toISOString().slice(0, 10);
+    }
+
+    afterEach(() => {
+        todaySession = null;
+        gymMatch = null;
+        workouts = [];
+    });
+
+    it("con sesión de plan hoy Y un entreno real reciente, muestra las dos cosas a la vez (titular + línea secundaria)", () => {
+
+        todaySession = { type: "z2", status: "pending" };
+        workouts = [{ date: isoDaysAgo(1), distanceKm: 4.3 }];
+
+        const html = Hero();
+
+        expect(html).toContain("HOY:");
+        expect(html).toContain("RODAJE Z2");
+        expect(html).toContain("Último entreno · 4,3 km ayer");
+
+    });
+
+    it("sin ningún entreno real, no muestra la línea secundaria (nunca un hueco vacío)", () => {
+
+        todaySession = { type: "z2", status: "pending" };
+        workouts = [];
+
+        const html = Hero();
+
+        expect(html).not.toContain("Último entreno");
+
+    });
+
+    it("un entreno de hoy mismo se lee 'hoy', no 'hace 0 días'", () => {
+
+        todaySession = null;
+        gymMatch = null;
+        workouts = [{ date: isoDaysAgo(0), distanceKm: 8 }];
+
+        const html = Hero();
+
+        expect(html).toContain("Último entreno · 8 km hoy");
+
+    });
+
+    it("un entreno real demasiado viejo (más del umbral) no muestra la línea secundaria", () => {
+
+        todaySession = { type: "z2", status: "pending" };
+        workouts = [{ date: isoDaysAgo(45), distanceKm: 10 }];
+
+        const html = Hero();
+
+        expect(html).not.toContain("Último entreno");
 
     });
 

@@ -235,6 +235,66 @@
 
 }
 
+/* "Próximo: RODAJE Z2 · 8 km · Miércoles" (Inicio, rediseño 2026-09-25) --
+   línea de cierre de la tarjeta, mismo peso visual que .week-summary-insight
+   pero con su propio separador superior (puede coexistir con insight/
+   WeekChart encima, nunca los sustituye). */
+/* Bug real encontrado al verificar en WebKit: con display:flex y el
+   texto suelto (sin envolver en un <span>) junto al icono, CADA fragmento
+   de texto/<strong> se convertía en su propio elemento flex -- sin
+   flex-wrap (nowrap por defecto), la fila entera se negaba a partir en
+   más líneas y se salía muy por fuera del ancho de la tarjeta, recortada
+   por el overflow:hidden de .week-summary--card ("Próximo: SERIES" se
+   veía, el resto asomaba fuera del borde). El texto va TODO dentro de un
+   único <span> (WeekSummary.js) para que envuelva como un bloque normal;
+   el icono se alinea arriba (flex-start, no center) para que si el texto
+   ocupa 2 líneas no quede descentrado verticalmente. */
+.week-summary-next{
+
+    display:flex;
+
+    align-items:flex-start;
+
+    gap:6px;
+
+    margin:0;
+
+    padding-top:10px;
+
+    border-top:1px solid color-mix(in srgb, var(--card-border) 70%, transparent);
+
+    font-size:.8rem;
+
+    color:var(--text-secondary);
+
+    line-height:1.4;
+
+}
+
+.week-summary-next span{
+
+    min-width:0;
+
+}
+
+.week-summary-next iconify-icon{
+
+    flex-shrink:0;
+
+    margin-top:2px;
+
+    color:var(--color-primary);
+
+    font-size:14px;
+
+}
+
+.week-summary-next strong{
+
+    color:var(--text-primary);
+
+}
+
 /* ==========================================================
    COMPACTO A MEDIA COLUMNA — ajustes finales de cierre (A1): desde que
    esta tarjeta vive junto a Próximas Carreras en dos columnas (ver
@@ -247,7 +307,7 @@
 
 .home-two-col .week-summary--card{
 
-    padding:14px 14px 12px;
+    padding:14px 14px 16px;
 
 }
 
@@ -318,5 +378,13 @@
     font-size:.72rem;
 
     line-height:1.4;
+
+}
+
+.home-two-col .week-summary-next{
+
+    font-size:.7rem;
+
+    padding-top:8px;
 
 }

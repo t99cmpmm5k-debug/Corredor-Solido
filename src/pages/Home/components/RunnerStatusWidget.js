@@ -3,7 +3,7 @@ import "./RunnerStatusWidget.css";
 // "Estado del corredor" (Inicio, Capa 2) -- `indicators` ya viene
 // calculado y filtrado (ver buildRunnerStatusIndicators() en
 // utils/runnerStatus.js), este componente es puro renderizado, igual que
-// MonthlyKmWidget.js/PlanComplianceWidget.js.
+// MonthlyKmWidget.js.
 //
 // Sin ningún indicador disponible, el bloque entero no se pinta -- mismo
 // criterio que NextGoalWidget.js sin carrera próxima. Con 1 a 4

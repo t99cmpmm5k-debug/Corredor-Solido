@@ -180,9 +180,56 @@ function BestRunningHour(hours, now) {
 // en respuestas raras de la API sin el bloque "current". `now` solo se
 // pasa distinto de new Date() en tests (ver remainingHours() en
 // hourlyForecast.js, usada dentro de BestRunningHour()).
-export function HourlyWeather({ hours, current, label }, now = new Date()) {
+// Cuántas horas se pintan en la tira de abajo -- antes eran las 24h
+// enteras cacheadas (ver HOURS_AHEAD en hourlyForecast.js); "clima para
+// correr", no "app meteorológica" (rediseño de Inicio, 2026-09-25):
+// solo las próximas RELEVANT_HOURS_COUNT horas que todavía no han pasado
+// (remainingHours(), la misma función que ya usa BestRunningHour para no
+// proponer una franja ya pasada). Con TODO el pronóstico ya pasado
+// (caso raro, solo con muy pocas horas cacheadas) se cae al final real
+// de esa lista en vez de a un hueco vacío -- sigue siendo dato real, solo
+// que ya no es "lo próximo", es "lo último que hubo".
+const RELEVANT_HOURS_COUNT = 6;
+
+function relevantHours(hours, now) {
+
+    const upcoming = remainingHours(hours, now);
+    return (upcoming.length ? upcoming : hours).slice(0, RELEVANT_HOURS_COUNT);
+
+}
+
+// hasSessionToday: true por defecto -- viene de Home.js (¿hay running
+// planificado hoy, tipo distinto de "recovery"?). Sin sesión hoy, "clima
+// para correr" no tiene nada que recomendar -- ver punto 8 del rediseño:
+// "si es descanso... sin buscar artificialmente una mejor hora". Se
+// muestra solo la temperatura real actual con un mensaje neutro, sin
+// buscar la mejor franja ni pintar la tira de horas ni la tendencia --
+// nada de eso tiene sentido un día sin sesión.
+export function HourlyWeather({ hours, current, label, hasSessionToday = true }, now = new Date()) {
 
     if (!hours || hours.length === 0) return "";
+
+    if (!hasSessionToday) {
+
+        return `
+
+            <section class="hourly-weather hourly-weather--rest">
+
+                <p class="hourly-weather-rest-message">
+
+                    Hoy no tienes sesión planificada
+
+                    ${current ? ` · <strong>${current.temp}°</strong>` : ""}
+
+                </p>
+
+            </section>
+
+        `;
+
+    }
+
+    const shownHours = relevantHours(hours, now);
 
     return `
 
@@ -209,11 +256,11 @@ export function HourlyWeather({ hours, current, label }, now = new Date()) {
 
             <div class="hourly-weather-scroll">
 
-                ${hours.map(HourlyWeatherSlot).join("")}
+                ${shownHours.map(HourlyWeatherSlot).join("")}
 
             </div>
 
-            ${TemperatureTrend(hours)}
+            ${TemperatureTrend(shownHours)}
 
         </section>
 

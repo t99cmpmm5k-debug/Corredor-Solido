@@ -41,11 +41,6 @@
     margin: 0 20px 28px;
 }
 
-.plan-compliance-card {
-
-    margin: 0 20px 28px;
-}
-
 .runner-status-card {
 
     margin: 0 20px 28px;
@@ -67,7 +62,17 @@
 
     display: flex;
 
-    align-items: stretch;
+    /* flex-start, no stretch (rediseño de Inicio, 2026-09-25): con la
+       línea nueva "Próximo: ..." (WeekSummary.js), "Esta semana" casi
+       siempre tiene más contenido real que "Tu próximo objetivo" --
+       forzar la misma altura estiraba el fondo/borde de la tarjeta más
+       corta (Tu próximo objetivo) sin encoger la otra, pero el propio
+       contenido de "Esta semana" (ver height:100% en WeekSummary.css)
+       podía necesitar más alto real del que cabía en su fondo estirado a
+       la altura de la vecina más corta -- bug real visto al verificar
+       (la línea "Próximo: ..." asomaba fuera del borde de la tarjeta).
+       Cada columna con su alto natural evita el problema de raíz. */
+    align-items: flex-start;
 
     gap: 12px;
 

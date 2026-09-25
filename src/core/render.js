@@ -10,6 +10,7 @@ import { initProfileEvents } from "../pages/Profile/initProfileEvents.js";
 import { initGymEvents } from "../pages/Gym/initGymEvents.js";
 import { initCarrerasEvents } from "../pages/Carreras/initCarrerasEvents.js";
 import { initMonthlyKmWidgetEvents } from "../pages/Home/components/initMonthlyKmWidgetEvents.js";
+import { initHomeEvents } from "../pages/Home/initHomeEvents.js";
 import { initAuthEvents } from "../pages/Auth/initAuthEvents.js";
 import { initComunidadEvents } from "../pages/Comunidad/initComunidadEvents.js";
 
@@ -44,6 +45,8 @@ export function render() {
     initCarrerasEvents();
 
     initMonthlyKmWidgetEvents();
+
+    initHomeEvents();
 
     initAuthEvents();
 

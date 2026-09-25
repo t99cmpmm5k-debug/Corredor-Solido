@@ -8,7 +8,7 @@ vi.mock("../../../data/workoutStore.js", () => ({
 
 const REFERENCE = new Date(2026, 7, 26); // 26 agosto 2026
 
-describe("NextGoalWidget", () => {
+describe("NextGoalWidget -- 'TU PRÓXIMO OBJETIVO' (rediseño de Inicio, 2026-09-25)", () => {
 
     afterEach(() => {
         vi.mocked(getUpcomingPlannedRaces).mockReset();
@@ -22,99 +22,159 @@ describe("NextGoalWidget", () => {
 
     });
 
-    it("título 'PRÓXIMAS CARRERAS' (renombrado en los ajustes de cierre) con la flecha de que hay más en Carreras", () => {
+    // El cambio central de este rediseño: una carrera del calendario
+    // general (ni Inscrito ni Objetivo, solo "Siguiendo" -- las dos
+    // banderas en false) YA NO cae aquí como fallback. Antes
+    // upcoming[0] la mostraba igual; ahora el widget desaparece del todo.
+    it("una carrera próxima sin isRegistered ni isGoal (solo 'Siguiendo') NO aparece -- el widget desaparece", () => {
 
         vi.mocked(getUpcomingPlannedRaces).mockReturnValue([
             { id: "r1", name: "10K Murcia", date: "2026-09-22" }
         ]);
 
+        expect(NextGoalWidget(REFERENCE)).toBe("");
+
+    });
+
+    it("título 'TU PRÓXIMO OBJETIVO' con una carrera marcada Objetivo", () => {
+
+        vi.mocked(getUpcomingPlannedRaces).mockReturnValue([
+            { id: "r1", name: "10K Murcia", date: "2026-09-22", isGoal: true }
+        ]);
+
         const html = NextGoalWidget(REFERENCE);
 
-        expect(html).toContain("PRÓXIMAS CARRERAS");
-        expect(html).not.toContain("PRÓXIMO OBJETIVO");
+        expect(html).toContain("TU PRÓXIMO OBJETIVO");
+        expect(html).not.toContain("PRÓXIMAS CARRERAS");
         expect(html).toContain("next-goal-more-hint");
 
     });
 
-    // Aunque getUpcomingPlannedRaces() pueda devolver varias carreras
-    // reales, el widget solo pinta la primera -- el resto vive en
-    // Carreras (ver comentario en NextGoalWidget.js).
-    it("con varias carreras próximas reales, solo muestra la primera (la más próxima)", () => {
+    it("carrera marcada Inscrito muestra el badge INSCRITO", () => {
 
         vi.mocked(getUpcomingPlannedRaces).mockReturnValue([
-            { id: "r1", name: "10K Murcia", date: "2026-09-22" },
-            { id: "r2", name: "Media Maratón Águilas", date: "2026-10-01" }
+            { id: "r1", name: "10K Murcia", date: "2026-09-22", isRegistered: true }
         ]);
 
         const html = NextGoalWidget(REFERENCE);
 
-        expect(html).toContain("10K Murcia");
-        expect(html).not.toContain("Media Maratón Águilas");
+        expect(html).toContain("INSCRITO");
+        expect(html).not.toContain(">OBJETIVO<");
 
     });
 
-    it("con una carrera próxima real, muestra su nombre completo y los datos reales de la segunda línea", () => {
+    it("carrera marcada solo Objetivo (no inscrita) muestra el badge OBJETIVO", () => {
 
         vi.mocked(getUpcomingPlannedRaces).mockReturnValue([
-            { id: "r1", name: "10K Murcia", date: "2026-09-22", distanceKm: 10, location: "Murcia" }
+            { id: "r1", name: "10K Murcia", date: "2026-09-22", isGoal: true }
         ]);
 
         const html = NextGoalWidget(REFERENCE);
 
-        expect(html).toContain("10K Murcia");
+        expect(html).toContain(">OBJETIVO<");
+        expect(html).not.toContain(">INSCRITO<");
+
+    });
+
+    // Prioridad: Inscrito más próxima gana a Objetivo más próxima, aunque
+    // el Objetivo sea temporalmente anterior.
+    it("con una Inscrito y una Objetivo, prioriza la Inscrito aunque sea más lejana en fecha", () => {
+
+        vi.mocked(getUpcomingPlannedRaces).mockReturnValue([
+            { id: "r1", name: "Objetivo cercano", date: "2026-09-01", isGoal: true },
+            { id: "r2", name: "Inscrita lejana", date: "2026-10-15", isRegistered: true }
+        ]);
+
+        const html = NextGoalWidget(REFERENCE);
+
+        expect(html).toContain("Inscrita lejana");
+        expect(html).not.toContain("Objetivo cercano");
+
+    });
+
+    it("con varias Inscrito, muestra la más próxima por fecha", () => {
+
+        vi.mocked(getUpcomingPlannedRaces).mockReturnValue([
+            { id: "r1", name: "Inscrita cercana", date: "2026-09-01", isRegistered: true },
+            { id: "r2", name: "Inscrita lejana", date: "2026-10-15", isRegistered: true }
+        ]);
+
+        const html = NextGoalWidget(REFERENCE);
+
+        expect(html).toContain("Inscrita cercana");
+        expect(html).not.toContain("Inscrita lejana");
+
+    });
+
+    it("nombre, distancia real y fecha, sin ubicación ni superficie", () => {
+
+        vi.mocked(getUpcomingPlannedRaces).mockReturnValue([
+            { id: "r1", name: "Carrera Popular", date: "2026-09-22", distanceKm: 10, location: "Águilas", isGoal: true }
+        ]);
+
+        const html = NextGoalWidget(REFERENCE);
+
+        expect(html).toContain("Carrera Popular");
         expect(html).toContain("10,00 km");
-        expect(html).toContain("Murcia");
+        expect(html).toContain("22 SEPT");
+        expect(html).not.toContain("Águilas"); // la ubicación ya no se muestra
 
     });
 
-    it("una carrera hoy muestra la cápsula HOY, sin repetir 'Hoy' en la segunda línea", () => {
+    it("sin distanceKm, la línea de meta solo trae la fecha (sin inventar ni disciplina ni ubicación)", () => {
 
         vi.mocked(getUpcomingPlannedRaces).mockReturnValue([
-            { id: "r1", name: "10K Murcia", date: "2026-08-26", distanceKm: 10, location: "Murcia" }
+            { id: "r1", name: "Carrera Nocturna", date: "2026-09-22", type: "RU", location: "Las Torres", isGoal: true }
         ]);
 
         const html = NextGoalWidget(REFERENCE);
 
-        expect(html).toContain("next-goal-day-pill");
-        expect(html).toContain("HOY");
-        expect(html).not.toContain("Hoy");
+        expect(html).not.toContain("Asfalto");
+        expect(html).not.toContain("Las Torres");
+        expect(html).toContain("22 SEPT");
 
     });
 
-    // Ajuste B2 (ronda de ajustes finales): misma cápsula que HOY, con
-    // texto MAÑANA -- y por el mismo motivo que HOY, la fecha ya no se
-    // repite en la segunda línea.
-    it("una carrera mañana muestra la cápsula MAÑANA, sin repetir 'Mañana' en la segunda línea", () => {
+    it("cuenta atrás real: 'Faltan N días' para una carrera lejana", () => {
 
         vi.mocked(getUpcomingPlannedRaces).mockReturnValue([
-            { id: "r1", name: "10K Murcia", date: "2026-08-27", distanceKm: 10, location: "Murcia" }
+            { id: "r1", name: "10K Murcia", date: "2026-09-18", isGoal: true } // 23 días desde el 26 ago
         ]);
 
         const html = NextGoalWidget(REFERENCE);
 
-        expect(html).toContain("next-goal-day-pill");
-        expect(html).toContain("MAÑANA");
-        expect(html).not.toContain("next-goal-subtitle\">Mañana<");
+        expect(html).toContain("Faltan 23 días");
 
     });
 
-    it("una carrera más lejana muestra el día de la semana y la fecha real, sin ninguna cápsula", () => {
+    it("cuenta atrás para mañana: 'Falta 1 día'", () => {
 
         vi.mocked(getUpcomingPlannedRaces).mockReturnValue([
-            { id: "r1", name: "10K Murcia", date: "2026-09-22" }
+            { id: "r1", name: "10K Murcia", date: "2026-08-27", isGoal: true }
         ]);
 
         const html = NextGoalWidget(REFERENCE);
 
-        expect(html).toContain("22 sep");
-        expect(html).not.toContain("next-goal-day-pill");
+        expect(html).toContain("Falta 1 día");
+
+    });
+
+    it("cuenta atrás para hoy: 'Es hoy'", () => {
+
+        vi.mocked(getUpcomingPlannedRaces).mockReturnValue([
+            { id: "r1", name: "10K Murcia", date: "2026-08-26", isGoal: true }
+        ]);
+
+        const html = NextGoalWidget(REFERENCE);
+
+        expect(html).toContain("Es hoy");
 
     });
 
     it("una carrera sin nombre usa 'Carrera' como fallback", () => {
 
         vi.mocked(getUpcomingPlannedRaces).mockReturnValue([
-            { id: "r1", date: "2026-08-30" }
+            { id: "r1", date: "2026-08-30", isGoal: true }
         ]);
 
         const html = NextGoalWidget(REFERENCE);
@@ -122,80 +182,23 @@ describe("NextGoalWidget", () => {
 
     });
 
-    it("sin distanceKm pero con type (RU/TRS, el campo real de plannedRaces), usa la etiqueta de disciplina en vez de omitir esa pieza", () => {
+    it("toda la tarjeta lleva data-action/data-race-id para abrir el detalle real de esa carrera", () => {
 
         vi.mocked(getUpcomingPlannedRaces).mockReturnValue([
-            { id: "r1", name: "Carrera Nocturna", date: "2026-08-26", type: "RU", location: "Las Torres" }
+            { id: "r42", name: "10K Murcia", date: "2026-09-22", isGoal: true }
         ]);
 
         const html = NextGoalWidget(REFERENCE);
 
-        expect(html).toContain("Asfalto");
-        expect(html).toContain("Las Torres");
-
-    });
-
-    it("sin distanceKm ni type ni location, para una carrera futura la segunda línea solo trae la fecha real", () => {
-
-        vi.mocked(getUpcomingPlannedRaces).mockReturnValue([
-            { id: "r1", name: "Carrera Nocturna", date: "2026-09-22" }
-        ]);
-
-        const html = NextGoalWidget(REFERENCE);
-
-        expect(html).toContain("next-goal-subtitle\">Martes, 22 sept<");
-
-    });
-
-    it("una carrera de hoy sin type/distanceKm/location no deja ninguna segunda línea (nada real que mostrar)", () => {
-
-        vi.mocked(getUpcomingPlannedRaces).mockReturnValue([
-            { id: "r1", name: "Carrera Nocturna", date: "2026-08-26" }
-        ]);
-
-        const html = NextGoalWidget(REFERENCE);
-
-        expect(html).not.toContain("next-goal-subtitle");
-
-    });
-
-    // Nombre largo real (30ª Carrera Nocturna Fiestas de Las Torres 2026)
-    // -- probado explícitamente en la ronda de columnas porque a media
-    // anchura es el caso más apretado; aquí solo se confirma que el
-    // marcado sigue siendo el <span> de siempre (el ajuste de ancho/
-    // elipsis vive en CSS, ver NextGoalWidget.css).
-    it("con una carrera marcada isGoal, la prioriza por encima de la más próxima por fecha simple", () => {
-
-        vi.mocked(getUpcomingPlannedRaces).mockReturnValue([
-            { id: "r1", name: "10K Murcia (más próxima)", date: "2026-09-22" },
-            { id: "r2", name: "Maratón Objetivo", date: "2026-10-15", isGoal: true }
-        ]);
-
-        const html = NextGoalWidget(REFERENCE);
-
-        expect(html).toContain("Maratón Objetivo");
-        expect(html).not.toContain("10K Murcia (más próxima)");
-
-    });
-
-    it("sin ninguna carrera marcada isGoal, mantiene el comportamiento actual (la más próxima por fecha)", () => {
-
-        vi.mocked(getUpcomingPlannedRaces).mockReturnValue([
-            { id: "r1", name: "10K Murcia", date: "2026-09-22" },
-            { id: "r2", name: "Media Maratón Águilas", date: "2026-10-01" }
-        ]);
-
-        const html = NextGoalWidget(REFERENCE);
-
-        expect(html).toContain("10K Murcia");
-        expect(html).not.toContain("Media Maratón Águilas");
+        expect(html).toContain('data-action="open-goal-race"');
+        expect(html).toContain('data-race-id="r42"');
 
     });
 
     it("un nombre de carrera largo real sigue en el mismo <span> (el recorte a 2 líneas/elipsis es cosa del CSS)", () => {
 
         vi.mocked(getUpcomingPlannedRaces).mockReturnValue([
-            { id: "r1", name: "30ª Carrera Nocturna Fiestas de Las Torres 2026", date: "2026-08-26", type: "RU", location: "Torres de Cotillas (Las), Murcia" }
+            { id: "r1", name: "30ª Carrera Nocturna Fiestas de Las Torres 2026", date: "2026-08-26", isGoal: true }
         ]);
 
         const html = NextGoalWidget(REFERENCE);

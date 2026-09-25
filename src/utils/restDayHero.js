@@ -8,9 +8,15 @@ const MIN_STREAK_WEEKS = 2;
 const RECENT_WINDOW_DAYS = 7;
 const MIN_PACE_SAMPLE = 3;
 const MIN_PACE_IMPROVEMENT_SEC = 2;
-const LAST_WORKOUT_STALE_DAYS = 30;
+// Exportadas: Hero.js (rediseño de Inicio, 2026-09-25) reutiliza estas
+// dos mismas piezas para la línea secundaria "Último entreno · X km
+// ayer" -- se muestra SIEMPRE que haya un entreno real reciente, tenga o
+// no sesión de plan hoy, a diferencia de aquí (donde solo entran en
+// juego sin sesión/gimnasio programado hoy, ver buildRestDayHero() más
+// abajo). Mismo umbral de "reciente" en los dos sitios, una sola fuente.
+export const LAST_WORKOUT_STALE_DAYS = 30;
 
-function daysBetween(isoFrom, isoTo) {
+export function daysBetween(isoFrom, isoTo) {
     return Math.round((parseISODate(isoTo) - parseISODate(isoFrom)) / 86400000);
 }
 
@@ -19,7 +25,7 @@ function formatKm(km) {
     return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
 }
 
-function mostRecentWorkout(workouts) {
+export function mostRecentWorkout(workouts) {
     return workouts.reduce((latest, w) => (!latest || w.date > latest.date) ? w : latest, null);
 }
 

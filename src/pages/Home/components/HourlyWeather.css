@@ -32,6 +32,36 @@
 
 }
 
+/* Día sin sesión (rediseño de Inicio, 2026-09-25, punto 8) -- mismo
+   contenedor/tarjeta, mucho más compacto: sin la tira de horas ni la
+   tendencia, solo el aviso + la temperatura real. gap:0 (a diferencia de
+   .hourly-weather de arriba) porque aquí solo hay un párrafo. */
+.hourly-weather--rest {
+
+    gap: 0;
+
+    padding: 14px 20px;
+
+}
+
+.hourly-weather-rest-message {
+
+    margin: 0;
+
+    color: var(--text-secondary);
+
+    font-size: .88rem;
+
+    line-height: 1.4;
+
+}
+
+.hourly-weather-rest-message strong {
+
+    color: var(--text-primary);
+
+}
+
 .hourly-weather-header {
 
     display: flex;

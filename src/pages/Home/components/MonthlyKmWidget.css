@@ -6,13 +6,18 @@
    abajo) -- eso es tipografía/protagonismo del dato, no el
    borde+resplandor de tarjeta que antes competía con el resto de Inicio
    por atención. */
+/* Compactada ~25-30% de alto (rediseño de Inicio, 2026-09-25, punto 7) --
+   menos padding, número más pequeño (ver .monthly-km-number) y barras más
+   bajas (MAX_BAR_HEIGHT 64->44, ver MonthlyKmWidget.js). Esta tarjeta pasa
+   a ser contexto (nivel 3 de la jerarquía, ver Home.css), ya no compite
+   en tamaño con Esta semana/Tu próximo objetivo/Estado del corredor. */
 .monthly-km-widget{
 
     position:relative;
 
     overflow:hidden;
 
-    padding:16px 20px;
+    padding:12px 18px;
 
     border-radius:22px;
 
@@ -135,7 +140,7 @@
 
 .monthly-km-number{
 
-    font-size:2.1rem;
+    font-size:1.75rem;
 
     font-weight:900;
 
@@ -196,7 +201,7 @@
 
     width:100%;
 
-    margin-top:10px;
+    margin-top:6px;
 
     display:flex;
 
@@ -232,7 +237,7 @@
 
     width:100%;
 
-    height:64px;
+    height:44px;
 
     display:flex;
 

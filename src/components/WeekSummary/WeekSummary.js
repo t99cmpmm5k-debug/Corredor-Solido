@@ -3,10 +3,17 @@ import "./WeekSummary.css";
 import { WeekChart } from "../WeekChart/WeekChart.js";
 
 // No lee planData.js ni ningún estado — todo llega por parámetro.
-// { title, kmDone, kmTarget, workoutCount, insight, days, variant }
+// { title, kmDone, kmTarget, workoutCount, insight, nextUp, days, variant }
 // Si llega `insight` se muestra esa frase; si no, se usa `days` para
 // dibujar el WeekChart (así la variante "strip" de Plan no cambia).
-export function WeekSummary({ title, kmDone, kmTarget, workoutCount, insight, days, variant = "card" }) {
+//
+// `nextUp` (Inicio, rediseño 2026-09-25) -- { typeLabel, distanceKm, dayLabel } |
+// null/undefined -- "Próximo: RODAJE Z2 · 8 km · Miércoles", la sesión de
+// plan sin completar más próxima. Opcional: sin pasarlo, esta tarjeta se
+// pinta exactamente igual que antes (Home.js es hoy su único consumidor
+// real, pero el componente sigue siendo genérico por si Plan lo reutiliza
+// algún día, ver comentario de cabecera).
+export function WeekSummary({ title, kmDone, kmTarget, workoutCount, insight, nextUp, days, variant = "card" }) {
 
     const percent = kmTarget > 0 ? Math.round((kmDone / kmTarget) * 100) : 0;
 
@@ -52,6 +59,18 @@ export function WeekSummary({ title, kmDone, kmTarget, workoutCount, insight, da
             ${insight
                 ? `<p class="week-summary-insight">${insight}</p>`
                 : days ? WeekChart(days, variant) : ""}
+
+            ${nextUp ? `
+
+                <p class="week-summary-next">
+
+                    <iconify-icon icon="solar:calendar-mark-bold-duotone"></iconify-icon>
+
+                    <span>Próximo: <strong>${nextUp.typeLabel}</strong>${nextUp.distanceKm ? ` · ${nextUp.distanceKm} km` : ""} · ${nextUp.dayLabel}</span>
+
+                </p>
+
+            ` : ""}
 
         </section>
 

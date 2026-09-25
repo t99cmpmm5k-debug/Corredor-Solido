@@ -73,12 +73,25 @@ function resetFilters() {
 
 }
 
+// Exportada: Home.js ("Tu próximo objetivo", NextGoalWidget) reutiliza
+// esto tal cual para abrir el detalle de la carrera Inscrita/Objetivo
+// desde Inicio -- mismo patrón que openRunningDetail() (Running) ya
+// usado por openRaceEntry() de aquí abajo: overlay con su propia entrada
+// de historial para que el gesto de atrás del móvil lo cierre sin salir
+// de la app.
+export function openPlannedRaceDetail(id) {
+
+    setSelectedPlannedRaceId(id);
+    history.pushState(RACE_DETAIL_HISTORY_STATE, "");
+
+    rerender();
+
+}
+
 // Una completada de verdad salta al detalle real de Running (mismo
 // patrón que viewSessionWorkout() en Plan/initPlanEvents.js: navega de
 // página y, ya en Running, abre directamente su vista de detalle). Una
-// planificada abre el detalle propio de Carreras (RaceDetailView.js),
-// como overlay con su propia entrada de historial para que el gesto de
-// atrás del móvil la cierre sin salir de la app.
+// planificada abre el detalle propio de Carreras (RaceDetailView.js).
 function openRaceEntry(kind, id) {
 
     if (kind === "completed") {
@@ -87,10 +100,7 @@ function openRaceEntry(kind, id) {
         return;
     }
 
-    setSelectedPlannedRaceId(id);
-    history.pushState(RACE_DETAIL_HISTORY_STATE, "");
-
-    rerender();
+    openPlannedRaceDetail(id);
 
 }
 

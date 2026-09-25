@@ -7,9 +7,8 @@ import { WeekSummary } from "../../components/WeekSummary/WeekSummary.js";
 import { HourlyWeather } from "./components/HourlyWeather.js";
 import { MonthlyKmWidget } from "./components/MonthlyKmWidget.js";
 import { NextGoalWidget } from "./components/NextGoalWidget.js";
-import { PlanComplianceWidget } from "./components/PlanComplianceWidget.js";
 import { RunnerStatusWidget } from "./components/RunnerStatusWidget.js";
-import { getCurrentWeekSessions, getWeekVolume, getWorkouts, getUpcomingPlannedRaces } from "../../data/workoutStore.js";
+import { getCurrentWeekSessions, getWorkouts, getUpcomingPlannedRaces, getTodaySession } from "../../data/workoutStore.js";
 import { buildWeekInsight } from "../../utils/weekInsight.js";
 import { buildMonthlyKmStats } from "../../utils/monthlyKm.js";
 import { buildPlanCompliance } from "../../utils/planCompliance.js";
@@ -18,13 +17,81 @@ import { buildAcwrInsight, buildRunningLoadEntries } from "../../utils/acwr.js";
 import { buildZ2Evolution } from "../Running/runningEvolution.js";
 import { getHourlyWeatherState } from "./homeWeatherStore.js";
 import { getGymDayForDate } from "../Plan/gymTimelineBridge.js";
-import { formatISODate } from "../../utils/date.js";
+import { WORKOUT_TYPES } from "../../data/workoutTypes.js";
+import { formatWeekday, formatISODate } from "../../utils/date.js";
 import { getState } from "../../core/state.js";
+
+function capitalize(text) {
+    return text ? text.charAt(0).toUpperCase() + text.slice(1) : text;
+}
+
+// Mismo mapeo type -> etiqueta que usa Hero.js ("HOY: RODAJE Z2") --
+// duplicado a propósito, no compartido entre páginas/bloques (ver
+// CLAUDE.md "known duplication"), es una transformación trivial de una
+// sola línea sobre un dato que ya existe en WORKOUT_TYPES.
+function typeLabel(type) {
+
+    if (type === "recovery") return "RECUPERA";
+
+    const label = WORKOUT_TYPES[type]?.label ?? "";
+    return label.replace(/[()]/g, "").toUpperCase();
+
+}
+
+// "Próximo: RODAJE Z2 · 8 km · Miércoles" (WeekSummary.js, rediseño de
+// Inicio 2026-09-25) -- la sesión de plan sin completar más próxima
+// dentro de la semana real actual (`week`, ya ordenada por fecha/slot,
+// ver getWeekSessions() en workoutStore.js). HOY MISMO se excluye a
+// propósito (s.date > todayIso, no >=): la sesión de hoy ya la cuenta el
+// Hero ("HOY: RODAJE Z2") y, muchas veces, también la frase-insight de
+// esta misma tarjeta -- repetirla aquí una tercera vez no aporta nada
+// nuevo (verificado en pantalla: "Hoy: Z2 · 10 km." seguido de "Próximo:
+// RODAJE Z2 · 10 km · Viernes" decía lo mismo dos veces). "Próximo" solo
+// tiene sentido para lo que viene DESPUÉS de hoy. null sin ninguna sesión
+// futura sin completar (semana ya completada del todo, o sin plan
+// importado) -- WeekSummary.js omite la línea entera en ese caso.
+//
+// Comparación por STRING ISO (todayIso), no por Date -- bug real
+// encontrado al verificar: `new Date()` lleva la hora actual (p. ej.
+// 18:53), así que comparar contra la medianoche de hoy (parseISODate)
+// hacía que ninguna sesión de HOY calificara nunca como "próxima"
+// (medianoche siempre es "antes" que cualquier hora del mismo día) --
+// con la comparación de fechas AAAA-MM-DD como texto no hay ninguna hora
+// de por medio.
+function buildNextUp(week, todayIso) {
+
+    const next = (week ?? []).find(s => s.status !== "completed" && s.date > todayIso);
+    if (!next) return null;
+
+    return {
+        typeLabel: typeLabel(next.type),
+        distanceKm: next.volume > 0 ? next.volume : null,
+        dayLabel: capitalize(formatWeekday(next.date))
+    };
+
+}
 
 export function Home(){
 
+    const today = new Date();
+    const todayIso = formatISODate(today);
+
     const week = getCurrentWeekSessions();
-    const { completed, goal } = getWeekVolume();
+
+    // FUENTE ÚNICA para el progreso semanal (corregido en el rediseño de
+    // Inicio, 2026-09-25 -- ver el comentario de buildPlanCompliance() en
+    // utils/planCompliance.js para la causa real del bug). Antes Home.js
+    // llamaba a getWeekVolume() (workoutStore.js) para el anillo/km de
+    // "Esta semana" Y por separado a buildPlanCompliance() para
+    // "Cumplimiento del plan" -- dos definiciones distintas de "km
+    // realizado" (una solo sesiones enlazadas, la otra TODOS los workouts
+    // de la semana por rango de fechas) que podían mostrar números
+    // distintos para la MISMA semana en dos sitios de la misma pantalla
+    // (bug real visto en pantalla: 8 km en un sitio, 12,3 km en otro).
+    // Ahora "Esta semana" y el % de cumplimiento leen del mismo objeto --
+    // ya no existe la card independiente "Cumplimiento del plan", queda
+    // fusionada aquí (ver WeekSummary() más abajo).
+    const planCompliance = buildPlanCompliance(week);
 
     const workoutCount = week.filter(
         session => session.status === "completed" && session.type !== "recovery" && session.type !== "free"
@@ -34,27 +101,23 @@ export function Home(){
     // cuando hoy no hay running -- ver corrección de coherencia en
     // weekInsight.js. Misma fuente que MasterCard.js y Plan, no una
     // comprobación nueva.
-    const todayGymMatch = getGymDayForDate(formatISODate(new Date()));
+    const todayGymMatch = getGymDayForDate(todayIso);
 
-    const insight = buildWeekInsight(week, { completed, goal, todayGymMatch });
+    const insight = buildWeekInsight(week, { goal: planCompliance.plannedKm, todayGymMatch });
 
     // Solo entrenos reales (getWorkouts(), nunca sesiones planificadas) --
     // ver buildMonthlyKmStats() para qué se degrada cuando falta historial.
     const workouts = getWorkouts();
     const monthlyKm = buildMonthlyKmStats(workouts);
 
-    // "Cumplimiento del plan" (Capa 2) -- planificado vs. realizado de
-    // running para la semana real actual (`week`, nunca la semana que se
-    // esté navegando en Plan). Solo running: ver buildPlanCompliance().
-    const planCompliance = buildPlanCompliance(week, workouts);
-    const planComplianceHtml = PlanComplianceWidget(planCompliance);
-
-    // "Estado del corredor" (Capa 2) -- 4 indicadores compactos, cada uno
-    // leyendo un cálculo YA EXISTENTE en otra pantalla (nunca uno nuevo,
-    // ver buildRunnerStatusIndicators()): la misma carga ACWR y evolución
-    // Z2 que ya muestra Running (mismos workouts), el mismo % de
-    // cumplimiento semanal de arriba, y la misma carrera/prioridad que ya
-    // usa NextGoalWidget.
+    // "Estado del corredor" -- 3 indicadores compactos (Carga/Z2/Semana,
+    // "Próx. carrera" se quitó de aquí en este rediseño: ya la cubre "Tu
+    // próximo objetivo" si hay una carrera Inscrita/Objetivo real), cada
+    // uno leyendo un cálculo YA EXISTENTE en otra pantalla (nunca uno
+    // nuevo, ver buildRunnerStatusIndicators()): la misma carga ACWR y
+    // evolución Z2 que ya muestra Running (mismos workouts), y el mismo %
+    // de cumplimiento semanal de arriba (misma fuente única que ya usa
+    // "Esta semana").
     const runnerStatusInputs = {
         acwrInsight: buildAcwrInsight(buildRunningLoadEntries(workouts)),
         z2Evolution: buildZ2Evolution(workouts),
@@ -63,9 +126,9 @@ export function Home(){
     };
     const runnerStatusIndicators = buildRunnerStatusIndicators(runnerStatusInputs);
 
-    // Frase-resumen (Capa 3) -- misma entrada que los indicadores de
-    // arriba, una sola interpretación priorizada (carrera inminente >
-    // carga alta > semana completada > Z2 de fondo), ver
+    // Frase-resumen -- misma entrada que los indicadores de arriba, una
+    // sola interpretación priorizada (carrera Inscrita/Objetivo inminente
+    // > carga alta > semana completada > Z2 de fondo), ver
     // buildRunnerStatusSummary() para el porqué del orden.
     const runnerStatusSummary = buildRunnerStatusSummary(runnerStatusInputs);
     const runnerStatusHtml = RunnerStatusWidget(runnerStatusIndicators, runnerStatusSummary);
@@ -77,16 +140,25 @@ export function Home(){
     // y la sección desaparece sin dejar hueco ni dato inventado.
     const weather = getHourlyWeatherState();
 
+    // "Clima para correr", no "app meteorológica" (rediseño de Inicio,
+    // punto 8) -- solo busca la mejor franja si hoy hay una sesión de
+    // RUNNING real programada (ni gimnasio ni descanso) -- mismo dato que
+    // ya decide el titular del Hero (getTodaySession(), workoutStore.js),
+    // ninguna comprobación nueva.
+    const todaySession = getTodaySession();
+    const hasRunningSessionToday = !!todaySession && todaySession.type !== "recovery";
+
     const weekSummaryHtml = `
 
         <section class="week-chart-card">
 
             ${WeekSummary({
                 title:"ESTA SEMANA",
-                kmDone: completed,
-                kmTarget: goal,
+                kmDone: planCompliance.actualKm,
+                kmTarget: planCompliance.plannedKm,
                 workoutCount,
                 insight,
+                nextUp: buildNextUp(week, todayIso),
                 variant:"card"
             })}
 
@@ -94,10 +166,10 @@ export function Home(){
 
     `;
 
-    // "Próximas carreras" (NextGoalWidget) devuelve "" sin ninguna carrera
-    // próxima real -- en ese caso Esta semana vuelve a ocupar el ancho
-    // completo en vez de dejar una columna vacía a su lado (ver
-    // .home-two-col en Home.css).
+    // "Tu próximo objetivo" (NextGoalWidget) devuelve "" sin ninguna
+    // carrera Inscrita/Objetivo real -- en ese caso Esta semana vuelve a
+    // ocupar el ancho completo en vez de dejar una columna vacía a su
+    // lado (ver .home-two-col en Home.css).
     const nextGoalHtml = NextGoalWidget();
 
     return `
@@ -122,16 +194,6 @@ export function Home(){
 
                 ` : weekSummaryHtml}
 
-                ${planComplianceHtml ? `
-
-                    <section class="plan-compliance-card">
-
-                        ${planComplianceHtml}
-
-                    </section>
-
-                ` : ""}
-
                 ${runnerStatusHtml ? `
 
                     <section class="runner-status-card">
@@ -152,7 +214,7 @@ export function Home(){
 
                     <section class="hourly-weather-card">
 
-                        ${HourlyWeather(weather)}
+                        ${HourlyWeather({ ...weather, hasSessionToday: hasRunningSessionToday })}
 
                     </section>
 

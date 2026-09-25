@@ -240,3 +240,71 @@ describe("HourlyWeather", () => {
     });
 
 });
+
+// "Clima para correr", no "app meteorológica" (rediseño de Inicio,
+// 2026-09-25, punto 8) -- día sin sesión: solo temperatura actual, sin
+// buscar la mejor franja ni pintar la tira de horas.
+describe("HourlyWeather -- hasSessionToday: false (día de descanso)", () => {
+
+    it("sin sesión hoy, mensaje neutro con la temperatura actual, sin buscar mejor franja", () => {
+
+        const hours = [hour("14:00", 30), hour("15:00", 32)];
+        const html = HourlyWeather({ hours, current: { temp: 32, icon: "sun" }, label: null, hasSessionToday: false }, new Date("2026-08-22T13:00:00"));
+
+        expect(html).toContain("Hoy no tienes sesión planificada");
+        expect(html).toContain("32°");
+        expect(html).not.toContain("hourly-weather-best");
+        expect(html).not.toContain("hourly-weather-scroll");
+
+    });
+
+    it("sin sesión hoy y sin dato de temperatura actual, el mensaje se queda solo sin inventar un grado", () => {
+
+        const hours = [hour("14:00", 30)];
+        const html = HourlyWeather({ hours, current: null, label: null, hasSessionToday: false }, new Date("2026-08-22T13:00:00"));
+
+        expect(html).toContain("Hoy no tienes sesión planificada");
+        expect(html).not.toContain("°");
+
+    });
+
+    it("hasSessionToday por defecto es true -- llamar sin ese campo (como todos los tests de arriba) sigue buscando la mejor franja", () => {
+
+        const hours = [hour("20:00", 26), hour("21:00", 20), hour("22:00", 24)];
+        const html = HourlyWeather({ hours, current: null, label: null }, new Date("2026-08-22T19:30:00"));
+
+        expect(html).toContain("Mejor franja restante para correr");
+
+    });
+
+});
+
+// "4-6 horas relevantes" (punto 8) -- la tira ya no pinta las 24h
+// cacheadas enteras, solo lo que queda por delante del reloj real.
+describe("HourlyWeather -- tira recortada a las horas relevantes (punto 8 del rediseño)", () => {
+
+    it("con más de 6 horas por delante, la tira solo pinta 6", () => {
+
+        const hours = Array.from({ length: 10 }, (_, i) => hour(`${String(i + 10).padStart(2, "0")}:00`, 20 + i));
+        const html = HourlyWeather({ hours, current: null, label: null }, new Date("2026-08-22T09:30:00"));
+
+        const scroll = html.slice(html.indexOf('class="hourly-weather-scroll'));
+        const count = (scroll.match(/hourly-weather-hour/g) || []).length;
+
+        expect(count).toBe(6);
+
+    });
+
+    it("con menos de 6 horas restantes, la tira solo pinta las reales, sin inventar huecos", () => {
+
+        const hours = [hour("20:00", 24), hour("21:00", 22)];
+        const html = HourlyWeather({ hours, current: null, label: null }, new Date("2026-08-22T19:30:00"));
+
+        const scroll = html.slice(html.indexOf('class="hourly-weather-scroll'));
+        const count = (scroll.match(/hourly-weather-hour/g) || []).length;
+
+        expect(count).toBe(2);
+
+    });
+
+});
