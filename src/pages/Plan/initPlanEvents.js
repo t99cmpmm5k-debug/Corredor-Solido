@@ -28,7 +28,7 @@ import {
 
 const PLAN_IMPORT_HISTORY_STATE = { planImport: true };
 
-function openPlanImport() {
+export function openPlanImport() {
 
     resetPlanImport();
     setImportStep("upload");

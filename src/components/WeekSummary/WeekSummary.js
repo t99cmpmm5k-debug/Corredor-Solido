@@ -20,7 +20,34 @@ import { formatKm } from "../../utils/format.js";
 // buildPlanCompliance() (sessionsCompleted/sessionsPlanned). Sustituye al
 // antiguo "N entrenamientos" + "Objetivo semanal", que no decía de
 // cuántas sesiones planificadas salía ese número.
-export function WeekSummary({ title, kmDone, kmTarget, sessionsDone, sessionsPlanned, insight, nextUp, days, variant = "card" }) {
+//
+// `empty` (ajuste final de Inicio 2026-09-28) -- true sin ninguna sesión
+// de plan esta semana: en vez de un anillo "0/0 km · 0/0 sesiones" (que
+// parecía un dato real a cero), estado vacío con acceso directo a la
+// importación de Plan (data-action="import-plan", ver initHomeEvents.js).
+export function WeekSummary({ title, kmDone, kmTarget, sessionsDone, sessionsPlanned, insight, nextUp, days, variant = "card", empty = false }) {
+
+    if (empty) {
+
+        return `
+
+            <section class="week-summary week-summary--${variant} week-summary--empty">
+
+                <h3 class="week-summary-title">${title}</h3>
+
+                <p class="week-summary-empty-message">Aún no tienes sesiones planificadas.</p>
+
+                <button type="button" class="week-summary-empty-action" data-action="import-plan">
+
+                    Importar plan <span aria-hidden="true">›</span>
+
+                </button>
+
+            </section>
+
+        `;
+
+    }
 
     const percent = kmTarget > 0 ? Math.round((kmDone / kmTarget) * 100) : 0;
 

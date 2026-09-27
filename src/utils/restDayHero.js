@@ -130,7 +130,7 @@ function buildVariants(workouts, todayIso) {
             title: ["Vas más", "rápido"],
             coachTitle: "Progreso",
             coachMessages: [
-                `Tu ritmo medio ha bajado ${paceImprovement} seg/km en tus últimos entrenos.`,
+                `Tu ritmo medio ha bajado ${paceImprovement} s/km en tus últimos entrenos.`,
                 "El trabajo se nota."
             ]
         });

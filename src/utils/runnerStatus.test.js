@@ -26,10 +26,12 @@ function planCompliance(kmPercent) {
 
 // Simplificado de 4 a 3 en el rediseño de Inicio (2026-09-25): "Próx.
 // carrera" se quitó (ya la cubre "Tu próximo objetivo", NextGoalWidget.js,
-// si hay una carrera Inscrita/Objetivo real) -- solo quedan Carga/Z2/Semana.
+// si hay una carrera Inscrita/Objetivo real). De 3 a 2 en el ajuste final
+// (2026-09-28): "Semana · X%" se quitó, ya lo muestra "Plan de esta semana".
+// Solo quedan Carga/Z2.
 describe("buildRunnerStatusIndicators", () => {
 
-    it("con las 3 fuentes disponibles, devuelve los 3 indicadores en orden", () => {
+    it("con todo disponible (plan incluido), devuelve solo Carga y Z2 -- nunca Semana", () => {
 
         const result = buildRunnerStatusIndicators({
             acwrInsight: acwr(1.1, "optimal", "Óptima"),
@@ -37,10 +39,9 @@ describe("buildRunnerStatusIndicators", () => {
             planCompliance: planCompliance(77)
         });
 
-        expect(result.map(i => i.key)).toEqual(["acwr", "z2", "week"]);
+        expect(result.map(i => i.key)).toEqual(["acwr", "z2"]);
         expect(result.find(i => i.key === "acwr").value).toBe("Óptima");
         expect(result.find(i => i.key === "z2").value).toBe("-11s/km");
-        expect(result.find(i => i.key === "week").value).toBe("77%");
 
     });
 
@@ -68,12 +69,12 @@ describe("buildRunnerStatusIndicators", () => {
 
     });
 
-    it("con plan pero sin ningún km objetivo (kmPercent null), omite el indicador de semana", () => {
+    it("solo con plan (sin ACWR ni Z2), no hay ningún indicador -- el plan ya no es uno de ellos", () => {
 
         const result = buildRunnerStatusIndicators({
             acwrInsight: UNAVAILABLE_ACWR,
             z2Evolution: UNAVAILABLE_Z2,
-            planCompliance: planCompliance(null)
+            planCompliance: planCompliance(77)
         });
 
         expect(result).toEqual([]);

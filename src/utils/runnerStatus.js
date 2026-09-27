@@ -53,15 +53,14 @@ function paceTrendLabel(evolution) {
 
 }
 
-// "Estado del corredor" (Inicio) -- 3 indicadores compactos (simplificado
-// de 4 a 3 en el rediseño de Inicio, 2026-09-25: "Próx. carrera" se quita
-// de aquí, ya la cubre "Tu próximo objetivo" -- NextGoalWidget.js -- si
-// hay una carrera real marcada), cada uno leyendo un cálculo que YA
-// EXISTE en otra pantalla, nunca uno nuevo:
+// "Estado del corredor" (Inicio) -- 2 indicadores compactos (4 -> 3 en el
+// rediseño de Inicio 2026-09-25: "Próx. carrera" ya la cubre "Tu próximo
+// objetivo"; 3 -> 2 en el ajuste final 2026-09-28: "Semana · X%" ya lo
+// cubre el anillo de "Plan de esta semana"), cada uno leyendo un cálculo
+// que YA EXISTE en otra pantalla, nunca uno nuevo:
 //
 // - Carga: buildAcwrInsight() (ver utils/acwr.js, ya usado en Running).
 // - Z2: buildZ2Evolution() (ver pages/Running/runningEvolution.js).
-// - Semana: buildPlanCompliance() (ver utils/planCompliance.js, Inicio).
 //
 // Cualquier pieza sin dato disponible se omite del array por completo
 // (nunca un placeholder "sin datos") -- RunnerStatusWidget.js oculta la
@@ -69,7 +68,7 @@ function paceTrendLabel(evolution) {
 // `runnerStatusInputs` que buildRunnerStatusSummary() de abajo (que sí
 // necesita upcomingRaces/referenceDate) -- Home.js arma uno solo, esta
 // función simplemente ignora los campos que no le hacen falta.
-export function buildRunnerStatusIndicators({ acwrInsight, z2Evolution, planCompliance }) {
+export function buildRunnerStatusIndicators({ acwrInsight, z2Evolution }) {
 
     const indicators = [];
 
@@ -91,24 +90,6 @@ export function buildRunnerStatusIndicators({ acwrInsight, z2Evolution, planComp
             icon: "solar:graph-new-up-bold-duotone",
             label: "Z2",
             value: paceTrendLabel(z2Evolution)
-        });
-
-    }
-
-    // Revisado (Capa 3, punto 4): a diferencia de la frase-resumen
-    // (planSummarySentence más abajo), este indicador se queda
-    // deliberadamente como número simple aunque supere el 100% -- es una
-    // celda compacta de icono+valor+etiqueta en una fila junto a otras 2,
-    // sin sitio para una nota de contexto sin romper el formato. El matiz
-    // de "cumplir de más no es automáticamente mejor" sigue presente en
-    // la propia frase-resumen, solo no aquí.
-    if (planCompliance.hasPlan && planCompliance.kmPercent != null) {
-
-        indicators.push({
-            key: "week",
-            icon: "solar:calendar-mark-bold-duotone",
-            label: "Semana",
-            value: `${planCompliance.kmPercent}%`
         });
 
     }

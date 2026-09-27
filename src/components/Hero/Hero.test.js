@@ -109,10 +109,15 @@ describe("Hero -- estado finalizada / gimnasio de hoy", () => {
 // depender de una fecha de test fija que se quede desfasada.
 describe("Hero -- línea secundaria 'Último entreno' (independiente del titular de hoy)", () => {
 
+    // Fecha LOCAL, no toISOString() (UTC) -- Hero.js compara contra
+    // formatISODate(new Date()), que es local; con toISOString() estos
+    // tests fallaban entre las 00:00 y las 02:00 de Madrid (en UTC aún era
+    // el día anterior). Visto al correr la suite a la 01:31.
     function isoDaysAgo(days) {
         const d = new Date();
         d.setDate(d.getDate() - days);
-        return d.toISOString().slice(0, 10);
+        const pad = n => String(n).padStart(2, "0");
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
     }
 
     afterEach(() => {

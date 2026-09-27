@@ -17,7 +17,9 @@
 
     overflow:hidden;
 
-    padding:12px 18px;
+    /* Arriba 12 -> 6px (ajuste final de Inicio 2026-09-28: aire de más
+       antes del título "SEPTIEMBRE"); lados y abajo sin tocar. */
+    padding:6px 18px 12px;
 
     border-radius:22px;
 

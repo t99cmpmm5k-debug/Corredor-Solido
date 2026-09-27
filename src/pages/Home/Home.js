@@ -106,14 +106,12 @@ export function Home(){
     const workouts = getWorkouts();
     const monthlyKm = buildMonthlyKmStats(workouts);
 
-    // "Estado del corredor" -- 3 indicadores compactos (Carga/Z2/Semana,
-    // "Próx. carrera" se quitó de aquí en este rediseño: ya la cubre "Tu
-    // próximo objetivo" si hay una carrera Inscrita/Objetivo real), cada
-    // uno leyendo un cálculo YA EXISTENTE en otra pantalla (nunca uno
-    // nuevo, ver buildRunnerStatusIndicators()): la misma carga ACWR y
-    // evolución Z2 que ya muestra Running (mismos workouts), y el mismo %
-    // de cumplimiento semanal de arriba (misma fuente única que ya usa
-    // "Esta semana").
+    // "Estado del corredor" -- 2 indicadores compactos (Carga/Z2; "Semana
+    // · X%" se quitó en el ajuste final 2026-09-28, ya lo muestra "Plan de
+    // esta semana"), cada uno leyendo un cálculo YA EXISTENTE en otra
+    // pantalla (ver buildRunnerStatusIndicators()): la misma carga ACWR y
+    // evolución Z2 que ya muestra Running. planCompliance sigue entrando
+    // aquí porque lo usa la frase-resumen (buildRunnerStatusSummary()).
     const runnerStatusInputs = {
         acwrInsight: buildAcwrInsight(buildRunningLoadEntries(workouts)),
         z2Evolution: buildZ2Evolution(workouts),
@@ -161,7 +159,10 @@ export function Home(){
                 sessionsPlanned: planCompliance.sessionsPlanned,
                 insight,
                 nextUp: buildNextUp(week, todayIso),
-                variant:"card"
+                variant:"card",
+                // Mismo criterio "hay plan" que ya usan MasterCard y
+                // Estado del corredor (planCompliance.hasPlan), no uno nuevo.
+                empty: !planCompliance.hasPlan
             })}
 
         </section>

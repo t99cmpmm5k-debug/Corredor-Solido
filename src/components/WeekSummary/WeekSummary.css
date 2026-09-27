@@ -388,3 +388,65 @@
     padding-top:8px;
 
 }
+
+/* ==========================================================
+   ESTADO VACÍO -- sin plan esta semana (ajuste final de Inicio
+   2026-09-28): título + frase + enlace a la importación de Plan, en vez
+   de un anillo "0/0" que parecía un dato real a cero.
+========================================================== */
+
+.week-summary--empty{
+
+    gap:8px;
+
+}
+
+.week-summary-empty-message{
+
+    margin:0;
+
+    font-size:.85rem;
+
+    line-height:1.45;
+
+    color:var(--text-secondary);
+
+}
+
+.week-summary-empty-action{
+
+    align-self:flex-start;
+
+    display:inline-flex;
+
+    align-items:center;
+
+    gap:4px;
+
+    margin:0;
+
+    padding:0;
+
+    border:none;
+
+    background:none;
+
+    font:inherit;
+
+    font-size:.85rem;
+
+    font-weight:700;
+
+    color:var(--color-primary);
+
+    cursor:pointer;
+
+}
+
+.week-summary-empty-action span{
+
+    font-size:1.1rem;
+
+    line-height:1;
+
+}
