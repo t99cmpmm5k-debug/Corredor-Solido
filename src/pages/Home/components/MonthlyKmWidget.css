@@ -102,7 +102,13 @@
 
 }
 
-.monthly-km-widget > *{
+/* :not(.monthly-km-glow) -- bug real encontrado midiendo en WebKit
+   (ajuste de Inicio 2026-09-27, "quita aire superior sobrante"): esta
+   regla tiene la misma especificidad que .monthly-km-glow y va DESPUÉS,
+   así que le pisaba el position:absolute -- el halo (90px de alto)
+   ocupaba sitio real en el flujo flex y empujaba la cifra hacia abajo,
+   dejando un hueco vacío en la parte superior de la tarjeta. */
+.monthly-km-widget > *:not(.monthly-km-glow){
 
     position:relative;
 

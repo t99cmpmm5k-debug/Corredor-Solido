@@ -93,10 +93,6 @@ export function Home(){
     // fusionada aquí (ver WeekSummary() más abajo).
     const planCompliance = buildPlanCompliance(week);
 
-    const workoutCount = week.filter(
-        session => session.status === "completed" && session.type !== "recovery" && session.type !== "free"
-    ).length;
-
     // Para que "Esta semana" nunca describa un día distinto de "hoy"
     // cuando hoy no hay running -- ver corrección de coherencia en
     // weekInsight.js. Misma fuente que MasterCard.js y Plan, no una
@@ -153,10 +149,16 @@ export function Home(){
         <section class="week-chart-card">
 
             ${WeekSummary({
-                title:"ESTA SEMANA",
+                // "Plan de esta semana", no "Esta semana" (ajuste
+                // 2026-09-27): el Hero puede mostrar "Últimos 7 días"
+                // (ventana móvil de entrenos reales, restDayHero.js) --
+                // dos conceptos distintos con km distintos, el título
+                // tiene que dejar claro que esto es cumplimiento del plan.
+                title:"PLAN DE ESTA SEMANA",
                 kmDone: planCompliance.actualKm,
                 kmTarget: planCompliance.plannedKm,
-                workoutCount,
+                sessionsDone: planCompliance.sessionsCompleted,
+                sessionsPlanned: planCompliance.sessionsPlanned,
                 insight,
                 nextUp: buildNextUp(week, todayIso),
                 variant:"card"

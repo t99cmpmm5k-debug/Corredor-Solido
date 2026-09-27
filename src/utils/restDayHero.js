@@ -1,4 +1,5 @@
 import { getWeekStartDate, addDays, formatISODate, formatWeekday, parseISODate } from "./date.js";
+import { formatKm } from "./format.js";
 
 // Umbrales para que cada variante solo aparezca cuando el dato es fiable,
 // nunca "casi" un patrón — mejor caer al mensaje neutro que sugerir una
@@ -20,10 +21,10 @@ export function daysBetween(isoFrom, isoTo) {
     return Math.round((parseISODate(isoTo) - parseISODate(isoFrom)) / 86400000);
 }
 
-function formatKm(km) {
-    const rounded = Math.round(km * 10) / 10;
-    return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
-}
+// Coma decimal (formatKm de utils/format.js, el mismo que ya usa la línea
+// "Último entreno · 4,3 km ayer" de Hero.js) -- antes había aquí una copia
+// local con punto ("26.3 km"), el único sitio de Inicio que lo escribía
+// distinto (ajuste de Inicio 2026-09-27).
 
 export function mostRecentWorkout(workouts) {
     return workouts.reduce((latest, w) => (!latest || w.date > latest.date) ? w : latest, null);
@@ -109,10 +110,15 @@ function buildVariants(workouts, todayIso) {
     const recentStats = computeRecentStats(workouts, todayIso);
     if (recentStats) {
         variants.push({
-            title: ["Esta semana", `${formatKm(recentStats.totalKm)} km`],
-            coachTitle: "Tu semana",
+            // "Últimos 7 días", nunca "Esta semana" (ajuste de Inicio
+            // 2026-09-27): es una ventana MÓVIL de 7 días sobre entrenos
+            // reales, no la semana de plan lunes-domingo -- con el título
+            // anterior se confundía con la tarjeta "Plan de esta semana"
+            // de justo debajo (km distintos, parecía un error).
+            title: ["Últimos 7 días", `${formatKm(recentStats.totalKm)} km`],
+            coachTitle: "Actividad reciente",
             coachMessages: [
-                `${recentStats.count} entreno${recentStats.count === 1 ? "" : "s"} y ${formatKm(recentStats.totalKm)} km en los últimos 7 días.`,
+                `Últimos 7 días · ${recentStats.count} entreno${recentStats.count === 1 ? "" : "s"} · ${formatKm(recentStats.totalKm)} km`,
                 "Sigue así."
             ]
         });

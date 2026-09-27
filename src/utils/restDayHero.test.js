@@ -55,7 +55,7 @@ describe("buildRestDayHero", () => {
         const hero = buildRestDayHero(workouts, TODAY);
 
         expect(hero.coachTitle).toBe("Tu último registro");
-        expect(hero.coachMessages[0]).toContain("10.2 km");
+        expect(hero.coachMessages[0]).toContain("10,2 km");
         expect(hero.coachMessages[0]).toContain(formatWeekday(date));
 
     });
@@ -98,16 +98,16 @@ describe("buildRestDayHero", () => {
             { id: "w2", date: "2026-08-21", type: "tempo", distanceKm: 6.4 }
         ];
 
-        // Fuerza la selección de la variante "Esta semana" ordenando el
+        // Fuerza la selección de la variante "Últimos 7 días" ordenando el
         // mock de random para que caiga en el segundo índice de variants
         // (racha no aplica aquí — solo 1 semana con datos).
         vi.spyOn(Math, "random").mockReturnValue(0);
         const hero = buildRestDayHero(workouts, TODAY);
 
-        expect(["Tu semana", "Tu último registro"]).toContain(hero.coachTitle);
+        expect(["Actividad reciente", "Tu último registro"]).toContain(hero.coachTitle);
 
-        if (hero.coachTitle === "Tu semana") {
-            expect(hero.coachMessages[0]).toBe("2 entrenos y 14.4 km en los últimos 7 días.");
+        if (hero.coachTitle === "Actividad reciente") {
+            expect(hero.coachMessages[0]).toBe("Últimos 7 días · 2 entrenos · 14,4 km");
         }
 
     });

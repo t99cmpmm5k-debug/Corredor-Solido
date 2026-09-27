@@ -227,7 +227,7 @@ describe("buildRunnerStatusSummary -- frase-resumen priorizada (Capa 3)", () => 
             upcomingRaces: []
         }, REFERENCE);
 
-        expect(result).toBe("Tu Z2 mejora poco a poco últimamente.");
+        expect(result).toBe("Tu Z2 ha mejorado 11 s/km respecto al inicio del periodo.");
 
     });
 
@@ -236,17 +236,17 @@ describe("buildRunnerStatusSummary -- frase-resumen priorizada (Capa 3)", () => 
         const faster = buildRunnerStatusSummary({
             acwrInsight: UNAVAILABLE_ACWR, z2Evolution: z2(353, 342), planCompliance: NO_PLAN, upcomingRaces: []
         }, REFERENCE);
-        expect(faster).toBe("Tu Z2 mejora poco a poco últimamente.");
+        expect(faster).toBe("Tu Z2 ha mejorado 11 s/km respecto al inicio del periodo.");
 
         const slower = buildRunnerStatusSummary({
             acwrInsight: UNAVAILABLE_ACWR, z2Evolution: z2(342, 353), planCompliance: NO_PLAN, upcomingRaces: []
         }, REFERENCE);
-        expect(slower).toBe("Tu Z2 va algo más lento últimamente, nada que preocupe.");
+        expect(slower).toBe("Tu Z2 va 11 s/km más lento que al inicio del periodo, nada que preocupe.");
 
         const stable = buildRunnerStatusSummary({
             acwrInsight: UNAVAILABLE_ACWR, z2Evolution: z2(350, 350), planCompliance: NO_PLAN, upcomingRaces: []
         }, REFERENCE);
-        expect(stable).toBe("Tu Z2 se mantiene estable últimamente.");
+        expect(stable).toBe("Tu Z2 se mantiene igual que al inicio del periodo.");
 
     });
 
@@ -259,7 +259,7 @@ describe("buildRunnerStatusSummary -- frase-resumen priorizada (Capa 3)", () => 
             upcomingRaces: [{ id: "r1", date: "2026-09-22", isGoal: true }] // 12 días, no urgente
         }, REFERENCE);
 
-        expect(result).toBe("Tu Z2 mejora poco a poco últimamente.");
+        expect(result).toBe("Tu Z2 ha mejorado 11 s/km respecto al inicio del periodo.");
 
     });
 

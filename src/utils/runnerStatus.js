@@ -33,9 +33,20 @@ function priorityRace(upcomingRaces) {
 // significa "más rápido") -- aquí se expresa como el propio ritmo
 // subiendo o bajando, con signo, para que "-11s/km" se lea igual que en
 // el resto de la app (menos segundos por km = más rápido).
+// Un solo cálculo del cambio de ritmo para el indicador compacto Z2
+// ("-58s/km") Y para la frase-resumen de más abajo ("Tu Z2 ha mejorado
+// 58 s/km...") -- ajuste de Inicio 2026-09-27: la frase era genérica
+// ("mejora poco a poco") y no citaba el número que la tarjeta muestra
+// justo encima. Redondeado a segundos enteros en los dos sitios.
+function paceChangeSec(evolution) {
+
+    return Math.round(evolution.last.avgPaceSecPerKm - evolution.first.avgPaceSecPerKm);
+
+}
+
 function paceTrendLabel(evolution) {
 
-    const change = evolution.last.avgPaceSecPerKm - evolution.first.avgPaceSecPerKm;
+    const change = paceChangeSec(evolution);
     if (change === 0) return "Sin cambios";
 
     return `${change > 0 ? "+" : "-"}${Math.abs(change)}s/km`;
@@ -155,19 +166,19 @@ function planSummarySentence(kmPercent) {
 
 }
 
-// Mismo signo que paceTrendLabel() de arriba (positivo = más lento ahora),
+// Mismo signo y MISMO número que paceTrendLabel() de arriba (positivo = más lento ahora),
 // pero en frase natural en vez de "+Ns/km" -- esto es la variante de
 // "fondo" cuando no hay nada más urgente que contar, así que el tono es
 // deliberadamente neutro incluso si el ritmo ha empeorado un poco.
 function z2SummarySentence(evolution) {
 
-    const change = evolution.last.avgPaceSecPerKm - evolution.first.avgPaceSecPerKm;
+    const change = paceChangeSec(evolution);
 
-    if (change === 0) return "Tu Z2 se mantiene estable últimamente.";
+    if (change === 0) return "Tu Z2 se mantiene igual que al inicio del periodo.";
 
     return change < 0
-        ? "Tu Z2 mejora poco a poco últimamente."
-        : "Tu Z2 va algo más lento últimamente, nada que preocupe.";
+        ? `Tu Z2 ha mejorado ${Math.abs(change)} s/km respecto al inicio del periodo.`
+        : `Tu Z2 va ${change} s/km más lento que al inicio del periodo, nada que preocupe.`;
 
 }
 

@@ -49,25 +49,25 @@ describe("buildWeekInsight -- redacción natural (ronda final de Inicio, 2026-08
 
     });
 
-    it("hoy series sin km, además del hito real de la semana: se combinan las dos frases", () => {
+    it("hoy series sin km con una sesión más adelante: solo habla de hoy (lo siguiente ya lo dice 'Próximo')", () => {
 
         const week = [
             session("2026-08-26", "intervals", 0),
             session("2026-08-29", "longRun", 13)
         ];
 
-        expect(insight(week, { goal: 21 })).toBe("Hoy: series. Sábado: tirada larga · 13 km.");
+        expect(insight(week, { goal: 21 })).toBe("Hoy: series.");
 
     });
 
-    it("añade la sesión clave de más adelante en la semana (más km, aún pendiente)", () => {
+    it("no repite la sesión clave de más adelante (ya la muestra 'Próximo' en la misma tarjeta)", () => {
 
         const week = [
             session("2026-08-26", "z2", 8),
             session("2026-08-29", "longRun", 13)
         ];
 
-        expect(insight(week, { goal: 21 })).toBe("Hoy: Z2 · 8 km. Sábado: tirada larga · 13 km.");
+        expect(insight(week, { goal: 21 })).toBe("Hoy: Z2 · 8 km.");
 
     });
 
@@ -107,7 +107,7 @@ describe("buildWeekInsight -- redacción natural (ronda final de Inicio, 2026-08
 
             const todayGymMatch = { day: { id: "d1", title: "Pierna" } };
 
-            expect(insight(week, { goal: 21, todayGymMatch })).toBe("Hoy: Pierna · Gym. Sábado: tirada larga · 13 km.");
+            expect(insight(week, { goal: 21, todayGymMatch })).toBe("Hoy: Pierna · Gym.");
 
         });
 
@@ -122,7 +122,7 @@ describe("buildWeekInsight -- redacción natural (ronda final de Inicio, 2026-08
 
             expect(html).not.toContain("lunes");
             expect(html).not.toContain("Lunes");
-            expect(html).toBe("Sábado: tirada larga · 13 km.");
+            expect(html).toBe("");
 
         });
 
@@ -135,14 +135,14 @@ describe("buildWeekInsight -- redacción natural (ronda final de Inicio, 2026-08
 
         });
 
-        it("una sesión de un día YA PASADO nunca cuenta como 'sesión clave' aunque tenga más km que las futuras", () => {
+        it("sin nada hoy, ni un día pasado ni uno futuro se cuelan como frase (el futuro es cosa de 'Próximo')", () => {
 
             const week = [
                 session("2026-08-24", "longRun", 30), // lunes, pasado -- no debe elegirse
                 session("2026-08-29", "z2", 5) // sábado, futuro -- esta sí
             ];
 
-            expect(insight(week, { goal: 35, todayGymMatch: null })).toBe("Sábado: Z2 · 5 km.");
+            expect(insight(week, { goal: 35, todayGymMatch: null })).toBe("");
 
         });
 

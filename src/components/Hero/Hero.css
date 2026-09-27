@@ -9,7 +9,9 @@
     /* 490 + 48 de colchón (ver bloque @media abajo para el motivo real,
        mismo cálculo, breakpoint móvil) -- consistencia entre ambos, no un
        problema real en desktop pero evita mantener dos criterios. */
-    height:538px;
+    /* 538 -> 480 (-11%, ajuste de Inicio 2026-09-27), mismo recorte que
+       el breakpoint móvil de abajo -- ver allí el porqué. */
+    height:480px;
 
     overflow:hidden;
 }
@@ -253,7 +255,9 @@
     width:72px;
     height:4px;
 
-    margin:42px 0 28px;
+    /* 42/28 -> 16/14 (ajuste de Inicio 2026-09-27, junto con el recorte
+       de altura de .hero -- ver @media de abajo) */
+    margin:16px 0 14px;
 
     border-radius:999px;
 
@@ -267,7 +271,7 @@
 
     width:52px;
 
-    margin:26px 0;
+    margin:12px 0;
 
 }
 
@@ -363,7 +367,7 @@
 
     display:block;
 
-    margin-bottom:10px;
+    margin-bottom:6px;
 
     font-size:1rem;
 
@@ -379,14 +383,14 @@
 }
 .hero-coach p{
 
-    margin:6px 0;
+    margin:4px 0;
 
    color:rgba(255,255,255,.93);
 
 text-shadow:
     0 2px 8px rgba(0,0,0,.30);
 
-    line-height:1.55;
+    line-height:1.45;
 
     font-size:.95rem;
 
@@ -398,9 +402,9 @@ text-shadow:
    margen para separarla del resto de la voz del coach. */
 .hero-coach p.hero-last-workout{
 
-    margin-top:10px;
+    margin-top:6px;
 
-    padding-top:8px;
+    padding-top:6px;
 
     border-top:1px solid rgba(255,255,255,.14);
 
@@ -435,8 +439,20 @@ text-shadow:
            real medido (mensaje de 2 líneas + Dynamic Island) con ~23px de
            aire de sobra -- verificado con Playwright forzando
            padding-top con cada inset real y los 9 tipos de sesión, no a
-           ojo. */
-        height:518px;
+           ojo.
+
+           518 -> 462 (-11%, ajuste de Inicio 2026-09-27: que el
+           contenido útil empiece antes). El recorte sale del aire
+           interno (márgenes de .hero-divider/.hero-divider-small y del
+           bloque coach, line-height del coach 1.55->1.45, título 50->46px),
+           así que todo el texto sube a la vez que el borde inferior.
+           Medido en WebKit con inset de Dynamic Island (59px) y la
+           variante más larga ("Racha"/"Vas más rápido": mensaje de 2
+           líneas + 2ª frase + "Último entreno"): 16px de aire hasta
+           .master-card. OJO: antes de este ajuste ese mismo caso ya
+           SOLAPABA ~15px -- la línea "Último entreno" (2026-09-25) se
+           había comido el colchón de 48px de arriba. */
+        height:462px;
 
     }
 
@@ -448,7 +464,7 @@ text-shadow:
 
     .hero-title{
 
-        font-size:50px;
+        font-size:46px;
 
     }
 

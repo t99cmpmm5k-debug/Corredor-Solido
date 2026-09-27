@@ -18,7 +18,7 @@ describe("HourlyWeather", () => {
 
         const html = HourlyWeather({ hours, current: null, label: null }, now);
 
-        expect(html).toContain("Mejor franja restante para correr");
+        expect(html).toContain("Mejor franja para correr");
         expect(html).toContain("21:00-22:00");
 
     });
@@ -47,7 +47,7 @@ describe("HourlyWeather", () => {
 
         const html = HourlyWeather({ hours, current: null, label: null }, now);
 
-        expect(html).not.toContain("Mejor franja restante");
+        expect(html).not.toContain("Mejor franja para correr");
         expect(html).toContain("08:00");
         expect(html).toContain("09:00");
 
@@ -115,7 +115,7 @@ describe("HourlyWeather", () => {
         expect(html).toContain("Mejor a partir de las");
         expect(html).toContain("21:00");
         expect(html).toContain("25°");
-        expect(html).not.toContain("Mejor franja restante para correr");
+        expect(html).not.toContain("Mejor franja para correr");
 
     });
 
@@ -130,7 +130,7 @@ describe("HourlyWeather", () => {
 
         const html = HourlyWeather({ hours, current: null, label: null }, now);
 
-        expect(html).toContain("Mejor franja restante para correr");
+        expect(html).toContain("Mejor franja para correr");
         expect(html).toContain("21:00-22:00");
 
     });
@@ -152,7 +152,7 @@ describe("HourlyWeather", () => {
 
         expect(html).toContain("Ahora es una buena franja");
         expect(html).toContain("18°");
-        expect(html).not.toContain("Mejor franja restante");
+        expect(html).not.toContain("Mejor franja para correr");
         expect(html).not.toContain("21:00-22:00");
 
     });
@@ -168,7 +168,7 @@ describe("HourlyWeather", () => {
 
         const html = HourlyWeather({ hours, current: null, label: null }, now);
 
-        expect(html).toContain("Mejor franja restante para correr");
+        expect(html).toContain("Mejor franja para correr");
         expect(html).toContain("21:00-22:00");
         expect(html).not.toContain("Ahora es una buena franja");
 
@@ -258,6 +258,25 @@ describe("HourlyWeather -- hasSessionToday: false (día de descanso)", () => {
 
     });
 
+    it("sin sesión hoy, con temperatura actual: icono pequeño de tiempo a la izquierda", () => {
+
+        const html = HourlyWeather({ hours: [hour("14:00", 30)], current: { temp: 31, icon: "sun" }, label: null, hasSessionToday: false }, new Date("2026-08-22T13:00:00"));
+
+        expect(html).toContain("<iconify-icon");
+        expect(html).toContain("Hoy no tienes sesión planificada · <strong>31°</strong>");
+
+    });
+
+    it("con sesión hoy, el titular lleva franja y temperatura juntas ('Mejor franja para correr · 21:00-22:00 · 22°')", () => {
+
+        const hours = [hour("20:00", 26), hour("21:00", 22), hour("22:00", 24)];
+        const html = HourlyWeather({ hours, current: null, label: null }, new Date("2026-08-22T19:30:00"));
+
+        expect(html).toContain("Mejor franja para correr · <strong>21:00-22:00</strong> · 22°");
+        expect(html).not.toContain("hourly-weather-best-detail");
+
+    });
+
     it("sin sesión hoy y sin dato de temperatura actual, el mensaje se queda solo sin inventar un grado", () => {
 
         const hours = [hour("14:00", 30)];
@@ -273,7 +292,7 @@ describe("HourlyWeather -- hasSessionToday: false (día de descanso)", () => {
         const hours = [hour("20:00", 26), hour("21:00", 20), hour("22:00", 24)];
         const html = HourlyWeather({ hours, current: null, label: null }, new Date("2026-08-22T19:30:00"));
 
-        expect(html).toContain("Mejor franja restante para correr");
+        expect(html).toContain("Mejor franja para correr");
 
     });
 

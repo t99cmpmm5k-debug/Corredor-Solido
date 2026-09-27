@@ -56,6 +56,21 @@
 
 }
 
+/* Icono pequeño de sol/nube a la izquierda (ajuste 2026-09-27) -- mismo
+   tamaño de tarjeta que antes; el texto va entero en un <span> para que
+   envuelva como un bloque (ver bug de flex nowrap en WeekSummary.css). */
+.hourly-weather-rest-message {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.hourly-weather-rest-message iconify-icon {
+    flex-shrink: 0;
+    font-size: 1.1rem;
+    color: var(--color-primary);
+}
+
 .hourly-weather-rest-message strong {
 
     color: var(--text-primary);

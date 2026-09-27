@@ -125,9 +125,16 @@ function BestRunningHour(hours, now) {
         `;
     }
 
-    const details = [`${best.temp}°`];
-    if (best.windKmh != null) details.push(`viento ${best.windKmh} km/h`);
-    if (best.humidity != null) details.push(`humedad ${best.humidity}%`);
+    // Ajuste de Inicio 2026-09-27: en la franja futura la temperatura sube
+    // al titular ("Mejor franja para correr · 21:00-22:00 · 26°"), así que
+    // la línea de detalle solo lleva viento/humedad (y desaparece si no
+    // hay ninguno de los dos). "Ahora es buena franja" sigue con la
+    // temperatura en el detalle, su titular no lleva hora.
+    const extraDetails = [];
+    if (best.windKmh != null) extraDetails.push(`viento ${best.windKmh} km/h`);
+    if (best.humidity != null) extraDetails.push(`humedad ${best.humidity}%`);
+
+    const details = [`${best.temp}°`, ...extraDetails];
 
     // Bug real corregido en esta fase: con la mejor franja siendo, p. ej.,
     // "23:00-00:00" y el reloj real ya dentro de ella (23:08), el mensaje
@@ -163,11 +170,11 @@ function BestRunningHour(hours, now) {
 
                 <iconify-icon icon="solar:sort-by-time-bold-duotone"></iconify-icon>
 
-                Mejor franja restante para correr: <strong>${best.time}-${nextHourLabel(best.time)}</strong>
+                <span>Mejor franja para correr · <strong>${best.time}-${nextHourLabel(best.time)}</strong> · ${best.temp}°</span>
 
             </p>
 
-            <p class="hourly-weather-best-detail">${details.join(" · ")}</p>
+            ${extraDetails.length ? `<p class="hourly-weather-best-detail">${extraDetails.join(" · ")}</p>` : ""}
 
         </div>
 
@@ -217,9 +224,9 @@ export function HourlyWeather({ hours, current, label, hasSessionToday = true },
 
                 <p class="hourly-weather-rest-message">
 
-                    Hoy no tienes sesión planificada
+                    ${current ? `<iconify-icon icon="${weatherIcon(current.icon)}"></iconify-icon>` : ""}
 
-                    ${current ? ` · <strong>${current.temp}°</strong>` : ""}
+                    <span>Hoy no tienes sesión planificada${current ? ` · <strong>${current.temp}°</strong>` : ""}</span>
 
                 </p>
 

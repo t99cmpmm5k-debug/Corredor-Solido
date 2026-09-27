@@ -1,4 +1,4 @@
-import { formatISODate, formatWeekday } from "./date.js";
+import { formatISODate } from "./date.js";
 
 // Etiqueta corta por tipo de sesión -- a diferencia de TYPE_LABEL de
 // antes ("un rodaje", "la tirada larga"), esta va delante de un número de
@@ -18,10 +18,6 @@ const SHORT_TYPE_LABEL = {
 
 function shortLabelFor(session) {
     return SHORT_TYPE_LABEL[session.type] ?? session.title?.toLowerCase() ?? "sesión";
-}
-
-function capitalize(text) {
-    return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
 // Formato "entrenador" (fase 3 del pulido de densidad, 2026-08-25):
@@ -45,6 +41,12 @@ function capitalize(text) {
 // parseForecastHours() en otros sitios de la app) para poder testear
 // "hoy" de forma determinista, sin depender del reloj real de quien
 // ejecute los tests.
+//
+// Ajuste de Inicio 2026-09-27: se quita la segunda frase de "sesión
+// clave" ("Domingo: tirada larga · 15 km.") -- la misma tarjeta ya
+// muestra debajo "Próximo: TIRADA LARGA · 15 km · Domingo" (buildNextUp()
+// en Home.js) y en pantalla salía la misma sesión dos veces seguidas.
+// Aquí queda solo lo de HOY; lo que viene después es cosa de "Próximo".
 export function buildWeekInsight(week, { goal, todayGymMatch = null, referenceDate = new Date() } = {}) {
 
     if (!week?.length || goal <= 0) return "";
@@ -52,13 +54,6 @@ export function buildWeekInsight(week, { goal, todayGymMatch = null, referenceDa
     const todayISO = formatISODate(referenceDate);
 
     const todaySession = week.find(session => session.date === todayISO) ?? null;
-    const fromToday = week.filter(session => session.date >= todayISO);
-
-    const keySession = fromToday
-        .filter(session => session.status !== "completed" && session.volume > 0)
-        .sort((a, b) => b.volume - a.volume)[0] ?? null;
-
-    const keyIsToday = keySession?.date === todayISO;
 
     const parts = [];
 
@@ -90,9 +85,6 @@ export function buildWeekInsight(week, { goal, todayGymMatch = null, referenceDa
         parts.push(`Hoy: ${todayParts.join(" + ")}.`);
     }
 
-    if (keySession && !keyIsToday) {
-        parts.push(`${capitalize(formatWeekday(keySession.date))}: ${shortLabelFor(keySession)} · ${keySession.volume} km.`);
-    }
 
     return parts.join(" ");
 
