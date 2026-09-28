@@ -98,3 +98,31 @@ export function buildHistoryGroups(workouts, { now = new Date() } = {}) {
     }));
 
 }
+
+// "Actividad reciente" de la pantalla principal de Running (pulido
+// 2026-09-29): solo las `limit` tarjetas más recientes, pero conservando
+// la cabecera de su grupo real ("SEMANA PASADA · 3 entrenos · 18,7 km ·
+// 5:33/km") con el resumen del grupo ENTERO, no solo de lo recortado --
+// el resumen describe la semana/mes real, las tarjetas son una muestra.
+// `groups` debe venir de buildHistoryGroups() (ya ordenado de más
+// reciente a más antiguo, igual que los workouts de cada grupo). El
+// historial completo sin recortar vive en su propia pantalla.
+export function limitGroupsToRecent(groups, limit) {
+
+    const limited = [];
+    let remaining = limit;
+
+    for (const group of groups) {
+
+        if (remaining <= 0) break;
+
+        const shown = group.workouts.slice(0, remaining);
+        remaining -= shown.length;
+
+        limited.push({ ...group, workouts: shown, hiddenCount: group.workouts.length - shown.length });
+
+    }
+
+    return limited;
+
+}

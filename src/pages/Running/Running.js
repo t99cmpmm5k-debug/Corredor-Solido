@@ -11,7 +11,7 @@ import { buildTypeSummary } from "./runningSummary.js";
 import { buildZ2Evolution, buildTypeEvolution, EVOLUTION_GROUP_SIZE } from "./runningEvolution.js";
 import { buildWeeklyProgress } from "./runningWeeklyProgress.js";
 import { buildWorkoutTypeContext } from "./runningTypeContext.js";
-import { buildHistoryGroups } from "./runningHistoryGrouping.js";
+import { buildHistoryGroups, limitGroupsToRecent } from "./runningHistoryGrouping.js";
 import {
     ACWR_CHRONIC_DAYS,
     ACWR_ZONE_THRESHOLDS,
@@ -267,22 +267,39 @@ function groupSummaryText(summary) {
 
 }
 
-// Los grupos de MES (no semana) ya no se pintan como tarjeta propia en la
-// pantalla principal -- pulido 2026-09-24, segunda vuelta: la primera
-// ronda dejaba ver el mes más reciente como tarjeta (además de Esta
-// semana/Semana pasada), pero Rafa pidió que ni ese se quede -- solo
-// semana actual y anterior aquí, cualquier mes entero va siempre a la
-// tabla ordenable (RunningFullTableView, botón "Ver tabla ordenable" justo
-// debajo). `groups` ya viene ordenado de más reciente a más antiguo (ver
-// buildHistoryGroups()), pero el orden no importa aquí -- ningún grupo
-// "month-*" sobrevive al filtro. Los entrenos de esos meses no se pierden:
-// siguen en `filtered`, y RunningFullTableView() (getWorkouts() sin
-// recorte de fecha, solo el filtro de tipo + orden por columna) ya los
-// tenía y los sigue teniendo -- este helper solo decide qué se pinta como
-// tarjeta aquí, nunca qué datos existen.
-function visibleHistoryGroupsOf(groups) {
+// Cuántas tarjetas de entreno enseña "Actividad reciente" en la pantalla
+// principal (pulido 2026-09-29, pedido: 3-5) -- el resto vive en
+// "Historial completo" (RunningFullHistoryView más abajo).
+const RECENT_ACTIVITY_LIMIT = 5;
 
-    return groups.filter(group => !group.key.startsWith("month-"));
+// Grupo de "Actividad reciente" -- misma cabecera visual que
+// RunningHistoryGroup() (etiqueta + resumen del grupo REAL entero, ver
+// limitGroupsToRecent()), pero fija: sin plegar/desplegar, aquí solo hay
+// 5 tarjetas como mucho, plegar no ahorra nada. Plegar sigue existiendo en
+// el historial completo, donde sí hay meses enteros.
+function RecentActivityGroup(group, shoes, routes, allWorkouts) {
+
+    return `
+
+        <div class="history-group">
+
+            <div class="history-group-header history-group-header--static">
+
+                <span class="history-group-title">${group.label}</span>
+
+                <span class="history-group-summary">${groupSummaryText(group.summary)}</span>
+
+            </div>
+
+            <div class="history-group-body">
+
+                ${group.workouts.map(workout => RunningHistoryItem(workout, shoes, routes, allWorkouts)).join("")}
+
+            </div>
+
+        </div>
+
+    `;
 
 }
 
@@ -1355,8 +1372,7 @@ function RunningIdleView() {
     // filtrado, no el total real de esa semana/mes. `filtered` ya viene
     // ordenado de más reciente a más antiguo (ver `sorted` arriba), orden
     // del que depende buildHistoryGroups() para ordenar los grupos entre sí.
-    const historyGroups = buildHistoryGroups(filtered);
-    const visibleHistoryGroups = visibleHistoryGroupsOf(historyGroups);
+    const recentGroups = limitGroupsToRecent(buildHistoryGroups(filtered), RECENT_ACTIVITY_LIMIT);
 
     // ACWR mira SIEMPRE el conjunto real de entrenos (workouts), nunca el
     // filtrado por tipo -- es carga de entrenamiento total, no de "solo
@@ -1448,44 +1464,29 @@ function RunningIdleView() {
 
                 ` : `
 
-                    <div class="history-groups">
+                    <section class="recent-activity">
 
-                        ${visibleHistoryGroups.map(group => {
+                        <h3 class="recent-activity-title">ACTIVIDAD RECIENTE</h3>
 
-                            const overrides = getHistoryGroupOverrides();
-                            const isOpen = overrides[group.key] ?? group.defaultOpen;
+                        <div class="history-groups">
 
-                            return RunningHistoryGroup(group, isOpen, shoes, routes, workouts);
+                            ${recentGroups.map(group => RecentActivityGroup(group, shoes, routes, workouts)).join("")}
 
-                        }).join("")}
+                        </div>
 
-                    </div>
+                        <!-- Única puerta a lo que no cabe en las 5 tarjetas de
+                             arriba: todos los grupos semana/mes (plegables),
+                             con los mismos filtros, y desde ahí la tabla
+                             ordenable (pulido 2026-09-29). -->
+                        <button class="recent-activity-more" data-action="open-history">
 
-                    <div class="running-history-header">
+                            Ver historial completo
 
-                        <!-- Bajado justo debajo de Esta semana/Semana pasada
-                             (2026-09-24, segunda vuelta): con los acordeones
-                             mensuales quitados de esta pantalla, este botón pasa
-                             a ser la única puerta a cualquier entreno más
-                             antiguo -- tiene que quedar justo donde antes
-                             empezaba el mes más reciente, no arriba del todo
-                             escondido tras los filtros. Nombre igual que el
-                             retoque de cierre anterior: "Ver tabla completa" no
-                             decía qué la hacía distinta de la lista de tarjetas
-                             de arriba; RunningFullTableView() SÍ aporta algo
-                             real y propio -- columnas ordenables
-                             (sort-history-table) y un layout más cómodo en
-                             horizontal, con TODOS los entrenos (getWorkouts(),
-                             sin recorte de fecha), no solo los antiguos. -->
-                        <button class="running-history-expand" data-action="open-history-table">
-
-                            <iconify-icon icon="solar:full-screen-bold-duotone"></iconify-icon>
-
-                            Ver tabla ordenable
+                            <iconify-icon icon="solar:alt-arrow-right-linear"></iconify-icon>
 
                         </button>
 
-                    </div>
+                    </section>
 
                 `}
 
@@ -1504,6 +1505,82 @@ function RunningIdleView() {
             `}
 
         </div>
+
+    `;
+
+}
+
+// "Historial completo" (pulido 2026-09-29) -- TODO lo que la pantalla
+// principal ya no enseña: todos los grupos semana/mes de buildHistoryGroups()
+// con su plegado de siempre (RunningHistoryGroup + getHistoryGroupOverrides,
+// meses cerrados por defecto), el mismo filtro por tipo (compartido con la
+// principal vía getTypeFilter(), así que cambiar de chip aquí o allí es lo
+// mismo) y la puerta a la tabla ordenable, que se muda aquí desde la
+// principal: es otra forma de mirar el archivo entero, no algo del día a
+// día. Ninguna lógica nueva, solo cambio de ubicación.
+function RunningFullHistoryView() {
+
+    const workouts = getWorkouts();
+    const shoes = getShoes();
+    const routes = getReferenceRoutes();
+    const typeFilter = getTypeFilter();
+
+    const sorted = [...workouts].sort((a, b) => b.date.localeCompare(a.date));
+    const filtered = typeFilter ? sorted.filter(w => w.type === typeFilter) : sorted;
+    const groups = buildHistoryGroups(filtered);
+    const overrides = getHistoryGroupOverrides();
+
+    return `
+
+        <section class="running-wizard running-step-history">
+
+            <header class="wizard-header">
+
+                <button class="wizard-close" data-action="close-history">
+
+                    <iconify-icon icon="solar:close-circle-bold-duotone"></iconify-icon>
+
+                </button>
+
+                <h2>Historial completo</h2>
+
+            </header>
+
+            ${RunningTypeFilters(typeFilter, workouts)}
+
+            ${filtered.length === 0 ? `
+
+                <div class="running-empty-filtered">
+
+                    <iconify-icon icon="solar:running-2-bold-duotone"></iconify-icon>
+
+                    <p>No hay entrenamientos de este tipo.</p>
+
+                </div>
+
+            ` : `
+
+                <div class="running-history-header">
+
+                    <button class="running-history-expand" data-action="open-history-table">
+
+                        <iconify-icon icon="solar:full-screen-bold-duotone"></iconify-icon>
+
+                        Ver tabla ordenable
+
+                    </button>
+
+                </div>
+
+                <div class="history-groups">
+
+                    ${groups.map(group => RunningHistoryGroup(group, overrides[group.key] ?? group.defaultOpen, shoes, routes, workouts)).join("")}
+
+                </div>
+
+            `}
+
+        </section>
 
     `;
 
@@ -1609,6 +1686,10 @@ export function Running() {
             editingShoeId: getEditingShoeId(),
             newShoePhoto: getNewShoePhoto()
         });
+
+    } else if (step === "history") {
+
+        content = RunningFullHistoryView();
 
     } else if (step === "historyTable") {
 

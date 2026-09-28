@@ -2916,3 +2916,77 @@
     color:var(--text-secondary);
 
 }
+
+/* =========================
+   ACTIVIDAD RECIENTE (pulido 2026-09-29)
+   Solo las 5 tarjetas más recientes en la principal; el archivo entero
+   vive en "Historial completo" (RunningFullHistoryView).
+========================= */
+
+.recent-activity{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:12px;
+
+}
+
+.recent-activity-title{
+
+    margin:0;
+
+    color:var(--text-secondary);
+
+    font-size:.74rem;
+
+    font-weight:800;
+
+    letter-spacing:.08em;
+
+}
+
+/* Cabecera de grupo fija (sin plegar) -- mismo aspecto que la plegable
+   del historial completo, sin cursor de botón. */
+.history-group-header--static{
+
+    cursor:default;
+
+}
+
+/* Enlace de texto, no botón con borde: es navegación (azul), no una
+   acción -- ver criterio de color semántico del pulido. */
+.recent-activity-more{
+
+    align-self:flex-start;
+
+    display:inline-flex;
+
+    align-items:center;
+
+    gap:4px;
+
+    padding:4px 2px;
+
+    border:none;
+
+    background:none;
+
+    color:var(--color-primary);
+
+    font:inherit;
+
+    font-size:.85rem;
+
+    font-weight:700;
+
+    cursor:pointer;
+
+}
+
+.recent-activity-more iconify-icon{
+
+    font-size:16px;
+
+}

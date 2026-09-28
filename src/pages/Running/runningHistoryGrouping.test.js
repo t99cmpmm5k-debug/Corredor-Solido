@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { addDays, formatISODate, getWeekStartDate, parseISODate } from "../../utils/date.js";
-import { buildHistoryGroups } from "./runningHistoryGrouping.js";
+import { buildHistoryGroups, limitGroupsToRecent } from "./runningHistoryGrouping.js";
 
 const TODAY = new Date(2026, 8, 3); // 2026-09-03, jueves
 const TODAY_ISO = formatISODate(TODAY);
@@ -135,6 +135,43 @@ describe("buildHistoryGroups", () => {
 
         expect(groups.map(g => g.key)).toEqual(["month-2026-7", "month-2026-6"]);
         expect(groups[0].workouts.map(w => w.id)).toEqual(["w1", "w3"]);
+
+    });
+
+});
+
+describe("limitGroupsToRecent -- Actividad reciente (pantalla principal)", () => {
+
+    const groups = [
+        { key: "this-week", workouts: [{ id: "a" }, { id: "b" }], summary: { count: 2 } },
+        { key: "last-week", workouts: [{ id: "c" }, { id: "d" }, { id: "e" }], summary: { count: 3 } },
+        { key: "month-2026-7", workouts: [{ id: "f" }], summary: { count: 1 } }
+    ];
+
+    it("recorta a las N tarjetas más recientes, cruzando grupos en orden", () => {
+
+        const result = limitGroupsToRecent(groups, 4);
+
+        expect(result.map(g => g.key)).toEqual(["this-week", "last-week"]);
+        expect(result.flatMap(g => g.workouts.map(w => w.id))).toEqual(["a", "b", "c", "d"]);
+
+    });
+
+    it("el resumen del grupo NO se recalcula sobre lo recortado (describe la semana real entera)", () => {
+
+        const lastWeek = limitGroupsToRecent(groups, 4)[1];
+
+        expect(lastWeek.summary.count).toBe(3);
+        expect(lastWeek.hiddenCount).toBe(1);
+
+    });
+
+    it("con menos entrenos que el límite, los devuelve todos sin inventar grupos vacíos", () => {
+
+        const result = limitGroupsToRecent(groups, 10);
+
+        expect(result).toHaveLength(3);
+        expect(result.every(g => g.hiddenCount === 0)).toBe(true);
 
     });
 

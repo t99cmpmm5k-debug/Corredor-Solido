@@ -75,8 +75,20 @@ import {
 const DETAIL_HISTORY_STATE = { runningDetail: true };
 const SHOES_HISTORY_STATE = { runningShoes: true };
 const HISTORY_TABLE_HISTORY_STATE = { runningHistoryTable: true };
+const FULL_HISTORY_HISTORY_STATE = { runningFullHistory: true };
+
+// Pantallas de Running desde las que se puede abrir el detalle de un
+// entreno y a las que hay que VOLVER al cerrarlo (pulido 2026-09-29) --
+// antes el detalle solo se abría desde la principal y cerrar siempre
+// llevaba a "idle"; con el historial completo como pantalla propia, cerrar
+// un entreno abierto desde ahí no debe tirarte a la principal.
+const DETAIL_RETURNABLE_STEPS = ["history", "analysis", "referenceRouteDetail"];
+let detailReturnStep = "idle";
 
 export function openDetail(workoutId) {
+
+    const current = getWizardStep();
+    detailReturnStep = DETAIL_RETURNABLE_STEPS.includes(current) ? current : "idle";
 
     setDetailWorkoutId(workoutId);
     setWizardStep("detail");
@@ -100,7 +112,7 @@ function closeDetail() {
     }
 
     setDetailWorkoutId(null);
-    setWizardStep("idle");
+    setWizardStep(detailReturnStep);
     rerender();
 
 }
@@ -140,6 +152,33 @@ function closeShoes() {
 // Pantalla propia para la tabla (ver Running.js, RunningFullTableView) —
 // aislada a propósito para que girar el móvil ahí dentro no afecte a
 // ninguna otra pantalla de la app.
+// "Historial completo" (pulido 2026-09-29, ver RunningFullHistoryView en
+// Running.js) -- mismo patrón de historial que el resto de pantallas.
+function openFullHistory() {
+
+    setHistoryMenuOpenId(null);
+    setWizardStep("history");
+
+    history.pushState(FULL_HISTORY_HISTORY_STATE, "");
+
+    // Scroll arriba: el enlace está al final de la principal, sin esto la
+    // pantalla nueva se abría ya desplazada (y con los chips "pegados").
+    rerender({ resetScroll: true });
+
+}
+
+function closeFullHistory() {
+
+    if (history.state?.runningFullHistory) {
+        history.back();
+        return;
+    }
+
+    setWizardStep("idle");
+    rerender();
+
+}
+
 function openHistoryTable() {
 
     setWizardStep("historyTable");
@@ -157,7 +196,7 @@ function closeHistoryTable() {
         return;
     }
 
-    setWizardStep("idle");
+    setWizardStep("history");
     rerender();
 
 }
@@ -286,9 +325,14 @@ window.addEventListener("popstate", () => {
 
     if (step === "detail") {
         setDetailWorkoutId(null);
-        setWizardStep("idle");
+        setWizardStep(detailReturnStep);
         rerender();
-    } else if (step === "shoes" || step === "historyTable" || step === "referenceRoutes") {
+    } else if (step === "historyTable") {
+        // Desde el pulido 2026-09-29 la tabla solo se abre desde el
+        // historial completo -- atrás vuelve ahí, no a la principal.
+        setWizardStep("history");
+        rerender();
+    } else if (step === "shoes" || step === "history" || step === "referenceRoutes") {
         setWizardStep("idle");
         rerender();
     } else if (step === "referenceRouteDetail") {
@@ -1088,6 +1132,18 @@ export function initRunningEvents() {
     document.querySelectorAll('[data-action="close-shoes"]').forEach(button => {
 
         button.addEventListener("click", closeShoes);
+
+    });
+
+    document.querySelectorAll('[data-action="open-history"]').forEach(button => {
+
+        button.addEventListener("click", openFullHistory);
+
+    });
+
+    document.querySelectorAll('[data-action="close-history"]').forEach(button => {
+
+        button.addEventListener("click", closeFullHistory);
 
     });
 
