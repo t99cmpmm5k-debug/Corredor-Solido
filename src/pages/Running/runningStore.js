@@ -153,6 +153,22 @@ export function setHistoryMenuOpenId(id) {
 
 }
 
+// Id de la zapatilla cuyo menú "•••" está abierto en la pantalla de
+// Zapatillas (pulido 2026-09-29) -- mismo patrón que historyMenuOpenId.
+let shoeMenuOpenId = null;
+
+export function getShoeMenuOpenId() {
+
+    return shoeMenuOpenId;
+
+}
+
+export function setShoeMenuOpenId(id) {
+
+    shoeMenuOpenId = id;
+
+}
+
 // Plegado/desplegado de las cabeceras de grupo del historial (semana/mes,
 // ver runningHistoryGrouping.js) -- solo se guarda aquí el ESTADO QUE EL
 // USUARIO HA TOCADO, no el estado por defecto de cada grupo (eso lo decide

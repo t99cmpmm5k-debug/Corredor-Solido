@@ -1,5 +1,5 @@
 import { rerender } from "../../core/router.js";
-import { addWorkout, addShoe, deleteWorkout, findSimilarWorkout, updateWorkoutType, updateWorkoutShoe, updateWorkoutDayState, retireShoe, updateShoe, getWorkouts } from "../../data/workoutStore.js";
+import { addWorkout, addShoe, deleteWorkout, findSimilarWorkout, updateWorkoutType, updateWorkoutShoe, updateWorkoutDayState, retireShoe, updateShoe, setPrimaryShoe, getWorkouts } from "../../data/workoutStore.js";
 import { createReferenceRoute, deleteReferenceRoute, assignWorkoutToRoute, unassignWorkoutFromReferenceRoutes, getReferenceRouteById } from "../../data/referenceRouteStore.js";
 import { dismissRouteSuggestion } from "../../data/routeSuggestionStore.js";
 import { existingRouteMatchPartnerId } from "./referenceRouteGeometry.js";
@@ -44,6 +44,8 @@ import {
     toggleSort,
     getHistoryMenuOpenId,
     setHistoryMenuOpenId,
+    getShoeMenuOpenId,
+    setShoeMenuOpenId,
     toggleHistoryGroup,
     setEvolutionTab,
     isAcwrInfoOpen,
@@ -129,6 +131,7 @@ export function openShoes() {
     setAddingNewShoe(false);
     setEditingShoeId(null);
     setNewShoePhoto(null);
+    setShoeMenuOpenId(null);
     setWizardStep("shoes");
 
     history.pushState(SHOES_HISTORY_STATE, "");
@@ -384,6 +387,18 @@ document.addEventListener("click", event => {
 
     setHistoryMenuOpenId(null);
     rerender();
+});
+
+// Mismo patrón para el menú "•••" de una tarjeta de zapatilla
+// (RunningShoesScreen.js, pulido 2026-09-29).
+document.addEventListener("click", event => {
+
+    if (!getShoeMenuOpenId()) return;
+    if (event.target.closest(".shoe-menu")) return;
+
+    setShoeMenuOpenId(null);
+    rerender();
+
 });
 
 // Mismo patrón que el listener de arriba, pero para el menú "···" de una
@@ -1449,12 +1464,37 @@ export function initRunningEvents() {
 
     });
 
+    document.querySelectorAll('[data-action="toggle-shoe-menu"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+
+            const id = button.dataset.shoeId;
+            setShoeMenuOpenId(getShoeMenuOpenId() === id ? null : id);
+            rerender();
+
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="set-primary-shoe"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+
+            setPrimaryShoe(button.dataset.shoeId);
+            setShoeMenuOpenId(null);
+            rerender();
+
+        });
+
+    });
+
     document.querySelectorAll('[data-action="edit-shoe"]').forEach(button => {
 
         button.addEventListener("click", () => {
 
             const id = button.dataset.shoeId;
 
+            setShoeMenuOpenId(null);
             setEditingShoeId(getEditingShoeId() === id ? null : id);
             setAddingNewShoe(false);
             setNewShoePhoto(null);
@@ -1493,6 +1533,7 @@ export function initRunningEvents() {
 
         button.addEventListener("click", () => {
             retireShoe(button.dataset.shoeId);
+            setShoeMenuOpenId(null);
             rerender();
         });
 
@@ -1502,6 +1543,7 @@ export function initRunningEvents() {
 
         button.addEventListener("click", () => {
             updateShoe(button.dataset.shoeId, { status: "active", retiredDate: null });
+            setShoeMenuOpenId(null);
             rerender();
         });
 

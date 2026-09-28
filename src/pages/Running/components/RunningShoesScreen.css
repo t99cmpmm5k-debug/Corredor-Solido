@@ -108,7 +108,10 @@
 
 }
 
-.shoe-card--retired{
+/* Solo foto y texto apagados, no la tarjeta entera -- si no, el menú
+   "•••" desplegado heredaría la transparencia. */
+.shoe-card--retired .shoe-photo,
+.shoe-card--retired .shoe-card-body{
 
     opacity:.6;
 
@@ -273,17 +276,215 @@
 }
 
 /* =========================
-   ACCIONES DE TARJETA
+   NOMBRE + BADGE DE ESTADO (pulido 2026-09-29)
+   Color semántico: Principal en verde (estado "en uso, bien"), Rotación
+   en azul suave (información), Retirada en gris.
 ========================= */
 
-.shoe-card-actions{
+.shoe-card-title-row{
 
     display:flex;
 
-    gap:10px;
+    align-items:center;
+
+    flex-wrap:wrap;
+
+    gap:6px 8px;
 
 }
 
+.shoe-badge{
+
+    padding:2px 8px;
+
+    border-radius:999px;
+
+    font-size:.66rem;
+
+    font-weight:800;
+
+    letter-spacing:.03em;
+
+    text-transform:uppercase;
+
+    white-space:nowrap;
+
+}
+
+.shoe-badge--primary{
+
+    background:color-mix(in srgb, var(--color-success) 16%, transparent);
+
+    color:var(--color-success);
+
+}
+
+.shoe-badge--rotation{
+
+    background:color-mix(in srgb, var(--color-primary) 14%, transparent);
+
+    color:var(--color-primary);
+
+}
+
+.shoe-badge--retired{
+
+    background:color-mix(in srgb, var(--text-secondary) 16%, transparent);
+
+    color:var(--text-secondary);
+
+}
+
+/* Contexto bajo el total: "3 zapatillas activas · 1 principal · 2 en
+   rotación". */
+.shoes-total-context{
+
+    margin-top:6px;
+
+    color:var(--text-secondary);
+
+    font-size:.8rem;
+
+    text-align:center;
+
+}
+
+/* =========================
+   MENÚ "•••" DE TARJETA (sustituye a los botones Editar/Retirar)
+   Mismo aspecto que .history-menu de las tarjetas de entreno.
+========================= */
+
+/* La tarjeta con el menú abierto por encima de sus hermanas -- si no, la
+   siguiente tarjeta (con su propio contexto de apilamiento) se pintaba
+   ENCIMA del desplegable (visto al verificar en WebKit). */
+.shoe-card:has(.shoe-menu-popover){
+
+    position:relative;
+
+    z-index:10;
+
+}
+
+.shoe-menu{
+
+    position:relative;
+
+    flex-shrink:0;
+
+    align-self:flex-start;
+
+}
+
+.shoe-menu-toggle{
+
+    display:flex;
+
+    padding:6px;
+
+    border:none;
+
+    background:none;
+
+    color:var(--text-secondary);
+
+    cursor:pointer;
+
+}
+
+.shoe-menu-toggle iconify-icon{
+
+    font-size:20px;
+
+}
+
+.shoe-menu-popover{
+
+    position:absolute;
+
+    top:calc(100% + 4px);
+
+    right:0;
+
+    z-index:5;
+
+    display:flex;
+
+    flex-direction:column;
+
+    min-width:210px;
+
+    padding:6px;
+
+    border-radius:14px;
+
+    /* Fondo sólido (pulido 2026-09-29): al 96% el contenido de debajo se
+       transparentaba de forma visible en WebKit (verificado en captura). */
+    background:var(--card-background);
+
+    backdrop-filter:blur(20px);
+
+    -webkit-backdrop-filter:blur(20px);
+
+    border:1px solid var(--card-border);
+
+    box-shadow:0 10px 30px rgba(0,0,0,.35);
+
+}
+
+.shoe-menu-popover button{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+
+    padding:10px 12px;
+
+    border:none;
+
+    border-radius:9px;
+
+    background:none;
+
+    color:var(--text-primary);
+
+    font:inherit;
+
+    font-size:.88rem;
+
+    font-weight:600;
+
+    text-align:left;
+
+    cursor:pointer;
+
+}
+
+.shoe-menu-popover button:hover{
+
+    background:color-mix(in srgb, var(--color-primary) 10%, transparent);
+
+}
+
+.shoe-menu-popover iconify-icon{
+
+    flex-shrink:0;
+
+    font-size:16px;
+
+    color:var(--color-primary);
+
+}
+
+.shoe-menu-popover .shoe-menu-danger,
+.shoe-menu-popover .shoe-menu-danger iconify-icon{
+
+    color:var(--color-danger);
+
+}
+
+/* Botón secundario de los formularios (Cancelar al añadir). */
 .shoe-card-action{
 
     padding:8px 14px;

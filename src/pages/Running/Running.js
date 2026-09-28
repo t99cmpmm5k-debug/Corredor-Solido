@@ -41,6 +41,7 @@ import {
     getSortColumn,
     getSortDirection,
     getHistoryMenuOpenId,
+    getShoeMenuOpenId,
     getHistoryGroupOverrides,
     getWarningsExpanded,
     getChartMetricMode,
@@ -62,7 +63,7 @@ import { RunningUploadStep } from "./components/RunningUploadStep.js";
 import { RunningReviewStep } from "./components/RunningReviewStep.js";
 import { RunningShoeStep } from "./components/RunningShoeStep.js";
 import { RunningDetailView, typeSelector, shoeSelector } from "./components/RunningDetailView.js";
-import { RunningShoesScreen, ShoePhoto, shoeBarPercent, formatKm } from "./components/RunningShoesScreen.js";
+import { RunningShoesScreen, ShoePhoto, shoeBarPercent, formatKm, getPrimaryShoe } from "./components/RunningShoesScreen.js";
 import { RunningHeader } from "./components/RunningHeader.js";
 import { routeSelector } from "./components/ReferenceRouteSelector.js";
 import { ReferenceRoutesListView } from "./components/ReferenceRoutesListView.js";
@@ -545,6 +546,11 @@ export function buildShoeMileageText(bar, shoe, km) {
 // verificar en el navegador con una zapatilla con km objetivo real, ver
 // commit). Con la barra en su propia línea a ancho completo, ese
 // desbordamiento no puede pasar.
+//
+// Compactada (pulido 2026-09-29): sin flecha propia (la card entera ya
+// abre la pantalla y lleva "Gestionar ›"), el "% de uso" solo aparece
+// cuando es un AVISO (80%/100%, mismos umbrales), y sin vida útil
+// configurada no se pinta una barra vacía -- solo los km.
 function ShoeMileageRow(shoe, km) {
 
     const bar = shoeBarPercent(shoe, km);
@@ -561,23 +567,25 @@ function ShoeMileageRow(shoe, km) {
 
                 <span class="shoe-mileage-name">${formatShoeName(shoe)}</span>
 
-                <iconify-icon icon="solar:alt-arrow-right-bold-duotone" class="history-table-chevron"></iconify-icon>
-
             </div>
 
             <div class="shoe-mileage-row-bottom">
 
-                <div class="shoe-mileage-bar-track">
+                ${bar ? `
 
-                    <div class="shoe-mileage-bar-fill ${bar ? `shoe-mileage-bar-fill--${bar.tier}` : ""}" style="--progress:${bar ? bar.fillPercent : 0}%"></div>
+                    <div class="shoe-mileage-bar-track">
 
-                </div>
+                        <div class="shoe-mileage-bar-fill shoe-mileage-bar-fill--${bar.tier}" style="--progress:${bar.fillPercent}%"></div>
+
+                    </div>
+
+                ` : ""}
 
                 <div class="shoe-mileage-km">
 
                     <span class="shoe-mileage-km-fraction">${fraction}</span>
 
-                    ${percentLabel ? `
+                    ${percentLabel && isNearingEnd ? `
 
                         <span class="shoe-mileage-km-percent ${isNearingEnd ? `shoe-mileage-km-percent--${bar.tier}` : ""}">
 
@@ -894,13 +902,13 @@ export function RunningShoeMileageSummary(shoes, { action = "open-shoes" } = {})
     const active = shoes.filter(s => s.status !== "retired");
     if (!active.length) return "";
 
-    // "Todas las zapatillas juntas" incluye las retiradas, igual que en
-    // RunningShoesScreen — ese kilometraje se corrió igual.
-    const totalKm = shoes.reduce((sum, s) => sum + getShoeTotalKm(s.id), 0);
-
-    // Vista compacta: solo la zapatilla activa con más km. El detalle de
-    // todas vive únicamente en "Gestionar zapatillas" (RunningShoesScreen).
-    const mostUsed = active.reduce((best, s) => getShoeTotalKm(s.id) > getShoeTotalKm(best.id) ? s : best);
+    // Vista compacta (pulido 2026-09-29): solo la zapatilla PRINCIPAL
+    // (getPrimaryShoe(): la marcada a mano, o la activa con más km si
+    // ninguna lo está -- el mismo criterio de antes). Fuera el "Total: X
+    // km" de todas juntas: ese número, con su contexto, vive en la
+    // pantalla de Zapatillas. Profile.js ("Equipamiento") reutiliza esta
+    // misma card, así que allí también queda compacta.
+    const primary = getPrimaryShoe(shoes);
     const others = active.length - 1;
 
     return `
@@ -913,23 +921,21 @@ export function RunningShoeMileageSummary(shoes, { action = "open-shoes" } = {})
 
                     <iconify-icon icon="solar:running-round-bold-duotone"></iconify-icon>
 
-                    KILOMETRAJE DE ZAPATILLAS
+                    ZAPATILLAS
 
                 </span>
 
-                <span class="shoe-mileage-total">Total: ${formatKm(totalKm)}</span>
+                <span class="shoe-mileage-manage">
+
+                    Gestionar
+
+                    <iconify-icon icon="solar:alt-arrow-right-linear"></iconify-icon>
+
+                </span>
 
             </div>
 
-            <span class="shoe-mileage-manage">
-
-                Gestionar zapatillas
-
-                <iconify-icon icon="solar:alt-arrow-right-bold-duotone"></iconify-icon>
-
-            </span>
-
-            ${ShoeMileageRow(mostUsed, getShoeTotalKm(mostUsed.id))}
+            ${ShoeMileageRow(primary, getShoeTotalKm(primary.id))}
 
             ${others > 0 ? `<span class="shoe-mileage-more">+${others} ${others === 1 ? "zapatilla activa más" : "zapatillas activas más"}</span>` : ""}
 
@@ -1738,6 +1744,7 @@ export function Running() {
             shoes: getShoes(),
             addingNewShoe: getAddingNewShoe(),
             editingShoeId: getEditingShoeId(),
+            shoeMenuOpenId: getShoeMenuOpenId(),
             newShoePhoto: getNewShoePhoto()
         });
 

@@ -478,7 +478,35 @@ export function updateWorkoutDayState(id, patch) {
 
 export function retireShoe(id) {
 
-    return updateShoe(id, { status: "retired", retiredDate: formatISODate(new Date()) });
+    // Una zapatilla retirada deja de poder ser la principal -- sin esto,
+    // reactivarla más tarde la devolvería como principal a la vez que otra.
+    return updateShoe(id, { status: "retired", retiredDate: formatISODate(new Date()), isPrimary: false });
+
+}
+
+// "Marcar como principal" (pantalla de Zapatillas, pulido 2026-09-29) --
+// campo nuevo `isPrimary` dentro del propio registro de la zapatilla (el
+// backend guarda cada zapatilla como JSON entero, ver 001_init.sql, así que
+// no hace falta migración). Solo una principal a la vez: se desmarca
+// cualquier otra, y solo se escriben las que cambian de verdad.
+export function setPrimaryShoe(id) {
+
+    const target = shoes.find(s => s.id === id && s.status !== "retired");
+    if (!target) return null;
+
+    for (const shoe of shoes) {
+
+        const isPrimary = shoe.id === id;
+        if (!!shoe.isPrimary === isPrimary) continue;
+
+        shoe.isPrimary = isPrimary;
+        put(STORES.shoes, shoe).catch(() => {});
+
+    }
+
+    notifyDataChanged();
+
+    return target;
 
 }
 

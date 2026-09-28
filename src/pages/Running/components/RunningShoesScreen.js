@@ -29,6 +29,100 @@ export function shoeBarPercent(shoe, km) {
 
 }
 
+// Zapatilla "principal" (pulido 2026-09-29): la marcada a mano con
+// "Marcar como principal" (isPrimary, ver setPrimaryShoe() en
+// workoutStore.js) y, si ninguna activa lo está todavía, la activa con más
+// km -- el mismo criterio que ya usaba el resumen compacto de Running
+// antes de existir la marca, para que nada cambie hasta que el usuario
+// elija. null sin ninguna activa.
+export function getPrimaryShoe(shoes) {
+
+    const active = shoes.filter(s => s.status !== "retired");
+    if (!active.length) return null;
+
+    return active.find(s => s.isPrimary)
+        ?? active.reduce((best, s) => getShoeTotalKm(s.id) > getShoeTotalKm(best.id) ? s : best);
+
+}
+
+// Badge de estado de cada tarjeta: Principal / Rotación / Retirada. "Activa"
+// a secas no se usa como badge porque la principal y las de rotación lo son
+// las dos -- no distinguiría nada.
+const SHOE_ROLE_BADGES = {
+    primary: { label: "Principal", className: "shoe-badge--primary" },
+    rotation: { label: "Rotación", className: "shoe-badge--rotation" },
+    retired: { label: "Retirada", className: "shoe-badge--retired" }
+};
+
+function ShoeBadge(role) {
+
+    const badge = SHOE_ROLE_BADGES[role];
+    return `<span class="shoe-badge ${badge.className}">${badge.label}</span>`;
+
+}
+
+// Menú "•••" de cada tarjeta (sustituye a los botones grandes Editar/
+// Retirar) -- mismo patrón que el "···" de las tarjetas del historial
+// (history-menu en Running.js): popover que se cierra al tocar fuera, ver
+// initRunningEvents.js. Las acciones reutilizan los data-action que ya
+// existían (edit-shoe, retire-shoe, reactivate-shoe).
+function ShoeMenu(shoe, role, isOpen, isEditing) {
+
+    const item = (action, icon, label, extraClass = "") => `
+
+        <button class="${extraClass}" data-action="${action}" data-shoe-id="${shoe.id}">
+
+            <iconify-icon icon="${icon}"></iconify-icon>
+
+            ${label}
+
+        </button>
+
+    `;
+
+    const items = role === "retired"
+        ? [item("reactivate-shoe", "solar:restart-bold-duotone", "Reactivar")]
+        : [
+            item("edit-shoe", "solar:pen-bold-duotone", isEditing ? "Cancelar edición" : "Editar"),
+            ...(role === "primary" ? [] : [item("set-primary-shoe", "solar:star-bold-duotone", "Marcar como principal")]),
+            item("retire-shoe", "solar:archive-down-minimlistic-bold-duotone", "Retirar", "shoe-menu-danger")
+        ];
+
+    return `
+
+        <div class="shoe-menu">
+
+            <button class="shoe-menu-toggle" data-action="toggle-shoe-menu" data-shoe-id="${shoe.id}" aria-label="Más opciones">
+
+                <iconify-icon icon="solar:menu-dots-bold-duotone"></iconify-icon>
+
+            </button>
+
+            ${isOpen ? `<div class="shoe-menu-popover">${items.join("")}</div>` : ""}
+
+        </div>
+
+    `;
+
+}
+
+// Contexto bajo el total (pulido 2026-09-29): "3 zapatillas activas · 1
+// principal · 2 en rotación" -- solo conteos reales, las partes a cero se
+// omiten (sin rotación no se dice "0 en rotación").
+export function shoesContextLine(activeCount, hasPrimary) {
+
+    if (!activeCount) return "";
+
+    const rotation = activeCount - (hasPrimary ? 1 : 0);
+    const parts = [`${activeCount} ${activeCount === 1 ? "zapatilla activa" : "zapatillas activas"}`];
+
+    if (hasPrimary) parts.push("1 principal");
+    if (rotation > 0) parts.push(`${rotation} en rotación`);
+
+    return parts.join(" · ");
+
+}
+
 function ShoeBar(shoe, km) {
 
     const bar = shoeBarPercent(shoe, km);
@@ -125,7 +219,7 @@ function ShoeEditForm(shoe, pendingPhoto) {
 
 }
 
-function ShoeCard(shoe, km, isEditing, pendingPhoto) {
+function ShoeCard(shoe, km, isEditing, pendingPhoto, role, isMenuOpen) {
 
     const photoSrc = (isEditing && pendingPhoto) || shoe.photo;
 
@@ -139,27 +233,19 @@ function ShoeCard(shoe, km, isEditing, pendingPhoto) {
 
                 <div class="shoe-card-body">
 
-                    <p class="shoe-card-name">${formatShoeName(shoe)}</p>
+                    <div class="shoe-card-title-row">
+
+                        <p class="shoe-card-name">${formatShoeName(shoe)}</p>
+
+                        ${ShoeBadge(role)}
+
+                    </div>
 
                     ${ShoeBar(shoe, km)}
 
                 </div>
 
-            </div>
-
-            <div class="shoe-card-actions">
-
-                <button class="shoe-card-action" data-action="edit-shoe" data-shoe-id="${shoe.id}">
-
-                    ${isEditing ? "Cancelar" : "Editar"}
-
-                </button>
-
-                <button class="shoe-card-action" data-action="retire-shoe" data-shoe-id="${shoe.id}">
-
-                    Retirar
-
-                </button>
+                ${ShoeMenu(shoe, role, isMenuOpen, isEditing)}
 
             </div>
 
@@ -171,7 +257,7 @@ function ShoeCard(shoe, km, isEditing, pendingPhoto) {
 
 }
 
-function RetiredShoeCard(shoe, km) {
+function RetiredShoeCard(shoe, km, isMenuOpen) {
 
     return `
 
@@ -183,21 +269,19 @@ function RetiredShoeCard(shoe, km) {
 
                 <div class="shoe-card-body">
 
-                    <p class="shoe-card-name">${formatShoeName(shoe)}</p>
+                    <div class="shoe-card-title-row">
 
-                    <p class="shoe-km-plain">${formatKm(km)} · retirada</p>
+                        <p class="shoe-card-name">${formatShoeName(shoe)}</p>
+
+                        ${ShoeBadge("retired")}
+
+                    </div>
+
+                    <p class="shoe-km-plain">${formatKm(km)}</p>
 
                 </div>
 
-            </div>
-
-            <div class="shoe-card-actions">
-
-                <button class="shoe-card-action" data-action="reactivate-shoe" data-shoe-id="${shoe.id}">
-
-                    Reactivar
-
-                </button>
+                ${ShoeMenu(shoe, "retired", isMenuOpen, false)}
 
             </div>
 
@@ -259,10 +343,14 @@ function AddShoeForm(pendingPhoto) {
 
 }
 
-export function RunningShoesScreen({ shoes, addingNewShoe, editingShoeId, newShoePhoto }) {
+export function RunningShoesScreen({ shoes, addingNewShoe, editingShoeId, newShoePhoto, shoeMenuOpenId = null }) {
 
     const active = shoes.filter(s => s.status !== "retired");
     const retired = shoes.filter(s => s.status === "retired");
+
+    // La principal siempre arriba del listado de activas.
+    const primary = getPrimaryShoe(shoes);
+    const activeSorted = [...active].sort((a, b) => (b.id === primary?.id) - (a.id === primary?.id));
 
     // "Todas las zapatillas juntas" incluye las retiradas — ese kilometraje
     // se corrió igual, no desaparece porque la zapatilla se jubile.
@@ -290,6 +378,8 @@ export function RunningShoesScreen({ shoes, addingNewShoe, editingShoeId, newSho
 
                 <span class="shoes-total-label">kilometraje total</span>
 
+                ${active.length ? `<span class="shoes-total-context">${shoesContextLine(active.length, !!primary)}</span>` : ""}
+
             </div>
 
             ${active.length === 0 ? `
@@ -300,11 +390,13 @@ export function RunningShoesScreen({ shoes, addingNewShoe, editingShoeId, newSho
 
                 <div class="shoes-list">
 
-                    ${active.map(shoe => ShoeCard(
+                    ${activeSorted.map(shoe => ShoeCard(
                         shoe,
                         getShoeTotalKm(shoe.id),
                         shoe.id === editingShoeId,
-                        newShoePhoto
+                        newShoePhoto,
+                        shoe.id === primary?.id ? "primary" : "rotation",
+                        shoe.id === shoeMenuOpenId
                     )).join("")}
 
                 </div>
@@ -329,7 +421,7 @@ export function RunningShoesScreen({ shoes, addingNewShoe, editingShoeId, newSho
 
                 <div class="shoes-list">
 
-                    ${retired.map(shoe => RetiredShoeCard(shoe, getShoeTotalKm(shoe.id))).join("")}
+                    ${retired.map(shoe => RetiredShoeCard(shoe, getShoeTotalKm(shoe.id), shoe.id === shoeMenuOpenId)).join("")}
 
                 </div>
 

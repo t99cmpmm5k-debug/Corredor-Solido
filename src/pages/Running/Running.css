@@ -1751,7 +1751,9 @@
 
     border-radius:14px;
 
-    background:color-mix(in srgb, var(--card-background) 96%, transparent);
+    /* Fondo sólido (pulido 2026-09-29): al 96% el contenido de debajo se
+       transparentaba de forma visible en WebKit (verificado en captura). */
+    background:var(--card-background);
 
     backdrop-filter:blur(20px);
 
@@ -2334,26 +2336,8 @@
 
 }
 
-.shoe-mileage-total{
-
-    flex-shrink:0;
-
-    padding:6px 12px;
-
-    border-radius:999px;
-
-    border:1px solid var(--card-border);
-
-    color:var(--text-secondary);
-
-    font-size:.72rem;
-
-    font-weight:700;
-
-    white-space:nowrap;
-
-}
-
+/* "Gestionar ›" en la propia cabecera (pulido 2026-09-29), donde antes
+   iba el "Total: X km". */
 .shoe-mileage-manage{
 
     display:inline-flex;
@@ -2362,7 +2346,7 @@
 
     gap:4px;
 
-    align-self:flex-end;
+    flex-shrink:0;
 
     color:var(--color-primary);
 
