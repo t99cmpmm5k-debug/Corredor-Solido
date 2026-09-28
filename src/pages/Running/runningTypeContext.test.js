@@ -54,7 +54,7 @@ describe("buildWorkoutTypeContext", () => {
 
         const result = buildWorkoutTypeContext(target, [target, ...others]);
 
-        expect(result).toEqual({ kind: "pace", text: "Rodaje (Z2) · +22 s/km más rápido que tu media" });
+        expect(result).toEqual({ kind: "pace", trend: "better", text: "-22 s/km vs tu media Z2" });
 
     });
 
@@ -69,7 +69,7 @@ describe("buildWorkoutTypeContext", () => {
 
         const result = buildWorkoutTypeContext(target, [target, ...others]);
 
-        expect(result).toEqual({ kind: "pace", text: "Rodaje (Z2) · +20 s/km más lento que tu media" });
+        expect(result).toEqual({ kind: "pace", trend: "worse", text: "+20 s/km vs tu media Z2" });
 
     });
 
@@ -84,7 +84,7 @@ describe("buildWorkoutTypeContext", () => {
 
         const result = buildWorkoutTypeContext(target, [target, ...others]);
 
-        expect(result).toEqual({ kind: "hr", text: "Rodaje (Z2) · FC +15 ppm respecto a tu media" });
+        expect(result).toEqual({ kind: "hr", trend: "worse", text: "FC +15 ppm vs tu media Z2" });
 
     });
 
@@ -99,7 +99,7 @@ describe("buildWorkoutTypeContext", () => {
 
         const result = buildWorkoutTypeContext(target, [target, ...others]);
 
-        expect(result).toEqual({ kind: "hr", text: "Rodaje (Z2) · FC -15 ppm respecto a tu media" });
+        expect(result).toEqual({ kind: "hr", trend: "better", text: "FC -15 ppm vs tu media Z2" });
 
     });
 

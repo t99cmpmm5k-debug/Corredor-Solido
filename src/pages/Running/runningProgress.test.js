@@ -190,7 +190,7 @@ describe("buildProgressMessage -- segunda línea de insight de RunningTypeSummar
 
         expect(message.trend).toBe("up");
         expect(message.html).toContain("20 s/km");
-        expect(message.html).toContain("FC media estable");
+        expect(message.html).toContain("FC estable");
 
     });
 
@@ -264,7 +264,7 @@ describe("buildComparisonMessage -- texto real de la comparación de calendario"
 
         const text = buildComparisonMessage({ currentPaceSecPerKm: 352, pastPaceSecPerKm: 372, deltaSecPerKm: -20 });
 
-        expect(text).toBe("Ritmo medio: 5:52/km · Hace 30 días: 6:12/km · Mejora: -20 s/km");
+        expect(text).toBe("5:52/km · -20 s/km vs hace 30 días");
 
     });
 
@@ -272,7 +272,8 @@ describe("buildComparisonMessage -- texto real de la comparación de calendario"
 
         const text = buildComparisonMessage({ currentPaceSecPerKm: 320, pastPaceSecPerKm: 300, deltaSecPerKm: 20 });
 
-        expect(text).toContain("Cambio: +20 s/km");
+        expect(text).toContain("+20 s/km vs hace 30 días");
+        expect(text).not.toContain("Mejora");
         expect(text).not.toContain("Mejora");
 
     });

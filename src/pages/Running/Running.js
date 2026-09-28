@@ -136,7 +136,7 @@ export function RunningHistoryItem(workout, shoes, routes, allWorkouts) {
 
                     <span class="history-date">${formatDayMonth(workout.date)}</span>
 
-                    ${typeBadge ? `<span class="history-type-badge">${typeBadge}</span>` : ""}
+                    ${typeBadge ? `<span class="history-type-badge history-type-badge--${workout.type}">${typeBadge}</span>` : ""}
 
                     ${workout.locationCity ? `<span class="history-location">${workout.locationCity}</span>` : ""}
 
@@ -217,7 +217,10 @@ export function RunningHistoryItem(workout, shoes, routes, allWorkouts) {
 
                 </div>
 
-                <div class="history-metric">
+                <!-- Temperatura: el dato menos importante de los tres (pulido
+                     2026-09-29) -- mismo orden ritmo -> FC -> temperatura,
+                     pero apagada para que no compita con ritmo y FC. -->
+                <div class="history-metric history-metric--muted">
 
                     <iconify-icon icon="solar:temperature-bold-duotone"></iconify-icon>
 
@@ -229,7 +232,7 @@ export function RunningHistoryItem(workout, shoes, routes, allWorkouts) {
 
             ${typeContext ? `
 
-                <div class="history-context">
+                <div class="history-context history-context--${typeContext.trend}">
 
                     <iconify-icon icon="${typeContext.kind === "pace" ? "solar:speedometer-bold-duotone" : "solar:heart-pulse-bold-duotone"}"></iconify-icon>
 
@@ -1023,7 +1026,7 @@ function RunningTypeSummary(typeFilter, summary, insight, comparison) {
 
                     <span class="running-summary-header-label">TU RESUMEN</span>
 
-                    <span class="running-summary-header-title">${typeLabel(typeFilter)}</span>
+                    <span class="running-summary-header-title">${typeFilter ? typeLabel(typeFilter) : "Vista general"}</span>
 
                     ${message ? `
 
@@ -1071,7 +1074,7 @@ function RunningTypeSummary(typeFilter, summary, insight, comparison) {
 
             ${comparison ? `
 
-                <p class="running-summary-comparison">
+                <p class="running-summary-comparison running-summary-comparison--${comparison.deltaSecPerKm < 0 ? "better" : "neutral"}">
 
                     <iconify-icon icon="solar:calendar-search-bold-duotone"></iconify-icon>
 

@@ -13,8 +13,12 @@
        anclados abajo (justify-content:flex-end) y el mismo padding-bottom/
        colchón de siempre para el solape con .running-summary (ver
        margin-top negativo en Running.css), bajar el suelo de altura solo
-       recorta foto vacía por encima del texto, no rompe ese solape. */
-    min-height:220px;
+       recorta foto vacía por encima del texto, no rompe ese solape.
+       220 -> 180px (pulido 2026-09-29, que "Tu resumen" entre antes). En
+       un iPhone con notch la altura real la marcan el contenido + los
+       paddings (no este mínimo), por eso también bajan el padding-top y
+       el padding-bottom de abajo. */
+    min-height:180px;
 
     display:flex;
 
@@ -27,13 +31,15 @@
        pueda superponerse por encima sin tapar el título/subtítulo (ver
        margin-top negativo en .running-summary, Running.css) — mismo papel
        que el padding-bottom:120px del Hero de Inicio frente a MasterCard. */
-    padding:24px 20px 90px;
+    /* 90 -> 82px: sigue dejando ~12px de aire entre el subtítulo y el
+       borde de .running-summary (margin-top:-70px). */
+    padding:24px 20px 82px;
 
     /* Contenido anclado abajo (justify-content:flex-end arriba) — con
        tanto alto de foto de más, subir el título pegado arriba dejaría un
        hueco vacío raro debajo; anclado abajo es lo mismo que hace
        CarrerasHero.js con su propio hero. */
-    padding-top:calc(24px + env(safe-area-inset-top));
+    padding-top:calc(12px + env(safe-area-inset-top));
 
     /* Cancela el padding que .running-content le mete desde fuera (24px
        + safe-area arriba, 24px a los lados) para que la foto de fondo

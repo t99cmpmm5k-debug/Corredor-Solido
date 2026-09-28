@@ -6,8 +6,6 @@
 // último) o runningProgress.js (grupo reciente vs grupo anterior). El
 // propio entreno se excluye de la media contra la que se compara.
 
-import { RUNNING_WORKOUT_TYPES } from "../../data/runningWorkoutTypes.js";
-
 // Umbrales de "diferencia real, no ruido" -- mismos valores que ya usa
 // buildTypeProgressInsight() en runningProgress.js (PACE_STABLE_THRESHOLD_SEC/
 // HR_STABLE_THRESHOLD_BPM). Reutilizados aquí a propósito: lo que cuenta
@@ -27,8 +25,19 @@ function average(values) {
     return values.reduce((sum, v) => sum + v, 0) / values.length;
 }
 
-function typeLabel(type) {
-    return RUNNING_WORKOUT_TYPES.find(t => t.id === type)?.label ?? type;
+// Copy corto (pulido 2026-09-29): "-13 s/km vs tu media Z2" en vez de
+// "Rodaje (Z2) · +13 s/km más rápido que tu media" -- el tipo ya lo dice
+// el badge de la propia tarjeta, aquí solo hace falta nombrar la media.
+const MEDIA_LABEL = {
+    easy: "tu media Z2",
+    series: "tu media de series",
+    tempo: "tu media de tempo",
+    long: "tu media de tirada larga",
+    race: "tu media de carrera"
+};
+
+function mediaLabel(type) {
+    return MEDIA_LABEL[type] ?? "tu media";
 }
 
 function buildPaceContext(workout, sameTypeOthers, label) {
@@ -44,9 +53,12 @@ function buildPaceContext(workout, sameTypeOthers, label) {
 
     if (Math.abs(deltaSecPerKm) < PACE_SIGNIFICANT_THRESHOLD_SEC_PER_KM) return null;
 
-    const direction = deltaSecPerKm > 0 ? "más rápido" : "más lento";
+    // Mismo signo que el resto de la app ("-43s/km" en Inicio/Análisis):
+    // menos segundos por km = más rápido = signo menos. `trend` para el
+    // color semántico (verde solo si es mejor).
+    const faster = deltaSecPerKm > 0;
 
-    return { kind: "pace", text: `${label} · +${Math.abs(deltaSecPerKm)} s/km ${direction} que tu media` };
+    return { kind: "pace", trend: faster ? "better" : "worse", text: `${faster ? "-" : "+"}${Math.abs(deltaSecPerKm)} s/km vs ${label}` };
 
 }
 
@@ -64,11 +76,12 @@ function buildHrContext(workout, sameTypeOthers, label) {
 
     const sign = deltaBpm > 0 ? "+" : "";
 
-    return { kind: "hr", text: `${label} · FC ${sign}${deltaBpm} ppm respecto a tu media` };
+    // FC más baja al mismo tipo de esfuerzo = mejor; más alta = peor.
+    return { kind: "hr", trend: deltaBpm < 0 ? "better" : "worse", text: `FC ${sign}${deltaBpm} ppm vs ${label}` };
 
 }
 
-// { kind: "pace"|"hr", text } o null -- sin histórico suficiente del
+// { kind: "pace"|"hr", trend: "better"|"worse", text } o null -- sin histórico suficiente del
 // mismo tipo, o con ambas métricas dentro del margen de ruido, no hay
 // contexto real que mostrar (nunca una comparación inventada ni un "sin
 // cambios" de relleno).
@@ -87,7 +100,7 @@ export function buildWorkoutTypeContext(workout, allWorkouts) {
     if (!workout.type) return null;
 
     const sameTypeOthers = allWorkouts.filter(w => w.id !== workout.id && w.type === workout.type);
-    const label = typeLabel(workout.type);
+    const label = mediaLabel(workout.type);
 
     return buildPaceContext(workout, sameTypeOthers, label) ?? buildHrContext(workout, sameTypeOthers, label);
 

@@ -123,15 +123,20 @@ export function buildPaceComparison(filteredWorkouts, currentAvgPaceSecPerKm, no
 
 }
 
-// Texto real de la comparación -- "Mejora" solo cuando de verdad se corre
-// más rápido ahora (delta negativo); en el sentido contrario no se
-// reclama una mejora que no existe, "Cambio" es neutro.
+// Texto real de la comparación, en corto (pulido 2026-09-29: antes
+// "Ritmo medio: 5:52/km · Hace 30 días: 6:12/km · Mejora: -20 s/km") --
+// "5:52/km · -20 s/km vs hace 30 días". Mismo signo que el resto de la app
+// (menos = más rápido); nunca se dice "mejora" con palabras, el signo y el
+// color (trend en Running.js) ya lo cuentan sin reclamar nada de más.
 export function buildComparisonMessage(comparison) {
 
-    const label = comparison.deltaSecPerKm < 0 ? "Mejora" : comparison.deltaSecPerKm > 0 ? "Cambio" : "Sin cambio";
+    const current = `${formatSecondsAsClock(comparison.currentPaceSecPerKm)}/km`;
+
+    if (comparison.deltaSecPerKm === 0) return `${current} · igual que hace 30 días`;
+
     const sign = comparison.deltaSecPerKm > 0 ? "+" : "";
 
-    return `Ritmo medio: ${formatSecondsAsClock(comparison.currentPaceSecPerKm)}/km · Hace 30 días: ${formatSecondsAsClock(comparison.pastPaceSecPerKm)}/km · ${label}: ${sign}${comparison.deltaSecPerKm} s/km`;
+    return `${current} · ${sign}${comparison.deltaSecPerKm} s/km vs hace 30 días`;
 
 }
 
@@ -150,6 +155,19 @@ function hrClause(hrTrend) {
     if (hrTrend === "stable") return " con una FC media estable";
     if (hrTrend === "lower") return " con la FC media más baja";
     if (hrTrend === "higher-partial") return ", aunque con la FC media algo más alta";
+    return "";
+
+}
+
+// Versión corta de hrClause() solo para "Tu resumen" (pulido 2026-09-29)
+// -- hrClause() de arriba la sigue usando tal cual la ficha de detalle de
+// un entreno (buildWorkoutComparisonMessage), que no forma parte de este
+// pulido.
+function summaryHrClause(hrTrend) {
+
+    if (hrTrend === "stable") return " · FC estable";
+    if (hrTrend === "lower") return " · FC más baja";
+    if (hrTrend === "higher-partial") return " · FC algo más alta";
     return "";
 
 }
@@ -177,7 +195,7 @@ export function buildProgressMessage(insight) {
         return {
             icon: "solar:chart-2-bold-duotone",
             trend: "flat",
-            html: `Tu ritmo se mantiene estable en tus últimos ${insight.groupSize} entrenos de ${label}${hrClause(insight.hrTrend)}.`
+            html: `Ritmo estable en tus últimos ${insight.groupSize} entrenos${summaryHrClause(insight.hrTrend)}`
         };
     }
 
@@ -186,7 +204,7 @@ export function buildProgressMessage(insight) {
         return {
             icon: "solar:graph-down-bold-duotone",
             trend: "down",
-            html: `Tu ritmo medio ha subido <span class="progress-value">${value} s/km</span> en tus últimos ${insight.groupSize} entrenos de ${label}${hrClause(insight.hrTrend)}.`
+            html: `<span class="progress-value">${value} s/km</span> más lento en tus últimos ${insight.groupSize} entrenos${summaryHrClause(insight.hrTrend)}`
         };
     }
 
@@ -198,14 +216,14 @@ export function buildProgressMessage(insight) {
         return {
             icon: "solar:chart-2-bold-duotone",
             trend: "flat",
-            html: `Corres <span class="progress-value">${value} s/km</span> más rápido en tus últimos ${insight.groupSize} entrenos de ${label}, pero con la FC media también más alta — no parece una mejora real de forma física.`
+            html: `<span class="progress-value">${value} s/km</span> más rápido en tus últimos ${insight.groupSize} entrenos, pero con más FC: no parece una mejora real`
         };
     }
 
     return {
         icon: "solar:graph-up-bold-duotone",
         trend: "up",
-        html: `Has mejorado <span class="progress-value">${value} s/km</span> en tus últimos ${insight.groupSize} entrenos de ${label}${hrClause(insight.hrTrend)}.`
+        html: `Has mejorado <span class="progress-value">${value} s/km</span> en tus últimos ${insight.groupSize} entrenos${summaryHrClause(insight.hrTrend)}`
     };
 
 }

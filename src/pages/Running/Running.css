@@ -170,7 +170,8 @@
 
     gap:6px;
 
-    padding:10px 16px;
+    /* 10/16 -> 7/14 y .9 -> .85rem (pulido 2026-09-29): chips más bajos. */
+    padding:7px 14px;
 
     border-radius:999px;
 
@@ -180,7 +181,7 @@
 
     color:var(--text-secondary);
 
-    font-size:.9rem;
+    font-size:.85rem;
 
     font-weight:600;
 
@@ -194,15 +195,22 @@
 
 }
 
+/* Activo = relleno sólido, sin resplandor exterior (pulido 2026-09-29:
+   antes un 28% de azul + glow de 16px; destacaba por el halo, no por el
+   propio chip). */
 .type-filter-chip.is-selected{
 
-    background:color-mix(in srgb, var(--color-primary) 28%, transparent);
+    background:var(--color-primary);
 
     border-color:var(--color-primary);
 
-    color:var(--text-primary);
+    color:#FFFFFF;
 
-    box-shadow:0 0 16px color-mix(in srgb, var(--color-glow) 45%, transparent);
+}
+
+.type-filter-chip.is-selected iconify-icon{
+
+    color:#FFFFFF;
 
 }
 
@@ -217,11 +225,11 @@
     z-index:10;
 
     /* Se superpone sobre la parte baja de la foto del header (el colchón
-       de padding-bottom:90px de .running-header, libre de texto — ver
+       de padding-bottom:82px de .running-header, libre de texto — ver
        RunningHeader.css), igual que .master-card sobre el Hero de Inicio.
        .running-content mete un gap:16px entre hermanos (20px antes del
        retoque de cierre), así que esto deja un solape neto de unos 54px
-       (70px de este margen menos ese gap), por debajo de esos 90px libres. */
+       (70px de este margen menos ese gap), por debajo de esos 82px libres. */
     margin-top:-70px;
 
     display:flex;
@@ -2980,5 +2988,73 @@
 .recent-activity-more iconify-icon{
 
     font-size:16px;
+
+}
+
+/* =========================
+   COLOR CON SIGNIFICADO (pulido 2026-09-29)
+   Sin cambiar la paleta, usando la existente con intención:
+   azul = información/navegación, verde = mejora/estado óptimo,
+   naranja = esfuerzo (series/tempo/carrera), gris claro = secundario.
+========================= */
+
+/* Badge de tipo en cada tarjeta: esfuerzo en naranja, el resto azul. */
+.history-type-badge--series,
+.history-type-badge--tempo,
+.history-type-badge--race{
+
+    background:color-mix(in srgb, var(--color-warning) 16%, transparent);
+
+    color:var(--color-warning);
+
+}
+
+/* Temperatura: el menos importante de los 3 indicadores -- gris y algo
+   más pequeña, para que ritmo y FC manden. */
+.history-metric--muted iconify-icon{
+
+    color:var(--text-secondary);
+
+    opacity:.7;
+
+}
+
+.history-metric--muted span{
+
+    color:var(--text-secondary);
+
+    font-size:.8rem;
+
+    font-weight:600;
+
+}
+
+/* Contexto vs tu media: verde solo si este entreno fue mejor (más rápido,
+   o misma exigencia con menos FC); si no, se queda en gris neutro. */
+.history-context--better,
+.history-context--better iconify-icon{
+
+    color:var(--color-success);
+
+}
+
+.history-context--worse iconify-icon{
+
+    color:var(--text-secondary);
+
+}
+
+/* Tu resumen: la mejora en verde (antes en el mismo azul que todo). */
+.running-summary-insight--up iconify-icon,
+.running-summary-insight--up .progress-value{
+
+    color:var(--color-success);
+
+}
+
+.running-summary-comparison--better,
+.running-summary-comparison--better iconify-icon{
+
+    color:var(--color-success);
 
 }
