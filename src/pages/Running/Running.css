@@ -1010,7 +1010,7 @@
    de una línea (ACWR_RECOMMENDATION_SUMMARY_BY_ZONE), el texto completo
    de buildAcwrRecommendation() -- con el matiz de escucha corporal en
    Alta/Muy alta -- solo al expandir. Mismo patrón que
-   .running-analysis-section/.gym-diet-section (marcador nativo oculto,
+   .gym-diet-section (marcador nativo oculto,
    flecha que gira). */
 .acwr-recommendation{
 
@@ -2751,12 +2751,26 @@
 }
 
 /* =========================
-   SECCIÓN "ANÁLISIS" (plegable)
+   CARD "ANÁLISIS DE PROGRESO" (pulido 2026-09-29)
+   Sustituye al antiguo colapsable "Ver análisis detallado": resumen +
+   CTA a la pantalla propia (RunningAnalysisView). Toda la card es el
+   botón. Color semántico: la frase va en verde solo si es una mejora
+   real, gris si no; el CTA en azul (navegación).
 ========================= */
 
-/* Mismo patrón que las secciones plegables de Mi dieta (GymDiet.css):
-   <details> nativo, marcador oculto y flecha que gira al abrir. */
-.running-analysis-section{
+.running-analysis-card{
+
+    display:flex;
+
+    flex-direction:column;
+
+    align-items:flex-start;
+
+    gap:4px;
+
+    width:100%;
+
+    padding:14px 16px;
 
     border-radius:var(--radius-lg);
 
@@ -2764,33 +2778,17 @@
 
     border:1px solid var(--card-border);
 
-}
+    color:inherit;
 
-.running-analysis-section summary{
+    font:inherit;
 
-    display:flex;
-
-    align-items:center;
-
-    justify-content:space-between;
-
-    gap:10px;
-
-    padding:14px 16px;
-
-    list-style:none;
+    text-align:left;
 
     cursor:pointer;
 
 }
 
-.running-analysis-section summary::-webkit-details-marker{
-
-    display:none;
-
-}
-
-.running-analysis-title{
+.running-analysis-card-label{
 
     display:inline-flex;
 
@@ -2798,61 +2796,71 @@
 
     gap:8px;
 
-    font-size:.8rem;
+    font-size:.78rem;
 
     font-weight:800;
 
     letter-spacing:.08em;
 
-    text-transform:uppercase;
-
     color:var(--text-primary);
 
 }
 
-.running-analysis-title iconify-icon{
+.running-analysis-card-label iconify-icon{
 
-    font-size:1.15rem;
+    font-size:1.1rem;
 
     color:var(--color-primary);
 
 }
 
-/* Tamaño explícito: como elemento flex del <summary> el icono se quedaba
-   en 0×0 en WebKit (mismo arreglo que .gym-diet-section). */
-.running-analysis-section summary > iconify-icon{
+.running-analysis-card-scope{
 
-    flex-shrink:0;
-
-    display:inline-flex;
-
-    width:20px;
-
-    height:20px;
-
-    font-size:20px;
+    font-size:.74rem;
 
     color:var(--text-secondary);
 
-    transition:transform .2s;
+}
+
+.running-analysis-card-headline{
+
+    margin-top:4px;
+
+    font-size:.92rem;
+
+    font-weight:700;
+
+    color:var(--text-secondary);
 
 }
 
-.running-analysis-section[open] summary > iconify-icon{
+.running-analysis-card-headline--up{
 
-    transform:rotate(180deg);
+    color:var(--color-success);
 
 }
 
-.running-analysis-body{
+.running-analysis-card-cta{
 
-    display:flex;
+    display:inline-flex;
 
-    flex-direction:column;
+    align-items:center;
 
-    gap:16px;
+    gap:4px;
 
-    padding:0 12px 12px;
+    margin-top:6px;
+
+    font-size:.85rem;
+
+    font-weight:700;
+
+    color:var(--color-primary);
+
+}
+
+.running-analysis-card-cta iconify-icon{
+
+    font-size:16px;
 
 }
 

@@ -68,3 +68,34 @@ export function buildTypeEvolution(workouts, { type = "easy", groupSize = EVOLUT
 // motor -- Series/Tempo llaman a buildTypeEvolution() directamente con su
 // propio type/groupSize (ver EVOLUTION_TYPE_CONFIG en Running.js).
 export const buildZ2Evolution = buildTypeEvolution;
+
+// Sujeto con su concordancia -- "Tus series van", no "Tu Series va".
+const EVOLUTION_HEADLINE_SUBJECTS = {
+    easy: { subject: "Tu Z2", plural: false },
+    series: { subject: "Tus series", plural: true },
+    tempo: { subject: "Tu tempo", plural: false }
+};
+
+// Frase de la card "ANÁLISIS DE PROGRESO" (principal de Running, pulido
+// 2026-09-29): el dato más relevante en una línea, siempre sacado de una
+// evolución YA calculada (buildTypeEvolution), nunca uno nuevo. Prioridad
+// Z2 > Series > Tempo (Z2 es el tipo con más volumen y el que ya destaca
+// Inicio). `evolutions`: [{ type, evolution }] en ese orden. Misma
+// convención que el indicador de Inicio: cambio = último - primero, en s/km
+// enteros; negativo = más rápido. null si ninguna evolución está
+// disponible -- la card lo dice en vez de inventar una frase.
+export function buildEvolutionHeadline(evolutions) {
+
+    const pick = (evolutions ?? []).find(({ evolution }) => evolution?.available);
+    if (!pick) return null;
+
+    const { subject, plural } = EVOLUTION_HEADLINE_SUBJECTS[pick.type] ?? { subject: pick.type, plural: false };
+    const change = Math.round(pick.evolution.last.avgPaceSecPerKm - pick.evolution.first.avgPaceSecPerKm);
+
+    if (change === 0) return { trend: "flat", text: `${subject} ${plural ? "se mantienen estables" : "se mantiene estable"}` };
+
+    return change < 0
+        ? { trend: "up", text: `${subject} ${plural ? "han" : "ha"} mejorado ${Math.abs(change)} s/km` }
+        : { trend: "down", text: `${subject} ${plural ? "van" : "va"} ${change} s/km más ${plural ? "lentas" : "lento"}` };
+
+}

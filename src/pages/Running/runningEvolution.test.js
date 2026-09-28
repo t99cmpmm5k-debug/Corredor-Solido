@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildZ2Evolution, buildTypeEvolution } from "./runningEvolution.js";
+import { buildZ2Evolution, buildTypeEvolution, buildEvolutionHeadline } from "./runningEvolution.js";
 
 function workout(id, date, type, avgPaceSecPerKm, avgHr = null) {
     return { id, date, type, avgPaceSecPerKm, avgHr };
@@ -166,6 +166,41 @@ describe("buildTypeEvolution -- motor generalizado (Series/Tempo, Capa 3), build
         expect(seriesEvolution.count).toBe(2);
         expect(seriesEvolution.first.date).toBe("2026-08-03");
         expect(seriesEvolution.last.date).toBe("2026-08-04");
+
+    });
+
+});
+
+describe("buildEvolutionHeadline -- frase de la card Análisis de progreso", () => {
+
+    const evo = (first, last) => ({ available: true, first: { avgPaceSecPerKm: first }, last: { avgPaceSecPerKm: last } });
+    const none = { available: false };
+
+    it("Z2 manda si está disponible, con el número real (último - primero)", () => {
+
+        expect(buildEvolutionHeadline([{ type: "easy", evolution: evo(380, 360) }, { type: "series", evolution: evo(300, 280) }]))
+            .toEqual({ trend: "up", text: "Tu Z2 ha mejorado 20 s/km" });
+
+    });
+
+    it("sin Z2 disponible, cae a la siguiente evolución disponible", () => {
+
+        expect(buildEvolutionHeadline([{ type: "easy", evolution: none }, { type: "series", evolution: evo(290, 298) }]))
+            .toEqual({ trend: "down", text: "Tus series van 8 s/km más lentas" });
+
+    });
+
+    it("redondea a segundos enteros y trata 0 como estable", () => {
+
+        expect(buildEvolutionHeadline([{ type: "tempo", evolution: evo(320.4, 320.2) }]))
+            .toEqual({ trend: "flat", text: "Tu tempo se mantiene estable" });
+
+    });
+
+    it("sin ninguna evolución disponible, null (no se inventa frase)", () => {
+
+        expect(buildEvolutionHeadline([{ type: "easy", evolution: none }])).toBeNull();
+        expect(buildEvolutionHeadline([])).toBeNull();
 
     });
 

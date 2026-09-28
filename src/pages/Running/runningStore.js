@@ -177,25 +177,12 @@ export function toggleHistoryGroup(key, currentlyOpen) {
 
 }
 
-// Sección plegable "Análisis" de la lista (cerrada por defecto) y pestaña
-// activa de su tarjeta "Evolución" (easy | series | tempo). Fuera de
-// `wizard` por el mismo motivo que historyGroupOverrides: cualquier
-// rerender (abrir un menú, cambiar de chip) no debe cerrarla ni volver a
-// Z2.
-let analysisOpen = false;
+// Pestaña activa de la tarjeta "Evolución" (easy | series | tempo) de la
+// pantalla Análisis. Fuera de `wizard` por el mismo motivo que
+// historyGroupOverrides: cualquier rerender no debe volver a Z2. (El
+// estado abierto/cerrado del antiguo colapsable "Análisis" desapareció con
+// él -- pulido 2026-09-29, ahora es una pantalla propia.)
 let evolutionTab = "easy";
-
-export function isAnalysisOpen() {
-
-    return analysisOpen;
-
-}
-
-export function setAnalysisOpen(open) {
-
-    analysisOpen = open;
-
-}
 
 export function getEvolutionTab() {
 
@@ -212,7 +199,7 @@ export function setEvolutionTab(tab) {
 // Compactado de ACWR (pulido 2026-09-24): el texto explicativo del icono
 // "i", los rangos de la barra de zonas y la recomendación completa
 // arrancan cerrados y se acuerdan de si se abrieron -- mismo motivo que
-// analysisOpen de arriba (que un rerender por cualquier otro motivo no
+// evolutionTab de arriba (que un rerender por cualquier otro motivo no
 // los cierre).
 let acwrInfoOpen = false;
 let acwrBarLegendOpen = false;

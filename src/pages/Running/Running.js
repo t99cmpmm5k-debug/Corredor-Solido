@@ -8,7 +8,7 @@ import { formatDayMonth } from "../../utils/date.js";
 import { formatSecondsAsClock, formatShoeName, formatKm as formatGroupKm } from "../../utils/format.js";
 import { buildTypeProgressInsight, buildProgressMessage, buildPaceComparison, buildComparisonMessage } from "./runningProgress.js";
 import { buildTypeSummary } from "./runningSummary.js";
-import { buildZ2Evolution, buildTypeEvolution, EVOLUTION_GROUP_SIZE } from "./runningEvolution.js";
+import { buildZ2Evolution, buildTypeEvolution, buildEvolutionHeadline, EVOLUTION_GROUP_SIZE } from "./runningEvolution.js";
 import { buildWeeklyProgress } from "./runningWeeklyProgress.js";
 import { buildWorkoutTypeContext } from "./runningTypeContext.js";
 import { buildHistoryGroups, limitGroupsToRecent } from "./runningHistoryGrouping.js";
@@ -52,7 +52,6 @@ import {
     getConfirmingSuggestion,
     getRouteSortColumn,
     getRouteSortDirection,
-    isAnalysisOpen,
     getEvolutionTab,
     isAcwrInfoOpen,
     isAcwrBarLegendOpen,
@@ -819,38 +818,52 @@ function EvolutionTabsCard(z2Evolution, extraEvolutions, activeTab) {
 
 }
 
-// Sección plegable "Análisis" (cerrada por defecto): lo menos consultado de
-// la lista, para que los entrenos queden justo después de ACWR. Mismo
-// patrón que "Notas generales" de Nutrición (GymDiet.js): <details> nativo
-// con su estado recordado en el store (evento "toggle", ver
-// initRunningEvents.js) para que un rerender no la cierre.
-function RunningAnalysisSection(content) {
+// "ANÁLISIS DE PROGRESO" (pulido 2026-09-29) -- sustituye al colapsable
+// "Ver análisis detallado" que vivía en esta misma pantalla. Card compacta:
+// qué hay dentro (tipos con evolución real + "4 semanas" si el gráfico
+// semanal tiene datos), UNA frase con el dato más relevante
+// (buildEvolutionHeadline(), mismo cálculo que ya se pintaba dentro) y el
+// CTA a la pantalla propia RunningAnalysisView. Verde si es mejora (color
+// semántico), gris si no.
+function RunningAnalysisCard({ z2Evolution, extraEvolutions, weeklyProgress }) {
+
+    const evolutions = [{ type: "easy", evolution: z2Evolution }, ...extraEvolutions];
+    const headline = buildEvolutionHeadline(evolutions);
+
+    const scope = [
+        ...evolutions.filter(({ type, evolution }) => type === "easy" || evolution.available).map(({ type }) => EVOLUTION_TAB_LABELS[type]),
+        ...(weeklyProgress.available ? ["4 semanas"] : [])
+    ];
 
     return `
 
-        <details class="running-analysis-section" data-running-analysis ${isAnalysisOpen() ? "open" : ""}>
+        <button class="running-analysis-card" data-action="open-analysis">
 
-            <summary>
+            <span class="running-analysis-card-label">
 
-                <span class="running-analysis-title">
+                <iconify-icon icon="solar:chart-2-bold-duotone"></iconify-icon>
 
-                    <iconify-icon icon="solar:chart-2-bold-duotone"></iconify-icon>
+                ANÁLISIS DE PROGRESO
 
-                    Ver análisis detallado
+            </span>
 
-                </span>
+            <span class="running-analysis-card-scope">${scope.join(" · ")}</span>
 
-                <iconify-icon icon="solar:alt-arrow-down-linear"></iconify-icon>
+            <span class="running-analysis-card-headline running-analysis-card-headline--${headline?.trend ?? "none"}">
 
-            </summary>
+                ${headline ? headline.text : "Importa más entrenos del mismo tipo para ver tu evolución."}
 
-            <div class="running-analysis-body">
+            </span>
 
-                ${content}
+            <span class="running-analysis-card-cta">
 
-            </div>
+                Ver análisis completo
 
-        </details>
+                <iconify-icon icon="solar:alt-arrow-right-linear"></iconify-icon>
+
+            </span>
+
+        </button>
 
     `;
 
@@ -1345,6 +1358,39 @@ function AcwrCard(insight) {
 
 }
 
+// Los tres cálculos de "Análisis" (pulido 2026-09-29: antes vivían dentro
+// de RunningIdleView para el colapsable; ahora los usan la card compacta
+// de la principal Y la pantalla propia RunningAnalysisView, así que se
+// calculan en un solo sitio). Sin cambios de lógica.
+function buildAnalysisData(workouts) {
+
+    // Evolución Z2 mira SIEMPRE el conjunto real de entrenos, nunca el
+    // filtrado por tipo -- si no, cambiar a "Series" en los chips la
+    // haría desaparecer aunque siga siendo información sobre Rodaje (Z2).
+    const z2Evolution = buildZ2Evolution(workouts);
+
+    // Evolución de Series/Tempo (Capa 3) -- mismo criterio que Z2 arriba
+    // (conjunto real completo, nunca el filtrado por chip). A diferencia
+    // de Z2, que se muestra siempre (incluso con su mensaje "Necesitas
+    // más..."), estas se OCULTAN por completo sin al menos 2 entrenos
+    // reales de ese tipo -- con 2-3 bloques de evolución a la vez, varios
+    // mensajes casi vacíos saturarían la pantalla (ver EXTRA_EVOLUTION_TYPES).
+    const extraEvolutions = EXTRA_EVOLUTION_TYPES
+        .map(type => ({ type, evolution: buildTypeEvolution(workouts, { type, groupSize: EVOLUTION_TYPE_CONFIG[type].groupSize }) }))
+        .filter(({ evolution }) => evolution.available);
+
+    // Progreso semanal (Capa 2) -- volumen + ritmo medio de las últimas 4
+    // semanas, también sobre el conjunto real completo (nunca el filtrado
+    // por tipo): es una vista agregada de "cuánto y cómo de rápido has
+    // corrido cada semana", no debe encogerse porque el chip activo sea
+    // "Series". Ver runningWeeklyProgress.js para el porqué de estas 2
+    // métricas y no las otras candidatas.
+    const weeklyProgress = buildWeeklyProgress(workouts);
+
+    return { z2Evolution, extraEvolutions, weeklyProgress };
+
+}
+
 function RunningIdleView() {
 
     const workouts = getWorkouts();
@@ -1379,28 +1425,7 @@ function RunningIdleView() {
     // rodajes" o "solo series".
     const acwrInsight = buildAcwrInsight(buildRunningLoadEntries(workouts));
 
-    // Evolución Z2 mira SIEMPRE el conjunto real de entrenos, nunca el
-    // filtrado por tipo -- si no, cambiar a "Series" en los chips la
-    // haría desaparecer aunque siga siendo información sobre Rodaje (Z2).
-    const z2Evolution = buildZ2Evolution(workouts);
-
-    // Evolución de Series/Tempo (Capa 3) -- mismo criterio que Z2 arriba
-    // (conjunto real completo, nunca el filtrado por chip). A diferencia
-    // de Z2, que se muestra siempre (incluso con su mensaje "Necesitas
-    // más..."), estas se OCULTAN por completo sin al menos 2 entrenos
-    // reales de ese tipo -- con 2-3 bloques de evolución a la vez, varios
-    // mensajes casi vacíos saturarían la pantalla (ver EXTRA_EVOLUTION_TYPES).
-    const extraEvolutions = EXTRA_EVOLUTION_TYPES
-        .map(type => ({ type, evolution: buildTypeEvolution(workouts, { type, groupSize: EVOLUTION_TYPE_CONFIG[type].groupSize }) }))
-        .filter(({ evolution }) => evolution.available);
-
-    // Progreso semanal (Capa 2) -- volumen + ritmo medio de las últimas 4
-    // semanas, también sobre el conjunto real completo (nunca el filtrado
-    // por tipo): es una vista agregada de "cuánto y cómo de rápido has
-    // corrido cada semana", no debe encogerse porque el chip activo sea
-    // "Series". Ver runningWeeklyProgress.js para el porqué de estas 2
-    // métricas y no las otras candidatas.
-    const weeklyProgress = buildWeeklyProgress(workouts);
+    const analysis = buildAnalysisData(workouts);
 
     const routes = getReferenceRoutes();
 
@@ -1490,21 +1515,50 @@ function RunningIdleView() {
 
                 `}
 
-                ${RunningAnalysisSection(`
-
-                    ${ReferenceRoutesEntryCard(routes)}
-
-                    ${WeeklyProgressChart(weeklyProgress)}
-
-                    ${EvolutionTabsCard(z2Evolution, extraEvolutions, getEvolutionTab())}
-
-                `)}
+                ${RunningAnalysisCard(analysis)}
 
                 ${RunningShoeMileageSummary(shoes)}
 
             `}
 
         </div>
+
+    `;
+
+}
+
+// "Análisis" (pulido 2026-09-29) -- todo lo que antes estaba dentro del
+// colapsable "Ver análisis detallado" de la principal, mismo contenido y
+// mismos componentes, en el orden pedido: Progreso (4 semanas) ->
+// Evolución Z2/Series/Tempo -> Recorridos de referencia.
+function RunningAnalysisView() {
+
+    const workouts = getWorkouts();
+    const { z2Evolution, extraEvolutions, weeklyProgress } = buildAnalysisData(workouts);
+
+    return `
+
+        <section class="running-wizard running-step-analysis">
+
+            <header class="wizard-header">
+
+                <button class="wizard-close" data-action="close-analysis">
+
+                    <iconify-icon icon="solar:close-circle-bold-duotone"></iconify-icon>
+
+                </button>
+
+                <h2>Análisis</h2>
+
+            </header>
+
+            ${WeeklyProgressChart(weeklyProgress)}
+
+            ${EvolutionTabsCard(z2Evolution, extraEvolutions, getEvolutionTab())}
+
+            ${ReferenceRoutesEntryCard(getReferenceRoutes())}
+
+        </section>
 
     `;
 
@@ -1686,6 +1740,10 @@ export function Running() {
             editingShoeId: getEditingShoeId(),
             newShoePhoto: getNewShoePhoto()
         });
+
+    } else if (step === "analysis") {
+
+        content = RunningAnalysisView();
 
     } else if (step === "history") {
 

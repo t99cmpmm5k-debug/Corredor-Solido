@@ -45,7 +45,6 @@ import {
     getHistoryMenuOpenId,
     setHistoryMenuOpenId,
     toggleHistoryGroup,
-    setAnalysisOpen,
     setEvolutionTab,
     isAcwrInfoOpen,
     setAcwrInfoOpen,
@@ -76,6 +75,7 @@ const DETAIL_HISTORY_STATE = { runningDetail: true };
 const SHOES_HISTORY_STATE = { runningShoes: true };
 const HISTORY_TABLE_HISTORY_STATE = { runningHistoryTable: true };
 const FULL_HISTORY_HISTORY_STATE = { runningFullHistory: true };
+const ANALYSIS_HISTORY_STATE = { runningAnalysis: true };
 
 // Pantallas de Running desde las que se puede abrir el detalle de un
 // entreno y a las que hay que VOLVER al cerrarlo (pulido 2026-09-29) --
@@ -179,6 +179,31 @@ function closeFullHistory() {
 
 }
 
+// "Análisis" (pulido 2026-09-29, ver RunningAnalysisView en Running.js) --
+// sustituye al colapsable de la principal. Scroll arriba por el mismo
+// motivo que openFullHistory().
+function openAnalysis() {
+
+    setWizardStep("analysis");
+
+    history.pushState(ANALYSIS_HISTORY_STATE, "");
+
+    rerender({ resetScroll: true });
+
+}
+
+function closeAnalysis() {
+
+    if (history.state?.runningAnalysis) {
+        history.back();
+        return;
+    }
+
+    setWizardStep("idle");
+    rerender();
+
+}
+
 function openHistoryTable() {
 
     setWizardStep("historyTable");
@@ -224,7 +249,7 @@ function closeReferenceRoutes() {
         return;
     }
 
-    setWizardStep("idle");
+    setWizardStep("analysis");
     rerender();
 
 }
@@ -332,7 +357,11 @@ window.addEventListener("popstate", () => {
         // historial completo -- atrás vuelve ahí, no a la principal.
         setWizardStep("history");
         rerender();
-    } else if (step === "shoes" || step === "history" || step === "referenceRoutes") {
+    } else if (step === "referenceRoutes") {
+        // Desde el pulido 2026-09-29 se abre desde la pantalla Análisis.
+        setWizardStep("analysis");
+        rerender();
+    } else if (step === "shoes" || step === "history" || step === "analysis") {
         setWizardStep("idle");
         rerender();
     } else if (step === "referenceRouteDetail") {
@@ -718,10 +747,16 @@ export function initRunningEvents() {
 
     });
 
-    // "Análisis": recordar si está abierta para que un rerender no la
-    // cierre (mismo patrón que las secciones de Mi dieta).
-    document.querySelector("[data-running-analysis]")?.addEventListener("toggle", event => {
-        setAnalysisOpen(event.currentTarget.open);
+    document.querySelectorAll('[data-action="open-analysis"]').forEach(button => {
+
+        button.addEventListener("click", openAnalysis);
+
+    });
+
+    document.querySelectorAll('[data-action="close-analysis"]').forEach(button => {
+
+        button.addEventListener("click", closeAnalysis);
+
     });
 
     document.querySelectorAll('[data-action="set-evolution-tab"]').forEach(button => {
