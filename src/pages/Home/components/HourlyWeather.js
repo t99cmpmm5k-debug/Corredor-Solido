@@ -206,35 +206,17 @@ function relevantHours(hours, now) {
 }
 
 // hasSessionToday: true por defecto -- viene de Home.js (¿hay running
-// planificado hoy, tipo distinto de "recovery"?). Sin sesión hoy, "clima
-// para correr" no tiene nada que recomendar -- ver punto 8 del rediseño:
-// "si es descanso... sin buscar artificialmente una mejor hora". Se
-// muestra solo la temperatura real actual con un mensaje neutro, sin
-// buscar la mejor franja ni pintar la tira de horas ni la tendencia --
-// nada de eso tiene sentido un día sin sesión.
+// planificado hoy, tipo distinto de "recovery"?). La tira de horas y la
+// tendencia se pintan SIEMPRE (Tarea 1, 2026-09-28 -- revierte el punto 8
+// del rediseño del 25-09, que en descanso lo reducía todo a una línea:
+// Rafa lo revisó en el iPhone y quiere el desglose hora por hora a
+// diario). Lo único que cambia sin sesión es el bloque destacado: no se
+// busca "mejor franja" (no hay entreno que colocar, sería inventar una
+// intención), en su lugar una línea discreta "Hoy no tienes sesión
+// planificada".
 export function HourlyWeather({ hours, current, label, hasSessionToday = true }, now = new Date()) {
 
     if (!hours || hours.length === 0) return "";
-
-    if (!hasSessionToday) {
-
-        return `
-
-            <section class="hourly-weather hourly-weather--rest">
-
-                <p class="hourly-weather-rest-message">
-
-                    ${current ? `<iconify-icon icon="${weatherIcon(current.icon)}"></iconify-icon>` : ""}
-
-                    <span>Hoy no tienes sesión planificada${current ? ` · <strong>${current.temp}°</strong>` : ""}</span>
-
-                </p>
-
-            </section>
-
-        `;
-
-    }
 
     const shownHours = relevantHours(hours, now);
 
@@ -259,7 +241,9 @@ export function HourlyWeather({ hours, current, label, hasSessionToday = true },
 
             </div>
 
-            ${BestRunningHour(hours, now)}
+            ${hasSessionToday
+                ? BestRunningHour(hours, now)
+                : `<p class="hourly-weather-rest-message">Hoy no tienes sesión planificada</p>`}
 
             <div class="hourly-weather-scroll">
 

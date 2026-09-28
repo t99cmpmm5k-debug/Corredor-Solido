@@ -242,28 +242,25 @@ describe("HourlyWeather", () => {
 });
 
 // "Clima para correr", no "app meteorológica" (rediseño de Inicio,
-// 2026-09-25, punto 8) -- día sin sesión: solo temperatura actual, sin
-// buscar la mejor franja ni pintar la tira de horas.
+// 2026-09-25, punto 8) -- día sin sesión: sin buscar la mejor franja. La
+// tira de horas vuelve a pintarse siempre desde la Tarea 1 (2026-09-28).
 describe("HourlyWeather -- hasSessionToday: false (día de descanso)", () => {
 
-    it("sin sesión hoy, mensaje neutro con la temperatura actual, sin buscar mejor franja", () => {
+    // Tarea 1 (2026-09-28): la tira de horas se pinta SIEMPRE -- en
+    // descanso solo cambia el bloque destacado (sin "mejor franja").
+    it("sin sesión hoy, SIGUE pintando la tira de horas y la temperatura actual, pero sin buscar mejor franja", () => {
 
         const hours = [hour("14:00", 30), hour("15:00", 32)];
-        const html = HourlyWeather({ hours, current: { temp: 32, icon: "sun" }, label: null, hasSessionToday: false }, new Date("2026-08-22T13:00:00"));
+        const html = HourlyWeather({ hours, current: { temp: 32, icon: "sun" }, label: "Murcia", hasSessionToday: false }, new Date("2026-08-22T13:00:00"));
 
         expect(html).toContain("Hoy no tienes sesión planificada");
+        expect(html).toContain("Hoy · Murcia");
         expect(html).toContain("32°");
+        expect(html).toContain("hourly-weather-scroll");
+        expect(html).toContain("14:00");
+        expect(html).toContain("15:00");
         expect(html).not.toContain("hourly-weather-best");
-        expect(html).not.toContain("hourly-weather-scroll");
-
-    });
-
-    it("sin sesión hoy, con temperatura actual: icono pequeño de tiempo a la izquierda", () => {
-
-        const html = HourlyWeather({ hours: [hour("14:00", 30)], current: { temp: 31, icon: "sun" }, label: null, hasSessionToday: false }, new Date("2026-08-22T13:00:00"));
-
-        expect(html).toContain("<iconify-icon");
-        expect(html).toContain("Hoy no tienes sesión planificada · <strong>31°</strong>");
+        expect(html).not.toContain("Mejor franja");
 
     });
 
@@ -277,13 +274,14 @@ describe("HourlyWeather -- hasSessionToday: false (día de descanso)", () => {
 
     });
 
-    it("sin sesión hoy y sin dato de temperatura actual, el mensaje se queda solo sin inventar un grado", () => {
+    it("sin sesión hoy y sin dato de temperatura actual: no inventa un grado actual, pero sí pinta las horas", () => {
 
         const hours = [hour("14:00", 30)];
         const html = HourlyWeather({ hours, current: null, label: null, hasSessionToday: false }, new Date("2026-08-22T13:00:00"));
 
         expect(html).toContain("Hoy no tienes sesión planificada");
-        expect(html).not.toContain("°");
+        expect(html).not.toContain("hourly-weather-current");
+        expect(html).toContain("30°");
 
     });
 

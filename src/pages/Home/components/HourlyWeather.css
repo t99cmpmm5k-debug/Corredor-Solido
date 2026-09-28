@@ -32,48 +32,18 @@
 
 }
 
-/* Día sin sesión (rediseño de Inicio, 2026-09-25, punto 8) -- mismo
-   contenedor/tarjeta, mucho más compacto: sin la tira de horas ni la
-   tendencia, solo el aviso + la temperatura real. gap:0 (a diferencia de
-   .hourly-weather de arriba) porque aquí solo hay un párrafo. */
-.hourly-weather--rest {
-
-    gap: 0;
-
-    padding: 14px 20px;
-
-}
-
+/* Día sin sesión -- en lugar del bloque "Mejor franja" (Tarea 1,
+   2026-09-28: la tira de horas se pinta siempre, ver HourlyWeather.js).
+   Texto secundario sin fondo propio: no es una recomendación. */
 .hourly-weather-rest-message {
 
     margin: 0;
 
     color: var(--text-secondary);
 
-    font-size: .88rem;
+    font-size: .84rem;
 
     line-height: 1.4;
-
-}
-
-/* Icono pequeño de sol/nube a la izquierda (ajuste 2026-09-27) -- mismo
-   tamaño de tarjeta que antes; el texto va entero en un <span> para que
-   envuelva como un bloque (ver bug de flex nowrap en WeekSummary.css). */
-.hourly-weather-rest-message {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.hourly-weather-rest-message iconify-icon {
-    flex-shrink: 0;
-    font-size: 1.1rem;
-    color: var(--color-primary);
-}
-
-.hourly-weather-rest-message strong {
-
-    color: var(--text-primary);
 
 }
 
