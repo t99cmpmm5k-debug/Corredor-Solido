@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { pool } from "../db.js";
 import { requireAuth } from "../middleware/requireAuth.js";
+import { resolveZ2Range } from "../z2Zone.js";
 
 export const communityRouter = Router();
 
@@ -14,13 +15,13 @@ communityRouter.use(requireAuth);
 // en Comunidad), y cuanta menos fisiología de más gente circule, mejor.
 const Z2_TYPE = "easy";
 
-// Rango fijo de pulsaciones tratado como "Zona 2" para TODA la comunidad --
-// confirmado con el usuario. No hay ningún perfil de FC máxima/reposo real
-// por usuario en la app (ni Karvonen ni %FCmax), así que un rango fijo es
-// una aproximación deliberada, igual para todos, no un cálculo personalizado
-// por corredor.
-const Z2_MIN_HR_BPM = 130;
-const Z2_MAX_HR_BPM = 150;
+// Rango de "Zona 2": desde 2026-09-29 el PERSONAL del dueño de cada
+// entreno (users.z2_min_bpm/z2_max_bpm, migración 012, configurable en
+// Perfil), y si no lo ha configurado, el rango fijo 130-150 de siempre --
+// ver resolveZ2Range() en ../z2Zone.js. Cada entreno se mide con la zona
+// de SU corredor, no con la de quien consulta el Ranking. El rango en sí
+// nunca sale en la respuesta, solo el % ya calculado (misma política de
+// "cuanta menos fisiología circule, mejor" de arriba).
 
 // % de tiempo dentro de Zona 2 de un entreno -- aproximado a partir de los
 // splits ya guardados (avgHr/paceSecPerKm/distanceKm por km), no hay ningún
@@ -32,7 +33,10 @@ const Z2_MAX_HR_BPM = 150;
 // duración estimada (distanceKm * paceSecPerKm), no como split suelto -- un
 // km más lento representa más tiempo real dentro del entreno que uno rápido,
 // y contar splits a secas los trataría como si pesaran igual.
-function computeZ2TimeInZonePercent(splits) {
+//
+// Exportada para testear el uso del rango personal directamente.
+// `range`: { minBpm, maxBpm } (resolveZ2Range()); por defecto el general.
+export function computeZ2TimeInZonePercent(splits, range = resolveZ2Range(null, null)) {
 
     const valid = (splits || []).filter(s => s.avgHr != null && s.paceSecPerKm != null && s.distanceKm != null);
     if (!valid.length) return null;
@@ -44,7 +48,7 @@ function computeZ2TimeInZonePercent(splits) {
         const durationSec = s.distanceKm * s.paceSecPerKm;
         totalSec += durationSec;
 
-        if (s.avgHr >= Z2_MIN_HR_BPM && s.avgHr <= Z2_MAX_HR_BPM) {
+        if (s.avgHr >= range.minBpm && s.avgHr <= range.maxBpm) {
             inZoneSec += durationSec;
         }
 
@@ -66,7 +70,9 @@ function computeZ2TimeInZonePercent(splits) {
 // importWarnings, fieldMeta, calorías, ubicación de texto...) queda
 // excluido por defecto sin tener que acordarse de excluirlo aquí -- solo
 // sale lo que se copia a mano.
-function toPublicEntreno(alias, workout) {
+// `z2Range`: la Zona 2 del DUEÑO del entreno (resolveZ2Range() sobre sus
+// columnas z2_min_bpm/z2_max_bpm), no la de quien hace la petición.
+function toPublicEntreno(alias, workout, z2Range = resolveZ2Range(null, null)) {
 
     const entreno = {
 
@@ -95,7 +101,7 @@ function toPublicEntreno(alias, workout) {
 
         // Sin datos suficientes (sin splits, o splits sin FC real) --
         // simplemente no se incluye, nunca un 0 o un valor inventado.
-        const z2TimeInZonePercent = computeZ2TimeInZonePercent(workout.splits);
+        const z2TimeInZonePercent = computeZ2TimeInZonePercent(workout.splits, z2Range);
 
         if (z2TimeInZonePercent != null) {
             entreno.z2TimeInZonePercent = z2TimeInZonePercent;
@@ -132,9 +138,9 @@ function toPublicSplit(split) {
 // PROPIO (chartSplits()/buildKmMarkers() en RunningDetailView.js/
 // routeMapPaceColoring.js, frontend). Reutiliza el mismo `workout.splits`
 // ya guardado en el JSON del entreno -- ningún formato nuevo.
-function toPublicEntrenoDetail(alias, workout) {
+function toPublicEntrenoDetail(alias, workout, z2Range) {
 
-    const entreno = toPublicEntreno(alias, workout);
+    const entreno = toPublicEntreno(alias, workout, z2Range);
     entreno.splits = (workout.splits || []).map(toPublicSplit);
 
     return entreno;
@@ -178,6 +184,7 @@ export async function getCommunityEntrenos(req, res) {
 
     const [rows] = await pool.execute(
         `SELECT u.email AS email, u.alias_publico AS alias_publico, w.data AS data,
+                u.z2_min_bpm AS z2_min_bpm, u.z2_max_bpm AS z2_max_bpm,
                 COUNT(DISTINCT wl.id) AS likes_count,
                 MAX(CASE WHEN wl.user_id = ? THEN 1 ELSE 0 END) AS liked_by_me,
                 COUNT(DISTINCT wc.id) AS comments_count
@@ -185,12 +192,12 @@ export async function getCommunityEntrenos(req, res) {
          JOIN users u ON u.id = w.user_id
          LEFT JOIN workout_likes wl ON wl.workout_id = w.id
          LEFT JOIN workout_comments wc ON wc.workout_id = w.id
-         GROUP BY w.user_id, w.id, u.email, u.alias_publico, w.data`,
+         GROUP BY w.user_id, w.id, u.email, u.alias_publico, u.z2_min_bpm, u.z2_max_bpm, w.data`,
         [req.userId]
     );
 
     const entrenos = rows.map(row => ({
-        ...toPublicEntreno(resolveAlias(row), row.data),
+        ...toPublicEntreno(resolveAlias(row), row.data, resolveZ2Range(row.z2_min_bpm, row.z2_max_bpm)),
         likesCount: row.likes_count,
         likedByMe: !!row.liked_by_me,
         commentsCount: row.comments_count
@@ -215,7 +222,8 @@ communityRouter.get("/entrenos", getCommunityEntrenos);
 export async function getCommunityEntrenoDetail(req, res) {
 
     const [rows] = await pool.execute(
-        `SELECT u.email AS email, u.alias_publico AS alias_publico, w.data AS data
+        `SELECT u.email AS email, u.alias_publico AS alias_publico, w.data AS data,
+                u.z2_min_bpm AS z2_min_bpm, u.z2_max_bpm AS z2_max_bpm
          FROM workouts w
          JOIN users u ON u.id = w.user_id
          WHERE w.id = ?
@@ -229,7 +237,7 @@ export async function getCommunityEntrenoDetail(req, res) {
 
     const [row] = rows;
 
-    res.json(toPublicEntrenoDetail(resolveAlias(row), row.data));
+    res.json(toPublicEntrenoDetail(resolveAlias(row), row.data, resolveZ2Range(row.z2_min_bpm, row.z2_max_bpm)));
 
 }
 

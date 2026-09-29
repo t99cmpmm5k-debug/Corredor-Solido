@@ -45,7 +45,7 @@ describe("profileStore -- perfil real (alias público + localidad + fecha de cre
 
     it("con sesión, carga el perfil real (alias + localidad + fecha) y pasa a status ready", async () => {
 
-        getPerfilMock.mockResolvedValue({ aliasPublico: "Rafa", localidad: "Murcia", createdAt: "2026-01-15T10:00:00.000Z" });
+        getPerfilMock.mockResolvedValue({ aliasPublico: "Rafa", localidad: "Murcia", createdAt: "2026-01-15T10:00:00.000Z", z2MinBpm: null, z2MaxBpm: null });
 
         const { loadMyProfile, getMyProfile } = await import("./profileStore.js");
 
@@ -54,14 +54,14 @@ describe("profileStore -- perfil real (alias público + localidad + fecha de cre
 
         await vi.waitFor(() => expect(getMyProfile().status).toBe("ready"));
 
-        expect(getMyProfile()).toEqual({ status: "ready", aliasPublico: "Rafa", localidad: "Murcia", createdAt: "2026-01-15T10:00:00.000Z" });
+        expect(getMyProfile()).toEqual({ status: "ready", aliasPublico: "Rafa", localidad: "Murcia", createdAt: "2026-01-15T10:00:00.000Z", z2MinBpm: null, z2MaxBpm: null });
         expect(rerenderMock).toHaveBeenCalled();
 
     });
 
     it("sin alias/localidad todavía, quedan null explícito -- nunca un valor inventado", async () => {
 
-        getPerfilMock.mockResolvedValue({ aliasPublico: null, localidad: null, createdAt: "2026-01-15T10:00:00.000Z" });
+        getPerfilMock.mockResolvedValue({ aliasPublico: null, localidad: null, createdAt: "2026-01-15T10:00:00.000Z", z2MinBpm: null, z2MaxBpm: null });
 
         const { loadMyProfile, getMyProfile } = await import("./profileStore.js");
 
@@ -75,7 +75,7 @@ describe("profileStore -- perfil real (alias público + localidad + fecha de cre
 
     it("es idempotente -- llamar dos veces seguidas no dispara una segunda petición", async () => {
 
-        getPerfilMock.mockResolvedValue({ aliasPublico: "Rafa", localidad: null, createdAt: "2026-01-15T10:00:00.000Z" });
+        getPerfilMock.mockResolvedValue({ aliasPublico: "Rafa", localidad: null, createdAt: "2026-01-15T10:00:00.000Z", z2MinBpm: null, z2MaxBpm: null });
 
         const { loadMyProfile } = await import("./profileStore.js");
 
@@ -106,7 +106,7 @@ describe("profileStore -- perfil real (alias público + localidad + fecha de cre
 
         setMyProfile({ aliasPublico: "Rafa Runner" });
 
-        expect(getMyProfile()).toEqual({ status: "ready", aliasPublico: "Rafa Runner", localidad: null, createdAt: null });
+        expect(getMyProfile()).toEqual({ status: "ready", aliasPublico: "Rafa Runner", localidad: null, createdAt: null, z2MinBpm: null, z2MaxBpm: null });
 
     });
 
@@ -117,10 +117,10 @@ describe("profileStore -- perfil real (alias público + localidad + fecha de cre
 
         const { setMyProfile, getMyProfile } = await import("./profileStore.js");
 
-        setMyProfile({ aliasPublico: "Rafa", localidad: "Murcia", createdAt: "2026-01-15T10:00:00.000Z" });
+        setMyProfile({ aliasPublico: "Rafa", localidad: "Murcia", createdAt: "2026-01-15T10:00:00.000Z", z2MinBpm: null, z2MaxBpm: null });
         setMyProfile({ localidad: "Cartagena" });
 
-        expect(getMyProfile()).toEqual({ status: "ready", aliasPublico: "Rafa", localidad: "Cartagena", createdAt: "2026-01-15T10:00:00.000Z" });
+        expect(getMyProfile()).toEqual({ status: "ready", aliasPublico: "Rafa", localidad: "Cartagena", createdAt: "2026-01-15T10:00:00.000Z", z2MinBpm: null, z2MaxBpm: null });
 
     });
 

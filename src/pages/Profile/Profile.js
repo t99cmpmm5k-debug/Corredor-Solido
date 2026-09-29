@@ -10,9 +10,10 @@ import { buildZ2Evolution } from "../Running/runningEvolution.js";
 import { buildWeeklyProgress } from "../Running/runningWeeklyProgress.js";
 import { WeeklyProgressChart } from "../Running/components/WeeklyProgressChart.js";
 import { RunningShoeMileageSummary } from "../Running/Running.js";
-import { getFeedback, getMyProfile, isEditOpen, getEditError, getProfileStep } from "./profileStore.js";
+import { getFeedback, getMyProfile, isEditOpen, getEditError, getEditDraft, getProfileStep } from "./profileStore.js";
 import { ProfileHero } from "./components/ProfileHero.js";
 import { ProfileSettingsView } from "./components/ProfileSettingsView.js";
+import { describeZ2Range } from "./z2Zone.js";
 
 // Rediseño 2026-09-25 (ver project_profile_redesign en memoria): Perfil
 // pasa de pantalla técnica/mantenimiento ("Rutinas de gimnasio: 0"...) a
@@ -203,6 +204,35 @@ function ProfileEquipmentSection(shoes) {
 // amistades); un toggle de privacidad real necesitaría cambios de
 // backend (filtrar /api/community/entrenos) que no están decididos. El
 // propio texto de la tarjeta lo deja explícito, no solo esta nota.
+// Zona 2 que se usa para TU % en zona del Ranking (2026-09-29) -- la
+// personal si la configuraste en Editar perfil, o el rango general
+// 130-150 ppm si no. Se edita en el mismo formulario que el alias.
+function ProfileZ2Row(myProfile) {
+
+    const { text, isPersonal } = describeZ2Range(myProfile.z2MinBpm, myProfile.z2MaxBpm);
+
+    return `
+
+        <div class="profile-community-row">
+
+            <div class="profile-community-row-text">
+
+                <span class="profile-community-row-label">Tu Zona 2</span>
+
+                <span class="profile-community-row-value">${text} · ${isPersonal ? "personal" : "rango general"}</span>
+
+            </div>
+
+            <button class="profile-link-button" data-action="edit-profile-from-community">Editar</button>
+
+        </div>
+
+        <p class="profile-card-hint">Se usa para calcular tu % de tiempo en zona en el Ranking "Z2 mejor ejecutada".</p>
+
+    `;
+
+}
+
 function ProfileCommunitySection(myProfile) {
 
     const ready = myProfile.status === "ready";
@@ -229,6 +259,8 @@ function ProfileCommunitySection(myProfile) {
             </div>
 
             <p class="profile-card-hint">Así te verán los demás usuarios en Comunidad -- si no lo pones, de momento se usa la parte de tu email antes de la @.</p>
+
+            ${ready ? ProfileZ2Row(myProfile) : ""}
 
             <div class="profile-community-row">
 
@@ -288,7 +320,7 @@ function ProfileIdleView() {
 
         <div class="profile-content">
 
-            ${ProfileHero(myProfile, isEditOpen(), getEditError())}
+            ${ProfileHero(myProfile, isEditOpen(), getEditError(), getEditDraft())}
 
             ${ProfileSummaryCard(workouts, shoes, getGymSessions().length)}
 

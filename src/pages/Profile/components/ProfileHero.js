@@ -30,7 +30,18 @@ function escapeHtml(text) {
 // guardar (ver handleSaveProfile en initProfileEvents.js) -- nunca wireado
 // a rerender() en cada tecla (bug real ya corregido en otro sitio, ver
 // feedback_controlled_input_rerender_bug).
-function ProfileEditForm(myProfile, editError) {
+//
+// `draft` (2026-09-29): lo tecleado cuando falló el último guardado (ver
+// getEditDraft() en profileStore.js) -- si existe, manda sobre los valores
+// guardados para no borrar lo que el usuario acaba de escribir.
+function ProfileEditForm(myProfile, editError, draft = null) {
+
+    const values = draft ?? {
+        alias: myProfile.aliasPublico ?? "",
+        localidad: myProfile.localidad ?? "",
+        z2Min: myProfile.z2MinBpm ?? "",
+        z2Max: myProfile.z2MaxBpm ?? ""
+    };
 
     return `
 
@@ -42,7 +53,7 @@ function ProfileEditForm(myProfile, editError) {
 
                 Alias público
 
-                <input type="text" class="profile-input" data-field="edit-alias" placeholder="Tu alias público" maxlength="50" value="${escapeHtml(myProfile.aliasPublico ?? "")}">
+                <input type="text" class="profile-input" data-field="edit-alias" placeholder="Tu alias público" maxlength="50" value="${escapeHtml(String(values.alias))}">
 
             </label>
 
@@ -50,9 +61,31 @@ function ProfileEditForm(myProfile, editError) {
 
                 Localidad (opcional)
 
-                <input type="text" class="profile-input" data-field="edit-localidad" placeholder="Tu localidad" maxlength="100" value="${escapeHtml(myProfile.localidad ?? "")}">
+                <input type="text" class="profile-input" data-field="edit-localidad" placeholder="Tu localidad" maxlength="100" value="${escapeHtml(String(values.localidad))}">
 
             </label>
+
+            <!-- Zona 2 personal (2026-09-29): la usa el % en zona del
+                 Ranking de Comunidad. inputmode numeric (no type=number)
+                 para el teclado numérico del iPhone sin las flechitas;
+                 se valida al guardar (parseZ2Inputs, ../z2Zone.js). -->
+            <div class="profile-hero-edit-label">
+
+                Tu Zona 2 (opcional, ppm)
+
+                <div class="profile-z2-inputs">
+
+                    <input type="text" inputmode="numeric" class="profile-input" data-field="edit-z2-min" placeholder="Mín. (130)" maxlength="3" value="${escapeHtml(String(values.z2Min))}" aria-label="Zona 2 mínimo en ppm">
+
+                    <span class="profile-z2-separator">–</span>
+
+                    <input type="text" inputmode="numeric" class="profile-input" data-field="edit-z2-max" placeholder="Máx. (150)" maxlength="3" value="${escapeHtml(String(values.z2Max))}" aria-label="Zona 2 máximo en ppm">
+
+                </div>
+
+                <span class="profile-hero-edit-hint">Vacío = rango general 130–150 ppm. Se usa para tu % en zona del Ranking.</span>
+
+            </div>
 
             <div class="profile-hero-edit-actions">
 
@@ -68,7 +101,7 @@ function ProfileEditForm(myProfile, editError) {
 
 }
 
-export function ProfileHero(myProfile, editOpen, editError) {
+export function ProfileHero(myProfile, editOpen, editError, editDraft = null) {
 
     const ready = myProfile.status === "ready";
     const initial = ready && myProfile.aliasPublico ? myProfile.aliasPublico.trim().charAt(0).toUpperCase() : null;
@@ -120,7 +153,7 @@ export function ProfileHero(myProfile, editOpen, editError) {
 
             ` : ""}
 
-            ${editOpen ? ProfileEditForm(myProfile, editError) : ""}
+            ${editOpen ? ProfileEditForm(myProfile, editError, editDraft) : ""}
 
         </section>
 

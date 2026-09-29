@@ -5,6 +5,7 @@ import { generateAuthToken, hashAuthToken } from "../tokenUtils.js";
 import { sendVerificationEmail, sendPasswordResetEmail } from "../email.js";
 import { emailRateLimit } from "../middleware/rateLimit.js";
 import { requireAuth } from "../middleware/requireAuth.js";
+import { validateZ2Range } from "../z2Zone.js";
 
 export const authRouter = Router();
 
@@ -297,13 +298,17 @@ authRouter.post("/restablecer", async (req, res) => {
 // llegó para sacar el año de "Corredor sólido desde AAAA".
 export async function getPerfil(req, res) {
 
-    const [rows] = await pool.execute("SELECT alias_publico, localidad, created_at FROM users WHERE id = ?", [req.userId]);
+    const [rows] = await pool.execute("SELECT alias_publico, localidad, created_at, z2_min_bpm, z2_max_bpm FROM users WHERE id = ?", [req.userId]);
     const row = rows[0];
 
+    // Zona 2 personal (migración 012): null/null = sin configurar, el
+    // Ranking usa entonces el rango general (ver ../z2Zone.js).
     res.json({
         aliasPublico: row?.alias_publico ?? null,
         localidad: row?.localidad ?? null,
-        createdAt: row?.created_at ? new Date(row.created_at).toISOString() : null
+        createdAt: row?.created_at ? new Date(row.created_at).toISOString() : null,
+        z2MinBpm: row?.z2_min_bpm ?? null,
+        z2MaxBpm: row?.z2_max_bpm ?? null
     });
 
 }
@@ -316,14 +321,30 @@ export async function getPerfil(req, res) {
 // presente se valida y se guarda por separado; ninguno de los dos se toca
 // si el otro falla su propia validación (falla entero antes de tocar la
 // base de datos, mismo criterio de "todo o nada" que ya tenía esta ruta).
+//
+// Zona 2 personal (2026-09-29): z2MinBpm/z2MaxBpm van SIEMPRE juntos --
+// basta con que venga uno de los dos para exigir el otro (validateZ2Range
+// en ../z2Zone.js). null/null borra el rango personal y el usuario vuelve
+// al rango general 130-150.
 export async function updatePerfil(req, res) {
 
-    const { aliasPublico, localidad } = req.body ?? {};
+    const { aliasPublico, localidad, z2MinBpm, z2MaxBpm } = req.body ?? {};
     const hasAlias = aliasPublico !== undefined;
     const hasLocalidad = localidad !== undefined;
+    const hasZ2 = z2MinBpm !== undefined || z2MaxBpm !== undefined;
 
-    if (!hasAlias && !hasLocalidad) {
+    if (!hasAlias && !hasLocalidad && !hasZ2) {
         return res.status(400).json({ error: "Nada que actualizar." });
+    }
+
+    if (hasZ2) {
+
+        const z2Error = validateZ2Range(z2MinBpm ?? null, z2MaxBpm ?? null);
+
+        if (z2Error) {
+            return res.status(400).json({ error: z2Error });
+        }
+
     }
 
     let trimmedAlias, trimmedLocalidad;
@@ -365,6 +386,10 @@ export async function updatePerfil(req, res) {
     // nunca una cadena vacía que luego el hero tendría que tratar como
     // "no hay localidad" en un sitio aparte.
     if (hasLocalidad) { fields.push("localidad = ?"); values.push(trimmedLocalidad || null); }
+    if (hasZ2) {
+        fields.push("z2_min_bpm = ?", "z2_max_bpm = ?");
+        values.push(z2MinBpm ?? null, z2MaxBpm ?? null);
+    }
 
     values.push(req.userId);
 
@@ -373,6 +398,10 @@ export async function updatePerfil(req, res) {
     const responseBody = {};
     if (hasAlias) responseBody.aliasPublico = trimmedAlias;
     if (hasLocalidad) responseBody.localidad = trimmedLocalidad || null;
+    if (hasZ2) {
+        responseBody.z2MinBpm = z2MinBpm ?? null;
+        responseBody.z2MaxBpm = z2MaxBpm ?? null;
+    }
 
     res.json(responseBody);
 

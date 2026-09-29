@@ -21,12 +21,13 @@ export function setFeedback(next) {
 // Perfil real (alias público + localidad + fecha de creación de la
 // cuenta, rediseño 2026-09-25 -- antes solo el alias, ver
 // project_profile_redesign) -- { status: "idle"|"loading"|"ready"|"unavailable",
-// aliasPublico, localidad, createdAt }. Una sola petición real por sesión
+// aliasPublico, localidad, createdAt, z2MinBpm, z2MaxBpm } -- los dos
+// z2* null = Zona 2 personal sin configurar (se usa el rango general). Una sola petición real por sesión
 // (idempotente, mismo patrón que homeWeatherStore.js), nunca deja
 // "loading" colgado. "unavailable" (sin sesión, sin red, o error del
 // servidor) no es un error visible -- el hero simplemente no muestra la
 // identidad hasta que haya datos reales, nunca un valor inventado.
-let myProfile = { status: "idle", aliasPublico: null, localidad: null, createdAt: null };
+let myProfile = { status: "idle", aliasPublico: null, localidad: null, createdAt: null, z2MinBpm: null, z2MaxBpm: null };
 
 export function getMyProfile() {
 
@@ -58,7 +59,9 @@ export function loadMyProfile() {
             status: "ready",
             aliasPublico: data.aliasPublico ?? null,
             localidad: data.localidad ?? null,
-            createdAt: data.createdAt ?? null
+            createdAt: data.createdAt ?? null,
+            z2MinBpm: data.z2MinBpm ?? null,
+            z2MaxBpm: data.z2MaxBpm ?? null
         };
         rerender();
 
@@ -78,6 +81,25 @@ export function loadMyProfile() {
 let editOpen = false;
 let editError = null;
 
+// Lo que el usuario había tecleado cuando falló el guardado (2026-09-29) --
+// sin esto, el rerender que pinta el error rellenaba el formulario otra vez
+// con los valores guardados y se perdía lo escrito (p. ej. una Zona 2 mal
+// puesta). null = usar los valores reales del perfil. Se descarta al abrir,
+// cerrar o guardar bien.
+let editDraft = null;
+
+export function getEditDraft() {
+
+    return editDraft;
+
+}
+
+export function setEditDraft(draft) {
+
+    editDraft = draft;
+
+}
+
 export function isEditOpen() {
 
     return editOpen;
@@ -87,6 +109,7 @@ export function isEditOpen() {
 export function setEditOpen(open) {
 
     editOpen = open;
+    editDraft = null;
     if (open) editError = null;
 
 }

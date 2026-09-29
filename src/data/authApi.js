@@ -101,11 +101,18 @@ export function getPerfil(authToken) {
 // verdad se pasó, nunca `undefined` explícito (el backend distingue "no
 // venía este campo" de "se mandó vacío", ver updatePerfil() en
 // server/src/routes/auth.js).
-export function actualizarPerfil(authToken, { aliasPublico, localidad } = {}) {
+//
+// z2MinBpm/z2MaxBpm (Zona 2 personal, 2026-09-29): van siempre juntos --
+// números enteros, o null/null para volver al rango general.
+export function actualizarPerfil(authToken, { aliasPublico, localidad, z2MinBpm, z2MaxBpm } = {}) {
 
     const body = {};
     if (aliasPublico !== undefined) body.aliasPublico = aliasPublico;
     if (localidad !== undefined) body.localidad = localidad;
+    if (z2MinBpm !== undefined || z2MaxBpm !== undefined) {
+        body.z2MinBpm = z2MinBpm ?? null;
+        body.z2MaxBpm = z2MaxBpm ?? null;
+    }
 
     return authRequest("perfil", body, { method: "PATCH", token: authToken });
 

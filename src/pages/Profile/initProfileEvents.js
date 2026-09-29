@@ -1,6 +1,7 @@
 import { navigate, rerender } from "../../core/router.js";
 import { exportData, importDataFromFile } from "../../utils/backup.js";
-import { setFeedback, loadMyProfile, setMyProfile, isEditOpen, setEditOpen, setEditError, getProfileStep, setProfileStep } from "./profileStore.js";
+import { setFeedback, loadMyProfile, setMyProfile, isEditOpen, setEditOpen, setEditError, setEditDraft, getProfileStep, setProfileStep } from "./profileStore.js";
+import { parseZ2Inputs } from "./z2Zone.js";
 import { clearToken, getToken } from "../../data/authStore.js";
 import { runSync } from "../../data/syncManager.js";
 import { actualizarPerfil } from "../../data/authApi.js";
@@ -78,17 +79,37 @@ function handleSaveProfile() {
 
     const alias = document.querySelector('[data-field="edit-alias"]')?.value.trim() ?? "";
     const localidad = document.querySelector('[data-field="edit-localidad"]')?.value.trim() ?? "";
+    const z2MinText = document.querySelector('[data-field="edit-z2-min"]')?.value ?? "";
+    const z2MaxText = document.querySelector('[data-field="edit-z2-max"]')?.value ?? "";
 
-    if (!alias) {
-        setEditError("El alias no puede estar vacío.");
+    // Lo tecleado, para no perderlo si hay que repintar con un error.
+    const draft = { alias, localidad, z2Min: z2MinText.trim(), z2Max: z2MaxText.trim() };
+
+    const fail = message => {
+        setEditError(message);
+        setEditDraft(draft);
         rerender();
-        return;
-    }
+    };
+
+    if (!alias) return fail("El alias no puede estar vacío.");
+
+    const z2 = parseZ2Inputs(z2MinText, z2MaxText);
+    if (z2.error) return fail(z2.error);
 
     setEditError(null);
+    setEditDraft(draft);
     rerender();
 
-    actualizarPerfil(getToken(), { aliasPublico: alias, localidad }).then(data => {
+    actualizarPerfil(getToken(), { aliasPublico: alias, localidad, ...z2.value }).then(data => {
+
+        // Backend todavía sin la migración/código de la Zona 2 (despliegue
+        // pendiente): ignora los campos z2 y responde 200 sin ellos. Mejor
+        // decirlo que dar por guardado algo que no se guardó. Alias y
+        // localidad sí se han guardado en ese caso.
+        if (!("z2MinBpm" in data)) {
+            setMyProfile(data);
+            return fail("Alias y localidad guardados, pero el servidor todavía no admite la Zona 2 personal (pendiente de actualizar).");
+        }
 
         setMyProfile(data);
         setEditOpen(false);
@@ -96,8 +117,7 @@ function handleSaveProfile() {
 
     }).catch(err => {
 
-        setEditError(err.message || "No se pudo guardar el perfil.");
-        rerender();
+        fail(err.message || "No se pudo guardar el perfil.");
 
     });
 

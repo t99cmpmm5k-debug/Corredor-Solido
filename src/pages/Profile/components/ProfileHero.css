@@ -211,6 +211,52 @@
 
 }
 
+/* Zona 2 personal (2026-09-29): mín – máx en una sola fila. */
+.profile-z2-inputs{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:8px;
+
+}
+
+.profile-z2-inputs .profile-input{
+
+    flex:1;
+
+    min-width:0;
+
+    text-align:center;
+
+}
+
+.profile-z2-separator{
+
+    color:var(--text-secondary);
+
+    font-size:1rem;
+
+}
+
+/* Texto de ayuda bajo un campo -- sin las mayúsculas del label. */
+.profile-hero-edit-hint{
+
+    color:var(--text-secondary);
+
+    font-size:.72rem;
+
+    font-weight:500;
+
+    text-transform:none;
+
+    letter-spacing:0;
+
+    line-height:1.4;
+
+}
+
 .profile-hero-edit-actions{
 
     display:flex;

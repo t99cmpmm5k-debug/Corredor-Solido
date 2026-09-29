@@ -19,6 +19,8 @@ mis datos" en el cliente (`src/utils/backup.js` del frontend).
    mysql -u TU_USUARIO -p TU_BASE_DE_DATOS < migrations/008_body_composition.sql
    mysql -u TU_USUARIO -p TU_BASE_DE_DATOS < migrations/009_nutrition_entries.sql
    mysql -u TU_USUARIO -p TU_BASE_DE_DATOS < migrations/010_diet.sql
+   mysql -u TU_USUARIO -p TU_BASE_DE_DATOS < migrations/011_localidad.sql
+   mysql -u TU_USUARIO -p TU_BASE_DE_DATOS < migrations/012_z2_zona_personal.sql
    ```
 3. Copia `.env.example` a `.env` y rellena los valores reales (credenciales
    de la base de datos ya creadas en Hestia, un `JWT_SECRET` largo y

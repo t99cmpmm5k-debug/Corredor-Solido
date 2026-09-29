@@ -748,3 +748,80 @@ describe("DELETE /api/community/entrenos/:id/comments/:commentId -- SOLO el auto
     });
 
 });
+
+describe("Zona 2 personal (2026-09-29) -- cada entreno se mide con la zona de SU corredor", () => {
+
+    afterEach(() => {
+        executeMock.mockReset();
+    });
+
+    // 3 km iguales en duración: 128 / 138 / 148 ppm.
+    const splits = [
+        { distanceKm: 1, paceSecPerKm: 360, avgHr: 128 },
+        { distanceKm: 1, paceSecPerKm: 360, avgHr: 138 },
+        { distanceKm: 1, paceSecPerKm: 360, avgHr: 148 }
+    ];
+
+    it("sin rango personal (NULL/NULL) usa el general 130-150 -- nadie pierde su cálculo actual", async () => {
+
+        executeMock.mockResolvedValue([[
+            { email: "a@example.com", z2_min_bpm: null, z2_max_bpm: null, data: { id: "w1", type: "easy", splits } }
+        ]]);
+
+        const { getCommunityEntrenos } = await import("./community.js");
+        const res = mockRes();
+
+        await getCommunityEntrenos({ userId: 1 }, res);
+
+        // 138 y 148 dentro de 130-150 -> 2 de 3
+        expect(res.json.mock.calls[0][0].entrenos[0].z2TimeInZonePercent).toBe(66.7);
+
+    });
+
+    it("con rango personal, el % se calcula con ESE rango, y cada fila con el de su propio dueño", async () => {
+
+        executeMock.mockResolvedValue([[
+            { email: "a@example.com", z2_min_bpm: 120, z2_max_bpm: 140, data: { id: "w1", type: "easy", splits } },
+            { email: "b@example.com", z2_min_bpm: null, z2_max_bpm: null, data: { id: "w2", type: "easy", splits } }
+        ]]);
+
+        const { getCommunityEntrenos } = await import("./community.js");
+        const res = mockRes();
+
+        await getCommunityEntrenos({ userId: 1 }, res);
+
+        const { entrenos } = res.json.mock.calls[0][0];
+
+        expect(entrenos[0].z2TimeInZonePercent).toBe(66.7); // 128 y 138 en 120-140
+        expect(entrenos[1].z2TimeInZonePercent).toBe(66.7); // 138 y 148 en 130-150
+        // el rango en sí nunca sale en la respuesta
+        expect(entrenos[0]).not.toHaveProperty("z2MinBpm");
+
+    });
+
+    it("un rango personal a medias (solo uno de los dos) nunca produce un rango raro: cae al general", async () => {
+
+        const { computeZ2TimeInZonePercent } = await import("./community.js");
+        const { resolveZ2Range } = await import("../z2Zone.js");
+
+        expect(computeZ2TimeInZonePercent(splits, resolveZ2Range(145, null))).toBe(66.7);
+        expect(computeZ2TimeInZonePercent(splits, resolveZ2Range(145, 155))).toBe(33.3);
+
+    });
+
+    it("el detalle de un entreno también usa la zona de su dueño", async () => {
+
+        executeMock.mockResolvedValue([[
+            { email: "a@example.com", z2_min_bpm: 145, z2_max_bpm: 160, data: { id: "w1", type: "easy", splits } }
+        ]]);
+
+        const { getCommunityEntrenoDetail } = await import("./community.js");
+        const res = mockRes();
+
+        await getCommunityEntrenoDetail({ userId: 1, params: { id: "w1" } }, res);
+
+        expect(res.json.mock.calls[0][0].z2TimeInZonePercent).toBe(33.3);
+
+    });
+
+});

@@ -49,7 +49,7 @@ describe("getPerfil -- devuelve alias, localidad y fecha de creación de la cuen
         await getPerfil({ userId: 7 }, res);
 
         expect(executeMock).toHaveBeenCalledWith(expect.stringContaining("WHERE id = ?"), [7]);
-        expect(res.json).toHaveBeenCalledWith({ aliasPublico: "Rafa", localidad: "Murcia", createdAt: "2026-01-15T10:00:00.000Z" });
+        expect(res.json).toHaveBeenCalledWith({ aliasPublico: "Rafa", localidad: "Murcia", createdAt: "2026-01-15T10:00:00.000Z", z2MinBpm: null, z2MaxBpm: null });
 
     });
 
@@ -62,7 +62,7 @@ describe("getPerfil -- devuelve alias, localidad y fecha de creación de la cuen
 
         await getPerfil({ userId: 7 }, res);
 
-        expect(res.json).toHaveBeenCalledWith({ aliasPublico: null, localidad: null, createdAt: "2026-01-15T10:00:00.000Z" });
+        expect(res.json).toHaveBeenCalledWith({ aliasPublico: null, localidad: null, createdAt: "2026-01-15T10:00:00.000Z", z2MinBpm: null, z2MaxBpm: null });
 
     });
 
@@ -78,7 +78,7 @@ describe("getPerfil -- devuelve alias, localidad y fecha de creación de la cuen
 
         await getPerfil({ userId: 7 }, res);
 
-        expect(res.json).toHaveBeenCalledWith({ aliasPublico: null, localidad: null, createdAt: null });
+        expect(res.json).toHaveBeenCalledWith({ aliasPublico: null, localidad: null, createdAt: null, z2MinBpm: null, z2MaxBpm: null });
 
     });
 
@@ -276,6 +276,77 @@ describe("updatePerfil -- un usuario solo puede modificar su propio alias/locali
         const res = mockRes();
 
         await updatePerfil({ userId: 5, body: { aliasPublico: "A", localidad: "Murcia" } }, res);
+
+        expect(res.status).toHaveBeenCalledWith(400);
+        expect(executeMock).not.toHaveBeenCalled();
+
+    });
+
+});
+
+describe("updatePerfil -- Zona 2 personal (z2MinBpm/z2MaxBpm)", () => {
+
+    afterEach(() => {
+        executeMock.mockReset();
+    });
+
+    it("guarda el rango personal para el usuario del JWT y lo devuelve", async () => {
+
+        executeMock.mockResolvedValue([{}]);
+
+        const { updatePerfil } = await import("./auth.js");
+        const res = mockRes();
+
+        await updatePerfil({ userId: 5, body: { z2MinBpm: 125, z2MaxBpm: 142 } }, res);
+
+        expect(executeMock).toHaveBeenCalledWith(
+            expect.stringContaining("z2_min_bpm = ?, z2_max_bpm = ?"),
+            [125, 142, 5]
+        );
+        expect(res.json).toHaveBeenCalledWith({ z2MinBpm: 125, z2MaxBpm: 142 });
+
+    });
+
+    it("null/null borra el rango personal (vuelve al general)", async () => {
+
+        executeMock.mockResolvedValue([{}]);
+
+        const { updatePerfil } = await import("./auth.js");
+        const res = mockRes();
+
+        await updatePerfil({ userId: 5, body: { z2MinBpm: null, z2MaxBpm: null } }, res);
+
+        expect(executeMock).toHaveBeenCalledWith(expect.stringContaining("z2_min_bpm = ?"), [null, null, 5]);
+        expect(res.json).toHaveBeenCalledWith({ z2MinBpm: null, z2MaxBpm: null });
+
+    });
+
+    it.each([
+        [{ z2MinBpm: 130 }, "solo uno de los dos"],
+        [{ z2MinBpm: 150, z2MaxBpm: 140 }, "máximo menor que el mínimo"],
+        [{ z2MinBpm: 140, z2MaxBpm: 140 }, "máximo igual al mínimo"],
+        [{ z2MinBpm: 60, z2MaxBpm: 140 }, "por debajo de 80"],
+        [{ z2MinBpm: 150, z2MaxBpm: 240 }, "por encima de 220"],
+        [{ z2MinBpm: 130.5, z2MaxBpm: 150 }, "no entero"],
+        [{ z2MinBpm: "130", z2MaxBpm: "150" }, "texto en vez de número"]
+    ])("rechaza %o (%s) con 400, sin tocar la base de datos", async body => {
+
+        const { updatePerfil } = await import("./auth.js");
+        const res = mockRes();
+
+        await updatePerfil({ userId: 5, body }, res);
+
+        expect(res.status).toHaveBeenCalledWith(400);
+        expect(executeMock).not.toHaveBeenCalled();
+
+    });
+
+    it("un alias válido con una Zona 2 inválida no guarda NADA (todo o nada)", async () => {
+
+        const { updatePerfil } = await import("./auth.js");
+        const res = mockRes();
+
+        await updatePerfil({ userId: 5, body: { aliasPublico: "Rafa", z2MinBpm: 150, z2MaxBpm: 120 } }, res);
 
         expect(res.status).toHaveBeenCalledWith(400);
         expect(executeMock).not.toHaveBeenCalled();
