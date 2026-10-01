@@ -30,9 +30,13 @@ const ICONS = {
 
     },
 
+    // Corredor con estelas de velocidad (mdi, Solar no tiene un icono de
+    // fondo/resistencia) -- el "route" de antes era una señal de desvío
+    // que no se leía como carrera, y los tres "running*" de Solar son casi
+    // idénticos al de rodaje (z2), justo la ambigüedad a evitar.
     longRun: {
 
-        icon: "solar:route-bold-duotone"
+        icon: "mdi:run-fast"
 
     },
 

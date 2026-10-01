@@ -6,6 +6,7 @@ import { WorkoutIcon } from "../../../components/WorkoutIcon/WorkoutIcon.js";
 import { getWorkoutForSession } from "../../../data/workoutStore.js";
 import { getExpandedSessionId, getSessionMenuOpenId } from "../planStore.js";
 import { WORKOUT_TYPES } from "../../../data/workoutTypes.js";
+import { resolveDayColorKey } from "../planDayColor.js";
 
 // Icono por lo que dice la etiqueta, no por posición — cada tipo de
 // sesión trae las suyas (planData.js) y antes se pintaban con un array
@@ -60,51 +61,51 @@ function buildDetails(workout) {
 
 }
 
-// Resumen compacto bajo el título (retoque de cierre: la versión de la
-// fase anterior repetía el título real dos veces seguidas -- una vez en
-// el <h2> de arriba, otra vez aquí mismo vía `workout.title || label`, p.
-// ej. "4 x 1000m" / "4 x 1000m". Aquí ya NO se repite el título -- la
-// etiqueta del tipo (WORKOUT_TYPES) va sola, y el segundo dato es
-// siempre información NUEVA real: ritmo objetivo si existe, si no zona
-// de FC si existe -- nunca un rango inventado (mismos campos reales que
-// buildDetails() más abajo, nunca uno inventado). Sin ninguno de los dos,
-// no añade nada ahí en vez de forzar un dato que no existe.
-function buildSummaryLine(workout) {
+// Pulido final (2026-10-01): el subtítulo bajo el título es SOLO el tipo
+// ("5 × 1000 m" / "Series") -- distancia, ritmo, zona y duración ya
+// viven en las cápsulas de .workout-grid justo debajo, repetirlos aquí
+// era la mitad de la altura de la cabecera de la tarjeta.
+function typeLabel(workout) {
 
-    const bits = [];
-
-    if (workout.distanceKm != null) bits.push(`${workout.distanceKm} km`);
-
-    bits.push(WORKOUT_TYPES[workout.type]?.label || "Sesión");
-
-    if (workout.targetPaceSecPerKm != null) {
-        bits.push(`Ritmo objetivo ${formatSecondsAsClock(workout.targetPaceSecPerKm)}/km`);
-    } else if (workout.targetHrZone != null) {
-        bits.push(`Zona de FC ${workout.targetHrZone}`);
-    }
-
-    if (workout.durationSec != null) bits.push(formatSecondsAsClock(workout.durationSec));
-
-    return bits.join(" · ");
+    return WORKOUT_TYPES[workout.type]?.label || "Sesión";
 
 }
 
-const DESCRIPTION_PREVIEW_LENGTH = 90;
+// Resumen corto de la descripción para la tarjeta (máx. ~2-3 líneas) --
+// nunca un texto inventado ni un corte a mitad de frase con "…": se
+// quedan frases ENTERAS del texto real hasta llenar el hueco, y el resto
+// queda para "Ver sesión completa". Los planes en PDF traen la
+// descripción por secciones (Objetivo/Estructura/Intensidad/Clave, ver
+// importers/plan/pdf.js) -- "Estructura" es justo lo que se va a hacer,
+// así que se prefiere esa; si no existe, la primera línea real.
+const SUMMARY_MAX_LENGTH = 125;
+const SECTION_LABEL_RE = /^(Objetivo|Estructura|Intensidad|Clave):\s*/i;
 
-// Primera línea de la descripción real, recortada si hace falta -- nunca
-// el párrafo entero. isTruncated decide si de verdad hace falta un
-// control de "ver más" (una descripción corta de una sola línea no
-// necesita ese botón, ya se ve entera).
-function buildDescriptionPreview(description) {
+export function buildDescriptionSummary(description) {
 
-    const trimmed = description.trim();
-    const firstLine = trimmed.split("\n")[0].trim();
+    const full = description.trim();
+    const lines = full.split("\n").map(line => line.trim()).filter(Boolean);
 
-    const preview = firstLine.length > DESCRIPTION_PREVIEW_LENGTH
-        ? `${firstLine.slice(0, DESCRIPTION_PREVIEW_LENGTH).trim()}…`
-        : firstLine;
+    const source = lines.find(line => /^Estructura:/i.test(line)) ?? lines[0] ?? "";
+    const text = source.replace(SECTION_LABEL_RE, "");
 
-    return { preview, isTruncated: preview !== trimmed };
+    const sentences = text.match(/[^.!?]+[.!?]*(\s+|$)/g)?.map(sentence => sentence.trim()).filter(Boolean) ?? [text];
+
+    // Siempre al menos la primera frase entera, aunque pase del tope (el
+    // CSS la limita a 3 líneas como red de seguridad) -- recortarla aquí
+    // sería justo el corte brusco que se quiere evitar.
+    let summary = sentences[0];
+
+    for (const sentence of sentences.slice(1)) {
+        const candidate = `${summary} ${sentence}`;
+        if (candidate.length > SUMMARY_MAX_LENGTH) break;
+        summary = candidate;
+    }
+
+    // Una sola frase más larga que el tope puede quedar recortada por el
+    // line-clamp del CSS -- también cuenta como "hay más", para que nunca
+    // quede texto real inalcanzable sin su "Ver sesión completa".
+    return { summary, hasMore: summary !== full || summary.length > SUMMARY_MAX_LENGTH };
 
 }
 
@@ -114,9 +115,9 @@ export function PlanWorkoutCard(workout) {
 
         return `
 
-            <section class="plan-workout-card plan-workout-card--empty">
+            <section class="plan-select-hint">
 
-                <p>Selecciona un día del calendario para ver su sesión.</p>
+                <p>Selecciona una sesión de la semana</p>
 
             </section>
 
@@ -134,41 +135,68 @@ export function PlanWorkoutCard(workout) {
     const isMenuOpen = getSessionMenuOpenId() === workout.id;
     const isExpanded = getExpandedSessionId() === workout.id;
 
-    const { preview, isTruncated } = workout.description
-        ? buildDescriptionPreview(workout.description)
-        : { preview: null, isTruncated: false };
+    const { summary, hasMore } = workout.description
+        ? buildDescriptionSummary(workout.description)
+        : { summary: null, hasMore: false };
+
+    const isCompleted = workout.status === "completed";
+    const label = typeLabel(workout);
+    const title = workout.title ?? label;
+
+    // Mismo color que el nodo del día en el timeline (planDayColor.js) --
+    // verde si ya está hecha, naranja/amarillo/cian por categoría si no.
+    const colorClass = `day-color-${resolveDayColorKey(workout)}`;
 
     return `
 
-        <section class="plan-workout-card">
+        <section class="plan-workout-card ${isCompleted ? "plan-workout-card--completed" : ""}">
 
             <div class="workout-header">
 
                 <div class="workout-title-block">
 
-                    <span class="workout-day">
+                    <div class="workout-day-row">
 
-                        ${isToday(workout.date) ? "HOY · " : ""}${workout.day} ${formatDayMonth(workout.date)}
+                        <span class="workout-day">
 
-                    </span>
+                            ${isToday(workout.date) ? "HOY · " : ""}${workout.day} ${formatDayMonth(workout.date)}
+
+                        </span>
+
+                        ${isCompleted ? `
+
+                            <span class="workout-status-chip">
+
+                                <iconify-icon icon="solar:check-circle-bold"></iconify-icon>
+                                Completada
+
+                            </span>
+
+                        ` : ""}
+
+                    </div>
 
                     <h2>
 
-                        ${workout.title ?? "Sesión"}
+                        ${title}
 
                         ${workout.subtitle ? `<span>${workout.subtitle}</span>` : ""}
 
                     </h2>
 
-                    <p class="workout-summary-line">
+                    ${title !== label ? `
 
-                        ${buildSummaryLine(workout)}
+                        <p class="workout-type-line">
 
-                    </p>
+                            ${label}
+
+                        </p>
+
+                    ` : ""}
 
                 </div>
 
-                <div class="workout-badge">
+                <div class="workout-badge ${colorClass}">
 
                     ${WorkoutIcon(workout.type)}
 
@@ -218,13 +246,14 @@ export function PlanWorkoutCard(workout) {
 
                 <div class="workout-description-block">
 
-                    <p class="workout-description ${isExpanded ? "workout-description--expanded" : ""}">
+                    <!-- Texto pegado a las etiquetas a propósito: la versión
+                         expandida usa white-space:pre-wrap (saltos de línea
+                         reales del PDF), y así también respetaba la
+                         indentación del template -- sangría y líneas en
+                         blanco antes y después del texto. -->
+                    <p class="workout-description ${isExpanded ? "workout-description--expanded" : ""}">${isExpanded ? workout.description.trim() : summary}</p>
 
-                        ${isExpanded ? workout.description : preview}
-
-                    </p>
-
-                    ${isTruncated ? `
+                    ${hasMore ? `
 
                         <button
                             class="workout-expand-toggle"
@@ -286,7 +315,7 @@ export function PlanWorkoutCard(workout) {
                     data-session-id="${workout.id}"
                 >
 
-                    MOVER SESIÓN
+                    Mover sesión
 
                 </button>
 

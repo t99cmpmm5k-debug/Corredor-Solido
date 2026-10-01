@@ -61,19 +61,23 @@ describe("buildMarkersByDate", () => {
 
     });
 
-    it("series (intervals), tirada larga (longRun) y gimnasio (strength) mantienen su color fijo pase lo que pase con el estado", () => {
+    it("pendientes: series naranja, tirada larga amarilla, gimnasio violeta; completadas: verde para todos (pulido final)", () => {
 
         const sessions = [
             { id: "s1", date: "2026-08-10", type: "intervals", status: "completed" },
             { id: "s2", date: "2026-08-11", type: "longRun", status: "pending" },
-            { id: "s3", date: "2026-08-12", type: "strength", status: "completed" }
+            { id: "s3", date: "2026-08-12", type: "strength", status: "completed" },
+            { id: "s4", date: "2026-08-13", type: "intervals", status: "upcoming" },
+            { id: "s5", date: "2026-08-14", type: "strength", status: "upcoming" }
         ];
 
         const markers = buildMarkersByDate(sessions);
 
-        expect(markers["2026-08-10"][0].color).toBe("#ff7a33");
+        expect(markers["2026-08-10"][0].color).toBe("var(--color-success)");
         expect(markers["2026-08-11"][0].color).toBe("var(--color-warning)");
-        expect(markers["2026-08-12"][0].color).toBe("var(--color-gym)");
+        expect(markers["2026-08-12"][0].color).toBe("var(--color-success)");
+        expect(markers["2026-08-13"][0].color).toBe("#ff7a33");
+        expect(markers["2026-08-14"][0].color).toBe("var(--color-gym)");
 
     });
 

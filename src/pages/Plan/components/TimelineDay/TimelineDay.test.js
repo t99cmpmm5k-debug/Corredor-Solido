@@ -41,13 +41,14 @@ describe("TimelineDay -- nodo del día (retoques finales de cierre del pulido de
 
     });
 
-    it("el punto de HOY solo aparece cuando isToday es true, independiente de la selección", () => {
+    it("HOY se marca con la clase is-today (anillo), independiente de la selección -- sin punto aparte", () => {
 
         const notToday = TimelineDay(session(), { isToday: false, isSelected: true, isCompleted: false });
         const today = TimelineDay(session(), { isToday: true, isSelected: false, isCompleted: false });
 
-        expect(notToday).not.toContain("day-today-dot");
-        expect(today).toContain("day-today-dot");
+        expect(notToday).not.toContain("is-today");
+        expect(today).toContain("is-today");
+        expect(today).not.toContain("day-today-dot");
 
     });
 

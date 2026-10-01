@@ -4,6 +4,43 @@ import { PLAN_IMAGES } from "../../../assets/plan";
 import { parseISODate, addDays, formatDayMonth, getISOWeekNumber } from "../../../utils/date.js";
 import { formatKm } from "../../../utils/format.js";
 
+// Categorías del resumen semanal bajo el timeline (pulido final
+// 2026-10-01) -- mismo agrupamiento que los colores de planDayColor.js
+// (calidad = series + tempo, tirada larga y carrera por separado aquí
+// porque son sesiones distintas para quien las lee, rodaje = z2 +
+// recuperación). Un tipo fuera de esta lista (fuerza, libre, general)
+// sigue contando en "N sesiones" pero sin categoría propia.
+const SUMMARY_CATEGORIES = [
+    { types: ["intervals", "tempo"], one: "calidad", many: "calidad" },
+    { types: ["z2", "recovery"], one: "rodaje", many: "rodajes" },
+    { types: ["longRun"], one: "tirada larga", many: "tiradas largas" },
+    { types: ["race"], one: "carrera", many: "carreras" }
+];
+
+// "3 sesiones · 23 km · 1 calidad · 1 rodaje · 1 tirada larga" -- solo
+// datos reales de la semana, y cualquier categoría con 0 sesiones se
+// omite (nunca "0 carreras"). null sin ninguna sesión: no hay nada que
+// resumir y la línea no se pinta.
+export function buildWeekSummary(sessions) {
+
+    if (!sessions.length) return null;
+
+    const totalKm = sessions.reduce((sum, session) => sum + (session.volume || 0), 0);
+
+    const bits = [
+        `${sessions.length} ${sessions.length === 1 ? "sesión" : "sesiones"}`,
+        `${formatKm(totalKm)} km`
+    ];
+
+    SUMMARY_CATEGORIES.forEach(({ types, one, many }) => {
+        const count = sessions.filter(session => types.includes(session.type)).length;
+        if (count) bits.push(`${count} ${count === 1 ? one : many}`);
+    });
+
+    return bits.join(" · ");
+
+}
+
 // Foto-por-tema propia del Plan, misma mecánica que el Hero
 // (themeManager decide el tema, un mapa de imágenes por tema
 // decide la foto) pero con su propio set de imágenes.
@@ -24,7 +61,7 @@ export function PlanHeader(weekStartDate, sessions, timelineHtml = "", { viewMod
     const weekEndDate = addDays(weekStartDate, 6);
 
     const weekNumber = getISOWeekNumber(parseISODate(weekStartDate));
-    const dateRange = `${formatDayMonth(weekStartDate)} · ${formatDayMonth(weekEndDate)}`;
+    const dateRange = `${formatDayMonth(weekStartDate)} — ${formatDayMonth(weekEndDate)}`;
 
     const completedCount = sessions.filter(session => session.status === "completed").length;
     const totalCount = sessions.length;
@@ -40,6 +77,8 @@ export function PlanHeader(weekStartDate, sessions, timelineHtml = "", { viewMod
         .filter(session => session.status === "completed")
         .reduce((sum, session) => sum + (session.volume || 0), 0);
     const totalKm = sessions.reduce((sum, session) => sum + (session.volume || 0), 0);
+
+    const weekSummary = buildWeekSummary(sessions);
 
     return `
 
@@ -135,7 +174,13 @@ export function PlanHeader(weekStartDate, sessions, timelineHtml = "", { viewMod
 
                         <span class="week-label">
 
-                            SEMANA ${weekNumber} · ${dateRange}
+                            SEMANA ${weekNumber}
+
+                        </span>
+
+                        <span class="week-dates">
+
+                            ${dateRange}
 
                         </span>
 
@@ -156,6 +201,8 @@ export function PlanHeader(weekStartDate, sessions, timelineHtml = "", { viewMod
                 </div>
 
                 ${timelineHtml}
+
+                ${weekSummary ? `<p class="plan-week-summary">${weekSummary}</p>` : ""}
 
             ` : ""}
 

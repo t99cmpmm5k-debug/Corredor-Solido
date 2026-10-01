@@ -13,7 +13,7 @@ vi.mock("../planStore.js", () => ({
     getSessionMenuOpenId: () => sessionMenuOpenId
 }));
 
-const { PlanWorkoutCard } = await import("./PlanWorkoutCard.js");
+const { PlanWorkoutCard, buildDescriptionSummary } = await import("./PlanWorkoutCard.js");
 
 function workout(overrides = {}) {
     return {
@@ -40,65 +40,53 @@ describe("PlanWorkoutCard -- tarjeta compacta (fase 4 del pulido de Plan)", () =
         sessionMenuOpenId = null;
     });
 
-    it("sin sesión seleccionada, muestra el estado vacío", () => {
+    it("sin sesión seleccionada, solo una línea de texto -- sin tarjeta vacía (pulido final)", () => {
 
         const html = PlanWorkoutCard(null);
-        expect(html).toContain("plan-workout-card--empty");
+        expect(html).toContain("plan-select-hint");
+        expect(html).toContain("Selecciona una sesión de la semana");
+        expect(html).not.toContain("plan-workout-card");
 
     });
 
-    it("línea de resumen compacta con datos reales (distancia · tipo · duración)", () => {
+    it("título real + subtítulo con solo el tipo (\"5 × 1000 m\" / \"Series\")", () => {
 
-        const html = PlanWorkoutCard(workout({ distanceKm: 8, durationSec: 2100 }));
+        const html = PlanWorkoutCard(workout({ type: "intervals", title: "5 × 1000 m", distanceKm: 10, targetPaceSecPerKm: 265 }));
 
-        expect(html).toContain("workout-summary-line");
-        expect(html).toContain("8 km · Rodaje (Z2) · 35:00");
+        expect(html).toMatch(/class="workout-type-line">\s*Series\s*</);
+        // los datos van en las cápsulas, no repetidos en el subtítulo
+        expect(html.split("10 km").length - 1).toBe(1);
+        expect(html.split("4:25/km").length - 1).toBe(1);
 
     });
 
-    it("sin distancia/duración real, el resumen solo trae el tipo -- nunca un dato inventado", () => {
+    it("sin título real, el tipo hace de título y no se repite como subtítulo", () => {
 
         const html = PlanWorkoutCard(workout({ type: "strength" }));
 
         expect(html).toContain("Fuerza");
+        expect(html).not.toContain("workout-type-line");
         expect(html).not.toContain("null");
 
     });
 
-    it("con un título real, el resumen NO lo repite (ya está en el <h2> de arriba) -- retoque de cierre", () => {
+    it("completada: chip 'Completada', borde verde y badge en color de completado", () => {
 
-        const html = PlanWorkoutCard(workout({ type: "intervals", title: "4 x 1000m" }));
+        const html = PlanWorkoutCard(workout({ type: "intervals", status: "completed" }));
 
-        const occurrences = html.split("4 x 1000m").length - 1;
-        expect(occurrences).toBe(1);
-        expect(html).toContain("Series");
-
-    });
-
-    it("con ritmo objetivo real, el resumen lo muestra como dato nuevo en vez de repetir el título", () => {
-
-        const html = PlanWorkoutCard(workout({ type: "intervals", title: "4 x 1000m", targetPaceSecPerKm: 265 }));
-
-        expect(html).toContain("Ritmo objetivo 4:25/km");
+        expect(html).toContain("Completada");
+        expect(html).toContain("plan-workout-card--completed");
+        expect(html).toContain("day-color-completed");
+        expect(html).not.toContain("day-color-series");
 
     });
 
-    it("sin ritmo objetivo pero con zona de FC real, usa la zona de FC en su lugar", () => {
+    it("pendiente: sin chip, badge en el color de su categoría", () => {
 
-        const html = PlanWorkoutCard(workout({ type: "intervals", title: "4 x 1000m", targetHrZone: "Z4" }));
+        const html = PlanWorkoutCard(workout({ type: "intervals", status: "pending" }));
 
-        expect(html).toContain("Zona de FC Z4");
-        expect(html).not.toContain("Ritmo objetivo");
-
-    });
-
-    it("sin ritmo objetivo ni zona de FC, no inventa ningún rango -- el resumen se queda solo con el tipo", () => {
-
-        const html = PlanWorkoutCard(workout({ type: "intervals", title: "4 x 1000m" }));
-
-        expect(html).toContain("workout-summary-line");
-        expect(html).not.toContain("Ritmo objetivo");
-        expect(html).not.toContain("Zona de FC");
+        expect(html).not.toContain("workout-status-chip");
+        expect(html).toContain("day-color-series");
 
     });
 
@@ -138,14 +126,13 @@ describe("PlanWorkoutCard -- tarjeta compacta (fase 4 del pulido de Plan)", () =
 
     });
 
-    it("con una descripción larga, colapsada muestra solo un extracto + botón para expandir", () => {
+    it("con una descripción larga de una sola frase, sigue ofreciendo 'Ver sesión completa' (el CSS puede recortarla)", () => {
 
         const long = "Calentamiento 10min + 6x400m a ritmo 5k con 90s recuperación + vuelta a la calma 10min trote suave, prestar atención a la técnica de carrera en cada repetición";
         const html = PlanWorkoutCard(workout({ description: long }));
 
         expect(html).toContain("workout-expand-toggle");
         expect(html).toContain("Ver sesión completa");
-        expect(html).not.toContain(long);
 
     });
 
@@ -180,18 +167,53 @@ describe("PlanWorkoutCard -- tarjeta compacta (fase 4 del pulido de Plan)", () =
 
         expect(html).toContain("VER ENTRENAMIENTO REGISTRADO");
         expect(html).toContain('data-action="view-session-workout"');
-        expect(html).not.toContain("MOVER SESIÓN");
+        expect(html).not.toContain("Mover sesión");
 
     });
 
-    it("sin entrenamiento real enlazado, muestra el botón ghost 'MOVER SESIÓN'", () => {
+    it("sin entrenamiento real enlazado, muestra el botón ghost 'Mover sesión'", () => {
 
         const html = PlanWorkoutCard(workout());
 
-        expect(html).toContain("MOVER SESIÓN");
+        expect(html).toContain("Mover sesión");
         expect(html).toContain("workout-button--ghost");
         expect(html).not.toContain("VER ENTRENAMIENTO REGISTRADO");
 
+    });
+
+});
+
+describe("buildDescriptionSummary -- resumen corto sin cortes a mitad de frase (pulido final)", () => {
+
+    const pdf = [
+        "Objetivo: mejorar el umbral con un estímulo de calidad bien controlado.",
+        "Estructura: 15 min suaves + movilidad + 3 progresivos. Después, 5 × 1000 m a ritmo objetivo con 2 min de trote. 10 min suaves de vuelta a la calma.",
+        "Intensidad: 4:25-4:30/km.",
+        "Clave: la última serie igual que la primera."
+    ].join("\n");
+
+    it("en un plan por secciones usa 'Estructura', sin la etiqueta", () => {
+        const { summary } = buildDescriptionSummary(pdf);
+        expect(summary.startsWith("15 min suaves + movilidad + 3 progresivos.")).toBe(true);
+        expect(summary).not.toContain("Estructura:");
+        expect(summary).not.toContain("Objetivo");
+    });
+
+    it("solo frases enteras, nunca un corte con '…'", () => {
+        const { summary, hasMore } = buildDescriptionSummary(pdf);
+        expect(summary).toBe("15 min suaves + movilidad + 3 progresivos. Después, 5 × 1000 m a ritmo objetivo con 2 min de trote.");
+        expect(summary).not.toContain("…");
+        expect(hasMore).toBe(true);
+    });
+
+    it("sin secciones, usa la primera línea real", () => {
+        const { summary, hasMore } = buildDescriptionSummary("Rodaje suave por el parque.\nSin reloj.");
+        expect(summary).toBe("Rodaje suave por el parque.");
+        expect(hasMore).toBe(true);
+    });
+
+    it("una descripción corta se ve entera y no ofrece 'ver más'", () => {
+        expect(buildDescriptionSummary("Rodaje suave")).toEqual({ summary: "Rodaje suave", hasMore: false });
     });
 
 });

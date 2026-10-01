@@ -54,11 +54,15 @@
 
     top:46px;
 
-    height:3px;
+    /* Pulido final: más fina y apagada -- es un hilo que une los días,
+       no un elemento con protagonismo propio. */
+    height:2px;
 
     border-radius:999px;
 
+    opacity:.5;
+
     box-shadow:
-        0 0 12px color-mix(in srgb, var(--color-glow) 45%, transparent);
+        0 0 4px color-mix(in srgb, var(--color-glow) 20%, transparent);
 
 }

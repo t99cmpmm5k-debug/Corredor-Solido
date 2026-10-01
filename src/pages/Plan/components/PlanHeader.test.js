@@ -8,7 +8,7 @@ vi.mock("../../../assets/plan", () => ({
     PLAN_IMAGES: { day: "plan-day.jpg" }
 }));
 
-const { PlanHeader } = await import("./PlanHeader.js");
+const { PlanHeader, buildWeekSummary } = await import("./PlanHeader.js");
 
 function session(volume, status = "pending") {
     return { volume, status };
@@ -16,13 +16,12 @@ function session(volume, status = "pending") {
 
 describe("PlanHeader -- cabecera compacta (fase 2 del pulido de Plan)", () => {
 
-    it("semana y rango de fechas van en una sola línea (.week-label)", () => {
+    it("\"SEMANA N\" es el título y el rango de fechas va en su propia línea debajo (pulido final)", () => {
 
-        const html = PlanHeader("2026-08-24", [], "", { viewMode: "week" });
+        const html = PlanHeader("2026-09-28", [], "", { viewMode: "week" });
 
-        expect(html).toContain("SEMANA");
-        expect(html).toContain("24 AGO");
-        expect(html).not.toContain("week-date");
+        expect(html).toMatch(/class="week-label">\s*SEMANA 40\s*</);
+        expect(html).toMatch(/class="week-dates">\s*28 SEPT — 4 OCT\s*</);
 
     });
 
@@ -70,6 +69,39 @@ describe("PlanHeader -- cabecera compacta (fase 2 del pulido de Plan)", () => {
         expect(html).not.toContain("plan-stats");
         expect(html).not.toContain("sesiones");
 
+    });
+
+});
+
+describe("buildWeekSummary -- línea de resumen bajo el timeline (pulido final)", () => {
+
+    const s = (type, volume) => ({ type, volume, status: "pending" });
+
+    it("sesiones · km · categorías presentes, en orden fijo", () => {
+        const summary = buildWeekSummary([s("intervals", 10), s("z2", 8), s("longRun", 5)]);
+        expect(summary).toBe("3 sesiones · 23 km · 1 calidad · 1 rodaje · 1 tirada larga");
+    });
+
+    it("omite cualquier categoría sin sesiones esa semana", () => {
+        const summary = buildWeekSummary([s("z2", 8), s("recovery", 5)]);
+        expect(summary).toBe("2 sesiones · 13 km · 2 rodajes");
+        expect(summary).not.toContain("calidad");
+        expect(summary).not.toContain("carrera");
+    });
+
+    it("tempo cuenta como calidad y la carrera va aparte de la tirada larga", () => {
+        const summary = buildWeekSummary([s("tempo", 10), s("intervals", 9), s("race", 21.1), s("longRun", 18)]);
+        expect(summary).toContain("2 calidad");
+        expect(summary).toContain("1 tirada larga");
+        expect(summary).toContain("1 carrera");
+    });
+
+    it("un tipo sin categoría (fuerza) cuenta en sesiones pero no inventa etiqueta", () => {
+        expect(buildWeekSummary([s("strength", 0)])).toBe("1 sesión · 0 km");
+    });
+
+    it("sin sesiones no hay línea (null)", () => {
+        expect(buildWeekSummary([])).toBeNull();
     });
 
 });

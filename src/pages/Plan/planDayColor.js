@@ -18,13 +18,23 @@
 // hijo de PlanTimeline, y PlanMonthCalendar.js también lo necesita para
 // sus marcadores del mes, con la misma fuente de verdad en los tres
 // sitios.
+//
+// Pulido final (2026-10-01): el color pasa a ser por CATEGORÍA mientras la
+// sesión está pendiente -- naranja = calidad (series Y tempo), amarillo =
+// tirada larga Y carrera, cian (--color-primary) = rodaje/recuperación --
+// y "completado" gana sobre todo lo demás (verde), también para series,
+// tirada larga y gimnasio: una sesión ya hecha no debe seguir leyéndose
+// como "activa" en naranja/cian (antes esos tipos mantenían su color fijo
+// incluso completados). Un "free" real (día libre de un plan importado)
+// se trata igual que el hueco de descanso.
 export function resolveDayColorKey(session) {
 
-    if (session.isRest) return "rest";
-    if (session.type === "intervals") return "series";
-    if (session.type === "longRun") return "longrun";
+    if (session.isRest || session.type === "free") return "rest";
+    if (session.status === "completed") return "completed";
+    if (session.type === "intervals" || session.type === "tempo") return "series";
+    if (session.type === "longRun" || session.type === "race") return "longrun";
     if (session.type === "strength") return "gym";
-    return session.status === "completed" ? "completed" : "pending";
+    return "pending";
 
 }
 

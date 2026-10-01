@@ -13,22 +13,22 @@
 
     margin-top:0;
 
-    padding:26px;
+    /* Pulido final (2026-10-01): más compacta -- menos padding y radio. */
+    padding:18px 18px 16px;
 
-    border-radius:26px;
+    border-radius:22px;
 
     background:color-mix(in srgb, var(--card-background) 80%, transparent);
 
     backdrop-filter:blur(26px);
     -webkit-backdrop-filter:blur(26px);
 
-    border:1px solid color-mix(in srgb, var(--color-primary) 55%, transparent);
+    border:1px solid color-mix(in srgb, var(--color-primary) 38%, transparent);
 
     box-shadow:
         0 10px 25px rgba(0,0,0,.20),
-        0 30px 60px rgba(0,0,0,.35),
-        0 0 6px color-mix(in srgb, var(--color-glow) 25%, transparent),
-        0 0 24px color-mix(in srgb, var(--color-glow) 20%, transparent);
+        0 24px 48px rgba(0,0,0,.30),
+        0 0 14px color-mix(in srgb, var(--color-glow) 12%, transparent);
 
 }
 
@@ -42,9 +42,9 @@
     right:2px;
     top:2px;
 
-    height:75px;
+    height:60px;
 
-    border-radius:24px 24px 0 0;
+    border-radius:20px 20px 0 0;
 
     background:linear-gradient(
         180deg,
@@ -90,7 +90,7 @@
 
     align-items:flex-start;
 
-    gap:20px;
+    gap:12px;
 
 }
 
@@ -118,9 +118,70 @@
    96px + menú al lado dejan poco ancho real). white-space:nowrap fuerza
    una sola línea; si el texto no cupiera de verdad en algún caso extremo,
    mejor un recorte con "…" que una segunda línea suelta. */
+/* Día + chip "Completada" en una sola fila. */
+.workout-day-row{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:8px;
+
+    min-width:0;
+
+}
+
+.workout-status-chip{
+
+    flex-shrink:0;
+
+    display:inline-flex;
+
+    align-items:center;
+
+    gap:4px;
+
+    padding:2px 8px 2px 6px;
+
+    border-radius:999px;
+
+    background:color-mix(in srgb, var(--color-success) 14%, transparent);
+
+    border:1px solid color-mix(in srgb, var(--color-success) 35%, transparent);
+
+    color:var(--color-success);
+
+    font-size:.68rem;
+
+    font-weight:700;
+
+}
+
+.workout-status-chip iconify-icon{
+
+    font-size:12px;
+
+}
+
+/* Sesión ya hecha: el borde de la tarjeta pasa al verde de "completado"
+   en vez del cian de "activa". */
+.plan-workout-card--completed{
+
+    border-color:color-mix(in srgb, var(--color-success) 35%, transparent);
+
+}
+
+.plan-workout-card--completed .workout-day{
+
+    color:var(--color-success);
+
+}
+
 .workout-day{
 
     display:block;
+
+    min-width:0;
 
     overflow:hidden;
 
@@ -151,7 +212,7 @@
    toda la tarjeta. */
 .workout-header h2{
 
-    margin:8px 0 0;
+    margin:6px 0 0;
 
     display:flex;
 
@@ -161,7 +222,7 @@
 
     color:var(--text-primary);
 
-    font-size:clamp(1.3rem, 8cqi, 1.75rem);
+    font-size:clamp(1.25rem, 8cqi, 1.6rem);
 
     line-height:1.15;
 
@@ -175,15 +236,15 @@
 
 }
 
-/* Resumen compacto (fase 4 del pulido de Plan) -- distancia/tipo/
-   duración reales en una sola línea corta, justo bajo el título. */
-.workout-summary-line{
+/* Subtítulo = solo el tipo de sesión (pulido final) -- los datos ya
+   están en las cápsulas de abajo. */
+.workout-type-line{
 
-    margin:6px 0 0;
+    margin:3px 0 0;
 
     color:var(--text-secondary);
 
-    font-size:.85rem;
+    font-size:.88rem;
 
     font-weight:600;
 
@@ -205,15 +266,38 @@
 
 }
 
+/* Pulido final: 96px -> 68px (~30% menos), halo corto -- no debe
+   competir con el título. Color por categoría/estado, mismas claves que
+   el timeline (ver planDayColor.js / TimelineDay.css). */
 .workout-badge .workout-icon:is(.sm,.md,.lg){
 
-    --size:96px;
+    --size:68px;
+
+    box-shadow:0 0 12px color-mix(in srgb, currentColor 22%, transparent);
 
 }
 
 .workout-badge .workout-icon iconify-icon{
 
-    font-size:42px;
+    font-size:30px;
+
+}
+
+.workout-badge.day-color-pending{ --day-color:var(--color-primary); }
+.workout-badge.day-color-completed{ --day-color:var(--color-success); }
+.workout-badge.day-color-rest{ --day-color:var(--color-text-muted); }
+.workout-badge.day-color-series{ --day-color:#ff7a33; }
+.workout-badge.day-color-longrun{ --day-color:var(--color-warning); }
+.workout-badge.day-color-gym{ --day-color:var(--color-gym); }
+
+/* (0,3,0): mismo empate con las clases de tipo de WorkoutIcon.css que en
+   TimelineDay.css. Solo con clase day-color-* (PlanGymDayCard comparte
+   .workout-badge sin ella y debe conservar su violeta de tipo). */
+.plan-workout-card .workout-badge[class*="day-color-"] .workout-icon{
+
+    color:var(--day-color);
+
+    border-color:var(--day-color);
 
 }
 
@@ -351,25 +435,29 @@
       DESCRIPCIÓN
 =========================*/
 
-.plan-workout-card--empty{
+/* Sin sesión seleccionada (pulido final): una sola línea de texto, sin
+   tarjeta vacía grande debajo del timeline. */
+.plan-select-hint{
 
-    display:flex;
-
-    align-items:center;
-
-    justify-content:center;
-
-    min-height:120px;
+    margin:4px 0 0;
 
     color:var(--text-secondary);
+
+    font-size:.88rem;
 
     text-align:center;
 
 }
 
+.plan-select-hint p{
+
+    margin:0;
+
+}
+
 .workout-description-block{
 
-    margin:16px 0 20px;
+    margin:12px 0 14px;
 
 }
 
@@ -383,16 +471,25 @@
 
     color:var(--text-secondary);
 
-    line-height:1.5;
+    line-height:1.45;
 
-    font-size:.9rem;
+    font-size:.88rem;
 
-    /* Explícito a propósito: no encontré ninguna regla en este archivo ni
-       en los estilos globales que centre este párrafo, pero se ve
-       centrado/descuadrado en un iPhone real — puede ser un caso más de
-       comportamiento distinto en Safari móvil que no puedo reproducir sin
-       el dispositivo. Fijarlo aquí no tiene coste y lo deja a salvo de
-       cualquier herencia que se me haya escapado. */
+    /* Red de seguridad: el resumen ya son frases enteras de ~2 líneas
+       (ver buildDescriptionSummary()), esto solo actúa si una única frase
+       real es muy larga. */
+    display:-webkit-box;
+
+    -webkit-box-orient:vertical;
+
+    -webkit-line-clamp:3;
+
+    overflow:hidden;
+
+    /* El "párrafo descuadrado en iPhone" que se veía aquí era la
+       indentación del template respetada por el pre-wrap de la versión
+       expandida (ver PlanWorkoutCard.js) -- text-align se queda explícito
+       igualmente, no cuesta nada. */
     text-align:left;
 
 }
@@ -405,6 +502,10 @@
    propio de siempre para que un texto muy largo no dispare la altura de
    toda la tarjeta. */
 .workout-description--expanded{
+
+    display:block;
+
+    -webkit-line-clamp:unset;
 
     margin-top:8px;
 
@@ -429,7 +530,7 @@
 
     display:block;
 
-    margin-top:8px;
+    margin-top:6px;
 
     padding:0;
 
@@ -439,7 +540,7 @@
 
     color:var(--color-primary);
 
-    font-size:.85rem;
+    font-size:.88rem;
 
     font-weight:700;
 
@@ -468,7 +569,7 @@
 
     grid-template-columns:repeat(2,1fr);
 
-    gap:10px;
+    gap:8px;
 
 }
 
@@ -480,7 +581,7 @@
 
     gap:8px;
 
-    padding:10px 14px;
+    padding:8px 12px;
 
     border-radius:999px;
 
@@ -510,7 +611,7 @@
 
     color:var(--text-primary);
 
-    font-size:1rem;
+    font-size:.92rem;
 
     font-weight:700;
 
@@ -524,13 +625,13 @@
 
     width:100%;
 
-    height:58px;
+    height:46px;
 
-    margin-top:26px;
+    margin-top:14px;
 
     border:none;
 
-    border-radius:16px;
+    border-radius:14px;
 
     background:linear-gradient(
 
@@ -544,11 +645,11 @@
 
     color:var(--button-text);
 
-    font-size:.95rem;
+    font-size:.88rem;
 
     font-weight:800;
 
-    letter-spacing:.04em;
+    letter-spacing:.02em;
 
     cursor:pointer;
 
@@ -569,21 +670,29 @@
    leyéndose como botón, con su área de toque) pero más bajo, más fino y
    sin mayúsculas gritando -- ahora sí es la acción menos protagonista de
    las tres de la tarjeta. */
+/* Pulido final: todavía más secundaria -- más baja, texto más pequeño
+   en minúsculas, borde tenue y sin glow. */
 .workout-button--ghost{
 
-    height:36px;
+    height:32px;
+
+    margin-top:12px;
 
     background:transparent;
 
-    border:1px solid color-mix(in srgb, var(--color-primary) 30%, transparent);
+    border:1px solid color-mix(in srgb, var(--color-primary) 18%, transparent);
 
-    color:var(--color-primary);
+    border-radius:10px;
 
-    font-size:.82rem;
+    color:color-mix(in srgb, var(--color-primary) 85%, var(--text-secondary));
 
-    font-weight:700;
+    font-size:.78rem;
+
+    font-weight:600;
 
     letter-spacing:normal;
+
+    box-shadow:none;
 
 }
 

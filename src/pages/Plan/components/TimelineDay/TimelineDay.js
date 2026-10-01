@@ -3,11 +3,12 @@ import { WorkoutIcon } from "../../../../components/WorkoutIcon/WorkoutIcon";
 import { formatDayNumber } from "../../../../utils/date.js";
 import { resolveDayColorKey } from "../../planDayColor.js";
 
-// isToday: fecha real de hoy -- lift+brillo (ya existía) MÁS un punto
-// pequeño (.day-today-dot) sobre el icono, señal explícita aparte del
-// halo grande de selección para que "hoy" y "seleccionado" nunca se
-// confundan cuando son el mismo día (caso por defecto al entrar en Plan).
-// isSelected: día tocado en el timeline, controla lo que se ve abajo
+// isToday: fecha real de hoy -- doble anillo (borde) en vez de un nodo
+// más grande (pulido final 2026-10-01), ver TimelineDay.css.
+// isSelected: día tocado en el timeline, controla lo que se ve abajo --
+// su señal propia es la marca bajo el nodo (.day-center::after), así
+// "hoy" (anillo) y "seleccionado" (marca) nunca se confunden cuando son
+// el mismo día (caso por defecto al entrar en Plan).
 // isCompleted: session.status === "completed", muestra el check
 // isRest: hueco de "Descanso" sin sesión real (ver fillWeekDays() en
 // PlanTimeline.js) -- no necesita cursor de "tocable", el click en la
@@ -58,8 +59,6 @@ export function TimelineDay(session, { isToday, isSelected, isCompleted, isRest 
             <div class="day-center ${colorClass}">
 
                 ${WorkoutIcon(session.type, { selected: isSelected })}
-
-                ${isToday ? `<span class="day-today-dot" aria-label="Hoy"></span>` : ""}
 
                 ${isCompleted ? `
                     <span class="day-check">

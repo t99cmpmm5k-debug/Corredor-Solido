@@ -70,7 +70,8 @@
 
     position:relative;
 
-    margin:6px 0 4px;
+    /* Abajo deja sitio a la marca de "seleccionado" (::after, -9px). */
+    margin:6px 0 12px;
 
     display:flex;
 
@@ -81,53 +82,61 @@
 }
 
 /* ==========================================================
-   COLOR CON SIGNIFICADO FIJO (ver planDayColor.js) -- anula aquí el
+   COLOR POR CATEGORÍA/ESTADO (ver planDayColor.js) -- anula aquí el
    color por TIPO que WorkoutIcon.css ya trae de fábrica (usado tal cual
-   en el resto de la app). Solo 3 claves tienen override real: series y
-   tirada larga ya salen en su color fijo por su propia clase de tipo
-   (.workout-icon.intervals/.longRun), no hace falta tocarlas aquí.
+   en el resto de la app). Pulido final 2026-10-01: las 6 claves tienen
+   override explícito (antes series/tirada larga confiaban en su clase de
+   tipo) -- "completado" tiene que ganar también sobre una sesión de
+   series o tirada larga, y tempo/carrera ya no usan su color de tipo.
+   --day-color lo reutiliza la marca de "seleccionado" de más abajo.
 ========================================================== */
 
-.day-center.day-color-pending .workout-icon{
-    color:var(--color-primary);
-    border-color:var(--color-primary);
-}
+.day-center.day-color-pending{ --day-color:var(--color-primary); }
+.day-center.day-color-completed{ --day-color:var(--color-success); }
+.day-center.day-color-rest{ --day-color:var(--color-text-muted); }
+.day-center.day-color-series{ --day-color:#ff7a33; }
+.day-center.day-color-longrun{ --day-color:var(--color-warning); }
+.day-center.day-color-gym{ --day-color:var(--color-gym); }
 
-.day-center.day-color-completed .workout-icon{
-    color:var(--color-success);
-    border-color:var(--color-success);
-}
-
-.day-center.day-color-rest .workout-icon{
-    color:var(--color-text-muted);
-    border-color:var(--color-text-muted);
+/* (0,3,0) a propósito: con solo ".day-center .workout-icon" empata con
+   ".workout-icon.recovery" y compañía de WorkoutIcon.css, y ese empate lo
+   decide el orden de import (una recuperación pendiente salía gris). */
+.timeline-day .day-center .workout-icon{
+    color:var(--day-color);
+    border-color:var(--day-color);
 }
 
 /* ==========================================================
-   PUNTO "HOY" -- señal explícita y pequeña, independiente del halo de
-   selección (WorkoutIcon.css .selected) para que un día que sea HOY Y
-   esté seleccionado a la vez (caso por defecto al entrar en Plan) no lea
-   como una sola cosa confusa: el punto dice "hoy", el halo dice
-   "seleccionado", cada uno su propia señal.
+   MARCA DE "SELECCIONADO" -- barrita bajo el nodo, en el color del día.
+   Señal propia y distinta del anillo de "hoy" (más abajo), para que un
+   día que sea HOY y esté seleccionado a la vez lea como dos cosas.
 ========================================================== */
 
-.day-today-dot{
+.day-center::after{
+
+    content:"";
 
     position:absolute;
 
-    top:-2px;
-    left:-2px;
+    left:50%;
+    bottom:-9px;
 
-    width:8px;
-    height:8px;
+    width:14px;
+    height:3px;
 
-    border-radius:50%;
+    border-radius:999px;
 
-    background:var(--color-primary);
+    transform:translateX(-50%) scaleX(0);
 
-    border:2px solid var(--card-background);
+    background:var(--day-color);
 
-    box-shadow:0 0 6px var(--color-primary);
+    transition:transform .25s ease;
+
+}
+
+.timeline-day.is-selected .day-center::after{
+
+    transform:translateX(-50%) scaleX(1);
 
 }
 
@@ -145,6 +154,25 @@
 .timeline-day .workout-icon iconify-icon{
 
     font-size:16px;
+
+}
+
+/* Glow global reducido (pulido final): un halo corto y tenue por nodo,
+   en vez del doble halo de WorkoutIcon.css -- siete nodos brillando a la
+   vez competían entre sí y con la tarjeta de abajo. */
+.timeline-day .workout-icon{
+
+    box-shadow:0 0 6px color-mix(in srgb, currentColor 28%, transparent);
+
+}
+
+.timeline-day .workout-icon.selected{
+
+    transform:none;
+
+    box-shadow:
+        0 0 6px color-mix(in srgb, currentColor 55%, transparent),
+        0 0 16px color-mix(in srgb, currentColor 22%, transparent);
 
 }
 
@@ -237,37 +265,37 @@
 
 /*========================
           HOY
-   (más grande y con más brillo — independiente de si además
-   está seleccionado)
+   Pulido final: ya no crece a 50px -- apenas un poco mayor que el resto
+   y destacado por BORDE: un segundo anillo fino separado del nodo
+   (outline con offset), en su mismo color. Independiente de si además
+   está seleccionado (esa señal es la marca de debajo).
 ========================*/
 
 .timeline-day.is-today{
 
-    transform:translateY(-6px);
+    transform:translateY(-3px);
 
 }
 
 .timeline-day.is-today .workout-icon{
 
-    --size:50px;
+    --size:38px;
 
-    filter:brightness(1.18);
+    outline:1.5px solid color-mix(in srgb, currentColor 55%, transparent);
 
-    box-shadow:
-        0 0 10px color-mix(in srgb, currentColor 75%, transparent),
-        0 0 36px color-mix(in srgb, currentColor 50%, transparent);
+    outline-offset:3px;
 
 }
 
 .timeline-day.is-today .workout-icon iconify-icon{
 
-    font-size:20px;
+    font-size:18px;
 
 }
 
-.timeline-day.is-today .day-number{
+.timeline-day.is-today .day-name{
 
-    font-size:16px;
+    color:var(--text-primary);
 
 }
 
@@ -296,7 +324,7 @@
 
 .timeline-day.is-today:hover{
 
-    transform:translateY(-9px);
+    transform:translateY(-5px);
 
 }
 
@@ -318,7 +346,18 @@
 
 }
 
+/* Menos contraste que cualquier día con sesión (pulido final): gris
+   azulado apagado y sin halo -- se lee como hueco, no como un nodo más. */
 .timeline-day.is-rest .workout-icon{
+
+    opacity:.42;
+
+    box-shadow:none;
+
+}
+
+.timeline-day.is-rest .day-name,
+.timeline-day.is-rest .day-number{
 
     opacity:.6;
 

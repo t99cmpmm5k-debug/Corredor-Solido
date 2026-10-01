@@ -86,41 +86,43 @@ describe("fillWeekDays", () => {
 
 });
 
-// Sistema de color con significado fijo (fase 2 del pulido de Plan,
-// 2026-08-27): azul=pendiente, verde=realizado, gris=descanso por
-// defecto -- series/tirada larga/gimnasio mantienen su color fijo pase lo
-// que pase con el estado (decisión explícita del usuario). Gimnasio se
-// sumó después (bug real: reutilizaba el mismo azul que "pendiente",
-// #2faeff casi idéntico a --color-primary #2EA8FF, indistinguible salvo
-// por el icono a tamaño pequeño).
-describe("resolveDayColor -- color por ESTADO, con series/tirada larga/gimnasio como únicas excepciones fijas", () => {
+// Sistema de color (fase 2 del pulido de Plan, rehecho en el pulido final
+// 2026-10-01): por categoría mientras la sesión está pendiente, verde en
+// cuanto se completa -- ya sin excepciones de "color fijo" que sobrevivan
+// al completado.
+describe("resolveDayColor -- color por categoría mientras está pendiente, verde en cuanto se completa (pulido final 2026-10-01)", () => {
 
     it("descanso (isRest) siempre gris, sin importar el tipo", () => {
         expect(resolveDayColor({ isRest: true, type: "z2", status: "pending" })).toBe("var(--color-text-muted)");
     });
 
-    it("pendiente (no completado) es azul, para cualquier tipo salvo series/tirada larga/gimnasio", () => {
+    it("un día libre real (type free) también es gris, igual que el hueco de descanso", () => {
+        expect(resolveDayColor({ type: "free", status: "pending" })).toBe("var(--color-text-muted)");
+    });
+
+    it("rodaje/recuperación pendiente es cian (--color-primary)", () => {
         expect(resolveDayColor({ type: "z2", status: "pending" })).toBe("var(--color-primary)");
+        expect(resolveDayColor({ type: "recovery", status: "upcoming" })).toBe("var(--color-primary)");
     });
 
-    it("realizado es verde, para cualquier tipo salvo series/tirada larga/gimnasio", () => {
-        expect(resolveDayColor({ type: "z2", status: "completed" })).toBe("var(--color-success)");
-        expect(resolveDayColor({ type: "recovery", status: "completed" })).toBe("var(--color-success)");
-    });
-
-    it("series (intervals) es siempre naranja, tanto pendiente como realizada", () => {
+    it("calidad pendiente (series Y tempo) es naranja", () => {
         expect(resolveDayColor({ type: "intervals", status: "pending" })).toBe("#ff7a33");
-        expect(resolveDayColor({ type: "intervals", status: "completed" })).toBe("#ff7a33");
+        expect(resolveDayColor({ type: "tempo", status: "upcoming" })).toBe("#ff7a33");
     });
 
-    it("tirada larga (longRun) es siempre amarilla, tanto pendiente como realizada", () => {
+    it("tirada larga y carrera pendientes son amarillas", () => {
         expect(resolveDayColor({ type: "longRun", status: "pending" })).toBe("var(--color-warning)");
-        expect(resolveDayColor({ type: "longRun", status: "completed" })).toBe("var(--color-warning)");
+        expect(resolveDayColor({ type: "race", status: "upcoming" })).toBe("var(--color-warning)");
     });
 
-    it("gimnasio (strength) es siempre violeta, tanto pendiente como realizado -- nunca el azul de 'pendiente'", () => {
+    it("gimnasio pendiente es violeta -- nunca el cian de rodaje", () => {
         expect(resolveDayColor({ type: "strength", status: "upcoming" })).toBe("var(--color-gym)");
-        expect(resolveDayColor({ type: "strength", status: "completed" })).toBe("var(--color-gym)");
+    });
+
+    it("completado es verde para TODOS los tipos -- series/tirada larga/gimnasio ya no conservan su color de 'activo'", () => {
+        ["z2", "recovery", "intervals", "tempo", "longRun", "race", "strength"].forEach(type => {
+            expect(resolveDayColor({ type, status: "completed" })).toBe("var(--color-success)");
+        });
     });
 
 });
