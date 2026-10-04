@@ -4,8 +4,20 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 const getCurrentWeatherAtDeviceLocationMock = vi.fn();
 const rerenderMock = vi.fn();
 
+let profileLocalidad = null;
+const forgetDevicePositionMock = vi.fn();
+
 vi.mock("../../services/currentWeather.js", () => ({
-    getCurrentWeatherAtDeviceLocation: (...args) => getCurrentWeatherAtDeviceLocationMock(...args)
+    getLiveWeather: (...args) => getCurrentWeatherAtDeviceLocationMock(...args)
+}));
+
+vi.mock("../Profile/profileStore.js", () => ({
+    loadMyProfile: () => Promise.resolve(),
+    getMyProfile: () => ({ localidad: profileLocalidad })
+}));
+
+vi.mock("../../services/weatherLocation.js", () => ({
+    forgetDevicePosition: () => forgetDevicePositionMock()
 }));
 
 vi.mock("../../core/router.js", () => ({
@@ -21,6 +33,8 @@ describe("currentWeatherStore -- caché en localStorage del tiempo en vivo", () 
         localStorage.clear();
         getCurrentWeatherAtDeviceLocationMock.mockReset();
         rerenderMock.mockReset();
+        forgetDevicePositionMock.mockReset();
+        profileLocalidad = null;
         vi.resetModules();
 
     });
@@ -36,7 +50,7 @@ describe("currentWeatherStore -- caché en localStorage del tiempo en vivo", () 
 
         await vi.waitFor(() => expect(getCurrentWeatherState().status).toBe("ready"));
 
-        expect(getCurrentWeatherState()).toEqual({ status: "ready", temp: 22, icon: "sun" });
+        expect(getCurrentWeatherState()).toEqual({ status: "ready", temp: 22, icon: "sun", source: null });
         expect(rerenderMock).toHaveBeenCalledWith({ resetScroll: true });
 
         const cached = JSON.parse(localStorage.getItem(CACHE_KEY));
@@ -54,7 +68,7 @@ describe("currentWeatherStore -- caché en localStorage del tiempo en vivo", () 
 
         loadCurrentWeather();
 
-        expect(getCurrentWeatherState()).toEqual({ status: "ready", temp: 18, icon: "cloud" });
+        expect(getCurrentWeatherState()).toEqual({ status: "ready", temp: 18, icon: "cloud", source: null });
         expect(getCurrentWeatherAtDeviceLocationMock).not.toHaveBeenCalled();
 
     });
@@ -71,7 +85,7 @@ describe("currentWeatherStore -- caché en localStorage del tiempo en vivo", () 
         loadCurrentWeather();
 
         expect(getCurrentWeatherState().status).toBe("loading");
-        expect(getCurrentWeatherAtDeviceLocationMock).toHaveBeenCalled();
+        await vi.waitFor(() => expect(getCurrentWeatherAtDeviceLocationMock).toHaveBeenCalled());
 
         await vi.waitFor(() => expect(getCurrentWeatherState().status).toBe("ready"));
         expect(getCurrentWeatherState().temp).toBe(25);
@@ -88,7 +102,7 @@ describe("currentWeatherStore -- caché en localStorage del tiempo en vivo", () 
 
         await vi.waitFor(() => expect(getCurrentWeatherState().status).toBe("unavailable"));
 
-        expect(getCurrentWeatherState()).toEqual({ status: "unavailable", temp: null, icon: null });
+        expect(getCurrentWeatherState()).toEqual({ status: "unavailable", temp: null, icon: null, source: null });
         expect(localStorage.getItem(CACHE_KEY)).toBeNull();
 
     });
@@ -103,6 +117,7 @@ describe("currentWeatherStore -- caché en localStorage del tiempo en vivo", () 
         loadCurrentWeather();
         loadCurrentWeather();
 
+        await vi.waitFor(() => expect(getCurrentWeatherAtDeviceLocationMock).toHaveBeenCalled());
         expect(getCurrentWeatherAtDeviceLocationMock).toHaveBeenCalledTimes(1);
 
         resolvePromise({ temp: 20, icon: "cloud" });
@@ -117,7 +132,53 @@ describe("currentWeatherStore -- caché en localStorage del tiempo en vivo", () 
         const { loadCurrentWeather, getCurrentWeatherState } = await import("./currentWeatherStore.js");
 
         expect(() => loadCurrentWeather()).not.toThrow();
-        expect(getCurrentWeatherAtDeviceLocationMock).toHaveBeenCalled();
+        await vi.waitFor(() => expect(getCurrentWeatherAtDeviceLocationMock).toHaveBeenCalled());
+
+    });
+
+    it("pasa la localidad de Perfil al resolver la ubicación", async () => {
+
+        profileLocalidad = "Murcia";
+        getCurrentWeatherAtDeviceLocationMock.mockResolvedValue({ temp: 20, icon: "sun", source: "localidad" });
+
+        const { loadCurrentWeather, getCurrentWeatherState } = await import("./currentWeatherStore.js");
+
+        loadCurrentWeather();
+
+        await vi.waitFor(() => expect(getCurrentWeatherState().status).toBe("ready"));
+        expect(getCurrentWeatherAtDeviceLocationMock).toHaveBeenCalledWith({ localidad: "Murcia" }, expect.any(Function));
+        expect(getCurrentWeatherState().source).toBe("localidad");
+
+    });
+
+    it("refreshCurrentWeather (localidad cambiada) descarta caché y posición guardada y vuelve a resolver, sin resetear el scroll", async () => {
+
+        localStorage.setItem(CACHE_KEY, JSON.stringify({ temp: 18, icon: "cloud", source: "gps", savedAt: Date.now() }));
+        getCurrentWeatherAtDeviceLocationMock.mockResolvedValue({ temp: 21, icon: "sun", source: "localidad" });
+
+        const { loadCurrentWeather, refreshCurrentWeather, getCurrentWeatherState } = await import("./currentWeatherStore.js");
+
+        loadCurrentWeather();
+        expect(getCurrentWeatherState().temp).toBe(18);
+
+        rerenderMock.mockReset();
+        refreshCurrentWeather();
+
+        expect(forgetDevicePositionMock).toHaveBeenCalled();
+        await vi.waitFor(() => expect(getCurrentWeatherState().temp).toBe(21));
+        expect(rerenderMock).toHaveBeenCalledWith({ resetScroll: false });
+
+    });
+
+    it("useDeviceLocationForWeather pide el GPS en modo manual y resuelve true si hay dato", async () => {
+
+        getCurrentWeatherAtDeviceLocationMock.mockResolvedValue({ temp: 19, icon: "cloud", source: "gps" });
+
+        const { useDeviceLocationForWeather, getCurrentWeatherState } = await import("./currentWeatherStore.js");
+
+        await expect(useDeviceLocationForWeather()).resolves.toBe(true);
+        expect(getCurrentWeatherAtDeviceLocationMock).toHaveBeenCalledWith({ manual: true }, expect.any(Function));
+        expect(getCurrentWeatherState().source).toBe("gps");
 
     });
 

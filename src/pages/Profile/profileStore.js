@@ -46,14 +46,20 @@ export function setMyProfile(partial) {
 
 }
 
+// Devuelve una promesa que resuelve cuando ya no hay petición en curso
+// (ready o unavailable) -- el tiempo en vivo de Inicio la espera para leer
+// la localidad (ver currentWeatherStore.js); el resto de llamadas la
+// ignoran, como antes.
+let profilePromise = null;
+
 export function loadMyProfile() {
 
-    if (myProfile.status !== "idle") return;
-    if (!isLoggedIn()) return;
+    if (profilePromise) return profilePromise;
+    if (myProfile.status !== "idle" || !isLoggedIn()) return Promise.resolve();
 
     myProfile = { ...myProfile, status: "loading" };
 
-    getPerfil(getToken()).then(data => {
+    profilePromise = getPerfil(getToken()).then(data => {
 
         myProfile = {
             status: "ready",
@@ -72,6 +78,8 @@ export function loadMyProfile() {
         rerender();
 
     });
+
+    return profilePromise;
 
 }
 

@@ -4,6 +4,9 @@ import { getBackupStatus, getDataSummary } from "../../../utils/backup.js";
 import { isLoggedIn } from "../../../data/authStore.js";
 import { getLastSyncAt, isSyncOffline } from "../../../data/syncManager.js";
 import { BUILD_ID } from "../../../utils/buildInfo.js";
+import { getCurrentWeatherState } from "../../Home/currentWeatherStore.js";
+import { getMyProfile } from "../profileStore.js";
+import { isGeolocationDenied } from "../../../services/weatherLocation.js";
 
 // Pantalla secundaria "Ajustes" (Perfil, rediseño 2026-09-25) -- todo lo
 // técnico/mantenimiento que antes ocupaba la pantalla principal de Perfil
@@ -146,6 +149,59 @@ function SyncCard() {
                 <iconify-icon icon="solar:refresh-circle-bold-duotone"></iconify-icon>
 
                 Sincronizar ahora
+
+            </button>
+
+        </section>
+
+    `;
+
+}
+
+// "Clima de Inicio" (badge de tiempo en vivo de MasterCard) -- explica de
+// dónde sale el dato y ofrece la única forma manual de pedir el GPS (ver
+// criterio en services/weatherLocation.js). Con localidad en Perfil, el
+// arranque nunca pide permiso de ubicación.
+function weatherSourceLabel() {
+
+    const { status, source } = getCurrentWeatherState();
+    const localidad = getMyProfile().localidad;
+
+    if (status === "loading") return "Buscando el tiempo…";
+    if (status === "ready" && source === "gps") return "Usando tu ubicación actual (se reutiliza durante 12 h sin volver a pedir permiso).";
+    if (status === "ready" && source === "localidad") return `Usando tu localidad de Perfil: ${escapeText(localidad || "")}.`;
+    if (localidad) return `Se usa tu localidad de Perfil (${escapeText(localidad)}).`;
+    if (isGeolocationDenied()) return "Sin clima: denegaste el permiso de ubicación y no hay localidad en tu Perfil.";
+
+    return "Añade tu localidad en Perfil para no tener que dar permiso de ubicación al abrir la app.";
+
+}
+
+function escapeText(text) {
+
+    return String(text).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+}
+
+function WeatherSourceCard() {
+
+    return `
+
+        <section class="profile-backup-card">
+
+            <h3>Clima de Inicio</h3>
+
+            <p class="profile-backup-note">
+
+                ${weatherSourceLabel()}
+
+            </p>
+
+            <button class="profile-button profile-button-secondary" data-action="use-device-location">
+
+                <iconify-icon icon="solar:map-point-bold-duotone"></iconify-icon>
+
+                Usar mi ubicación actual
 
             </button>
 
@@ -322,6 +378,8 @@ export function ProfileSettingsView(feedback) {
                 </p>
 
             </section>
+
+            ${WeatherSourceCard()}
 
             ${PrivacyCard()}
 

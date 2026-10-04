@@ -1,6 +1,6 @@
 import { navigate, rerender } from "../../core/router.js";
 import { exportData, importDataFromFile } from "../../utils/backup.js";
-import { setFeedback, loadMyProfile, setMyProfile, isEditOpen, setEditOpen, setEditError, setEditDraft, getProfileStep, setProfileStep } from "./profileStore.js";
+import { setFeedback, loadMyProfile, getMyProfile, setMyProfile, isEditOpen, setEditOpen, setEditError, setEditDraft, getProfileStep, setProfileStep } from "./profileStore.js";
 import { parseZ2Inputs } from "./z2Zone.js";
 import { clearToken, getToken } from "../../data/authStore.js";
 import { runSync } from "../../data/syncManager.js";
@@ -8,6 +8,7 @@ import { actualizarPerfil } from "../../data/authApi.js";
 import { Login } from "../Auth/Auth.js";
 import { Running } from "../Running/Running.js";
 import { openShoes } from "../Running/initRunningEvents.js";
+import { refreshCurrentWeather, useDeviceLocationForWeather } from "../Home/currentWeatherStore.js";
 
 function handleExport() {
 
@@ -47,6 +48,24 @@ const SYNC_STATUS_FEEDBACK = {
     error: { type: "error", text: "No se pudo sincronizar. Se reintentará más tarde." },
     busy: { type: "success", text: "Ya había una sincronización en curso -- se ha completado." }
 };
+
+// "Usar mi ubicación actual" (Ajustes, tarjeta "Clima de Inicio") -- única
+// forma de pedir el GPS a mano; el arranque solo lo pide sin localidad.
+function handleUseDeviceLocation() {
+
+    setFeedback(null);
+    rerender();
+
+    useDeviceLocationForWeather().then(ok => {
+
+        setFeedback(ok
+            ? { type: "success", text: "Clima de Inicio actualizado con tu ubicación actual." }
+            : { type: "error", text: "No se pudo obtener tu ubicación. Revisa el permiso de ubicación del iPhone para esta app." });
+        rerender();
+
+    });
+
+}
 
 function handleSyncNow() {
 
@@ -100,6 +119,15 @@ function handleSaveProfile() {
     setEditDraft(draft);
     rerender();
 
+    const previousLocalidad = getMyProfile().localidad ?? "";
+
+    // El tiempo en vivo de Inicio usa la localidad por defecto (ver
+    // services/weatherLocation.js) -- si cambia, el dato guardado es de la
+    // anterior.
+    const refreshWeatherIfLocalidadChanged = data => {
+        if ("localidad" in data && (data.localidad ?? "") !== previousLocalidad) refreshCurrentWeather();
+    };
+
     actualizarPerfil(getToken(), { aliasPublico: alias, localidad, ...z2.value }).then(data => {
 
         // Backend todavía sin la migración/código de la Zona 2 (despliegue
@@ -108,10 +136,12 @@ function handleSaveProfile() {
         // localidad sí se han guardado en ese caso.
         if (!("z2MinBpm" in data)) {
             setMyProfile(data);
+            refreshWeatherIfLocalidadChanged(data);
             return fail("Alias y localidad guardados, pero el servidor todavía no admite la Zona 2 personal (pendiente de actualizar).");
         }
 
         setMyProfile(data);
+        refreshWeatherIfLocalidadChanged(data);
         setEditOpen(false);
         rerender();
 
@@ -212,6 +242,8 @@ export function initProfileEvents() {
     if (syncButton) {
         syncButton.addEventListener("click", handleSyncNow);
     }
+
+    document.querySelector('[data-action="use-device-location"]')?.addEventListener("click", handleUseDeviceLocation);
 
     const logoutButton = document.querySelector('[data-action="logout"]');
 

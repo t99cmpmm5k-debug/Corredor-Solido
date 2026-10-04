@@ -1,88 +1,77 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 
 const fetchOpenMeteoForecastMock = vi.fn();
+const resolveMock = vi.fn();
+const requestMock = vi.fn();
 
 vi.mock("./hourlyForecast.js", () => ({
     fetchOpenMeteoForecast: (...args) => fetchOpenMeteoForecastMock(...args)
 }));
 
-const { getCurrentWeatherAtDeviceLocation } = await import("./currentWeather.js");
+vi.mock("./weatherLocation.js", () => ({
+    resolveLiveWeatherLocation: (...args) => resolveMock(...args),
+    requestLiveWeatherDeviceLocation: (...args) => requestMock(...args)
+}));
 
-describe("getCurrentWeatherAtDeviceLocation -- tiempo en vivo por geolocalización real del dispositivo", () => {
+const { getLiveWeather } = await import("./currentWeather.js");
+
+describe("getLiveWeather -- tiempo en vivo del badge de MasterCard", () => {
 
     afterEach(() => {
         fetchOpenMeteoForecastMock.mockReset();
-        vi.unstubAllGlobals();
+        resolveMock.mockReset();
+        requestMock.mockReset();
     });
 
-    it("con permiso concedido y Open-Meteo respondiendo, devuelve el bloque current real", async () => {
+    it("con ubicación resuelta y Open-Meteo respondiendo, devuelve el bloque current con su fuente", async () => {
 
-        vi.stubGlobal("navigator", {
-            geolocation: {
-                getCurrentPosition: (success) => success({ coords: { latitude: 37.6, longitude: -1.13 } })
-            }
-        });
-
+        resolveMock.mockResolvedValue({ lat: 37.6, lon: -1.13, source: "localidad" });
         fetchOpenMeteoForecastMock.mockResolvedValue({ hours: [], current: { temp: 22, icon: "sun" } });
 
-        const result = await getCurrentWeatherAtDeviceLocation();
+        const result = await getLiveWeather({ localidad: "Murcia" });
 
-        expect(result).toEqual({ temp: 22, icon: "sun" });
+        expect(result).toEqual({ temp: 22, icon: "sun", source: "localidad" });
+        expect(resolveMock).toHaveBeenCalledWith("Murcia", expect.any(Function));
+        expect(requestMock).not.toHaveBeenCalled();
         expect(fetchOpenMeteoForecastMock).toHaveBeenCalledWith(37.6, -1.13, expect.any(Function));
 
     });
 
-    it("sin geolocalización disponible en el navegador, devuelve null sin llamar a Open-Meteo", async () => {
+    it("manual=true pide el GPS directamente (Usar mi ubicación actual)", async () => {
 
-        vi.stubGlobal("navigator", {});
+        requestMock.mockResolvedValue({ lat: 40.4, lon: -3.7, source: "gps" });
+        fetchOpenMeteoForecastMock.mockResolvedValue({ current: { temp: 15, icon: "rain" } });
 
-        const result = await getCurrentWeatherAtDeviceLocation();
+        const result = await getLiveWeather({ manual: true });
 
-        expect(result).toBeNull();
+        expect(result).toEqual({ temp: 15, icon: "rain", source: "gps" });
+        expect(resolveMock).not.toHaveBeenCalled();
+
+    });
+
+    it("sin ubicación, devuelve null sin llamar a Open-Meteo", async () => {
+
+        resolveMock.mockResolvedValue(null);
+
+        expect(await getLiveWeather()).toBeNull();
         expect(fetchOpenMeteoForecastMock).not.toHaveBeenCalled();
 
     });
 
-    it("con el permiso denegado (o cualquier error de geolocalización), devuelve null sin llamar a Open-Meteo", async () => {
+    it("con Open-Meteo sin bloque current (o caído), devuelve null", async () => {
 
-        vi.stubGlobal("navigator", {
-            geolocation: {
-                getCurrentPosition: (success, error) => error({ code: 1, message: "User denied Geolocation" })
-            }
-        });
-
-        const result = await getCurrentWeatherAtDeviceLocation();
-
-        expect(result).toBeNull();
-        expect(fetchOpenMeteoForecastMock).not.toHaveBeenCalled();
-
-    });
-
-    it("con ubicación real pero Open-Meteo sin bloque current (o caído), devuelve null", async () => {
-
-        vi.stubGlobal("navigator", {
-            geolocation: {
-                getCurrentPosition: (success) => success({ coords: { latitude: 37.6, longitude: -1.13 } })
-            }
-        });
-
+        resolveMock.mockResolvedValue({ lat: 37.6, lon: -1.13, source: "gps" });
         fetchOpenMeteoForecastMock.mockResolvedValue(null);
 
-        const result = await getCurrentWeatherAtDeviceLocation();
-
-        expect(result).toBeNull();
+        expect(await getLiveWeather()).toBeNull();
 
     });
 
     it("nunca lanza -- cualquier fallo inesperado también resuelve a null", async () => {
 
-        vi.stubGlobal("navigator", {
-            geolocation: {
-                getCurrentPosition: () => { throw new Error("boom"); }
-            }
-        });
+        resolveMock.mockRejectedValue(new Error("boom"));
 
-        await expect(getCurrentWeatherAtDeviceLocation()).resolves.toBeNull();
+        await expect(getLiveWeather()).resolves.toBeNull();
 
     });
 
