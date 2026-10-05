@@ -39,6 +39,10 @@ function exerciseTarget(definition) {
             ? ` · ${formatWeight(definition.targetWeight, definition.weightUnit)}`
             : "";
 
+    // Ejercicio sin series/reps pautadas (activación, core libre...): solo
+    // la carga si la hay -- nunca "null×null".
+    if (definition.sets == null) return weightPart.replace(/^ · /, "");
+
     return `${definition.sets}×${definition.targetReps}${weightPart}`;
 
 }

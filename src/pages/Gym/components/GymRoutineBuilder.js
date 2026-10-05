@@ -49,12 +49,12 @@ function ExerciseRow(dayId, exercise) {
 
                 <label>
                     <span>Series</span>
-                    <input type="number" min="1" inputmode="numeric" data-action="set-exercise-sets" data-day-id="${dayId}" data-exercise-id="${exercise.id}" value="${exercise.sets}">
+                    <input type="number" min="1" inputmode="numeric" data-action="set-exercise-sets" data-day-id="${dayId}" data-exercise-id="${exercise.id}" value="${exercise.sets ?? ""}">
                 </label>
 
                 <label>
                     <span>Reps</span>
-                    <input type="text" inputmode="numeric" data-action="set-exercise-reps" data-day-id="${dayId}" data-exercise-id="${exercise.id}" value="${exercise.targetReps}" placeholder="8-10">
+                    <input type="text" inputmode="numeric" data-action="set-exercise-reps" data-day-id="${dayId}" data-exercise-id="${exercise.id}" value="${exercise.targetReps ?? ""}" placeholder="8-10">
                 </label>
 
                 <label>
