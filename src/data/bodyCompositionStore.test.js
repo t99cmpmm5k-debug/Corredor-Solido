@@ -13,7 +13,7 @@ describe("parseBodyCompositionForm", () => {
 
         const { fields } = parseBodyCompositionForm({ date: "2026-09-23", weightKg: "72,45", bodyFatPercent: "18,2", waterPercent: "55", musclePercent: "41.37" });
 
-        expect(fields).toEqual({ date: "2026-09-23", weightKg: 72.5, bodyFatPercent: 18.2, waterPercent: 55, musclePercent: 41.4 });
+        expect(fields).toEqual({ date: "2026-09-23", weightKg: 72.5, bodyFatPercent: 18.2, waterPercent: 55, musclePercent: 41.4, waistCm: null });
 
     });
 
@@ -21,7 +21,7 @@ describe("parseBodyCompositionForm", () => {
 
         const { fields } = parseBodyCompositionForm({ date: "2026-09-23", weightKg: "71", bodyFatPercent: "", waterPercent: " ", musclePercent: undefined });
 
-        expect(fields).toEqual({ date: "2026-09-23", weightKg: 71, bodyFatPercent: null, waterPercent: null, musclePercent: null });
+        expect(fields).toEqual({ date: "2026-09-23", weightKg: 71, bodyFatPercent: null, waterPercent: null, musclePercent: null, waistCm: null });
 
     });
 
@@ -32,6 +32,27 @@ describe("parseBodyCompositionForm", () => {
         expect(parseBodyCompositionForm({ date: "2026-09-23", weightKg: "abc" }).error).toMatch(/peso/);
         expect(parseBodyCompositionForm({ date: "2026-09-23", weightKg: "70", bodyFatPercent: "120" }).error).toMatch(/grasa/);
         expect(parseBodyCompositionForm({ date: "", weightKg: "70" }).error).toMatch(/fecha/);
+
+    });
+
+});
+
+describe("parseBodyCompositionForm -- cintura", () => {
+
+    it("opcional: coma decimal, redondeo a un decimal, vacío es null (nunca 0)", () => {
+
+        expect(parseBodyCompositionForm({ date: "2026-10-05", weightKg: "80", waistCm: "84,25" }).fields.waistCm).toBe(84.3);
+        expect(parseBodyCompositionForm({ date: "2026-10-05", weightKg: "80", waistCm: "" }).fields.waistCm).toBeNull();
+        expect(parseBodyCompositionForm({ date: "2026-10-05", weightKg: "80" }).fields.waistCm).toBeNull();
+
+    });
+
+    it("rechaza cinturas fuera de 40-200 cm o que no son número", () => {
+
+        expect(parseBodyCompositionForm({ date: "2026-10-05", weightKg: "80", waistCm: "39" }).error).toMatch(/cintura/);
+        expect(parseBodyCompositionForm({ date: "2026-10-05", weightKg: "80", waistCm: "201" }).error).toMatch(/cintura/);
+        expect(parseBodyCompositionForm({ date: "2026-10-05", weightKg: "80", waistCm: "abc" }).error).toMatch(/cintura/);
+        expect(parseBodyCompositionForm({ date: "2026-10-05", weightKg: "80", waistCm: "40" }).fields.waistCm).toBe(40);
 
     });
 
@@ -131,6 +152,28 @@ describe("getLatestBodyComposition / getBodyCompositionSeries", () => {
             { date: "2026-09-24", value: 80.9 }
         ]);
         expect(store.getBodyCompositionSeries("bodyFatPercent", "2026-09-24")).toEqual([{ date: "2026-08-26", value: 17 }]);
+
+    });
+
+    it("cintura: la última medida aunque no sea el último registro; los registros antiguos sin el campo siguen igual", async () => {
+
+        const store = await import("./bodyCompositionStore.js");
+        await store.hydrate();
+
+        // Registro "antiguo": sin la propiedad waistCm (anterior a 2026-10-07).
+        await store.restoreBodyCompositionEntry({ id: "old", date: "2026-09-20", weightKg: 81, bodyFatPercent: null, waterPercent: null, musclePercent: null, createdAt: "2026-09-20T08:00:00.000Z" });
+        expect(store.getLatestWaist()).toBeNull();
+        expect(store.getLatestBodyComposition().metrics.weightKg.value).toBe(81);
+
+        store.addBodyCompositionEntry({ date: "2026-09-28", weightKg: 80.6, bodyFatPercent: null, waterPercent: null, musclePercent: null, waistCm: 85 });
+        store.addBodyCompositionEntry({ date: "2026-10-03", weightKg: 80.4, bodyFatPercent: null, waterPercent: null, musclePercent: null, waistCm: 84 });
+        store.addBodyCompositionEntry({ date: "2026-10-05", weightKg: 80.2, bodyFatPercent: null, waterPercent: null, musclePercent: null, waistCm: null });
+
+        expect(store.getLatestWaist()).toEqual({ value: 84, date: "2026-10-03", previousDate: "2026-09-28", delta: -1 });
+        expect(store.getBodyCompositionSeries("waistCm", "2026-10-05")).toEqual([
+            { date: "2026-09-28", value: 85 },
+            { date: "2026-10-03", value: 84 }
+        ]);
 
     });
 

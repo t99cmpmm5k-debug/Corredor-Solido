@@ -4,8 +4,11 @@ import {
     getBodyCompositionEntries,
     getBodyCompositionEntryById,
     getLatestBodyComposition,
-    getBodyCompositionSeries
+    getBodyCompositionSeries,
+    getLatestWaist,
+    BODY_METRICS
 } from "../../../data/bodyCompositionStore.js";
+import { getWeeklyBodySummary } from "../../../data/weeklyBodySummary.js";
 import { formatISODate, parseISODate, addDays } from "../../../utils/date.js";
 import { formatKm } from "../../../utils/format.js";
 import { getBodyCompEditingId, getBodyCompPendingDeleteId, getBodyCompChartMetric, isBodyCompHistoryExpanded } from "../gymStore.js";
@@ -25,8 +28,28 @@ const METRICS = {
     weightKg: { label: "Peso", unit: "kg", icon: "mdi:weight-kilogram", field: "Peso (kg)", better: null },
     bodyFatPercent: { label: "Grasa", unit: "%", icon: "mdi:percent", field: "Grasa (%)", better: "down" },
     waterPercent: { label: "Agua", unit: "%", icon: "solar:waterdrop-bold", field: "Agua (%)", better: null },
-    musclePercent: { label: "Músculo", unit: "%", icon: "mdi:arm-flex", field: "Músculo (%)", better: "up" }
+    musclePercent: { label: "Músculo", unit: "%", icon: "mdi:arm-flex", field: "Músculo (%)", better: "up" },
+    // Opcional desde 2026-10-07. Sin mini tarjeta propia (ver WaistLine()).
+    waistCm: { label: "Cintura", unit: "cm", icon: "mdi:tape-measure", field: "Cintura (cm)", better: null }
 };
+
+// Medidas del gráfico: la cintura solo cuando ya hay 2 registros con ella
+// (con menos no hay línea que dibujar, y un chip que siempre lleva a
+// "Necesitas al menos 2 registros" no aporta).
+function chartMetrics(entries) {
+
+    const waistCount = entries.filter(entry => entry.waistCm != null).length;
+    return Object.keys(METRICS).filter(metric => metric !== "waistCm" || waistCount >= 2);
+
+}
+
+// "−0,4" / "+1" / "=": el signo menos tipográfico, sin color (neutro).
+function formatChange(value) {
+
+    if (value === 0) return "=";
+    return `${value > 0 ? "+" : "−"}${formatKm(Math.abs(value))}`;
+
+}
 
 const HISTORY_PREVIEW = 3;
 const CHART_DAYS = 30;
@@ -106,6 +129,22 @@ function mostCommonPreviousDate(metrics) {
 
 }
 
+// Cintura bajo las 4 mini tarjetas, en una línea, en vez de una 5.ª
+// tarjeta (en 393px no caben 5 sin encoger las otras 4): la última medida
+// aunque sea de otro día que el pesaje -- entonces lleva su fecha -- y su
+// cambio respecto a la anterior, en neutro. Sin ninguna medida, nada.
+function WaistLine(latestDate) {
+
+    const waist = getLatestWaist();
+    if (!waist) return "";
+
+    const change = waist.delta != null ? ` (${formatChange(waist.delta)})` : "";
+    const date = waist.date !== latestDate ? ` · ${formatDate(waist.date)}` : "";
+
+    return `<p class="gym-bc-waist"><iconify-icon icon="${METRICS.waistCm.icon}"></iconify-icon>Cintura <b>${formatNumber(waist.value)} cm</b>${change}${date}</p>`;
+
+}
+
 function LatestCard() {
 
     const latest = getLatestBodyComposition();
@@ -135,8 +174,10 @@ function LatestCard() {
             </header>
 
             <div class="gym-bc-tiles">
-                ${Object.keys(METRICS).map(metric => MetricTile(metric, latest.metrics[metric], previousDate)).join("")}
+                ${BODY_METRICS.map(metric => MetricTile(metric, latest.metrics[metric], previousDate)).join("")}
             </div>
+
+            ${WaistLine(latest.date)}
 
             ${previousDate ? "" : `<p class="gym-bc-note">Primer registro · añade otro para empezar a ver tu evolución.</p>`}
 
@@ -216,9 +257,42 @@ function EvolutionChart(metric) {
 
 }
 
+function signedPart(value, unit, change) {
+
+    if (value == null) return "—";
+    return `${formatNumber(value)}${unit}${change != null ? ` (${formatChange(change)})` : ""}`;
+
+}
+
+// Una línea por semana (las últimas 4 con algún dato), solo datos y en
+// neutro: "Semana 41 · peso 80,9 kg (−0,4) · cintura 84 cm (−1) · dieta
+// 71%". Sin ninguna semana con datos, el bloque no se pinta.
+function WeeklyLines() {
+
+    const weeks = getWeeklyBodySummary(formatISODate(new Date()));
+    if (!weeks.length) return "";
+
+    return `
+
+        <ul class="gym-bc-weeks" aria-label="Resumen por semana">
+            ${weeks.map(week => `
+                <li>
+                    <b>Semana ${week.weekNumber}</b>
+                    <span>peso ${signedPart(week.weightKg, " kg", week.weightDelta)} · cintura ${signedPart(week.waistCm, " cm", week.waistDelta)} · dieta ${week.dietPercent == null ? "—" : `${week.dietPercent}%`}</span>
+                </li>
+            `).join("")}
+        </ul>
+
+    `;
+
+}
+
 function EvolutionCard() {
 
-    const metric = getBodyCompChartMetric();
+    const available = chartMetrics(getBodyCompositionEntries());
+    const selected = getBodyCompChartMetric();
+    // Cintura elegida y luego borrados sus registros: vuelve a Peso.
+    const metric = available.includes(selected) ? selected : "weightKg";
 
     return `
 
@@ -229,10 +303,12 @@ function EvolutionCard() {
             </header>
 
             <div class="gym-bc-chips" role="group" aria-label="Medida del gráfico">
-                ${Object.entries(METRICS).map(([key, m]) => `<button class="gym-bc-chip ${key === metric ? "is-active" : ""}" data-action="bodycomp-chart-metric" data-metric="${key}" aria-pressed="${key === metric}">${m.label}</button>`).join("")}
+                ${available.map(key => `<button class="gym-bc-chip ${key === metric ? "is-active" : ""}" data-action="bodycomp-chart-metric" data-metric="${key}" aria-pressed="${key === metric}">${METRICS[key].label}</button>`).join("")}
             </div>
 
             ${EvolutionChart(metric)}
+
+            ${WeeklyLines()}
 
         </section>
 
@@ -251,6 +327,7 @@ function EntryForm() {
     const editingId = getBodyCompEditingId();
     const editing = editingId ? getBodyCompositionEntryById(editingId) : null;
     const latest = getLatestBodyComposition();
+    const latestWaist = getLatestWaist();
     const today = formatISODate(new Date());
     const confirmingDelete = editing && getBodyCompPendingDeleteId() === editing.id;
 
@@ -271,12 +348,21 @@ function EntryForm() {
             <div class="gym-builder-error" data-bodycomp-error hidden></div>
 
             <div class="gym-bc-fields">
-                ${Object.entries(METRICS).map(([key, m]) => `
-                    <label>
-                        <span>${m.field}</span>
-                        <input type="text" inputmode="decimal" data-field="${key}" value="${editing?.[key] != null ? formatNumber(editing[key]) : ""}" placeholder="${latest?.metrics[key].value != null ? formatNumber(latest.metrics[key].value) : "—"}">
-                    </label>
-                `).join("")}
+                ${Object.entries(METRICS).map(([key, m]) => {
+
+                    // Placeholder (gris, no se guarda): el último valor
+                    // conocido -- para la cintura, la última medida aunque
+                    // no sea del último registro.
+                    const last = key === "waistCm" ? latestWaist?.value : latest?.metrics[key].value;
+
+                    return `
+                        <label>
+                            <span>${m.field}</span>
+                            <input type="text" inputmode="decimal" data-field="${key}" value="${editing?.[key] != null ? formatNumber(editing[key]) : ""}" placeholder="${last != null ? formatNumber(last) : "—"}">
+                        </label>
+                    `;
+
+                }).join("")}
             </div>
 
             <div class="gym-bodycomp-form-actions">
@@ -309,7 +395,7 @@ function HistoryRow(entry, editingId) {
     return `
 
         <button class="gym-bc-row ${editingId === entry.id ? "is-editing" : ""}" data-action="edit-bodycomp-entry" data-entry-id="${entry.id}" aria-label="Editar el registro del ${formatDate(entry.date, { withYear: true })}">
-            <span class="gym-bc-row-date">${formatDate(entry.date, { withYear: true })}</span>
+            <span class="gym-bc-row-date">${formatDate(entry.date, { withYear: true })}${entry.waistCm != null ? `<small>cintura ${formatNumber(entry.waistCm)} cm</small>` : ""}</span>
             <span>${formatNumber(entry.weightKg)} kg</span>
             <span>${percent(entry.bodyFatPercent)}</span>
             <span>${percent(entry.waterPercent)}</span>

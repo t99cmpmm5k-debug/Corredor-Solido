@@ -492,11 +492,13 @@
 
 }
 
+/* 5 campos desde que existe la cintura: 3 + 2 (en 393px, 5 en fila no
+   dejan sitio a "Músculo (%)"). */
 .gym-bc-fields{
 
     display:grid;
-    grid-template-columns:repeat(4, 1fr);
-    gap:8px;
+    grid-template-columns:repeat(3, 1fr);
+    gap:10px 8px;
 
 }
 
@@ -662,6 +664,78 @@
     overflow:hidden;
     text-overflow:ellipsis;
     color:var(--text-secondary);
+
+}
+
+/* Cintura del registro, debajo de la fecha -- solo si ese registro la tiene. */
+.gym-bc-row-date small{
+
+    display:block;
+    font-size:.68rem;
+    color:var(--color-text-muted);
+
+}
+
+/* Cintura bajo las mini tarjetas de "Último registro". */
+.gym-bc-waist{
+
+    display:flex;
+    align-items:center;
+    gap:6px;
+    margin:-4px 0 0;
+    color:var(--text-secondary);
+    font-size:.8rem;
+
+}
+
+.gym-bc-waist iconify-icon{
+
+    flex-shrink:0;
+    color:var(--color-primary);
+    font-size:14px;
+
+}
+
+.gym-bc-waist b{
+
+    color:var(--text-primary);
+    font-weight:700;
+
+}
+
+/* Línea semanal bajo el gráfico de Evolución: solo datos, gris azulado,
+   sin verde ni rojo. */
+.gym-bc-weeks{
+
+    list-style:none;
+    margin:0;
+    padding:10px 0 0;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    border-top:1px solid color-mix(in srgb, var(--card-border) 70%, transparent);
+    color:var(--text-secondary);
+    font-size:.76rem;
+    line-height:1.4;
+    font-variant-numeric:tabular-nums;
+
+}
+
+/* La semana en su columna y los datos al lado: con todos los datos la
+   línea no cabe en 393px, y así el salto queda alineado bajo los datos. */
+.gym-bc-weeks li{
+
+    display:grid;
+    grid-template-columns:auto minmax(0, 1fr);
+    column-gap:8px;
+
+}
+
+.gym-bc-weeks b{
+
+    color:var(--text-primary);
+    font-weight:700;
+    white-space:nowrap;
 
 }
 

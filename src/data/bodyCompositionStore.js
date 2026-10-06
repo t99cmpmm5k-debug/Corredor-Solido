@@ -151,11 +151,44 @@ export function parseBodyCompositionForm(raw) {
 
     }
 
+    // Cintura (cm), opcional desde 2026-10-07: mismo patrón que los
+    // porcentajes -- vacío es null, nunca 0. Un registro antiguo
+    // simplemente no trae el campo (undefined), que se trata igual que null.
+    const waistCm = parseDecimal(raw.waistCm);
+
+    if (waistCm != null && !(waistCm >= WAIST_RANGE_CM[0] && waistCm <= WAIST_RANGE_CM[1])) {
+        return { error: `Revisa la cintura: tiene que estar entre ${WAIST_RANGE_CM[0]} y ${WAIST_RANGE_CM[1]} cm.` };
+    }
+
+    fields.waistCm = waistCm == null ? null : Math.round(waistCm * 10) / 10;
+
     return { fields };
 
 }
 
+const WAIST_RANGE_CM = [40, 200];
+
+// Las 4 medidas de la báscula (mini tarjetas de "Último registro"). La
+// cintura va aparte (ver getLatestWaist()): se mide pocas veces y no en
+// el mismo momento que el pesaje.
 export const BODY_METRICS = ["weightKg", "bodyFatPercent", "waterPercent", "musclePercent"];
+
+// Último registro CON cintura (aunque no sea el último registro) y su
+// cambio respecto al anterior con cintura -- null si nunca se ha medido.
+export function getLatestWaist() {
+
+    const withWaist = getBodyCompositionEntries().filter(e => e.waistCm != null);
+    const [latest, previous] = withWaist;
+    if (!latest) return null;
+
+    return {
+        value: latest.waistCm,
+        date: latest.date,
+        previousDate: previous?.date ?? null,
+        delta: previous ? Math.round((latest.waistCm - previous.waistCm) * 10) / 10 : null
+    };
+
+}
 
 // "Último registro": el valor de cada métrica en el registro más reciente,
 // comparado con el registro ANTERIOR que tenga esa misma métrica (una

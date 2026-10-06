@@ -164,3 +164,88 @@ describe("getWeekCompliance", () => {
     });
 
 });
+
+describe("getWeekDietCompliance -- línea semanal de Composición", () => {
+
+    beforeEach(() => {
+        resetFakeIndexedDB();
+        vi.resetModules();
+    });
+
+    // Dieta importada el domingo anterior a la semana del lunes 21.
+    async function storeWithPlanImportedOn(isoDateTime) {
+
+        const store = await import("./dietStore.js");
+        await store.hydrate();
+        vi.useFakeTimers({ toFake: ["Date"] });
+        vi.setSystemTime(new Date(isoDateTime));
+        const plan = store.importDietPlan(PARSED);
+        vi.useRealTimers();
+
+        return { store, plan };
+
+    }
+
+    it("sin ninguna dieta importada: null, nunca 0%", async () => {
+
+        const store = await import("./dietStore.js");
+        await store.hydrate();
+
+        expect(store.getWeekDietCompliance(MONDAY, SUNDAY)).toBeNull();
+
+    });
+
+    it("suma comidas marcadas / comidas del menú de cada día, y solo cuenta hasta hoy (nunca días futuros)", async () => {
+
+        const { store, plan } = await storeWithPlanImportedOn("2026-09-20T10:00:00");
+
+        // Lunes: 2 comidas, las 2 marcadas. Martes: 1 comida, sin marcar.
+        store.toggleMealEaten(MONDAY, plan.id, "LUNES|09:00", "LUNES|09:00|1");
+        store.toggleMealEaten(MONDAY, plan.id, "LUNES|21:00", "LUNES|21:00|2");
+
+        // "Hoy" es martes: miércoles-domingo no cuentan todavía.
+        expect(store.getWeekDietCompliance(MONDAY, "2026-09-22")).toEqual({ done: 2, total: 3, percent: 67 });
+
+        // El día de cada comida es el mismo que ve el anillo de ese día.
+        expect(store.getDayCompliance(MONDAY)).toEqual({ done: 2, total: 2, percent: 100 });
+        expect(store.getWeekCompliance(MONDAY, "2026-09-22")[0].percent).toBe(100);
+
+    });
+
+    it("fin de semana intercambiado: el sábado es DESCANSO y el domingo TIRADA_LARGA según la elección de esa semana", async () => {
+
+        const { store, plan } = await storeWithPlanImportedOn("2026-09-20T10:00:00");
+
+        store.setWeekendLongRunDay(SATURDAY, "domingo");
+        store.toggleMealEaten(SATURDAY, plan.id, "DESCANSO|09:00", "DESCANSO|09:00|1");
+        store.toggleMealEaten(SUNDAY, plan.id, "TIRADA_LARGA|Pre", "TIRADA_LARGA|Pre|1");
+
+        // Lun-vie: 6 comidas sin marcar; sábado DESCANSO 1/1; domingo TIRADA_LARGA 1/2.
+        expect(store.getWeekDietCompliance(MONDAY, SUNDAY)).toEqual({ done: 2, total: 9, percent: 22 });
+
+        // Con la tirada el sábado, la marca de DESCANSO del sábado ya no es de su menú.
+        store.setWeekendLongRunDay(SATURDAY, "sabado");
+        expect(store.getDayCompliance(SATURDAY)).toEqual({ done: 0, total: 2, percent: 0 });
+
+    });
+
+    it("fin de semana sin elegir: sábado y domingo no cuentan (no hay menú)", async () => {
+
+        const { store, plan } = await storeWithPlanImportedOn("2026-09-20T10:00:00");
+        store.toggleMealEaten(MONDAY, plan.id, "LUNES|09:00", "LUNES|09:00|1");
+
+        expect(store.getWeekDietCompliance(MONDAY, SUNDAY)).toEqual({ done: 1, total: 6, percent: 17 });
+
+    });
+
+    it("días anteriores a importar la dieta no cuentan; semana entera anterior, null", async () => {
+
+        const { store } = await storeWithPlanImportedOn("2026-09-23T10:00:00");
+
+        // Solo cuentan miércoles (día de importar) y jueves: 0 de 2.
+        expect(store.getWeekDietCompliance(MONDAY, "2026-09-24")).toEqual({ done: 0, total: 2, percent: 0 });
+        expect(store.getWeekDietCompliance("2026-09-14", "2026-09-24")).toBeNull();
+
+    });
+
+});

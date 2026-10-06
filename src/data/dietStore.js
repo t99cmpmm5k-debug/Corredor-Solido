@@ -192,29 +192,71 @@ export function computeDayCompliance(day, eaten) {
 
 }
 
-// Últimos `days` días hasta `today` (incluido): cada uno contra el plan con
-// el que se marcó, o el activo si no se marcó nada. null en los días
-// anteriores a importar la dieta activa y en fines de semana sin elegir
-// (no hay menú con el que comparar).
+// Cumplimiento de UN día -- la única fuente de verdad para cualquier
+// cumplimiento que no sea el del menú que se está pintando: la fila de la
+// semana del anillo (getWeekCompliance), el histórico y la línea semanal
+// de Composición (getWeekDietCompliance). Contra el plan con el que se
+// marcó ese día; sin nada marcado, contra la dieta que estaba vigente esa
+// fecha (la última importada ese día o antes -- importar otra conserva
+// las anteriores). null si esa fecha no había ninguna dieta importada o
+// es un fin de semana sin elegir (no hay menú con el que comparar).
+export function getDayCompliance(date) {
+
+    const record = checks.find(c => c.id === date);
+    const plan = record
+        ? plans.find(p => p.id === record.planId) ?? null
+        : getDietPlans().find(p => formatISODate(new Date(p.importedAt)) <= date) ?? null;
+
+    if (!plan) return null;
+
+    const { dayKey } = resolveDietDay(date);
+    if (!dayKey) return null;
+
+    return computeDayCompliance(plan.days[dayKey], record?.eaten ?? {});
+
+}
+
+// Últimos `days` días hasta `today` (incluido), ver getDayCompliance().
 export function getComplianceHistory(today, days = 7) {
 
-    const active = getActiveDietPlan();
     const history = [];
 
     for (let i = days - 1; i >= 0; i--) {
 
         const date = addDays(today, -i);
-        const record = checks.find(c => c.id === date);
-        const plan = record ? plans.find(p => p.id === record.planId) : active;
-        const beforeImport = !record && active && date < formatISODate(new Date(active.importedAt));
-        const { dayKey } = resolveDietDay(date);
-
-        const compliance = beforeImport || !plan || !dayKey ? null : computeDayCompliance(plan.days[dayKey], record?.eaten ?? {});
-        history.push({ date, percent: compliance?.percent ?? null });
+        history.push({ date, percent: getDayCompliance(date)?.percent ?? null });
 
     }
 
     return history;
+
+}
+
+// Cumplimiento de una semana (lunes `weekStart` a domingo) contando SOLO
+// los días ya transcurridos (hasta `today` incluido): comidas marcadas
+// sobre comidas del menú, sumando los días que tienen menú
+// (getDayCompliance). Así un día con 6 comidas pesa más que uno con 2, y
+// el total de la semana es el mismo "X de Y comidas" que el anillo, solo
+// que sumado. null si ningún día transcurrido tenía menú -- nunca 0%.
+export function getWeekDietCompliance(weekStart, today) {
+
+    let done = 0;
+    let total = 0;
+
+    for (let i = 0; i < 7; i++) {
+
+        const date = addDays(weekStart, i);
+        if (date > today) break;
+
+        const day = getDayCompliance(date);
+        if (!day) continue;
+
+        done += day.done;
+        total += day.total;
+
+    }
+
+    return total ? { done, total, percent: Math.round(done / total * 100) } : null;
 
 }
 
@@ -244,17 +286,12 @@ export function restoreDietWeekend(weekend) {
 export function getWeekCompliance(date, today) {
 
     const monday = getWeekStartDate(date);
-    const active = getActiveDietPlan();
 
     return Array.from({ length: 7 }, (_, i) => {
 
         const day = addDays(monday, i);
-        const record = checks.find(c => c.id === day);
-        const plan = record ? plans.find(p => p.id === record.planId) : active;
-        const { dayKey } = resolveDietDay(day);
-        const compliance = plan && dayKey ? computeDayCompliance(plan.days[dayKey], record?.eaten ?? {}) : null;
 
-        return { date: day, percent: compliance?.percent ?? null, future: day > today };
+        return { date: day, percent: getDayCompliance(day)?.percent ?? null, future: day > today };
 
     });
 

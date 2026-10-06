@@ -241,7 +241,8 @@ function saveBodyCompositionEntry() {
         weightKg: read("weightKg"),
         bodyFatPercent: read("bodyFatPercent"),
         waterPercent: read("waterPercent"),
-        musclePercent: read("musclePercent")
+        musclePercent: read("musclePercent"),
+        waistCm: read("waistCm")
     });
 
     // El error se pinta en sitio, sin rerender(): los inputs no están
