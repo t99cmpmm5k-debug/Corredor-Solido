@@ -6,7 +6,10 @@
 
     gap:16px;
 
-    padding:20px 16px calc(24px + env(safe-area-inset-bottom));
+    /* Mismo colchón compartido que .gym-content (variables.css): antes
+       24px + safe-area, y la bottom nav (fija) tapaba "Guardar
+       entrenamiento" al final de la pantalla. Arriba, el notch. */
+    padding:calc(20px + env(safe-area-inset-top)) 16px calc(var(--bottom-nav-clearance) + env(safe-area-inset-bottom));
 
 }
 

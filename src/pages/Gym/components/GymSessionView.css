@@ -16,7 +16,7 @@
        ancho normal (~390px), sin caer al fallback de gym-set-steppers. */
     padding:14px;
 
-    border-radius:var(--radius-xl);
+    border-radius:var(--radius-lg);
 
     background:color-mix(in srgb, var(--card-background) 70%, transparent);
 
@@ -26,7 +26,7 @@
 
     flex-direction:column;
 
-    gap:14px;
+    gap:12px;
 
 }
 
@@ -86,6 +86,8 @@
 
     background:color-mix(in srgb, var(--color-primary) 14%, transparent);
 
+    font-family:inherit;
+
     text-align:left;
 
     cursor:pointer;
@@ -112,7 +114,25 @@
 
 .gym-exercise-target{
 
+    display:block;
+
+    margin-top:4px;
+
     color:var(--text-secondary);
+
+    font-size:.82rem;
+
+    line-height:1.35;
+
+}
+
+/* Activación/core sin series ni reps (ver exerciseCard en
+   GymSessionView.js): en lugar de una tabla vacía. */
+.gym-exercise-free{
+
+    margin:0;
+
+    color:var(--color-text-muted);
 
     font-size:.82rem;
 
@@ -162,11 +182,9 @@
 
     flex-shrink:0;
 
-    width:44px;
+    width:38px;
 
-    height:44px;
-
-    border:none;
+    height:38px;
 
     border-radius:50%;
 
@@ -196,17 +214,17 @@
 
 .gym-exercise-nav-btn iconify-icon{
 
-    font-size:22px;
+    font-size:18px;
 
 }
 
 .gym-exercise-nav-count{
 
-    color:var(--text-secondary);
+    color:var(--text-primary);
 
-    font-size:.85rem;
+    font-size:.92rem;
 
-    font-weight:700;
+    font-weight:800;
 
 }
 
@@ -280,6 +298,10 @@
 
     flex-shrink:0;
 
+    /* Sin esto, suelta dentro del flex de la tarjeta ("Primera vez") se
+       estiraba a todo el ancho como una barra vacía. */
+    align-self:flex-start;
+
     padding:6px 12px;
 
     border-radius:999px;
@@ -341,7 +363,7 @@
 
     gap:8px;
 
-    padding:10px 0;
+    padding:6px 0;
 
     border-top:1px solid color-mix(in srgb, var(--card-border) 70%, transparent);
 
@@ -429,7 +451,9 @@
 
     width:100%;
 
-    padding:8px 4px;
+    padding:7px 4px;
+
+    font-family:inherit;
 
     border:none;
 
@@ -543,9 +567,9 @@
 
     flex-shrink:0;
 
-    width:44px;
+    width:40px;
 
-    height:44px;
+    height:40px;
 
     border:none;
 
@@ -567,7 +591,7 @@
 
 .gym-set-done iconify-icon{
 
-    font-size:26px;
+    font-size:24px;
 
     color:var(--color-text-muted);
 
@@ -576,8 +600,6 @@
 .gym-set-done.is-done{
 
     background:color-mix(in srgb, var(--color-success) 20%, transparent);
-
-    box-shadow:0 0 14px color-mix(in srgb, var(--color-success) 45%, transparent);
 
 }
 
@@ -603,7 +625,7 @@
 
     flex-direction:column;
 
-    gap:6px;
+    gap:8px;
 
 }
 
@@ -833,7 +855,7 @@
 
 .gym-rest-timer{
 
-    padding:14px 16px;
+    padding:12px 14px;
 
     border-radius:var(--radius-lg);
 
@@ -870,6 +892,13 @@
 .gym-rest-timer.is-critical .gym-rest-timer-value{
 
     color:var(--color-warning);
+
+}
+
+.gym-rest-timer.is-critical .gym-rest-timer-value,
+.gym-rest-timer.is-ready .gym-rest-timer-value{
+
+    font-size:1.6rem;
 
 }
 
@@ -974,7 +1003,7 @@
 
 .gym-rest-timer-actions{
 
-    margin-top:12px;
+    margin-top:10px;
 
     display:flex;
 
@@ -986,9 +1015,11 @@
 
     flex:1;
 
-    padding:10px 0;
+    padding:8px 0;
 
     border-radius:var(--radius-sm);
+
+    font-family:inherit;
 
     border:1px solid var(--card-border);
 
@@ -1036,9 +1067,9 @@
 
 .gym-notes-input{
 
-    min-height:64px;
+    min-height:56px;
 
-    padding:12px 14px;
+    padding:10px 12px;
 
     border-radius:var(--radius-md);
 

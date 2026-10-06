@@ -16,17 +16,27 @@ import { isBuilderOpen } from "./gymRoutineBuilderStore.js";
 import { hasWeeklySchedule, getTodayGymDay, getUpcomingGymDays, getWeekProgress, getWeekSessions } from "./gymSchedule.js";
 import { formatISODate } from "../../utils/date.js";
 
-function DayRow(day) {
+function exerciseCount(day) {
+
+    const count = day.exercises.length;
+    return `${count} ejercicio${count === 1 ? "" : "s"}`;
+
+}
+
+// Fila de un día: toda la fila arranca (o retoma) la sesión de ese día.
+// .gym-day-row/.is-highlighted se conservan -- es lo que busca
+// scrollToHighlightedDay() al venir desde Plan (ver openGymDay()).
+function DayRow(day, { label = day.title, nested = false } = {}) {
 
     const highlighted = getHighlightedDayId() === day.id;
 
     return `
 
-        <button class="gym-day-row ${highlighted ? "is-highlighted" : ""}" data-action="select-day" data-day-id="${day.id}">
+        <button class="gym-day-row ${nested ? "is-nested" : ""} ${highlighted ? "is-highlighted" : ""}" data-action="select-day" data-day-id="${day.id}">
 
-            <span>${day.title}</span>
+            <span class="gym-day-row-title">${label}</span>
 
-            <span class="gym-day-row-count">${day.exercises.length} ejercicios</span>
+            <span class="gym-day-row-count">${exerciseCount(day)}</span>
 
         </button>
 
@@ -34,11 +44,12 @@ function DayRow(day) {
 
 }
 
-// Menú "···" (Editar/Eliminar) en vez de los iconos de lápiz y papelera
-// sueltos que llevaba antes -- mismo patrón que .race-card-menu en
-// Carreras y .workout-menu en PlanGymDayCard.js (esta última ya lo usa
-// para la MISMA rutina cuando se ve desde Plan; esta tarjeta, la lista
-// real de Gimnasio, es la que se había quedado atrás).
+// Menú "···" con las acciones que ya existían (Editar/Eliminar) -- mismo
+// patrón que .race-card-menu en Carreras y .workout-menu en
+// PlanGymDayCard.js. data-menu-id: el mismo estado de "qué menú está
+// abierto" (getRoutineMenuOpenId) sirve también para el ··· de cada
+// sesión del resumen semanal (ver GymHomeSummary.js); solo uno abierto a
+// la vez en toda la pantalla.
 function RoutineMenu(routine) {
 
     const isMenuOpen = getRoutineMenuOpenId() === routine.id;
@@ -50,11 +61,12 @@ function RoutineMenu(routine) {
             <button
                 class="gym-routine-menu-toggle"
                 data-action="toggle-routine-menu"
-                data-routine-id="${routine.id}"
-                aria-label="Más opciones"
+                data-menu-id="${routine.id}"
+                aria-label="Más opciones de ${routine.name}"
+                aria-expanded="${isMenuOpen}"
             >
 
-                <iconify-icon icon="solar:menu-dots-bold-duotone"></iconify-icon>
+                <iconify-icon icon="solar:menu-dots-bold"></iconify-icon>
 
             </button>
 
@@ -82,27 +94,66 @@ function RoutineMenu(routine) {
 
 }
 
-function RoutineCard(routine) {
+// Una fila por rutina, sin caja interior: nombre + nº de ejercicios + ···.
+// Rutina de un solo día (el caso normal, p. ej. las de Ana): la fila
+// entera abre ese día. Varios días: la rutina hace de cabecera y cada día
+// cuelga debajo como fila propia, también sin caja.
+function RoutineRow(routine) {
+
+    const days = routine.days;
+
+    if (days.length === 1) {
+
+        const [day] = days;
+        // El título del día solo se repite si dice algo distinto del nombre
+        // de la rutina ("Día 1" dentro de "Torso"), nunca dos veces lo mismo.
+        const label = day.title && day.title !== routine.name
+            ? `${routine.name} <small>· ${day.title}</small>`
+            : routine.name;
+
+        return `
+
+            <li class="gym-routine-row">
+                ${DayRow(day, { label })}
+                ${RoutineMenu(routine)}
+            </li>
+
+        `;
+
+    }
 
     return `
 
-        <div class="gym-routine-card">
+        <li class="gym-routine-row is-group">
 
-            <div class="gym-routine-card-header">
-
-                <h2>${routine.name}</h2>
-
-                ${RoutineMenu(routine)}
-
+            <div class="gym-routine-row-head">
+                <span class="gym-day-row-title">${routine.name}</span>
+                <span class="gym-day-row-count">${days.length ? `${days.length} días` : "Sin días"}</span>
             </div>
 
-            <div class="gym-routine-card-days">
+            ${RoutineMenu(routine)}
 
-                ${routine.days.map(DayRow).join("")}
+            ${days.length ? `<div class="gym-routine-row-days">${days.map(day => DayRow(day, { nested: true })).join("")}</div>` : ""}
 
-            </div>
+        </li>
 
-        </div>
+    `;
+
+}
+
+function RoutineList(routines) {
+
+    return `
+
+        <section class="gym-routine-list">
+
+            <h2 class="gym-section-title">Tus rutinas</h2>
+
+            <ul class="gym-routine-rows">
+                ${routines.map(RoutineRow).join("")}
+            </ul>
+
+        </section>
 
     `;
 
@@ -142,7 +193,12 @@ function GymRoutinesEmptyState() {
 // mano, que tampoco lo traían).
 function GymHomeSummarySection(days) {
 
-    if (!hasWeeklySchedule(days)) return "";
+    // Rutinas guardadas pero ninguna con día de la semana: una línea, no
+    // una tarjeta de "hoy" vacía. Sin ninguna rutina, ya habla el estado
+    // vacío de la lista (GymRoutinesEmptyState).
+    if (!hasWeeklySchedule(days)) {
+        return days.length ? `<p class="gym-schedule-empty">Aún no tienes entrenamientos programados.</p>` : "";
+    }
 
     const today = formatISODate(new Date());
     const expanded = getWeekSummaryExpanded();
@@ -160,9 +216,10 @@ function GymHomeSummarySection(days) {
 
     return GymHomeSummary({
         todayDay: getTodayGymDay(days, today),
-        upcoming: getUpcomingGymDays(days, today),
+        upcoming: getUpcomingGymDays(days, today, 3),
         weekProgress: { ...getWeekProgress(days, getGymSessions(), today), expanded, sessions },
-        todayISO: today
+        todayISO: today,
+        openMenuId: getRoutineMenuOpenId()
     });
 
 }
@@ -177,7 +234,7 @@ function GymHomeTabs(activeTab) {
 
             <button class="gym-detail-tab ${activeTab === "rutinas" ? "is-active" : ""}" data-action="set-gym-home-tab" data-tab="rutinas">RUTINAS</button>
 
-            <button class="gym-detail-tab ${activeTab === "composicion" ? "is-active" : ""}" data-action="set-gym-home-tab" data-tab="composicion">COMPOSICIÓN CORPORAL</button>
+            <button class="gym-detail-tab ${activeTab === "composicion" ? "is-active" : ""}" data-action="set-gym-home-tab" data-tab="composicion">COMPOSICIÓN</button>
 
             <button class="gym-detail-tab ${activeTab === "nutricion" ? "is-active" : ""}" data-action="set-gym-home-tab" data-tab="nutricion">NUTRICIÓN</button>
 
@@ -205,11 +262,7 @@ function GymDaySelect() {
 
                 ${GymHomeSummarySection(allDays)}
 
-                <div class="gym-routine-list">
-
-                    ${routines.length ? routines.map(RoutineCard).join("") : GymRoutinesEmptyState()}
-
-                </div>
+                ${routines.length ? RoutineList(routines) : GymRoutinesEmptyState()}
 
             `}
 

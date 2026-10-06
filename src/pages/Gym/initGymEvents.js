@@ -854,10 +854,13 @@ export function initGymEvents() {
 
     });
 
-    // Un <select>, no texto libre: repintar al cambiar no pierde nada.
-    document.querySelector('[data-action="bodycomp-chart-metric"]')?.addEventListener("change", event => {
-        setBodyCompChartMetric(event.target.value);
-        rerender();
+    // Chips Peso/Grasa/Agua/Músculo (antes un <select>): botones, no texto
+    // libre -- repintar al cambiar no pierde nada.
+    document.querySelectorAll('[data-action="bodycomp-chart-metric"]').forEach(button => {
+        button.addEventListener("click", () => {
+            setBodyCompChartMetric(button.dataset.metric);
+            rerender();
+        });
     });
 
     document.querySelector('[data-action="bodycomp-history-toggle"]')?.addEventListener("click", () => {
@@ -918,7 +921,12 @@ export function initGymEvents() {
 
         button.addEventListener("click", () => {
 
-            if (!window.confirm("¿Borrar esta sesión? No se puede deshacer.")) return;
+            setRoutineMenuOpenId(null);
+
+            if (!window.confirm("¿Borrar esta sesión? No se puede deshacer.")) {
+                rerender();
+                return;
+            }
 
             deleteSession(button.dataset.sessionId);
             setDetailExpandedSessionId(null);
@@ -988,7 +996,7 @@ export function initGymEvents() {
 
             event.stopPropagation();
 
-            const id = button.dataset.routineId;
+            const id = button.dataset.menuId;
             setRoutineMenuOpenId(getRoutineMenuOpenId() === id ? null : id);
             rerender();
 

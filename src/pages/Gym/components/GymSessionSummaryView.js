@@ -140,10 +140,12 @@ export function GymSessionSummaryView(session) {
                         <span class="gym-summary-stat-label">Ejercicios</span>
                     </div>
 
-                    <div class="gym-summary-stat">
-                        <span class="gym-summary-stat-value">${doneSets}/${totalSets}</span>
-                        <span class="gym-summary-stat-label">Series</span>
-                    </div>
+                    ${totalSets ? `
+                        <div class="gym-summary-stat">
+                            <span class="gym-summary-stat-value">${doneSets}/${totalSets}</span>
+                            <span class="gym-summary-stat-label">Series</span>
+                        </div>
+                    ` : ""}
 
                 </div>
 

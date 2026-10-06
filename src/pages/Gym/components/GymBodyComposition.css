@@ -7,7 +7,7 @@
 
     display:flex;
     flex-direction:column;
-    gap:18px;
+    gap:20px;
 
 }
 
@@ -22,7 +22,7 @@
 
     border-radius:var(--radius-lg);
     border:1px solid var(--card-border);
-    background:color-mix(in srgb, var(--card-background) 80%, transparent);
+    background:color-mix(in srgb, var(--card-background) 70%, transparent);
 
 }
 
@@ -197,12 +197,6 @@
 
 }
 
-.gym-home-tabs{
-
-    margin-bottom:18px;
-
-}
-
 .gym-bodycomp-form [data-bodycomp-error][hidden]{
 
     display:none;
@@ -212,6 +206,10 @@
 /* ==========================================================
    Rediseño según el mockup (2026-09-24): tarjetas Último
    registro / Evolución / Nuevo registro / Historial.
+   Pulido final (2026-10-06): misma escala que Running y Plan
+   (radio --radius-lg, 20px dentro), mini cards ~10% más bajas,
+   chips en vez de desplegable, historial en filas de una línea.
+   .gym-bodycomp-card también la usan las tarjetas de Nutrición.
 ========================================================== */
 
 .gym-bodycomp-card{
@@ -220,18 +218,18 @@
     flex-direction:column;
     gap:14px;
 
-    padding:18px 16px;
+    padding:18px 20px;
 
     border-radius:var(--radius-lg);
     border:1px solid var(--card-border);
-    background:color-mix(in srgb, var(--card-background) 80%, transparent);
+    background:color-mix(in srgb, var(--card-background) 70%, transparent);
 
 }
 
 .gym-bc-head{
 
     display:flex;
-    align-items:center;
+    align-items:baseline;
     justify-content:space-between;
     gap:10px;
 
@@ -242,7 +240,7 @@
     min-width:0;
     margin:0;
     color:var(--text-primary);
-    font-size:1.08rem;
+    font-size:1rem;
     font-weight:800;
     white-space:nowrap;
 
@@ -251,7 +249,7 @@
 .gym-bc-head h3 small{
 
     color:var(--text-secondary);
-    font-size:.72rem;
+    font-size:.74rem;
     font-weight:500;
 
 }
@@ -259,19 +257,29 @@
 .gym-bc-head > span{
 
     color:var(--text-secondary);
-    font-size:.82rem;
+    font-size:.78rem;
+    text-align:right;
 
 }
 
-.gym-bc-empty{
+.gym-bc-empty,
+.gym-bc-note{
 
     margin:0;
     color:var(--text-secondary);
-    font-size:.86rem;
+    font-size:.84rem;
+    line-height:1.4;
 
 }
 
-/* Último registro: 4 tarjetas en fila. */
+.gym-bc-note{
+
+    margin-top:-4px;
+    font-size:.78rem;
+
+}
+
+/* Último registro: 4 mini tarjetas en fila. */
 .gym-bc-tiles{
 
     display:grid;
@@ -285,50 +293,62 @@
     display:flex;
     flex-direction:column;
     align-items:center;
-    gap:2px;
+    gap:4px;
     min-width:0;
 
-    padding:12px 4px 10px;
+    padding:10px 4px;
 
     border-radius:var(--radius-md);
-    border:1px solid var(--card-border);
+    border:1px solid color-mix(in srgb, var(--card-border) 80%, transparent);
     background:color-mix(in srgb, var(--card-background) 55%, transparent);
 
     text-align:center;
 
 }
 
-.gym-bc-tile iconify-icon{
+.gym-bc-tile-label{
 
-    color:var(--color-primary);
-    font-size:20px;
-    margin-bottom:4px;
+    display:inline-flex;
+    align-items:center;
+    gap:3px;
+    color:var(--text-secondary);
+    font-size:.62rem;
+    font-weight:700;
+    letter-spacing:.02em;
+    text-transform:uppercase;
 
 }
 
-.gym-bc-tile-label{
+.gym-bc-tile-label iconify-icon{
 
-    color:var(--text-secondary);
-    font-size:.66rem;
-    font-weight:700;
-    letter-spacing:.04em;
-    text-transform:uppercase;
+    flex-shrink:0;
+    color:var(--color-primary);
+    font-size:12px;
 
 }
 
 .gym-bc-tile strong{
 
     color:var(--text-primary);
-    font-size:1.45rem;
+    font-size:1.2rem;
     font-weight:800;
-    line-height:1.15;
+    line-height:1.1;
+    white-space:nowrap;
 
 }
 
-.gym-bc-tile-unit{
+.gym-bc-tile strong small{
 
     color:var(--text-secondary);
-    font-size:.72rem;
+    font-size:.68rem;
+    font-weight:600;
+
+}
+
+/* El peso, algo más protagonista que los porcentajes. */
+.gym-bc-tile.is-main strong{
+
+    font-size:1.4rem;
 
 }
 
@@ -340,11 +360,11 @@
 
 .gym-bc-delta{
 
-    margin-top:6px;
     color:var(--text-secondary);
     font-size:.72rem;
     font-weight:700;
-    line-height:1.3;
+    line-height:1.25;
+    white-space:nowrap;
 
 }
 
@@ -358,49 +378,43 @@
 
     display:block;
     color:var(--text-secondary);
+    font-size:.64rem;
     font-weight:500;
 
 }
 
-.gym-bc-delta.is-empty{
+/* Evolución: chips de medida y gráfico. */
+.gym-bc-chips{
 
-    font-weight:500;
-
-}
-
-/* Evolución: desplegable de medida y gráfico. */
-.gym-bc-select{
-
-    position:relative;
-    display:inline-flex;
-    align-items:center;
+    display:flex;
+    gap:6px;
+    margin-top:-4px;
 
 }
 
-.gym-bc-select select{
+.gym-bc-chip{
 
-    -webkit-appearance:none;
-    appearance:none;
-
-    padding:5px 26px 5px 10px;
+    flex:1;
+    padding:6px 0;
 
     border-radius:999px;
     border:1px solid var(--card-border);
     background:transparent;
-    color:var(--text-primary);
+    color:var(--text-secondary);
 
     font:inherit;
-    font-size:.78rem;
+    font-size:.74rem;
+    font-weight:700;
+
+    cursor:pointer;
 
 }
 
-.gym-bc-select iconify-icon{
+.gym-bc-chip.is-active{
 
-    position:absolute;
-    right:10px;
-    pointer-events:none;
-    color:var(--text-secondary);
-    font-size:14px;
+    border-color:var(--color-primary);
+    background:var(--color-primary);
+    color:var(--button-text);
 
 }
 
@@ -414,7 +428,7 @@
 
 .gym-bc-grid{
 
-    stroke:color-mix(in srgb, var(--card-border) 70%, transparent);
+    stroke:color-mix(in srgb, var(--card-border) 60%, transparent);
     stroke-width:.6;
 
 }
@@ -474,7 +488,7 @@
 
 .gym-bc-date iconify-icon{
 
-    font-size:18px;
+    font-size:16px;
 
 }
 
@@ -490,7 +504,7 @@
 
     display:flex;
     flex-direction:column;
-    gap:6px;
+    gap:4px;
     min-width:0;
 
 }
@@ -498,7 +512,7 @@
 .gym-bc-fields span{
 
     color:var(--text-secondary);
-    font-size:.72rem;
+    font-size:.7rem;
     white-space:nowrap;
 
 }
@@ -507,8 +521,8 @@
 
     width:100%;
     box-sizing:border-box;
-    min-height:44px;
-    padding:10px;
+    min-height:40px;
+    padding:8px 10px;
 
     border-radius:var(--radius-sm);
     border:1px solid var(--card-border);
@@ -516,6 +530,7 @@
     color:var(--text-primary);
 
     font:inherit;
+    /* 16px: por debajo, iOS Safari hace zoom al enfocar el campo. */
     font-size:1rem;
 
 }
@@ -523,15 +538,15 @@
 .gym-bc-save{
 
     flex:1;
-    min-height:46px;
+    min-height:44px;
 
     border:none;
     border-radius:var(--radius-md);
     background:var(--color-primary);
-    color:#fff;
+    color:var(--button-text);
 
     font:inherit;
-    font-size:1rem;
+    font-size:.95rem;
     font-weight:700;
 
     cursor:pointer;
@@ -563,7 +578,7 @@
 
 }
 
-/* Historial: filas compactas. */
+/* Historial: filas de una línea, sin caja por fila. */
 .gym-bc-link{
 
     display:inline-flex;
@@ -582,11 +597,19 @@
 
 }
 
+.gym-bc-history-toggle{
+
+    align-self:flex-start;
+    color:var(--color-primary);
+    font-weight:700;
+
+}
+
 .gym-bc-rows{
 
     display:flex;
     flex-direction:column;
-    gap:8px;
+    margin-top:-6px;
 
 }
 
@@ -595,19 +618,19 @@
     display:grid;
     /* Columnas de ancho fijo para que peso/grasa/agua/músculo queden
        alineados entre filas aunque alguna tenga "—". */
-    grid-template-columns:16px minmax(0, 1fr) 3.9em 3em 3em 3em 12px;
+    grid-template-columns:minmax(0, 1fr) 4em 3.2em 3.2em 3.2em 12px;
     align-items:center;
-    gap:5px;
+    gap:4px;
 
-    padding:12px 8px;
+    padding:10px 0;
 
-    border-radius:var(--radius-md);
-    border:1px solid var(--card-border);
-    background:color-mix(in srgb, var(--card-background) 55%, transparent);
+    border:none;
+    border-bottom:1px solid color-mix(in srgb, var(--card-border) 70%, transparent);
+    background:none;
     color:var(--text-primary);
 
     font:inherit;
-    font-size:.72rem;
+    font-size:.76rem;
     text-align:left;
     white-space:nowrap;
 
@@ -615,20 +638,19 @@
 
 }
 
+.gym-bc-row:last-child{
+
+    border-bottom:none;
+
+}
+
 .gym-bc-row.is-editing{
 
-    border-color:var(--color-primary);
+    color:var(--color-primary);
 
 }
 
 .gym-bc-row iconify-icon{
-
-    color:var(--color-primary);
-    font-size:16px;
-
-}
-
-.gym-bc-row iconify-icon:last-child{
 
     color:var(--text-secondary);
     font-size:14px;
@@ -639,11 +661,13 @@
 
     overflow:hidden;
     text-overflow:ellipsis;
+    color:var(--text-secondary);
 
 }
 
 .gym-bc-row > span:not(.gym-bc-row-date){
 
     text-align:right;
+    font-variant-numeric:tabular-nums;
 
 }

@@ -166,32 +166,6 @@ function setRow(definition, sessionExercise, set, index, excludeSessionId) {
 
 }
 
-function ExerciseNavHeader(index, total) {
-
-    return `
-
-        <div class="gym-exercise-nav">
-
-            <button class="gym-exercise-nav-btn" data-action="prev-exercise" ${index === 0 ? "disabled" : ""}>
-
-                <iconify-icon icon="solar:alt-arrow-left-bold-duotone"></iconify-icon>
-
-            </button>
-
-            <span class="gym-exercise-nav-count">Ejercicio ${index + 1} de ${total}</span>
-
-            <button class="gym-exercise-nav-btn" data-action="next-exercise" ${index === total - 1 ? "disabled" : ""}>
-
-                <iconify-icon icon="solar:alt-arrow-right-bold-duotone"></iconify-icon>
-
-            </button>
-
-        </div>
-
-    `;
-
-}
-
 // Series (no ejercicios) hechas/totales de TODA la sesión -- para la barra
 // de progreso, que avanza con cada serie marcada, no solo al cambiar de
 // ejercicio.
@@ -211,13 +185,13 @@ function sessionSetsProgress(session) {
 
 }
 
-// Visible durante toda la sesión (Fase 2.6): nombre del ejercicio actual +
-// posición, barra de progreso a nivel de SERIES (más fina que solo contar
-// ejercicios) y el contador "12/28 series" debajo -- sin repetir
-// "X/Y ejercicios" aquí, ya lo dice la línea de arriba, para no saturar.
-function SessionProgressHeader(session, index, definition) {
+// Cabecera única de la sesión (pulido final 2026-10-06): ‹ "Ejercicio 3 de
+// 8" › + barra de progreso a nivel de SERIES + "12/28 series". Antes eran
+// dos bloques que repetían "Ejercicio X de Y". Sin ninguna serie pautada
+// en toda la rutina (solo activación/core libre), ni barra ni "0/0".
+function SessionNav(session, index) {
 
-    const totalExercises = session.exercises.length;
+    const total = session.exercises.length;
     const { total: totalSets, done: doneSets } = sessionSetsProgress(session);
     const percent = totalSets ? Math.round((doneSets / totalSets) * 100) : 0;
 
@@ -225,19 +199,29 @@ function SessionProgressHeader(session, index, definition) {
 
         <div class="gym-session-progress">
 
-            <div class="gym-session-progress-top">
+            <div class="gym-exercise-nav">
 
-                <span class="gym-session-progress-title">${definition ? `${definition.name} · ` : ""}Ejercicio ${index + 1} de ${totalExercises}</span>
+                <button class="gym-exercise-nav-btn" data-action="prev-exercise" aria-label="Ejercicio anterior" ${index === 0 ? "disabled" : ""}>
+                    <iconify-icon icon="solar:alt-arrow-left-linear"></iconify-icon>
+                </button>
+
+                <span class="gym-exercise-nav-count">Ejercicio ${index + 1} de ${total}</span>
+
+                <button class="gym-exercise-nav-btn" data-action="next-exercise" aria-label="Ejercicio siguiente" ${index >= total - 1 ? "disabled" : ""}>
+                    <iconify-icon icon="solar:alt-arrow-right-linear"></iconify-icon>
+                </button>
 
             </div>
 
-            <div class="gym-session-progress-track">
+            ${totalSets ? `
 
-                <div class="gym-session-progress-fill" style="width:${percent}%"></div>
+                <div class="gym-session-progress-track">
+                    <div class="gym-session-progress-fill" style="width:${percent}%"></div>
+                </div>
 
-            </div>
+                <span class="gym-session-progress-sets">${doneSets}/${totalSets} series</span>
 
-            <span class="gym-session-progress-sets">${doneSets}/${totalSets} series</span>
+            ` : ""}
 
         </div>
 
@@ -334,11 +318,11 @@ function RestTimer() {
 
             <div class="gym-rest-timer-actions">
 
-                <button class="gym-rest-btn" data-action="rest-subtract">−15s</button>
+                <button class="gym-rest-btn" data-action="rest-subtract">−15 s</button>
 
                 <button class="gym-rest-btn" data-action="rest-skip">Saltar</button>
 
-                <button class="gym-rest-btn" data-action="rest-add">+15s</button>
+                <button class="gym-rest-btn" data-action="rest-add">+15 s</button>
 
             </div>
 
@@ -383,6 +367,13 @@ function todayBestWeight(sessionExercise) {
 
 function exerciseCard(definition, sessionExercise, excludeSessionId) {
 
+    const target = exerciseTarget(definition);
+
+    // Activación/core sin series ni reps pautadas: no hay nada que marcar
+    // serie a serie, así que tampoco tabla (antes salía una cabecera
+    // Anterior/Reps sin filas debajo) -- solo las notas.
+    const hasSets = sessionExercise.sets.length > 0;
+
     return `
 
         <section class="gym-exercise-card">
@@ -405,21 +396,25 @@ function exerciseCard(definition, sessionExercise, excludeSessionId) {
 
                     ${definition.muscleGroup ? `<span class="gym-exercise-muscle">${definition.muscleGroup}</span>` : ""}
 
-                    <span class="gym-exercise-target">${exerciseTarget(definition)}</span>
+                    ${target ? `<span class="gym-exercise-target">${target}</span>` : ""}
 
                 </div>
 
             </header>
 
-            ${definition.weightUnit ? GymExerciseHistoryChart(definition.id, definition.weightUnit, excludeSessionId, todayBestWeight(sessionExercise)) : ""}
+            ${definition.weightUnit && hasSets ? GymExerciseHistoryChart(definition.id, definition.weightUnit, excludeSessionId, todayBestWeight(sessionExercise)) : ""}
 
-            <div class="gym-set-table ${definition.weightUnit ? "" : "gym-set-table--no-weight"}">
+            ${hasSets ? `
 
-                ${SetColumnsHeader(definition)}
+                <div class="gym-set-table ${definition.weightUnit ? "" : "gym-set-table--no-weight"}">
 
-                ${sessionExercise.sets.map((set, index) => setRow(definition, sessionExercise, set, index, excludeSessionId)).join("")}
+                    ${SetColumnsHeader(definition)}
 
-            </div>
+                    ${sessionExercise.sets.map((set, index) => setRow(definition, sessionExercise, set, index, excludeSessionId)).join("")}
+
+                </div>
+
+            ` : `<p class="gym-exercise-free">Sin series ni repeticiones pautadas.</p>`}
 
             ${RestTimer()}
 
@@ -462,9 +457,7 @@ export function GymSessionView(session) {
 
             </header>
 
-            ${SessionProgressHeader(session, index, definition)}
-
-            ${ExerciseNavHeader(index, session.exercises.length)}
+            ${SessionNav(session, index)}
 
             ${sessionExercise && definition ? exerciseCard(definition, sessionExercise, excludeSessionId) : ""}
 

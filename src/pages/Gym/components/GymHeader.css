@@ -9,7 +9,7 @@
        notch no la da la altura sino el padding-top con
        env(safe-area-inset-top) de abajo (ver el arreglo de 2026-08-29,
        project_hero_coach_text_clipping_fix) -- se conserva tal cual. */
-    min-height:calc(150px + env(safe-area-inset-top));
+    min-height:calc(130px + env(safe-area-inset-top));
 
     display:flex;
 
@@ -17,14 +17,18 @@
 
     justify-content:flex-end;
 
-    padding:24px 20px 26px;
+    padding:20px 20px 18px;
 
-    padding-top:calc(28px + env(safe-area-inset-top));
+    padding-top:calc(24px + env(safe-area-inset-top));
 
     /* Cancela el padding que .gym-content le mete desde fuera (24px +
        safe-area arriba, 24px a los lados) para que la foto llegue a los 3
        bordes reales de la pantalla. */
-    margin:calc(-1 * (24px + env(safe-area-inset-top))) -24px 14px;
+    /* Pulido final (2026-10-06): hero ~13% más bajo (150 -> 130px, misma
+       altura en las 3 pestañas -- es el mismo componente) y sin margen
+       inferior propio: la separación con el selector la da el gap de
+       .gym-content, igual que entre el resto de tarjetas. */
+    margin:calc(-1 * (24px + env(safe-area-inset-top))) -24px 0;
 
     isolation:isolate;
 
@@ -166,7 +170,7 @@
 
     color:#FFFFFF;
 
-    font-size:2.6rem;
+    font-size:2.4rem;
 
     line-height:1;
 
@@ -184,7 +188,7 @@
 
     color:rgba(255,255,255,.85);
 
-    font-size:1.05rem;
+    font-size:1rem;
 
     text-shadow:0 2px 6px rgba(0,0,0,.45);
 
@@ -242,5 +246,45 @@
 .gym-background-image[data-theme-id="night"]{
 
     object-position:center 14%;
+
+}
+
+/* ==========================
+   SELECTOR RUTINAS · COMPOSICIÓN · NUTRICIÓN
+   Pulido final (2026-10-06): algo más bajo, una sola línea, activo con
+   relleno cian y los inactivos en gris azulado, sin glow -- idéntico en
+   las 3 pestañas. Solo .gym-home-tabs: .gym-detail-tabs se sigue usando
+   tal cual en el detalle de ejercicio, raciones/gramos y fin de semana.
+========================== */
+
+.gym-home-tabs{
+
+    gap:2px;
+
+    padding:3px;
+
+}
+
+.gym-home-tabs .gym-detail-tab{
+
+    padding:8px 0;
+
+    font-size:.72rem;
+
+    letter-spacing:.05em;
+
+    white-space:nowrap;
+
+    color:var(--text-secondary);
+
+    box-shadow:none;
+
+}
+
+.gym-home-tabs .gym-detail-tab.is-active{
+
+    background:var(--color-primary);
+
+    color:var(--color-on-primary, #fff);
 
 }

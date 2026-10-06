@@ -17,10 +17,14 @@ import { getBodyCompEditingId, getBodyCompPendingDeleteId, getBodyCompChartMetri
 // comparación solo existe si hay un valor anterior real, y el gráfico
 // solo tiene punto donde hay registro.
 
+// better: la única dirección que es una mejora SIN conocer el objetivo de
+// la persona (menos grasa, más músculo). Peso y agua no la tienen: bajar
+// de peso no es bueno o malo per se, así que su cambio va siempre en
+// neutro (pulido final 2026-10-06 -- antes "↓ peso" salía en verde).
 const METRICS = {
-    weightKg: { label: "Peso", unit: "kg", icon: "mdi:weight-kilogram", field: "Peso (kg)", better: "down" },
+    weightKg: { label: "Peso", unit: "kg", icon: "mdi:weight-kilogram", field: "Peso (kg)", better: null },
     bodyFatPercent: { label: "Grasa", unit: "%", icon: "mdi:percent", field: "Grasa (%)", better: "down" },
-    waterPercent: { label: "Agua", unit: "%", icon: "solar:waterdrop-bold", field: "Agua (%)", better: "up" },
+    waterPercent: { label: "Agua", unit: "%", icon: "solar:waterdrop-bold", field: "Agua (%)", better: null },
     musclePercent: { label: "Músculo", unit: "%", icon: "mdi:arm-flex", field: "Músculo (%)", better: "up" }
 };
 
@@ -46,44 +50,59 @@ function formatDate(iso, { withYear = false } = {}) {
 
 // ---- Último registro --------------------------------------------------------
 
-// Verde si el cambio va en la dirección buena para esa métrica (menos peso
-// y grasa, más agua y músculo); si no, en gris -- sin rojo, que sería un
-// juicio que el registro no dice.
-function Delta(metric, info) {
+// Solo el cambio ("−0,4 kg"), en verde únicamente si es una mejora real
+// (ver METRICS.better) y si no en neutro -- sin rojo, que sería un juicio
+// que el registro no dice. La fecha con la que se compara va una sola vez
+// en la cabecera (commonPreviousDate); solo se repite en la tarjeta si
+// ESA medida se compara con otro registro (p. ej. grasa sin dato el
+// último día).
+function Delta(metric, info, commonPreviousDate) {
 
-    if (info.delta == null) return `<small class="gym-bc-delta is-empty">sin registro anterior</small>`;
+    if (info.delta == null) return "";
 
-    if (info.delta === 0) return `<small class="gym-bc-delta">= igual<br><span>vs. ${formatDate(info.previousDate)}</span></small>`;
+    const otherDate = info.previousDate !== commonPreviousDate ? `<span>vs. ${formatDate(info.previousDate)}</span>` : "";
+
+    if (info.delta === 0) return `<small class="gym-bc-delta">=${otherDate}</small>`;
 
     const up = info.delta > 0;
-    const good = (METRICS[metric].better === "up") === up;
+    const better = METRICS[metric].better;
+    const good = better != null && (better === "up") === up;
+
+    return `<small class="gym-bc-delta ${good ? "is-good" : ""}">${up ? "+" : "−"}${formatNumber(Math.abs(info.delta))} ${METRICS[metric].unit}${otherDate}</small>`;
+
+}
+
+function MetricTile(metric, info, commonPreviousDate) {
+
+    const { label, unit, icon } = METRICS[metric];
+    const empty = info.value == null;
 
     return `
 
-        <small class="gym-bc-delta ${good ? "is-good" : ""}">
-            ${up ? "↑" : "↓"} ${formatNumber(Math.abs(info.delta))} ${METRICS[metric].unit}
-            <span>vs. ${formatDate(info.previousDate)}</span>
-        </small>
+        <div class="gym-bc-tile ${empty ? "is-empty" : ""} ${metric === "weightKg" ? "is-main" : ""}">
+            <span class="gym-bc-tile-label"><iconify-icon icon="${icon}"></iconify-icon>${label}</span>
+            <strong>${empty ? "—" : formatNumber(info.value)}${empty ? "" : `<small> ${unit}</small>`}</strong>
+            ${empty ? "" : Delta(metric, info, commonPreviousDate)}
+        </div>
 
     `;
 
 }
 
-function MetricTile(metric, info) {
+// La fecha de comparación más repetida entre las medidas que sí tienen un
+// registro anterior -- null si ninguna lo tiene (primer registro).
+function mostCommonPreviousDate(metrics) {
 
-    const { label, unit, icon } = METRICS[metric];
+    const counts = new Map();
 
-    return `
+    Object.values(metrics).forEach(info => {
+        if (info.delta != null) counts.set(info.previousDate, (counts.get(info.previousDate) ?? 0) + 1);
+    });
 
-        <div class="gym-bc-tile ${info.value == null ? "is-empty" : ""}">
-            <iconify-icon icon="${icon}"></iconify-icon>
-            <span class="gym-bc-tile-label">${label}</span>
-            <strong>${info.value == null ? "—" : formatNumber(info.value)}</strong>
-            <span class="gym-bc-tile-unit">${unit}</span>
-            ${info.value == null ? `<small class="gym-bc-delta is-empty">sin dato</small>` : Delta(metric, info)}
-        </div>
+    let best = null;
+    counts.forEach((count, date) => { if (best == null || count > counts.get(best)) best = date; });
 
-    `;
+    return best;
 
 }
 
@@ -91,20 +110,35 @@ function LatestCard() {
 
     const latest = getLatestBodyComposition();
 
+    if (!latest) {
+
+        return `
+
+            <section class="gym-bodycomp-card">
+                <header class="gym-bc-head"><h3>Último registro</h3></header>
+                <p class="gym-bc-empty">Aún no hay ningún registro. Añade el primero abajo.</p>
+            </section>
+
+        `;
+
+    }
+
+    const previousDate = mostCommonPreviousDate(latest.metrics);
+
     return `
 
         <section class="gym-bodycomp-card">
 
             <header class="gym-bc-head">
                 <h3>Último registro</h3>
-                ${latest ? `<span>${formatDate(latest.date, { withYear: true })}</span>` : ""}
+                <span>${formatDate(latest.date, { withYear: true })}${previousDate ? ` · vs. ${formatDate(previousDate)}` : ""}</span>
             </header>
 
-            ${latest ? `
-                <div class="gym-bc-tiles">
-                    ${Object.keys(METRICS).map(metric => MetricTile(metric, latest.metrics[metric])).join("")}
-                </div>
-            ` : `<p class="gym-bc-empty">Todavía no hay ningún registro. Añade el primero abajo.</p>`}
+            <div class="gym-bc-tiles">
+                ${Object.keys(METRICS).map(metric => MetricTile(metric, latest.metrics[metric], previousDate)).join("")}
+            </div>
+
+            ${previousDate ? "" : `<p class="gym-bc-note">Primer registro · añade otro para empezar a ver tu evolución.</p>`}
 
         </section>
 
@@ -114,7 +148,7 @@ function LatestCard() {
 
 // ---- Evolución ----------------------------------------------------------------
 
-const CHART = { width: 320, height: 150, left: 28, right: 8, top: 10, bottom: 24 };
+const CHART = { width: 320, height: 120, left: 28, right: 8, top: 8, bottom: 22 };
 
 // Marcas del eje Y: 4 valores redondos que cubren el rango con margen.
 function yTicks(values) {
@@ -138,7 +172,11 @@ function EvolutionChart(metric) {
 
     if (points.length < 2) {
 
-        return `<p class="gym-bc-empty">${points.length ? "Con un segundo registro en estos 30 días verás aquí la evolución." : "Sin registros de esta medida en los últimos 30 días."}</p>`;
+        // Sin hueco de gráfico: solo la frase. Si en total sí hay 2 o más
+        // registros de esta medida pero no dentro de la ventana, se dice.
+        const total = getBodyCompositionEntries().filter(entry => entry[metric] != null).length;
+
+        return `<p class="gym-bc-empty">${total >= 2 ? "Necesitas al menos 2 registros en los últimos 30 días para mostrar evolución." : "Necesitas al menos 2 registros para mostrar evolución."}</p>`;
 
     }
 
@@ -154,21 +192,12 @@ function EvolutionChart(metric) {
 
     const coords = points.map(p => [x(p.date), y(p.value)]);
     const line = coords.map(([cx, cy]) => `${cx.toFixed(1)},${cy.toFixed(1)}`).join(" ");
-    const baseY = height - bottom;
-    const area = `${coords[0][0].toFixed(1)},${baseY} ${line} ${coords.at(-1)[0].toFixed(1)},${baseY}`;
 
     const xLabels = [0, 7, 14, 21, 28].map(offset => addDays(today, -(CHART_DAYS - 1) + offset));
 
     return `
 
         <svg class="gym-bc-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="Evolución de ${METRICS[metric].label.toLowerCase()}">
-
-            <defs>
-                <linearGradient id="gym-bc-area" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stop-color="var(--color-primary)" stop-opacity=".35"></stop>
-                    <stop offset="100%" stop-color="var(--color-primary)" stop-opacity="0"></stop>
-                </linearGradient>
-            </defs>
 
             ${ticks.map(t => `
                 <line class="gym-bc-grid" x1="${left}" x2="${width - right}" y1="${y(t).toFixed(1)}" y2="${y(t).toFixed(1)}"></line>
@@ -177,7 +206,6 @@ function EvolutionChart(metric) {
 
             ${xLabels.map(iso => `<text class="gym-bc-axis" x="${x(iso).toFixed(1)}" y="${height - 6}" text-anchor="middle">${formatDate(iso)}</text>`).join("")}
 
-            <polygon class="gym-bc-area" points="${area}" fill="url(#gym-bc-area)"></polygon>
             <polyline class="gym-bc-line" points="${line}"></polyline>
 
             ${coords.map(([cx, cy], i) => `<circle class="gym-bc-dot" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="3.5"><title>${formatDate(points[i].date)}: ${formatNumber(points[i].value)} ${METRICS[metric].unit}</title></circle>`).join("")}
@@ -197,14 +225,12 @@ function EvolutionCard() {
         <section class="gym-bodycomp-card">
 
             <header class="gym-bc-head">
-                <h3>Evolución <small>(últimos 30 días)</small></h3>
-                <label class="gym-bc-select">
-                    <select data-action="bodycomp-chart-metric" aria-label="Medida del gráfico">
-                        ${Object.entries(METRICS).map(([key, m]) => `<option value="${key}" ${key === metric ? "selected" : ""}>${m.label} (${m.unit})</option>`).join("")}
-                    </select>
-                    <iconify-icon icon="solar:alt-arrow-down-linear"></iconify-icon>
-                </label>
+                <h3>Evolución <small>· últimos 30 días</small></h3>
             </header>
+
+            <div class="gym-bc-chips" role="group" aria-label="Medida del gráfico">
+                ${Object.entries(METRICS).map(([key, m]) => `<button class="gym-bc-chip ${key === metric ? "is-active" : ""}" data-action="bodycomp-chart-metric" data-metric="${key}" aria-pressed="${key === metric}">${m.label}</button>`).join("")}
+            </div>
 
             ${EvolutionChart(metric)}
 
@@ -283,7 +309,6 @@ function HistoryRow(entry, editingId) {
     return `
 
         <button class="gym-bc-row ${editingId === entry.id ? "is-editing" : ""}" data-action="edit-bodycomp-entry" data-entry-id="${entry.id}" aria-label="Editar el registro del ${formatDate(entry.date, { withYear: true })}">
-            <iconify-icon icon="mdi:weight-kilogram"></iconify-icon>
             <span class="gym-bc-row-date">${formatDate(entry.date, { withYear: true })}</span>
             <span>${formatNumber(entry.weightKg)} kg</span>
             <span>${percent(entry.bodyFatPercent)}</span>
@@ -309,15 +334,16 @@ function HistoryCard(entries) {
         <section class="gym-bodycomp-card">
 
             <header class="gym-bc-head">
-                <h3>Historial de registros</h3>
-                ${entries.length > HISTORY_PREVIEW ? `
-                    <button class="gym-bc-link" data-action="bodycomp-history-toggle">${expanded ? "Ver menos" : "Ver todo"} <iconify-icon icon="solar:alt-arrow-right-linear"></iconify-icon></button>
-                ` : ""}
+                <h3>Historial</h3>
             </header>
 
             <div class="gym-bc-rows">
                 ${shown.map(entry => HistoryRow(entry, editingId)).join("")}
             </div>
+
+            ${entries.length > HISTORY_PREVIEW ? `
+                <button class="gym-bc-link gym-bc-history-toggle" data-action="bodycomp-history-toggle" aria-expanded="${expanded}">${expanded ? "Ver menos" : "Ver historial completo"} <iconify-icon icon="solar:alt-arrow-${expanded ? "up" : "right"}-linear"></iconify-icon></button>
+            ` : ""}
 
         </section>
 

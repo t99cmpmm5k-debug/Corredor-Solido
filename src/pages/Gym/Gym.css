@@ -20,7 +20,9 @@
 
     flex-direction:column;
 
-    gap:16px;
+    /* Pulido final (2026-10-06): 20px entre tarjetas principales, misma
+       escala que Running y Plan. */
+    gap:20px;
 
 }
 
@@ -141,9 +143,9 @@
 
 .gym-close{
 
-    width:44px;
+    width:40px;
 
-    height:44px;
+    height:40px;
 
     flex-shrink:0;
 
@@ -188,7 +190,9 @@
 
     width:100%;
 
-    height:56px;
+    height:50px;
+
+    font-family:inherit;
 
     border:none;
 

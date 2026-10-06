@@ -85,27 +85,26 @@ function todayCard(day, upcoming, todayISO) {
 
 }
 
+// Toda la fila arranca ese día (mismo data-action="select-day" que las
+// filas de "Tus rutinas") -- no existe una vista de "calendario de fuerza"
+// a la que llevar, así que tampoco se enlaza ninguna.
 function upcomingItem({ day, date }) {
+
+    const count = day.exercises.length;
 
     return `
 
-        <li class="gym-upcoming-item">
+        <li>
 
-            <div class="gym-upcoming-date">
+            <button class="gym-upcoming-item" data-action="select-day" data-day-id="${day.id}">
 
-                <span class="gym-upcoming-weekday">${getDayAbbreviation(date)}</span>
+                <span class="gym-upcoming-date">${getDayAbbreviation(date)} ${formatDayNumber(date)}</span>
 
-                <span class="gym-upcoming-daynumber">${formatDayNumber(date)}</span>
+                <span class="gym-upcoming-title">${day.title}</span>
 
-            </div>
+                <span class="gym-upcoming-count">${count} ejercicio${count === 1 ? "" : "s"}</span>
 
-            <div class="gym-upcoming-info">
-
-                <h3>${day.title}</h3>
-
-                <span>${day.exercises.length} ejercicios</span>
-
-            </div>
+            </button>
 
         </li>
 
@@ -113,25 +112,42 @@ function upcomingItem({ day, date }) {
 
 }
 
-function weekSessionRow(session) {
+// Borrar una sesión de la semana: la única acción que ya existía aquí (no
+// hay edición de una sesión pasada), ahora dentro de un ··· en vez de una
+// papelera siempre visible. Comparte el estado "qué menú está abierto"
+// con los ··· de las rutinas (ver RoutineMenu() en Gym.js).
+function weekSessionRow(session, openMenuId) {
+
+    const open = openMenuId === session.id;
 
     return `
 
         <li class="gym-week-session-row">
 
-            <div class="gym-week-session-info">
+            <span class="gym-week-session-date">${formatDayMonth(session.date)}</span>
 
-                <span class="gym-week-session-date">${formatDayMonth(session.date)}</span>
+            <span class="gym-week-session-title">${session.dayTitle}</span>
 
-                <span class="gym-week-session-title">${session.dayTitle}</span>
+            <div class="gym-routine-menu">
+
+                <button class="gym-routine-menu-toggle" data-action="toggle-routine-menu" data-menu-id="${session.id}" aria-label="Más opciones de la sesión" aria-expanded="${open}">
+                    <iconify-icon icon="solar:menu-dots-bold"></iconify-icon>
+                </button>
+
+                ${open ? `
+
+                    <div class="gym-routine-menu-popover">
+
+                        <button class="gym-routine-menu-danger" data-action="delete-gym-session" data-session-id="${session.id}">
+                            <iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon>
+                            Eliminar sesión
+                        </button>
+
+                    </div>
+
+                ` : ""}
 
             </div>
-
-            <button class="gym-week-session-delete" data-action="delete-gym-session" data-session-id="${session.id}">
-
-                <iconify-icon icon="solar:trash-bin-trash-bold-duotone"></iconify-icon>
-
-            </button>
 
         </li>
 
@@ -140,9 +156,8 @@ function weekSessionRow(session) {
 }
 
 // sessions llega ya formada por Gym.js (fecha + título del día), no una
-// sesión cruda — este componente solo renderiza, mismo criterio que
-// todayCard/upcomingItem más arriba.
-function weekSessionsList(sessions) {
+// sesión cruda — este componente solo renderiza.
+function weekSessionsList(sessions, openMenuId) {
 
     if (!sessions.length) {
 
@@ -150,40 +165,48 @@ function weekSessionsList(sessions) {
 
     }
 
-    return `<ul class="gym-week-sessions-list">${sessions.map(weekSessionRow).join("")}</ul>`;
+    return `<ul class="gym-week-sessions-list">${sessions.map(session => weekSessionRow(session, openMenuId)).join("")}</ul>`;
 
 }
 
-// Mensaje de cierre de la semana -- sesiones que faltan (dato real,
-// total-completed de gymSchedule.js) o "semana completada" cuando ya no
-// queda ninguna. Nunca inventa qué sesión concreta falta, solo el conteo.
-function pendingSessionMessage(completed, total) {
+function plural(count, singular, pluralText) {
 
-    const remaining = total - completed;
-
-    if (remaining <= 0) return "Semana completada.";
-
-    return `Te queda${remaining === 1 ? "" : "n"} ${remaining} sesión${remaining === 1 ? "" : "es"} esta semana.`;
+    return `${count} ${count === 1 ? singular : pluralText}`;
 
 }
 
-function weekSummary({ completed, total, exercises, sets, expanded, sessions }) {
+// Una sola línea de progreso real de la semana: ejercicios y series HECHOS
+// (weekTotals() en gymSchedule.js, solo series marcadas) y sesiones
+// terminadas/programadas. Sin ninguna sesión hecha todavía, solo el conteo
+// de sesiones -- nunca "0 ejercicios · 0 series".
+export function weekLine({ completed, total, exercises, sets }) {
 
+    const sessions = `${completed}/${total} sesiones`;
+
+    if (!completed) return sessions;
+
+    return `${plural(exercises, "ejercicio", "ejercicios")} · ${plural(sets, "serie", "series")} · ${sessions}`;
+
+}
+
+function weekSummary(progress, openMenuId) {
+
+    const { completed, total, expanded, sessions } = progress;
     const percent = total ? Math.round((completed / total) * 100) : 0;
 
     return `
 
-        <div class="gym-week-summary">
+        <section class="gym-week-summary">
 
-            <button class="gym-week-summary-header" data-action="toggle-week-summary">
+            <button class="gym-week-summary-header" data-action="toggle-week-summary" aria-expanded="${expanded}">
 
                 <h2>Resumen semanal</h2>
 
-                <span>${completed}/${total} sesiones</span>
+                <iconify-icon icon="solar:alt-arrow-${expanded ? "up" : "down"}-linear"></iconify-icon>
 
             </button>
 
-            <p class="gym-week-summary-stats">${exercises} ejercicio${exercises === 1 ? "" : "s"} · ${sets} serie${sets === 1 ? "" : "s"}</p>
+            <p class="gym-week-summary-stats">${weekLine(progress)}</p>
 
             <div class="gym-week-progress-track">
 
@@ -191,11 +214,9 @@ function weekSummary({ completed, total, exercises, sets, expanded, sessions }) 
 
             </div>
 
-            <p class="gym-week-summary-message">${pendingSessionMessage(completed, total)}</p>
+            ${expanded ? weekSessionsList(sessions, openMenuId) : ""}
 
-            ${expanded ? weekSessionsList(sessions) : ""}
-
-        </div>
+        </section>
 
     `;
 
@@ -206,7 +227,7 @@ function weekSummary({ completed, total, exercises, sets, expanded, sessions }) 
 // gymSchedule.js — este componente solo renderiza. weekProgress incluye
 // además expanded/sessions (estado del desplegable y su listado, con
 // dayTitle ya resuelto) para el borrado desde el resumen semanal.
-export function GymHomeSummary({ todayDay, upcoming, weekProgress, todayISO }) {
+export function GymHomeSummary({ todayDay, upcoming, weekProgress, todayISO, openMenuId = null }) {
 
     return `
 
@@ -218,7 +239,7 @@ export function GymHomeSummary({ todayDay, upcoming, weekProgress, todayISO }) {
 
                 <section class="gym-upcoming">
 
-                    <h2>Próximos entrenamientos</h2>
+                    <h2 class="gym-section-title">Próximos entrenamientos</h2>
 
                     <ul class="gym-upcoming-list">
 
@@ -230,7 +251,7 @@ export function GymHomeSummary({ todayDay, upcoming, weekProgress, todayISO }) {
 
             ` : ""}
 
-            ${weekSummary(weekProgress)}
+            ${weekSummary(weekProgress, openMenuId)}
 
         </div>
 
