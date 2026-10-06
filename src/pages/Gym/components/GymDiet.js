@@ -178,7 +178,7 @@ function WeekendPicker(date, current) {
 
 // ---- Cumplimiento: anillo + semana -----------------------------------------------
 
-const RING = { size: 104, stroke: 10 };
+const RING = { size: 84, stroke: 8 };
 
 function Ring(percent) {
 
@@ -210,7 +210,7 @@ function Ring(percent) {
 
 // Estado de cada día de la semana: completo (todas las comidas), parcial
 // (anillo proporcional), sin nada, futuro, y el día que se está viendo.
-function WeekDay(day, index, viewedDate) {
+function WeekDay(day, index, viewedDate, today) {
 
     const complete = day.percent === 100;
     const partial = !complete && day.percent > 0;
@@ -219,7 +219,8 @@ function WeekDay(day, index, viewedDate) {
         complete ? "is-complete" : "",
         partial ? "is-partial" : "",
         day.future ? "is-future" : "",
-        day.date === viewedDate ? "is-selected" : ""
+        day.date === viewedDate ? "is-selected" : "",
+        day.date === today ? "is-today" : ""
     ].filter(Boolean).join(" ");
 
     return `
@@ -253,7 +254,7 @@ function ComplianceCard(date, compliance) {
                 </div>
 
                 <div class="gym-diet-week" aria-label="Semana">
-                    ${week.map((day, i) => WeekDay(day, i, date)).join("")}
+                    ${week.map((day, i) => WeekDay(day, i, date, today)).join("")}
                 </div>
 
             </div>
@@ -323,9 +324,24 @@ function MealPhoto(text) {
 
 }
 
-// Una tarjeta por comida. Una opción: la casilla la marca. Varias: se
-// elige con los radios cuál se comió (y la casilla, ya marcada, la
-// desmarca); con ninguna elegida, la casilla pide elegir antes.
+// "momento" del CSV tal cual: si es una hora ("09:00") va como hora arriba
+// a la izquierda; si es un nombre ("Post-gym", "Desayuno") como etiqueta
+// pequeña en cian. Mismo texto en los dos casos -- solo cambia el estilo,
+// nunca se renombra ni se inventa una etiqueta.
+function MomentLabel(moment) {
+
+    const isTime = /^\d{1,2}[:.]\d{2}$/.test(moment.trim());
+
+    return `<span class="gym-meal-moment ${isTime ? "is-time" : "is-tag"}">${escapeHtml(moment)}</span>`;
+
+}
+
+// Una tarjeta por comida (pulido final 2026-10-06): casilla pequeña +
+// momento arriba, el texto recortado a 2-3 líneas con "Ver detalle" para
+// el resto (solo aparece si de verdad se corta, ver initGymDietEvents.js)
+// e ilustración pequeña a la derecha. Una opción: la casilla la marca.
+// Varias: se elige con los radios cuál se comió (y la casilla, ya
+// marcada, la desmarca); con ninguna elegida, la casilla pide elegir antes.
 function MealCard(meal, eatenKey) {
 
     const multiple = meal.options.length > 1;
@@ -334,13 +350,13 @@ function MealCard(meal, eatenKey) {
 
     const body = multiple ? `
 
-        <p class="gym-meal-choose">Elige 1 opción:</p>
+        <p class="gym-meal-choose">Elige 1:</p>
 
         <div class="gym-meal-options" role="radiogroup" aria-label="${escapeHtml(meal.moment)}">
             ${meal.options.map(option => `
                 <button class="gym-meal-option ${option.key === eatenKey ? "is-selected" : ""}" role="radio" aria-checked="${option.key === eatenKey}" data-action="diet-toggle-meal" data-meal-key="${escapeHtml(meal.key)}" data-option-key="${escapeHtml(option.key)}">
                     <span class="gym-meal-radio" aria-hidden="true"></span>
-                    <span><b>Opción ${option.number}:</b> ${escapeHtml(option.text)}</span>
+                    <span class="gym-meal-clamp"><b>${option.number}.</b> ${escapeHtml(option.text)}</span>
                 </button>
             `).join("")}
         </div>
@@ -350,25 +366,28 @@ function MealCard(meal, eatenKey) {
     ` : (() => {
 
         const { main, detail } = splitMealText(meal.options[0].text);
-        return `
-            <p class="gym-meal-main">${escapeHtml(main)}</p>
-            ${detail ? `<p class="gym-meal-detail">${escapeHtml(detail)}</p>` : ""}
-        `;
+        return `<p class="gym-meal-main gym-meal-clamp">${escapeHtml(main)}${detail ? ` <span class="gym-meal-detail">${escapeHtml(detail)}</span>` : ""}</p>`;
 
     })();
 
     return `
 
-        <article class="gym-meal-card ${eaten ? "is-eaten" : ""}">
+        <article class="gym-meal-card ${eaten ? "is-eaten" : ""}" data-meal-card="${escapeHtml(meal.key)}">
 
-            <button class="gym-meal-check" role="checkbox" aria-checked="${Boolean(eaten)}" aria-label="${escapeHtml(meal.moment)}: ${eaten ? "comido" : "sin marcar"}"
-                data-action="diet-meal-check" data-meal-key="${escapeHtml(meal.key)}" data-option-key="${escapeHtml((eaten ?? meal.options[0]).key)}" data-multiple="${multiple}" data-eaten="${Boolean(eaten)}">
-                ${eaten ? `<iconify-icon icon="mdi:check-bold"></iconify-icon>` : ""}
-            </button>
+            <div class="gym-meal-head">
+
+                <button class="gym-meal-check" role="checkbox" aria-checked="${Boolean(eaten)}" aria-label="${escapeHtml(meal.moment)}: ${eaten ? "comido" : "sin marcar"}"
+                    data-action="diet-meal-check" data-meal-key="${escapeHtml(meal.key)}" data-option-key="${escapeHtml((eaten ?? meal.options[0]).key)}" data-multiple="${multiple}" data-eaten="${Boolean(eaten)}">
+                    ${eaten ? `<iconify-icon icon="mdi:check-bold"></iconify-icon>` : ""}
+                </button>
+
+                ${MomentLabel(meal.moment)}
+
+            </div>
 
             <div class="gym-meal-body">
-                <h4 class="gym-meal-moment">${escapeHtml(meal.moment)}</h4>
                 ${body}
+                <button class="gym-meal-more" data-action="diet-meal-expand" hidden>Ver detalle</button>
             </div>
 
             ${MealPhoto(shown.text)}
@@ -417,7 +436,7 @@ function Manage(plan, state) {
                 ${CsvPicker("Importar otra dieta")}
                 ${TemplateButton()}
                 ${FreeLogButton()}
-                <button class="gym-bodycomp-cancel ${deletePending ? "gym-diet-danger" : ""}" data-action="diet-delete">${deletePending ? "¿Borrar la dieta?" : "Borrar dieta"}</button>
+                <button class="gym-bodycomp-cancel gym-diet-delete ${deletePending ? "is-confirming" : ""}" data-action="diet-delete">${deletePending ? "Pulsa otra vez para borrar la dieta" : "Borrar dieta"}</button>
             </div>
         </details>
 

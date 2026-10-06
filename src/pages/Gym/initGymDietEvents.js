@@ -69,7 +69,48 @@ function downloadTemplate() {
 
 }
 
+// Comidas abiertas con "Ver detalle" -- se reaplica en cada render (marcar
+// una comida repinta la pestaña y, sin esto, se volvía a recortar).
+const expandedMeals = new Set();
+
+// "Ver detalle" solo donde el texto de verdad está recortado: se mide ya
+// pintado (scrollHeight > clientHeight), no se adivina por nº de letras.
+function setupMealClamp() {
+
+    document.querySelectorAll("[data-meal-card]").forEach(card => {
+
+        const button = card.querySelector('[data-action="diet-meal-expand"]');
+        if (!button) return;
+
+        if (expandedMeals.has(card.dataset.mealCard)) {
+            card.classList.add("is-expanded");
+            button.hidden = false;
+            button.textContent = "Ver menos";
+            return;
+        }
+
+        const clipped = [...card.querySelectorAll(".gym-meal-clamp")].some(el => el.scrollHeight > el.clientHeight + 1);
+        button.hidden = !clipped;
+
+    });
+
+}
+
 export function initGymDietEvents() {
+
+    setupMealClamp();
+
+    document.querySelectorAll('[data-action="diet-meal-expand"]').forEach(button => {
+        button.addEventListener("click", () => {
+            const card = button.closest("[data-meal-card]");
+            if (!card) return;
+            const key = card.dataset.mealCard;
+            const open = !expandedMeals.has(key);
+            if (open) expandedMeals.add(key); else expandedMeals.delete(key);
+            card.classList.toggle("is-expanded", open);
+            button.textContent = open ? "Ver menos" : "Ver detalle";
+        });
+    });
 
     document.querySelectorAll('[data-action="diet-csv-input"]').forEach(input => {
 
