@@ -6,8 +6,12 @@ import {
     getEatenForDate,
     getWeekendLongRunDay,
     computeDayCompliance,
-    getWeekCompliance
+    getWeekCompliance,
+    getTrainingTimeForDate,
+    getMealsForTrainingTime,
+    dayHasTrainingTimes
 } from "../../../data/dietStore.js";
+import { TRAINING_TIMES } from "../../../utils/dietCsv.js";
 import { formatISODate, formatDayMonth, getWeekStartDate, addDays, parseISODate } from "../../../utils/date.js";
 import { getMealImages, splitMealText } from "../dietDisplay.js";
 import { getDietImport, isDietWeekendPickerOpen, isDietDeletePending, isDietSectionOpen } from "../gymStore.js";
@@ -444,6 +448,30 @@ function Manage(plan, state) {
 
 }
 
+// "¿Cuándo entrenas?" -- solo en días con comidas ligadas a una franja
+// (momentos "Mañana - …" / "Mediodía - …" / "Tarde - …" en el CSV). Mismo
+// selector .gym-detail-tabs que el resto de Gimnasio. La franja se guarda
+// en el registro de ese día (ver setTrainingTime en dietStore.js).
+function TrainingTimeTabs(date, active) {
+
+    return `
+
+        <section class="gym-diet-training">
+
+            <h3 class="gym-diet-training-title">¿Cuándo entrenas?</h3>
+
+            <div class="gym-detail-tabs gym-diet-training-tabs" role="tablist" aria-label="Franja de entrenamiento">
+                ${TRAINING_TIMES.map(time => `
+                    <button class="gym-detail-tab ${time.id === active ? "is-active" : ""}" role="tab" aria-selected="${time.id === active}" data-action="diet-training-time" data-date="${date}" data-time="${time.id}">${time.label.toUpperCase()}</button>
+                `).join("")}
+            </div>
+
+        </section>
+
+    `;
+
+}
+
 export function GymDiet(date) {
 
     const plan = getActiveDietPlan();
@@ -459,7 +487,11 @@ export function GymDiet(date) {
 
     const day = dayKey ? plan.days[dayKey] : null;
     const eaten = getEatenForDate(date);
-    const compliance = day ? computeDayCompliance(day, eaten) : null;
+    // Planes sin prefijos: sin franja, todas las comidas, igual que antes.
+    const hasTimes = dayHasTrainingTimes(day);
+    const trainingTime = hasTimes ? getTrainingTimeForDate(date) : null;
+    const meals = getMealsForTrainingTime(day, trainingTime);
+    const compliance = day ? computeDayCompliance(day, eaten, trainingTime) : null;
 
     return `
 
@@ -476,8 +508,9 @@ export function GymDiet(date) {
             </div>
         ` : `
             ${DayHeader(dayKey, day)}
+            ${hasTimes ? TrainingTimeTabs(date, trainingTime) : ""}
             <div class="gym-meal-list">
-                ${day.meals.map(meal => MealCard(meal, eaten[meal.key])).join("")}
+                ${meals.map(meal => MealCard(meal, eaten[meal.key])).join("")}
             </div>
         `}
 

@@ -1,6 +1,6 @@
 import { rerender } from "../../core/router.js";
 import { parseDietCsv, buildDietCsvTemplate } from "../../utils/dietCsv.js";
-import { getActiveDietPlan, importDietPlan, toggleMealEaten, setWeekendLongRunDay, deleteDietPlan } from "../../data/dietStore.js";
+import { getActiveDietPlan, importDietPlan, toggleMealEaten, setWeekendLongRunDay, deleteDietPlan, setTrainingTime } from "../../data/dietStore.js";
 import { getViewedNutritionDate } from "./components/GymNutrition.js";
 import { setDietImport, setDietWeekendPickerOpen, isDietDeletePending, setDietDeletePending, setDietSectionOpen } from "./gymStore.js";
 
@@ -141,6 +141,17 @@ export function initGymDietEvents() {
     document.querySelector('[data-action="diet-weekend-change"]')?.addEventListener("click", () => {
         setDietWeekendPickerOpen(true);
         rerender({ resetScroll: true });
+    });
+
+    // Pestañas "¿Cuándo entrenas?": guardan la franja en el registro de
+    // ese día y repintan la lista y el anillo con ella.
+    document.querySelectorAll('[data-action="diet-training-time"]').forEach(button => {
+        button.addEventListener("click", () => {
+            const plan = getActiveDietPlan();
+            if (!plan) return;
+            setTrainingTime(button.dataset.date, plan.id, button.dataset.time);
+            rerender();
+        });
     });
 
     // Marcar qué opción se comió: el día visto, contra la dieta activa.

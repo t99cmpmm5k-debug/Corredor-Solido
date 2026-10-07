@@ -27,6 +27,32 @@ export const GENERAL_RULES = "REGLAS_GENERALES";
 
 const RESERVED_MOMENTS = ["HIDRATACION", "AJUSTE", "REGLA"];
 
+// Franjas de entrenamiento: un momento que empieza por "Mañana - ",
+// "Mediodía - " o "Tarde - " es una comida solo para los días que se
+// entrena en esa franja; sin prefijo, la comida vale para las tres. En la
+// app se elige la franja de cada día (pestañas de "¿Cuándo entrenas?").
+export const TRAINING_TIMES = [
+    { id: "manana", label: "Mañana", prefix: "Mañana" },
+    { id: "mediodia", label: "Mediodía", prefix: "Mediodía" },
+    { id: "tarde", label: "Tarde", prefix: "Tarde" }
+];
+
+// "Mañana - Desayuno" -> { training: "manana", name: "Desayuno" }; sin
+// prefijo -> { training: null, name: momento }. NFC: un CSV guardado con
+// la tilde descompuesta (macOS) tiene que casar igual.
+function splitTrainingPrefix(momento) {
+
+    const normalized = momento.normalize("NFC");
+
+    for (const time of TRAINING_TIMES) {
+        const match = normalized.match(new RegExp(`^${time.prefix}\\s*-\\s*(.*)$`));
+        if (match) return { training: time.id, prefix: time.prefix, name: match[1].trim() };
+    }
+
+    return { training: null, prefix: null, name: momento };
+
+}
+
 const MAX_ERRORS = 25;
 const MAX_BYTES = 1024 * 1024;
 
@@ -213,12 +239,23 @@ export function parseDietCsv(rawText) {
 
         }
 
+        const { training, prefix, name } = splitTrainingPrefix(momento);
+
+        if (training && !name) { fail(line, `el momento «${momento}» tiene la franja «${prefix} - » pero le falta el nombre de la comida (p. ej. «${prefix} - Desayuno»).`); continue; }
+        if (training && RESERVED_MOMENTS.includes(name)) { fail(line, `${name} no lleva franja: escríbelo sin «${prefix} - ».`); continue; }
+
         if (!alimento) { fail(line, `a ${dia} · ${momento} · opción ${opcion} le falta el texto en «alimento».`); continue; }
         if (notas) { fail(line, "las comidas no llevan «notas» (solo AJUSTE y REGLA). Si es parte de la comida, ponlo en «alimento»."); continue; }
 
-        let meal = day.meals.find(m => m.moment === momento);
+        // La clave conserva el momento ORIGINAL (con prefijo): reimportar el
+        // mismo CSV no pierde lo marcado, y "Mañana - Desayuno" y "Tarde -
+        // Desayuno" son dos comidas distintas. `moment` va sin el prefijo
+        // (la franja ya la dice la pestaña) y `training` solo si tiene franja.
+        const mealKey = `${dia}|${momento}`;
+        let meal = day.meals.find(m => m.key === mealKey);
         if (!meal) {
-            meal = { key: `${dia}|${momento}`, moment: momento, options: [] };
+            meal = { key: mealKey, moment: name, options: [] };
+            if (training) meal.training = training;
             day.meals.push(meal);
         }
 

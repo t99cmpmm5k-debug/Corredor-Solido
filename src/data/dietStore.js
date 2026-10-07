@@ -165,28 +165,91 @@ export function getEatenForDate(date) {
 
 // Marca que de `mealKey` se comió `optionKey`; volver a tocar la misma
 // opción la desmarca, tocar otra la sustituye (una opción por comida).
+// Conserva el resto del registro del día (la franja elegida, trainingTime).
 export function toggleMealEaten(date, planId, mealKey, optionKey) {
 
-    const eaten = { ...getEatenForDate(date) };
+    const record = checks.find(c => c.id === date);
+    const eaten = { ...(record?.eaten ?? {}) };
 
     if (eaten[mealKey] === optionKey) delete eaten[mealKey];
     else eaten[mealKey] = optionKey;
 
-    upsert(checks, STORES.dietChecks, { id: date, date, planId, eaten, updatedAt: new Date().toISOString() });
+    upsert(checks, STORES.dietChecks, { ...record, id: date, date, planId, eaten, updatedAt: new Date().toISOString() });
     notifyDataChanged();
 
 }
 
+// ---- Franja de entrenamiento (Mañana / Mediodía / Tarde) ---------------------
+
+const DEFAULT_TRAINING_TIME = "mediodia";
+
+// Franja de un día: la elegida ese día; si no, la del último día anterior
+// en que se eligió (por fecha, para que el histórico no cambie al elegir
+// otra hoy); si nunca se ha elegido, mediodía.
+export function getTrainingTimeForDate(date) {
+
+    const own = checks.find(c => c.id === date)?.trainingTime;
+    if (own) return own;
+
+    const previous = checks
+        .filter(c => c.trainingTime && c.date < date)
+        .sort((a, b) => b.date.localeCompare(a.date))[0];
+
+    return previous?.trainingTime ?? DEFAULT_TRAINING_TIME;
+
+}
+
+// Guarda la franja en el registro del día (dietChecks), conservando lo ya
+// marcado -- mismo registro y mismo sync que las comidas.
+export function setTrainingTime(date, planId, trainingTime) {
+
+    const record = checks.find(c => c.id === date);
+
+    upsert(checks, STORES.dietChecks, {
+        ...record,
+        id: date,
+        date,
+        planId: record?.planId ?? planId,
+        eaten: record?.eaten ?? {},
+        trainingTime,
+        updatedAt: new Date().toISOString()
+    });
+    notifyDataChanged();
+
+}
+
+// ¿Tiene este día comidas ligadas a una franja? Si no (planes sin
+// prefijos), no hay pestañas y todo se ve como antes.
+export function dayHasTrainingTimes(day) {
+
+    return Boolean(day?.meals.some(meal => meal.training));
+
+}
+
+// Comidas de una franja: las suyas más las comunes (sin franja). Sin
+// franja (null), todas -- el comportamiento de antes.
+export function getMealsForTrainingTime(day, trainingTime) {
+
+    if (!day) return [];
+    if (!trainingTime) return day.meals;
+
+    return day.meals.filter(meal => !meal.training || meal.training === trainingTime);
+
+}
+
 // Cumplimiento de un día: comidas con alguna opción marcada sobre las
-// comidas del día (HIDRATACION y AJUSTE no son comidas y no cuentan). Una
-// marca de una opción que ya no existe en el plan (CSV reimportado sin
-// ella) no cuenta. null si no hay día que contar.
-export function computeDayCompliance(day, eaten) {
+// comidas del día (HIDRATACION y AJUSTE no son comidas y no cuentan). Con
+// franja, solo las de esa franja más las comunes (una comida de otra
+// franja ni suma ni resta, aunque se marcara). Una marca de una opción que
+// ya no existe en el plan (CSV reimportado sin ella) no cuenta. null si no
+// hay día que contar.
+export function computeDayCompliance(day, eaten, trainingTime = null) {
 
-    if (!day?.meals.length) return null;
+    const meals = getMealsForTrainingTime(day, trainingTime);
+    if (!meals.length) return null;
 
-    const total = day.meals.length;
-    const done = day.meals.filter(meal => meal.options.some(o => o.key === eaten[meal.key])).length;
+    const total = meals.length;
+    const done = meals.filter(meal => meal.options.some(o => o.key === eaten[meal.key])).length;
 
     return { done, total, percent: Math.round(done / total * 100) };
 
@@ -212,7 +275,7 @@ export function getDayCompliance(date) {
     const { dayKey } = resolveDietDay(date);
     if (!dayKey) return null;
 
-    return computeDayCompliance(plan.days[dayKey], record?.eaten ?? {});
+    return computeDayCompliance(plan.days[dayKey], record?.eaten ?? {}, getTrainingTimeForDate(date));
 
 }
 
