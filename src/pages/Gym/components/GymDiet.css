@@ -457,14 +457,14 @@
 .gym-meal-card{
 
     display:grid;
-    grid-template-columns:minmax(0, 1fr) 52px;
+    grid-template-columns:minmax(0, 1fr) 40px;
     grid-template-areas:
         "head photo"
         "body photo";
-    column-gap:12px;
-    row-gap:6px;
+    column-gap:10px;
+    row-gap:4px;
 
-    padding:12px 14px;
+    padding:10px 12px;
 
     border-radius:var(--radius-lg);
     border:1px solid var(--card-border);
@@ -484,9 +484,33 @@
 
     grid-area:head;
     display:flex;
-    align-items:center;
+    align-items:flex-start;
     gap:10px;
     min-width:0;
+
+}
+
+/* Hora (si las opciones la comparten) + nombre; el nombre hace salto de
+   línea, nunca "…". */
+.gym-meal-title{
+
+    flex:1;
+    min-width:0;
+    display:flex;
+    flex-wrap:wrap;
+    align-items:baseline;
+    gap:0 8px;
+    padding-top:3px;
+
+}
+
+.gym-meal-time{
+
+    color:var(--text-primary);
+    font-size:.8rem;
+    font-weight:800;
+    font-variant-numeric:tabular-nums;
+    white-space:nowrap;
 
 }
 
@@ -536,9 +560,7 @@
 .gym-meal-moment{
 
     min-width:0;
-    overflow:hidden;
-    text-overflow:ellipsis;
-    white-space:nowrap;
+    line-height:1.35;
 
 }
 
@@ -590,11 +612,12 @@
 
 }
 
+/* 1-2 líneas de contenido; el resto tras "Ver detalle". */
 .gym-meal-clamp{
 
     display:-webkit-box;
     -webkit-box-orient:vertical;
-    -webkit-line-clamp:3;
+    -webkit-line-clamp:2;
     overflow:hidden;
 
 }
@@ -648,7 +671,22 @@
 
     display:flex;
     flex-direction:column;
-    gap:2px;
+    gap:0;
+
+}
+
+/* 3.ª opción en adelante: plegadas hasta "Ver N opciones más" (o ya
+   abiertas si la marcada está entre ellas). */
+.gym-meal-options-extra{
+
+    display:none;
+
+}
+
+.gym-meal-card.is-options-open .gym-meal-options-extra{
+
+    display:flex;
+    flex-direction:column;
 
 }
 
@@ -658,7 +696,7 @@
     align-items:flex-start;
     gap:8px;
 
-    padding:4px 6px 4px 0;
+    padding:3px 6px 3px 0;
     border:none;
     border-radius:var(--radius-sm);
     background:transparent;
@@ -722,12 +760,14 @@
 
 /* Ilustración (iconos 3D, ver src/assets/CREDITS.md): una centrada o dos
    solapadas. Más pequeña que antes (76 -> 52px). */
+/* Ilustración: 40px (antes 52), y en pareja las dos del mismo tamaño;
+   sombra más suave. */
 .gym-meal-photo{
 
     grid-area:photo;
     position:relative;
-    width:52px;
-    height:52px;
+    width:40px;
+    height:40px;
     align-self:center;
 
 }
@@ -735,27 +775,27 @@
 .gym-meal-photo img{
 
     position:absolute;
-    inset:3px;
-    width:46px;
-    height:46px;
+    inset:2px;
+    width:36px;
+    height:36px;
     object-fit:contain;
-    filter:drop-shadow(0 4px 6px rgba(0,0,0,.35));
+    filter:drop-shadow(0 2px 3px rgba(0,0,0,.25));
 
 }
 
 .gym-meal-photo.is-pair img:first-child{
 
     inset:0 auto auto 0;
-    width:36px;
-    height:36px;
+    width:28px;
+    height:28px;
 
 }
 
 .gym-meal-photo.is-pair img:last-child{
 
     inset:auto 0 0 auto;
-    width:34px;
-    height:34px;
+    width:28px;
+    height:28px;
 
 }
 
@@ -873,5 +913,67 @@
     padding:8px 0;
     font-size:.72rem;
     white-space:nowrap;
+
+}
+
+/* ==========================
+   AJUSTE compacto: resumen a 3 líneas + "Ver indicaciones" con el texto
+   completo (ver Adjustment() en GymDiet.js).
+========================== */
+
+.gym-diet-adjust{
+
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+
+}
+
+.gym-diet-info .gym-diet-adjust-summary,
+.gym-diet-info .gym-diet-adjust-full{
+
+    display:block;
+    margin:0;
+    color:var(--text-primary);
+    font-size:.8rem;
+    line-height:1.35;
+
+}
+
+.gym-diet-info .gym-diet-adjust-summary{
+
+    display:-webkit-box;
+    -webkit-box-orient:vertical;
+    -webkit-line-clamp:3;
+    overflow:hidden;
+
+}
+
+.gym-diet-info .gym-diet-adjust-summary[hidden],
+.gym-diet-info .gym-diet-adjust-full[hidden]{
+
+    display:none;
+
+}
+
+.gym-diet-adjust .gym-meal-more{
+
+    margin-top:2px;
+
+}
+
+/* "Ver N opciones más" y "Ver detalle" en una fila; sin ninguno visible,
+   la fila no ocupa sitio. */
+.gym-meal-links{
+
+    display:flex;
+    flex-wrap:wrap;
+    gap:0 16px;
+
+}
+
+.gym-meal-links:not(:has(.gym-meal-more:not([hidden]))){
+
+    display:none;
 
 }

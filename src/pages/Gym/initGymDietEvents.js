@@ -69,15 +69,61 @@ function downloadTemplate() {
 
 }
 
-// Comidas abiertas con "Ver detalle" -- se reaplica en cada render (marcar
-// una comida repinta la pestaña y, sin esto, se volvía a recortar).
+// Comidas abiertas con "Ver detalle", comidas con todas sus opciones a la
+// vista y AJUSTE desplegado -- se reaplican en cada render (marcar una
+// comida repinta la pestaña y, sin esto, todo se volvía a plegar).
 const expandedMeals = new Set();
+const openOptions = new Set();
+let adjustOpen = false;
+
+function setOptionsOpen(card, open) {
+
+    card.classList.toggle("is-options-open", open);
+
+    const button = card.querySelector('[data-action="diet-more-options"]');
+    if (!button) return;
+
+    const count = Number(button.dataset.count);
+    button.textContent = open ? "Ver menos opciones" : `Ver ${count} ${count === 1 ? "opción" : "opciones"} más`;
+
+}
+
+function setAdjustOpen(box, open) {
+
+    box.querySelector(".gym-diet-adjust-summary").hidden = open;
+    box.querySelector(".gym-diet-adjust-full").hidden = !open;
+    box.querySelector('[data-action="diet-toggle-ajuste"]').textContent = open ? "Ver menos" : "Ver indicaciones ›";
+
+}
+
+// AJUSTE: con marcador "SI ENTRENAS POR LA MAÑANA" siempre hay más que
+// ver; sin él, solo si el resumen (el texto entero) se corta de verdad.
+function setupAdjustment() {
+
+    const box = document.querySelector("[data-diet-adjust]");
+    if (!box) return;
+
+    const button = box.querySelector('[data-action="diet-toggle-ajuste"]');
+    const summary = box.querySelector(".gym-diet-adjust-summary");
+    const clipped = summary.scrollHeight > summary.clientHeight + 1;
+
+    button.hidden = !(box.dataset.hasMarker === "true" || clipped || adjustOpen);
+    setAdjustOpen(box, adjustOpen);
+
+}
 
 // "Ver detalle" solo donde el texto de verdad está recortado: se mide ya
 // pintado (scrollHeight > clientHeight), no se adivina por nº de letras.
 function setupMealClamp() {
 
     document.querySelectorAll("[data-meal-card]").forEach(card => {
+
+        // Opciones desplegadas: las que el usuario abrió, más las que ya
+        // salen abiertas porque la marcada estaba entre las ocultas.
+        if (openOptions.has(card.dataset.mealCard) || card.classList.contains("is-options-open")) {
+            openOptions.add(card.dataset.mealCard);
+            setOptionsOpen(card, true);
+        }
 
         const button = card.querySelector('[data-action="diet-meal-expand"]');
         if (!button) return;
@@ -99,6 +145,27 @@ function setupMealClamp() {
 export function initGymDietEvents() {
 
     setupMealClamp();
+    setupAdjustment();
+
+    document.querySelectorAll('[data-action="diet-more-options"]').forEach(button => {
+        button.addEventListener("click", () => {
+            const card = button.closest("[data-meal-card]");
+            if (!card) return;
+            const key = card.dataset.mealCard;
+            const open = !openOptions.has(key);
+            if (open) openOptions.add(key); else openOptions.delete(key);
+            setOptionsOpen(card, open);
+            // Las opciones recién visibles también pueden necesitar "Ver detalle".
+            setupMealClamp();
+        });
+    });
+
+    document.querySelector('[data-action="diet-toggle-ajuste"]')?.addEventListener("click", () => {
+        const box = document.querySelector("[data-diet-adjust]");
+        if (!box) return;
+        adjustOpen = !adjustOpen;
+        setAdjustOpen(box, adjustOpen);
+    });
 
     document.querySelectorAll('[data-action="diet-meal-expand"]').forEach(button => {
         button.addEventListener("click", () => {

@@ -273,6 +273,32 @@ function ComplianceCard(date, compliance) {
 
 // HIDRATACION y AJUSTE: información del día, no comida -- sin casillas y
 // con su propio estilo.
+// AJUSTE compacto: como resumen, lo que va antes de "SI ENTRENAS POR LA
+// MAÑANA" (las indicaciones por franja vienen detrás); sin ese marcador,
+// el texto entero recortado a 3 líneas. "Ver indicaciones" despliega el
+// texto COMPLETO, tal cual viene del CSV -- nunca se reescribe ni se
+// quita nada. Sin marcador, el botón solo aparece si el texto de verdad
+// se corta (ver setupDietClamps en initGymDietEvents.js).
+const ADJUSTMENT_SPLIT = /\s*SI ENTRENAS POR LA MA(Ñ|N)ANA/i;
+
+function Adjustment(text) {
+
+    const match = text.match(ADJUSTMENT_SPLIT);
+    const summary = match && match.index > 0 ? text.slice(0, match.index).trim() : text;
+
+    return `
+
+        <div class="gym-diet-adjust" data-diet-adjust data-has-marker="${Boolean(match && match.index > 0)}">
+            <p><iconify-icon icon="solar:info-circle-bold-duotone"></iconify-icon><b>Ajuste</b></p>
+            <p class="gym-diet-adjust-summary">${escapeHtml(summary)}</p>
+            <p class="gym-diet-adjust-full" hidden>${escapeHtml(text)}</p>
+            <button class="gym-meal-more" data-action="diet-toggle-ajuste" hidden>Ver indicaciones ›</button>
+        </div>
+
+    `;
+
+}
+
 function DayInfo(day) {
 
     if (!day.hydration && !day.adjustment) return "";
@@ -281,7 +307,7 @@ function DayInfo(day) {
 
         <div class="gym-diet-info">
             ${day.hydration ? `<p><iconify-icon icon="solar:waterdrop-bold-duotone"></iconify-icon><b>Hidratación</b><span>${escapeHtml(day.hydration)}</span></p>` : ""}
-            ${day.adjustment ? `<p><iconify-icon icon="solar:info-circle-bold-duotone"></iconify-icon><b>Ajuste</b><span>${escapeHtml(day.adjustment)}</span></p>` : ""}
+            ${day.adjustment ? Adjustment(day.adjustment) : ""}
         </div>
 
     `;
@@ -340,43 +366,88 @@ function MomentLabel(moment) {
 
 }
 
-// Una tarjeta por comida (pulido final 2026-10-06): casilla pequeña +
-// momento arriba, el texto recortado a 2-3 líneas con "Ver detalle" para
-// el resto (solo aparece si de verdad se corta, ver initGymDietEvents.js)
-// e ilustración pequeña a la derecha. Una opción: la casilla la marca.
-// Varias: se elige con los radios cuál se comió (y la casilla, ya
-// marcada, la desmarca); con ninguna elegida, la casilla pide elegir antes.
+// Hora entre corchetes al principio del texto ("[07:45] Café…", "[21:30-
+// 22:00] …"): si TODAS las opciones de la comida empiezan por la misma, se
+// muestra una vez en la cabecera y no se repite en cada opción. Solo es
+// presentación: el texto guardado no cambia, y si las horas no coinciden
+// cada opción la sigue llevando.
+const LEADING_TIME = /^\[([^\]]+)\]\s*/;
+
+function sharedTime(options) {
+
+    const times = options.map(option => option.text.match(LEADING_TIME)?.[1] ?? null);
+    return times[0] && times.every(time => time === times[0]) ? times[0] : null;
+
+}
+
+function optionText(text, time) {
+
+    return time ? text.replace(LEADING_TIME, "") : text;
+
+}
+
+// Con 3 o más opciones se ven 2 y "Ver N opciones más" despliega el resto
+// en la misma tarjeta. Si la opción marcada está entre las ocultas, la
+// tarjeta sale ya desplegada.
+const VISIBLE_OPTIONS = 2;
+
+function OptionButton(meal, option, eatenKey, time) {
+
+    return `
+
+        <button class="gym-meal-option ${option.key === eatenKey ? "is-selected" : ""}" role="radio" aria-checked="${option.key === eatenKey}" data-action="diet-toggle-meal" data-meal-key="${escapeHtml(meal.key)}" data-option-key="${escapeHtml(option.key)}">
+            <span class="gym-meal-radio" aria-hidden="true"></span>
+            <span class="gym-meal-clamp"><b>${option.number}.</b> ${escapeHtml(optionText(option.text, time))}</span>
+        </button>
+
+    `;
+
+}
+
+// Una tarjeta por comida (pulido final de Nutrición): casilla pequeña,
+// hora (si la hay) y nombre -- el momento del CSV sin el prefijo de franja,
+// con salto de línea en vez de "…" --, 1-2 líneas de contenido con "Ver
+// detalle" solo si de verdad se corta (ver initGymDietEvents.js) e
+// ilustración pequeña. Una opción: la casilla la marca. Varias: se elige
+// con los radios cuál se comió (y la casilla, ya marcada, la desmarca);
+// con ninguna elegida, la casilla pide elegir antes.
 function MealCard(meal, eatenKey) {
 
     const multiple = meal.options.length > 1;
     const eaten = meal.options.find(o => o.key === eatenKey) ?? null;
     const shown = eaten ?? meal.options[0];
+    const time = sharedTime(meal.options);
+
+    const visible = meal.options.slice(0, VISIBLE_OPTIONS);
+    const hidden = meal.options.length > VISIBLE_OPTIONS ? meal.options.slice(VISIBLE_OPTIONS) : [];
+    const shownAll = hidden.length ? visible : meal.options;
+    const eatenHidden = hidden.some(option => option.key === eatenKey);
 
     const body = multiple ? `
 
         <p class="gym-meal-choose">Elige 1:</p>
 
         <div class="gym-meal-options" role="radiogroup" aria-label="${escapeHtml(meal.moment)}">
-            ${meal.options.map(option => `
-                <button class="gym-meal-option ${option.key === eatenKey ? "is-selected" : ""}" role="radio" aria-checked="${option.key === eatenKey}" data-action="diet-toggle-meal" data-meal-key="${escapeHtml(meal.key)}" data-option-key="${escapeHtml(option.key)}">
-                    <span class="gym-meal-radio" aria-hidden="true"></span>
-                    <span class="gym-meal-clamp"><b>${option.number}.</b> ${escapeHtml(option.text)}</span>
-                </button>
-            `).join("")}
+            ${shownAll.map(option => OptionButton(meal, option, eatenKey, time)).join("")}
+            ${hidden.length ? `
+                <div class="gym-meal-options-extra">
+                    ${hidden.map(option => OptionButton(meal, option, eatenKey, time)).join("")}
+                </div>
+            ` : ""}
         </div>
 
         <p class="gym-meal-hint" data-meal-hint hidden>Toca la opción que has comido.</p>
 
     ` : (() => {
 
-        const { main, detail } = splitMealText(meal.options[0].text);
+        const { main, detail } = splitMealText(optionText(meal.options[0].text, time));
         return `<p class="gym-meal-main gym-meal-clamp">${escapeHtml(main)}${detail ? ` <span class="gym-meal-detail">${escapeHtml(detail)}</span>` : ""}</p>`;
 
     })();
 
     return `
 
-        <article class="gym-meal-card ${eaten ? "is-eaten" : ""}" data-meal-card="${escapeHtml(meal.key)}">
+        <article class="gym-meal-card ${eaten ? "is-eaten" : ""} ${eatenHidden ? "is-options-open" : ""}" data-meal-card="${escapeHtml(meal.key)}">
 
             <div class="gym-meal-head">
 
@@ -385,13 +456,20 @@ function MealCard(meal, eatenKey) {
                     ${eaten ? `<iconify-icon icon="mdi:check-bold"></iconify-icon>` : ""}
                 </button>
 
-                ${MomentLabel(meal.moment)}
+                <span class="gym-meal-title">
+                    ${time ? `<span class="gym-meal-time">${escapeHtml(time)}</span>` : ""}
+                    ${MomentLabel(meal.moment)}
+                </span>
 
             </div>
 
             <div class="gym-meal-body">
                 ${body}
-                <button class="gym-meal-more" data-action="diet-meal-expand" hidden>Ver detalle</button>
+                <!-- Los dos enlaces en una sola fila (antes apilados). -->
+                <div class="gym-meal-links">
+                    ${hidden.length ? `<button class="gym-meal-more gym-meal-more-options" data-action="diet-more-options" data-count="${hidden.length}">${eatenHidden ? "Ver menos opciones" : `Ver ${hidden.length} ${hidden.length === 1 ? "opción" : "opciones"} más`}</button>` : ""}
+                    <button class="gym-meal-more" data-action="diet-meal-expand" hidden>Ver detalle</button>
+                </div>
             </div>
 
             ${MealPhoto(shown.text)}
