@@ -200,4 +200,22 @@ describe("dietStore -- pestaña Descanso", () => {
 
     });
 
+    it("plan guardado sin `training` con comidas «Descanso - »: se deducen al leer, sin reimportar", async () => {
+
+        const rows = CSV.split("\n");
+        rows.splice(5, 0, "LUNES,Descanso - Desayuno,1,Huevos + pan 40 g,");
+        const { store, plan } = await freshStore(withoutTraining(parseDietCsv(rows.join("\n")).plan));
+
+        expect(store.getDietMenu(plan, "LUNES", "tarde").meals.map(m => m.key)).toEqual(["LUNES|09:00", "LUNES|Tarde - Post-gym"]);
+        expect(store.getDietMenu(plan, "LUNES", "descanso").meals.map(m => [m.key, m.moment, m.training ?? null])).toEqual([
+            ["LUNES|09:00", "09:00", null],
+            ["LUNES|Descanso - Desayuno", "Desayuno", "descanso"]
+        ]);
+
+        store.setTrainingTime(MONDAY, plan.id, "tarde");
+        store.toggleMealEaten(MONDAY, plan.id, "LUNES|Descanso - Desayuno", "LUNES|Descanso - Desayuno|1");
+        expect(store.getDayCompliance(MONDAY)).toEqual({ done: 0, total: 2, percent: 0 });
+
+    });
+
 });

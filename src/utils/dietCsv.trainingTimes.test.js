@@ -67,6 +67,14 @@ describe("parseDietCsv -- franjas de entrenamiento", () => {
 
     });
 
+    it("«Descanso - » sin nombre de comida es un error con su línea", () => {
+
+        const { errors } = parseDietCsv(csv("LUNES,Descanso - ,1,Huevos + pan 40 g,"));
+
+        expect(errors).toEqual([{ line: 2, message: expect.stringContaining("le falta el nombre de la comida") }]);
+
+    });
+
     it("la tilde descompuesta (NFD, p. ej. guardado desde macOS) casa igual", () => {
 
         const { plan } = parseDietCsv(csv("LUNES,Mañana - Desayuno,1,Avena 40 g,".normalize("NFD")));
