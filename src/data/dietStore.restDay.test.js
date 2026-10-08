@@ -171,4 +171,33 @@ describe("dietStore -- pestaña Descanso", () => {
 
     });
 
+    it("comidas «Descanso - » del propio día: solo en la pestaña Descanso, y cuentan solo ahí", async () => {
+
+        const rows = CSV.split("\n");
+        rows.splice(5, 0, "LUNES,Descanso - Desayuno,1,Huevos + pan 40 g,", "LUNES,Descanso - Desayuno,2,Yogur 200 g,");
+        const { store, plan } = await freshStore(parseDietCsv(rows.join("\n")).plan);
+
+        for (const time of ["manana", "mediodia", "tarde"]) {
+            expect(store.getDietMenu(plan, "LUNES", time).meals.map(m => m.key)).not.toContain("LUNES|Descanso - Desayuno");
+        }
+
+        expect(store.canChooseRestDay(plan, "LUNES")).toBe(true);
+
+        // Las suyas más las comunes, del propio día -- no el menú DESCANSO.
+        const menu = store.getDietMenu(plan, "LUNES", "descanso");
+        expect(menu.dayKey).toBe("LUNES");
+        expect(menu.meals.map(m => [m.key, m.moment])).toEqual([
+            ["LUNES|09:00", "09:00"],
+            ["LUNES|Descanso - Desayuno", "Desayuno"]
+        ]);
+
+        store.setTrainingTime(MONDAY, plan.id, "descanso");
+        store.toggleMealEaten(MONDAY, plan.id, "LUNES|Descanso - Desayuno", "LUNES|Descanso - Desayuno|2");
+        expect(store.getDayCompliance(MONDAY)).toEqual({ done: 1, total: 2, percent: 50 });
+
+        store.setTrainingTime(MONDAY, plan.id, "tarde");
+        expect(store.getDayCompliance(MONDAY)).toEqual({ done: 0, total: 2, percent: 0 });
+
+    });
+
 });

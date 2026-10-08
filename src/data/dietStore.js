@@ -184,9 +184,10 @@ export function toggleMealEaten(date, planId, mealKey, optionKey) {
 
 const DEFAULT_TRAINING_TIME = "mediodia";
 
-// 4ª pestaña: ese día no se entrena y se come el menú DESCANSO del plan
-// entero (ver getDietMenu). Se guarda en trainingTime igual que las otras,
-// pero nunca se hereda: es una decisión de ese día.
+// 4ª pestaña: ese día no se entrena. Se come lo que el propio día tenga
+// con "Descanso - " o, si no tiene, el menú DESCANSO del plan entero (ver
+// getDietMenu). Se guarda en trainingTime igual que las otras, pero nunca
+// se hereda: es una decisión de ese día.
 export const REST_TRAINING_TIME = "descanso";
 const REST_DAY_KEY = "DESCANSO";
 
@@ -265,23 +266,35 @@ export function dayHasTrainingTimes(day) {
 }
 
 // Comidas de una franja: las suyas más las comunes (sin franja). Sin
-// franja (null), todas -- el comportamiento de antes. Con "descanso",
-// `day` es ya el menú DESCANSO (ver getDietMenu): todas las suyas.
+// franja (null), todas -- el comportamiento de antes. "descanso" filtra
+// igual: las "Descanso - " del día más las comunes (en el día DESCANSO,
+// sin prefijos, son todas).
 export function getMealsForTrainingTime(day, trainingTime) {
 
     const meals = getDayMeals(day);
-    if (!trainingTime || trainingTime === REST_TRAINING_TIME) return meals;
+    if (!trainingTime) return meals;
 
     return meals.filter(meal => !meal.training || meal.training === trainingTime);
 
 }
 
-// ¿Sale la pestaña Descanso en este día? Solo en días con franjas, que no
-// sean ya el propio DESCANSO, y si el plan tiene menú DESCANSO.
+// ¿Tiene el día comidas propias de descanso ("Descanso - …")?
+function dayHasRestMeals(day) {
+
+    return getDayMeals(day).some(meal => meal.training === REST_TRAINING_TIME);
+
+}
+
+// ¿Sale la pestaña Descanso en este día? Si el día tiene comidas
+// "Descanso - ", sí; si no, en días con franjas que no sean ya el propio
+// DESCANSO y si el plan tiene menú DESCANSO.
 export function canChooseRestDay(plan, dayKey) {
 
+    const day = plan?.days[dayKey];
+    if (dayHasRestMeals(day)) return true;
+
     return dayKey !== REST_DAY_KEY
-        && dayHasTrainingTimes(plan?.days[dayKey])
+        && dayHasTrainingTimes(day)
         && getDayMeals(plan.days[REST_DAY_KEY]).length > 0;
 
 }
@@ -292,9 +305,10 @@ export function canChooseRestDay(plan, dayKey) {
 // del plan cuyas comidas (y AJUSTE/HIDRATACION) se usan:
 // - día sin franjas: todas sus comidas, trainingTime null (como antes);
 // - con franja de entreno: las de esa franja más las comunes;
-// - con "descanso" (y si se puede, ver canChooseRestDay): el menú DESCANSO
-//   entero, sin mezclar nada del día. Si no se puede (plan sin menú
-//   DESCANSO), mediodía.
+// - con "descanso" y comidas "Descanso - " en el día: esas más las comunes;
+// - con "descanso" sin ellas (y si se puede, ver canChooseRestDay): el
+//   menú DESCANSO entero, sin mezclar nada del día. Si no se puede (plan
+//   sin menú DESCANSO), mediodía.
 // computeDayCompliance(menu.day, eaten, menu.trainingTime) es su cumplimiento.
 export function getDietMenu(plan, dayKey, chosenTime) {
 
@@ -302,6 +316,10 @@ export function getDietMenu(plan, dayKey, chosenTime) {
     if (!day) return { dayKey, day: null, trainingTime: null, meals: [] };
 
     if (!dayHasTrainingTimes(day)) return { dayKey, day, trainingTime: null, meals: getMealsForTrainingTime(day, null) };
+
+    if (chosenTime === REST_TRAINING_TIME && dayHasRestMeals(day)) {
+        return { dayKey, day, trainingTime: REST_TRAINING_TIME, meals: getMealsForTrainingTime(day, REST_TRAINING_TIME) };
+    }
 
     if (chosenTime === REST_TRAINING_TIME && canChooseRestDay(plan, dayKey)) {
         const rest = plan.days[REST_DAY_KEY];
@@ -318,9 +336,9 @@ export function getDietMenu(plan, dayKey, chosenTime) {
 // comidas del día (HIDRATACION y AJUSTE no son comidas y no cuentan). Con
 // franja, solo las de esa franja más las comunes (una comida de otra
 // franja ni suma ni resta, aunque se marcara). Una marca de una opción que
-// ya no existe en el plan (CSV reimportado sin ella) no cuenta. Con
-// "descanso", `day` es el menú DESCANSO y cuentan todas las suyas (las
-// marcas de la franja del día ni suman ni restan). null si no hay día que
+// ya no existe en el plan (CSV reimportado sin ella) no cuenta. "descanso"
+// es una franja más: sus comidas "Descanso - " más las comunes (o, si el
+// día no tiene, `day` es el menú DESCANSO y cuentan todas las suyas). null si no hay día que
 // contar. Para elegir day/franja de una fecha, getDietMenu().
 export function computeDayCompliance(day, eaten, trainingTime = null) {
 

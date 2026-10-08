@@ -29,12 +29,14 @@ const RESERVED_MOMENTS = ["HIDRATACION", "AJUSTE", "REGLA"];
 
 // Franjas de entrenamiento: un momento que empieza por "Mañana - ",
 // "Mediodía - " o "Tarde - " es una comida solo para los días que se
-// entrena en esa franja; sin prefijo, la comida vale para las tres. En la
-// app se elige la franja de cada día (pestañas de "¿Cuándo entrenas?").
+// entrena en esa franja; "Descanso - ", solo para los días de ese menú en
+// que no se entrena. Sin prefijo, la comida vale para todas. En la app se
+// elige la franja de cada día (pestañas de "¿Cuándo entrenas?").
 export const TRAINING_TIMES = [
     { id: "manana", label: "Mañana", prefix: "Mañana" },
     { id: "mediodia", label: "Mediodía", prefix: "Mediodía" },
-    { id: "tarde", label: "Tarde", prefix: "Tarde" }
+    { id: "tarde", label: "Tarde", prefix: "Tarde" },
+    { id: "descanso", label: "Descanso", prefix: "Descanso" }
 ];
 
 // "Mañana - Desayuno" -> { training: "manana", name: "Desayuno" }; sin

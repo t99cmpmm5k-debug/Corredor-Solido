@@ -534,11 +534,11 @@ function Manage(plan, state) {
 // (momentos "Mañana - …" / "Mediodía - …" / "Tarde - …" en el CSV). Mismo
 // selector .gym-detail-tabs que el resto de Gimnasio. La franja se guarda
 // en el registro de ese día (ver setTrainingTime en dietStore.js).
-// Descanso (si el plan tiene menú DESCANSO, ver canChooseRestDay): ese día
-// se come el menú DESCANSO en lugar del del día.
+// Descanso solo si ese día tiene menú de descanso (sus comidas "Descanso -
+// " o el día DESCANSO del plan, ver canChooseRestDay).
 function TrainingTimeTabs(date, active, withRest) {
 
-    const tabs = [...TRAINING_TIMES, ...(withRest ? [{ id: REST_TRAINING_TIME, label: "Descanso" }] : [])];
+    const tabs = TRAINING_TIMES.filter(time => withRest || time.id !== REST_TRAINING_TIME);
 
     return `
 

@@ -19,9 +19,25 @@ function csv(...mondayRows) {
 
 describe("parseDietCsv -- franjas de entrenamiento", () => {
 
-    it("exporta las tres franjas en orden", () => {
+    it("exporta las cuatro franjas en orden", () => {
 
-        expect(TRAINING_TIMES.map(t => t.id)).toEqual(["manana", "mediodia", "tarde"]);
+        expect(TRAINING_TIMES.map(t => t.id)).toEqual(["manana", "mediodia", "tarde", "descanso"]);
+        expect(TRAINING_TIMES.map(t => t.prefix)).toEqual(["Mañana", "Mediodía", "Tarde", "Descanso"]);
+
+    });
+
+    it("«Descanso - » es la franja descanso, con el nombre sin prefijo", () => {
+
+        const { plan, errors } = parseDietCsv(csv(
+            "LUNES,Descanso - Desayuno,1,Huevos + pan 40 g,",
+            "LUNES,Mañana - Desayuno,1,Avena 40 g,"
+        ));
+
+        expect(errors).toBeUndefined();
+        expect(plan.days.LUNES.meals.map(m => [m.key, m.moment, m.training])).toEqual([
+            ["LUNES|Descanso - Desayuno", "Desayuno", "descanso"],
+            ["LUNES|Mañana - Desayuno", "Desayuno", "manana"]
+        ]);
 
     });
 
