@@ -40,7 +40,7 @@ export const TRAINING_TIMES = [
 // "Mañana - Desayuno" -> { training: "manana", name: "Desayuno" }; sin
 // prefijo -> { training: null, name: momento }. NFC: un CSV guardado con
 // la tilde descompuesta (macOS) tiene que casar igual.
-function splitTrainingPrefix(momento) {
+export function splitTrainingPrefix(momento) {
 
     const normalized = momento.normalize("NFC");
 

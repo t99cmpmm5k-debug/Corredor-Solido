@@ -8,8 +8,9 @@ import {
     computeDayCompliance,
     getWeekCompliance,
     getTrainingTimeForDate,
-    getMealsForTrainingTime,
-    dayHasTrainingTimes
+    getDietMenu,
+    canChooseRestDay,
+    REST_TRAINING_TIME
 } from "../../../data/dietStore.js";
 import { TRAINING_TIMES } from "../../../utils/dietCsv.js";
 import { formatISODate, formatDayMonth, getWeekStartDate, addDays, parseISODate } from "../../../utils/date.js";
@@ -314,10 +315,13 @@ function DayInfo(day) {
 
 }
 
-function DayHeader(dayKey, day) {
+// `menuDay`: el día cuyo AJUSTE/HIDRATACION se enseña -- el propio, o el
+// DESCANSO si ese día se ha elegido la pestaña Descanso.
+function DayHeader(dayKey, menuDay, isRestMenu) {
 
     const info = DAY_INFO[dayKey];
     const weekend = dayKey === "TIRADA_LARGA" || dayKey === "DESCANSO";
+    const subtitle = isRestMenu ? DAY_INFO.DESCANSO.subtitle : info.subtitle;
 
     return `
 
@@ -327,12 +331,12 @@ function DayHeader(dayKey, day) {
                 <iconify-icon class="gym-diet-day-icon" icon="${info.icon}"></iconify-icon>
                 <div>
                     <h3>${info.title}</h3>
-                    <p>${info.subtitle}</p>
+                    <p>${subtitle}</p>
                 </div>
                 ${weekend ? `<button class="gym-diet-change" data-action="diet-weekend-change">Cambiar <iconify-icon icon="solar:alt-arrow-down-linear"></iconify-icon></button>` : ""}
             </div>
 
-            ${DayInfo(day)}
+            ${DayInfo(menuDay)}
 
         </section>
 
@@ -530,7 +534,11 @@ function Manage(plan, state) {
 // (momentos "Mañana - …" / "Mediodía - …" / "Tarde - …" en el CSV). Mismo
 // selector .gym-detail-tabs que el resto de Gimnasio. La franja se guarda
 // en el registro de ese día (ver setTrainingTime en dietStore.js).
-function TrainingTimeTabs(date, active) {
+// Descanso (si el plan tiene menú DESCANSO, ver canChooseRestDay): ese día
+// se come el menú DESCANSO en lugar del del día.
+function TrainingTimeTabs(date, active, withRest) {
+
+    const tabs = [...TRAINING_TIMES, ...(withRest ? [{ id: REST_TRAINING_TIME, label: "Descanso" }] : [])];
 
     return `
 
@@ -539,7 +547,7 @@ function TrainingTimeTabs(date, active) {
             <h3 class="gym-diet-training-title">¿Cuándo entrenas?</h3>
 
             <div class="gym-detail-tabs gym-diet-training-tabs" role="tablist" aria-label="Franja de entrenamiento">
-                ${TRAINING_TIMES.map(time => `
+                ${tabs.map(time => `
                     <button class="gym-detail-tab ${time.id === active ? "is-active" : ""}" role="tab" aria-selected="${time.id === active}" data-action="diet-training-time" data-date="${date}" data-time="${time.id}">${time.label.toUpperCase()}</button>
                 `).join("")}
             </div>
@@ -563,13 +571,13 @@ export function GymDiet(date) {
     // que se usa esa semana), o al pulsar "Cambiar".
     const showPicker = !longRunDay || isDietWeekendPickerOpen();
 
-    const day = dayKey ? plan.days[dayKey] : null;
     const eaten = getEatenForDate(date);
-    // Planes sin prefijos: sin franja, todas las comidas, igual que antes.
-    const hasTimes = dayHasTrainingTimes(day);
-    const trainingTime = hasTimes ? getTrainingTimeForDate(date) : null;
-    const meals = getMealsForTrainingTime(day, trainingTime);
-    const compliance = day ? computeDayCompliance(day, eaten, trainingTime) : null;
+    // Qué menú toca: planes sin prefijos, sin franja y todas las comidas
+    // (igual que antes); con Descanso, el menú DESCANSO entero.
+    const menu = getDietMenu(plan, dayKey, getTrainingTimeForDate(date));
+    const hasTimes = menu.trainingTime != null;
+    const isRestMenu = menu.trainingTime === REST_TRAINING_TIME;
+    const compliance = menu.day ? computeDayCompliance(menu.day, eaten, menu.trainingTime) : null;
 
     return `
 
@@ -585,10 +593,10 @@ export function GymDiet(date) {
                 <p>Elige arriba qué día del fin de semana haces la tirada larga para ver el menú de hoy.</p>
             </div>
         ` : `
-            ${DayHeader(dayKey, day)}
-            ${hasTimes ? TrainingTimeTabs(date, trainingTime) : ""}
+            ${DayHeader(dayKey, menu.day, isRestMenu)}
+            ${hasTimes ? TrainingTimeTabs(date, menu.trainingTime, canChooseRestDay(plan, dayKey)) : ""}
             <div class="gym-meal-list">
-                ${meals.map(meal => MealCard(meal, eaten[meal.key])).join("")}
+                ${menu.meals.map(meal => MealCard(meal, eaten[meal.key])).join("")}
             </div>
         `}
 
