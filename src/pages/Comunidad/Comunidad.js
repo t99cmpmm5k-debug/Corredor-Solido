@@ -22,7 +22,7 @@ const TAB_LABELS = {
 
 // Cápsula única (ajuste visual: acercar al mockup aprobado) en vez de
 // píldoras sueltas -- mismo patrón que .gym-detail-tabs/.gym-detail-tab
-// (GymExerciseDetailView.css: HISTORIAL/GRÁFICAS), no el de
+// (GymDetailScreen.css: pestañas de Gimnasio), no el de
 // .carreras-tabs (esas SÍ son píldoras independientes, pensadas para
 // poder crecer y hacer scroll horizontal si hiciera falta -- aquí son
 // siempre exactamente 2, un segmento fijo). Mapas existió como pestaña

@@ -58,7 +58,7 @@ function exerciseProgressLine(definition, sessionExercise, session) {
     const todayWeight = Math.max(...doneSets.map(set => set.weight));
     const todayReps = doneSets.find(set => set.weight === todayWeight).reps;
 
-    const previous = getPreviousExerciseSummary(definition.id, { excludeSessionId: session.id });
+    const previous = getPreviousExerciseSummary(definition.id, { excludeSessionId: session.id, name: definition.name });
 
     if (!previous) return { text: "Primera vez", tone: "muted" };
 

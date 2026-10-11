@@ -154,7 +154,7 @@ export function getWeekProgress(days, sessions, todayISO) {
 // Mismas sesiones que cuenta getWeekProgress(), pero el listado completo
 // en vez de solo el número — para el desplegable del resumen semanal
 // donde se pueden borrar una a una. Más reciente primero, igual que
-// HistoryTab en GymExerciseDetailView.js.
+// el historial de entrenos (getCompletedGymSessions en gymSessionStore.js).
 export function getWeekSessions(days, sessions, todayISO) {
 
     return completedThisWeek(days, sessions, todayISO)

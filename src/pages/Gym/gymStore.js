@@ -6,9 +6,15 @@ const store = {
     activeSessionId: null,
     currentExerciseIndex: 0,
 
+    // Hoja "historial de este ejercicio" abierta sobre la sesión en curso
+    // (null = cerrada).
     detailExerciseId: null,
-    detailTab: "historial",
-    detailExpandedSessionId: null,
+
+    // Historial de entrenos: sesión abierta en detalle y a qué pantalla
+    // vuelve al cerrarla ("select-day" desde Rutinas, "gym-history" desde
+    // el historial completo).
+    detailSessionId: null,
+    sessionDetailReturnStep: "select-day",
 
     weekSummaryExpanded: false,
 
@@ -101,7 +107,7 @@ export function setCurrentExerciseIndex(index) {
 }
 
 /*==========================
-   DETALLE DE EJERCICIO (Fase 4)
+   HOJA DE HISTORIAL DE UN EJERCICIO
 ==========================*/
 
 export function getDetailExerciseId() {
@@ -116,38 +122,26 @@ export function setDetailExerciseId(id) {
 
 }
 
-export function getDetailTab() {
+/*==========================
+   HISTORIAL DE ENTRENOS
+==========================*/
 
-    return store.detailTab;
+export function getDetailSessionId() {
 
-}
-
-export function setDetailTab(tab) {
-
-    store.detailTab = tab;
+    return store.detailSessionId;
 
 }
 
-export function getDetailExpandedSessionId() {
+export function getSessionDetailReturnStep() {
 
-    return store.detailExpandedSessionId;
-
-}
-
-export function setDetailExpandedSessionId(sessionId) {
-
-    store.detailExpandedSessionId = sessionId;
+    return store.sessionDetailReturnStep;
 
 }
 
-// Solo se llama al cerrar la pantalla de detalle — pestaña y fila
-// desplegada no deben sobrevivir a la siguiente vez que se abra, ni
-// siquiera para el mismo ejercicio.
-export function resetExerciseDetail() {
+export function setDetailSession(sessionId, returnStep = "select-day") {
 
-    store.detailExerciseId = null;
-    store.detailTab = "historial";
-    store.detailExpandedSessionId = null;
+    store.detailSessionId = sessionId;
+    store.sessionDetailReturnStep = returnStep;
 
 }
 

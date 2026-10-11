@@ -29,7 +29,7 @@
    píldoras sueltas (mismo
    lenguaje que .carreras-tab), ahora una única cápsula que las engloba,
    mismo patrón que .gym-detail-tabs/.gym-detail-tab
-   (GymExerciseDetailView.css: HISTORIAL/GRÁFICAS) -- un fondo/borde
+   (GymDetailScreen.css: pestañas de Gimnasio) -- un fondo/borde
    compartido con padding interno, cada opción a flex:1 sin su propio
    fondo/borde, la activa resaltada por dentro con el color de acento.
    margin-top negativo: se superpone al colchón de foto/degradado libre de

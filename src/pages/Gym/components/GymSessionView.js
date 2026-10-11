@@ -1,9 +1,11 @@
 import "./GymSessionView.css";
 
 import { getGymDay } from "../../../data/gymRoutineStore.js";
-import { getLastLoggedSet } from "../../../data/gymSessionStore.js";
-import { getCurrentExerciseIndex, isRestRunning, getRestRemainingSec, getRestDurationSec, isEditingCell, getExerciseCompletionOverlay } from "../gymStore.js";
-import { GymExerciseHistoryChart } from "./GymExerciseHistoryChart.js";
+import { getLastExerciseSession } from "../../../data/gymSessionStore.js";
+import { getCurrentExerciseIndex, isRestRunning, getRestRemainingSec, getRestDurationSec, isEditingCell, getExerciseCompletionOverlay, getDetailExerciseId } from "../gymStore.js";
+import { GymExerciseHistoryChart, PreviousSessionBadge } from "./GymExerciseHistoryChart.js";
+import { GymExerciseHistorySheet } from "./GymExerciseHistorySheet.js";
+import { formatSetCompact, formatWeightNumber } from "../gymSetFormat.js";
 
 function formatWeight(weight, weightUnit) {
 
@@ -56,6 +58,9 @@ function exerciseTarget(definition) {
 function setCell(exerciseId, setIndex, field, value) {
 
     const editing = isEditingCell(exerciseId, setIndex, field);
+
+    // Coma decimal en el peso ("42,5"), igual que la columna "Anterior".
+    const display = value == null ? "—" : field === "weight" ? formatWeightNumber(value) : value;
     const incAction = field === "weight" ? "inc-weight" : "inc-reps";
     const decAction = field === "weight" ? "dec-weight" : "dec-reps";
 
@@ -69,7 +74,7 @@ function setCell(exerciseId, setIndex, field, value) {
 
                     <button class="gym-stepper-btn" data-action="${decAction}" data-exercise-id="${exerciseId}" data-set-index="${setIndex}">−</button>
 
-                    <span class="gym-stepper-value">${value != null ? value : "—"}</span>
+                    <span class="gym-stepper-value">${display}</span>
 
                     <button class="gym-stepper-btn" data-action="${incAction}" data-exercise-id="${exerciseId}" data-set-index="${setIndex}">+</button>
 
@@ -89,7 +94,7 @@ function setCell(exerciseId, setIndex, field, value) {
             data-exercise-id="${exerciseId}"
             data-set-index="${setIndex}"
             data-field="${field}"
-        >${value != null ? value : "—"}</button>
+        >${display}</button>
 
     `;
 
@@ -120,22 +125,18 @@ function SetColumnsHeader(definition) {
 
 }
 
-// "Anterior" de esta fila concreta: la MISMA serie (por índice) la última
-// vez que se hizo -- comparación serie a serie (pirámide incluida), no el
-// resumen de toda la sesión anterior (eso vive en la cabecera de la
-// tarjeta, ver GymExerciseHistoryChart.js/Fase 2.2).
-function previousCellText(definition, exerciseId, index, excludeSessionId) {
+// "Anterior" de esta fila concreta: la serie con el MISMO índice de la
+// última sesión real con este ejercicio (previous = getLastExerciseSession,
+// emparejada por id o nombre) -- todas las filas hablan de la misma
+// sesión, la de la fecha que enseña la cabecera; "—" si esa serie no se
+// hizo aquella vez. Ejercicios sin peso: solo las reps.
+function previousCellText(previous, index) {
 
-    if (!definition.weightUnit) return "—";
-
-    const previous = getLastLoggedSet(exerciseId, index, { excludeSessionId });
-    if (!previous) return "—";
-
-    return `${previous.weight}${previous.reps != null ? `×${previous.reps}` : ""}`;
+    return formatSetCompact(previous?.sets[index] ?? null);
 
 }
 
-function setRow(definition, sessionExercise, set, index, excludeSessionId) {
+function setRow(definition, sessionExercise, set, index, previous) {
 
     return `
 
@@ -143,7 +144,7 @@ function setRow(definition, sessionExercise, set, index, excludeSessionId) {
 
             <span class="gym-set-label">${index + 1}</span>
 
-            <span class="gym-set-col-prev">${previousCellText(definition, sessionExercise.exerciseId, index, excludeSessionId)}</span>
+            <span class="gym-set-col-prev">${previousCellText(previous, index)}</span>
 
             ${definition.weightUnit ? setCell(sessionExercise.exerciseId, index, "weight", set.weight) : ""}
 
@@ -374,6 +375,10 @@ function exerciseCard(definition, sessionExercise, excludeSessionId) {
     // Anterior/Reps sin filas debajo) -- solo las notas.
     const hasSets = sessionExercise.sets.length > 0;
 
+    const previous = hasSets
+        ? getLastExerciseSession(definition.id, { name: definition.name, excludeSessionId })
+        : null;
+
     return `
 
         <section class="gym-exercise-card">
@@ -382,7 +387,7 @@ function exerciseCard(definition, sessionExercise, excludeSessionId) {
 
                 <div>
 
-                    ${definition.weightUnit ? `
+                    ${hasSets ? `
 
                         <button class="gym-exercise-title" data-action="open-exercise-detail" data-exercise-id="${definition.id}">
 
@@ -402,7 +407,11 @@ function exerciseCard(definition, sessionExercise, excludeSessionId) {
 
             </header>
 
-            ${definition.weightUnit && hasSets ? GymExerciseHistoryChart(definition.id, definition.weightUnit, excludeSessionId, todayBestWeight(sessionExercise)) : ""}
+            ${hasSets
+                ? definition.weightUnit
+                    ? GymExerciseHistoryChart(definition.id, definition.weightUnit, excludeSessionId, todayBestWeight(sessionExercise), { name: definition.name, previous })
+                    : PreviousSessionBadge(previous, null)
+                : ""}
 
             ${hasSets ? `
 
@@ -410,7 +419,7 @@ function exerciseCard(definition, sessionExercise, excludeSessionId) {
 
                     ${SetColumnsHeader(definition)}
 
-                    ${sessionExercise.sets.map((set, index) => setRow(definition, sessionExercise, set, index, excludeSessionId)).join("")}
+                    ${sessionExercise.sets.map((set, index) => setRow(definition, sessionExercise, set, index, previous)).join("")}
 
                 </div>
 
@@ -433,13 +442,12 @@ export function GymSessionView(session) {
     const sessionExercise = session.exercises[index];
     const definition = day?.exercises.find(e => e.id === sessionExercise?.exerciseId);
 
-    // Mismo criterio que ExerciseDetailSection() en Gym.js: startSession()
-    // retoma la sesión de hoy aunque ya tenga finishedAt (es un checkpoint,
-    // no un cierre — ver gymSessionStore.js), así que "activa" no basta
-    // para excluirla de su propio historial. Sin este matiz, el badge se
-    // quedaba en "Primera vez" para siempre nada más guardar, aunque esa
-    // misma sesión ya tuviera una serie real hecha.
-    const excludeSessionId = session.finishedAt ? null : session.id;
+    // La sesión que se está viendo nunca es su propio "Anterior", esté
+    // guardada o no. Antes se dejaba de excluir en cuanto tenía finishedAt
+    // (startSession() retoma la de hoy aunque ya esté guardada): al volver
+    // a abrir el día, "Anterior" enseñaba lo que acababas de hacer hoy en
+    // vez de la sesión real anterior.
+    const excludeSessionId = session.id;
 
     return `
 
@@ -470,6 +478,8 @@ export function GymSessionView(session) {
         </div>
 
         ${ExerciseCompleteOverlay()}
+
+        ${definition && getDetailExerciseId() === definition.id ? GymExerciseHistorySheet(definition, excludeSessionId) : ""}
 
     `;
 

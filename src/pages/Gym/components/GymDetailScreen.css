@@ -1,0 +1,136 @@
+/* Piezas compartidas de las pantallas secundarias de Gimnasio (antes
+   vivían en GymExerciseDetailView.css, pantalla retirada 2026-10-11):
+   contenedor + cabecera con X (historial de entrenos), el selector de
+   pestañas (.gym-detail-tabs, también Rutinas/Composición/Nutrición y la
+   dieta) y el estado vacío (.gym-detail-empty, Dieta/Nutrición). */
+
+.gym-detail{
+
+    padding:24px;
+
+    padding-top:calc(24px + env(safe-area-inset-top));
+
+    padding-bottom:calc(var(--bottom-nav-clearance) + env(safe-area-inset-bottom));
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:20px;
+
+}
+
+.gym-detail-header{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:14px;
+
+}
+
+.gym-detail-header h2{
+
+    flex:1;
+
+    min-width:0;
+
+    color:var(--text-primary);
+
+    font-size:1.2rem;
+
+    font-weight:800;
+
+    white-space:nowrap;
+
+    overflow:hidden;
+
+    text-overflow:ellipsis;
+
+}
+
+/*==========================
+   PESTAÑAS
+==========================*/
+
+.gym-detail-tabs{
+
+    display:flex;
+
+    gap:8px;
+
+    padding:4px;
+
+    border-radius:999px;
+
+    background:color-mix(in srgb, var(--card-background) 70%, transparent);
+
+    border:1px solid var(--card-border);
+
+}
+
+.gym-detail-tab{
+
+    flex:1;
+
+    padding:10px 0;
+
+    border:none;
+
+    border-radius:999px;
+
+    background:none;
+
+    color:var(--text-secondary);
+
+    font-size:.76rem;
+
+    font-weight:800;
+
+    letter-spacing:.04em;
+
+    /* Los <button> no heredan la tipografía de la app por defecto. */
+    font-family:inherit;
+
+    cursor:pointer;
+
+}
+
+.gym-detail-tab.is-active{
+
+    background:var(--color-primary);
+
+    color:var(--color-on-primary, #fff);
+
+}
+
+/*==========================
+   ESTADO VACÍO
+==========================*/
+
+.gym-detail-empty{
+
+    display:flex;
+
+    flex-direction:column;
+
+    align-items:center;
+
+    gap:10px;
+
+    padding:40px 20px;
+
+    text-align:center;
+
+    color:var(--text-secondary);
+
+}
+
+.gym-detail-empty iconify-icon{
+
+    font-size:34px;
+
+    color:var(--color-text-muted);
+
+}

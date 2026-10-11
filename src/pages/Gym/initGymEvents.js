@@ -26,11 +26,10 @@ import {
     stopRestTimer,
     adjustRestTimer,
     REST_STEP_SEC,
+    getDetailExerciseId,
     setDetailExerciseId,
-    setDetailTab,
-    getDetailExpandedSessionId,
-    setDetailExpandedSessionId,
-    resetExerciseDetail,
+    setDetailSession,
+    getSessionDetailReturnStep,
     toggleWeekSummaryExpanded,
     getHighlightedDayId,
     setHighlightedDayId,
@@ -114,15 +113,13 @@ function closeRoutineBuilder() {
 
 }
 
-// Igual que openExerciseDetail — su propia entrada de historial para que
-// el gesto de atrás del móvil cierre el detalle en vez de salir de la app.
+// Hoja de historial de un ejercicio (toque en su nombre durante la
+// sesión) -- se pinta encima de la sesión, sin cambiar de paso (la sesión
+// sigue debajo tal cual). Su propia entrada de historial para que el
+// gesto de atrás del móvil cierre la hoja en vez de salir de la app.
 function openExerciseDetail(exerciseId) {
 
     setDetailExerciseId(exerciseId);
-    setDetailTab("historial");
-    setDetailExpandedSessionId(null);
-    setStep("exercise-detail");
-
     history.pushState(GYM_EXERCISE_DETAIL_HISTORY_STATE, "");
 
     rerender();
@@ -136,12 +133,88 @@ function closeExerciseDetail() {
         return;
     }
 
-    resetExerciseDetail();
-
-    // Solo se llega aquí desde dentro de una sesión (ver GymSessionView.js)
-    // — cerrar siempre vuelve a ella, no a la selección de día.
-    setStep("session");
+    setDetailExerciseId(null);
     rerender();
+
+}
+
+const GYM_HISTORY_STATE = { gymHistory: true };
+const GYM_SESSION_DETAIL_STATE = { gymSessionDetail: true };
+
+// Scroll de la pantalla desde la que se abrió el historial/detalle, para
+// volver al mismo sitio ("Entrenos hechos" está al final de Rutinas --
+// setStep() siempre sube arriba del todo).
+const returnScrollY = {};
+
+function rememberScroll() {
+
+    returnScrollY[getStep()] = window.scrollY;
+
+}
+
+function restoreScroll(step) {
+
+    window.scrollTo(0, returnScrollY[step] ?? 0);
+
+}
+
+// Historial de entrenos (Rutinas → "Ver historial completo ›") y detalle
+// de una sesión -- pantallas propias con su entrada de historial, mismo
+// motivo que la hoja de arriba.
+function openGymHistory() {
+
+    setRoutineMenuOpenId(null);
+    rememberScroll();
+    setStep("gym-history");
+    history.pushState(GYM_HISTORY_STATE, "");
+
+    rerender();
+
+}
+
+function openGymSessionDetail(sessionId, returnStep) {
+
+    setRoutineMenuOpenId(null);
+    rememberScroll();
+    setDetailSession(sessionId, returnStep === "gym-history" ? "gym-history" : "select-day");
+    setStep("gym-session-detail");
+    history.pushState(GYM_SESSION_DETAIL_STATE, "");
+
+    rerender();
+
+}
+
+// Lo que hace "atrás" desde cada pantalla del historial, venga del botón
+// X o del gesto del móvil (popstate): repinta la pantalla de origen en el
+// mismo scroll en el que se dejó.
+function leaveGymSessionDetail() {
+
+    const returnStep = getSessionDetailReturnStep();
+
+    setDetailSession(null);
+    setStep(returnStep);
+    rerender();
+    restoreScroll(returnStep);
+
+}
+
+function leaveGymHistory() {
+
+    setRoutineMenuOpenId(null);
+    setStep("select-day");
+    rerender();
+    restoreScroll("select-day");
+
+}
+
+function closeHistoryScreen(stateKey, leave) {
+
+    if (history.state?.[stateKey]) {
+        history.back();
+        return;
+    }
+
+    leave();
 
 }
 
@@ -156,11 +229,18 @@ window.addEventListener("popstate", () => {
         return;
     }
 
-    if (getStep() === "exercise-detail") {
-        resetExerciseDetail();
-        setStep("session");
+    if (getDetailExerciseId()) {
+        setDetailExerciseId(null);
         rerender();
+        return;
     }
+
+    if (getStep() === "gym-session-detail") {
+        leaveGymSessionDetail();
+        return;
+    }
+
+    if (getStep() === "gym-history") leaveGymHistory();
 
 });
 
@@ -380,8 +460,9 @@ function buildExerciseCompletionSummary(session, definition, sessionExercise) {
     const todayWeight = Math.max(...doneSets.map(set => set.weight));
     const todayReps = modeOfReps(doneSets.map(set => set.reps));
 
-    const excludeSessionId = session.finishedAt ? null : session.id;
-    const previous = getPreviousExerciseSummary(definition.id, { excludeSessionId });
+    // Nunca la propia sesión, esté guardada o no (mismo criterio que
+    // GymSessionView.js).
+    const previous = getPreviousExerciseSummary(definition.id, { excludeSessionId: session.id, name: definition.name });
 
     return {
         exerciseId: definition.id,
@@ -645,6 +726,7 @@ export function initGymEvents() {
             // Todo lo marcado como hecho ya está autoguardado — cerrar aquí
             // no pierde nada, solo saca de la pantalla de sesión.
             setActiveSessionId(null);
+            setDetailExerciseId(null);
             stopRestTimer();
             clearEditingCell();
             clearExerciseCompleteAdvanceTimer();
@@ -668,6 +750,7 @@ export function initGymEvents() {
             const id = getActiveSessionId();
             if (id) finishSession(id);
 
+            setDetailExerciseId(null);
             stopRestTimer();
             clearEditingCell();
             clearExerciseCompleteAdvanceTimer();
@@ -891,27 +974,27 @@ export function initGymEvents() {
 
     });
 
-    document.querySelectorAll('[data-action="set-exercise-detail-tab"]').forEach(button => {
+    document.querySelectorAll('[data-action="open-gym-history"]').forEach(button => {
 
-        button.addEventListener("click", () => {
-
-            setDetailTab(button.dataset.tab);
-            setDetailExpandedSessionId(null);
-            rerender();
-
-        });
+        button.addEventListener("click", openGymHistory);
 
     });
 
-    document.querySelectorAll('[data-action="toggle-history-row"]').forEach(button => {
+    document.querySelectorAll('[data-action="close-gym-history"]').forEach(button => {
 
-        button.addEventListener("click", () => {
+        button.addEventListener("click", () => closeHistoryScreen("gymHistory", leaveGymHistory));
 
-            const sessionId = button.dataset.sessionId;
-            setDetailExpandedSessionId(getDetailExpandedSessionId() === sessionId ? null : sessionId);
-            rerender();
+    });
 
-        });
+    document.querySelectorAll('[data-action="open-gym-session-detail"]').forEach(button => {
+
+        button.addEventListener("click", () => openGymSessionDetail(button.dataset.sessionId, button.dataset.returnStep));
+
+    });
+
+    document.querySelectorAll('[data-action="close-gym-session-detail"]').forEach(button => {
+
+        button.addEventListener("click", () => closeHistoryScreen("gymSessionDetail", leaveGymSessionDetail));
 
     });
 
@@ -930,7 +1013,6 @@ export function initGymEvents() {
             }
 
             deleteSession(button.dataset.sessionId);
-            setDetailExpandedSessionId(null);
             rerender();
 
         });

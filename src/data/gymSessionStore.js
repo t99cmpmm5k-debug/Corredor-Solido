@@ -1,7 +1,7 @@
 import { STORES, getAll, put, remove } from "./db.js";
 import { generateId } from "../utils/id.js";
 import { formatISODate } from "../utils/date.js";
-import { getGymDay } from "./gymRoutineStore.js";
+import { getGymDay, getRoutines } from "./gymRoutineStore.js";
 import { notifyDataChanged } from "./changeEvents.js";
 import { recordTombstone } from "./tombstoneStore.js";
 
@@ -92,7 +92,7 @@ function buildInitialSets(exercise) {
     // serie 1 con la serie 1, serie 2 con la serie 2...), no de un único
     // valor repetido en las 4 — ver getLastLoggedSetWeight más abajo.
     return Array.from({ length: exercise.sets }, (_, index) => ({
-        weight: getLastLoggedSetWeight(exercise.id, index) ?? exercise.targetWeight,
+        weight: getLastLoggedSetWeight(exercise.id, index, { name: exercise.name }) ?? exercise.targetWeight,
         reps,
         done: false
     }));
@@ -240,21 +240,125 @@ export function finishSession(sessionId) {
 
 }
 
+/*==========================
+   EMPAREJADO DE EJERCICIOS ENTRE SESIONES
+==========================*/
+
+// Bug real (2026-10-11, "no puedo ver los pesos que he subido"): todo el
+// historial emparejaba SOLO por exerciseId, que es el id aleatorio del
+// ejercicio dentro de UNA rutina concreta (ver addExerciseToDay() en
+// gymRoutineBuilderStore.js). El mismo ejercicio en otra rutina, o en una
+// rutina borrada y vuelta a crear, tiene otro id -- "Anterior" salía vacío
+// aunque la sesión real estuviera guardada. Ahora se empareja por id y, si
+// no hay, por nombre normalizado (sin mayúsculas, tildes ni espacios de
+// sobra) -- el nombre ya se guarda en cada sesión desde la primera versión,
+// no hace falta cambiar el formato. Igualdad exacta tras normalizar: "Hip
+// Thrust" y "Hip Thrust ligero" siguen siendo ejercicios distintos.
+export function normalizeExerciseName(name) {
+
+    return String(name ?? "")
+        .normalize("NFD")
+        .replace(/\p{Diacritic}/gu, "")
+        .toLowerCase()
+        .replace(/\s+/g, " ")
+        .trim();
+
+}
+
+// Nombre de un ejercicio a partir de su id: primero en las rutinas
+// guardadas, y si la rutina ya no existe, en cualquier sesión que lo
+// tenga -- así las llamadas que solo conocen el id (las de siempre)
+// también ganan el emparejado por nombre sin tener que pasarlo.
+function resolveExerciseName(exerciseId, name) {
+
+    if (name) return name;
+
+    for (const routine of getRoutines()) {
+
+        for (const day of routine.days || []) {
+
+            const exercise = (day.exercises || []).find(e => e.id === exerciseId);
+            if (exercise?.name) return exercise.name;
+
+        }
+
+    }
+
+    for (const session of sessions) {
+
+        const exercise = (session.exercises || []).find(e => e.exerciseId === exerciseId);
+        if (exercise?.name) return exercise.name;
+
+    }
+
+    return null;
+
+}
+
+// El ejercicio de una sesión que corresponde a (exerciseId, name): por id
+// si está, si no por nombre normalizado. Defensivo con sesiones antiguas
+// (sin exercises/sets): nunca rompe, simplemente no encuentra nada.
+export function findSessionExercise(session, exerciseId, name = null) {
+
+    const exercises = Array.isArray(session?.exercises) ? session.exercises : [];
+
+    const byId = exercises.find(e => e.exerciseId === exerciseId);
+    if (byId) return byId;
+
+    const key = normalizeExerciseName(name);
+    if (!key) return null;
+
+    return exercises.find(e => normalizeExerciseName(e.name) === key) || null;
+
+}
+
+function setsOf(exercise) {
+
+    return Array.isArray(exercise?.sets) ? exercise.sets : [];
+
+}
+
+function doneSetsOf(exercise) {
+
+    return setsOf(exercise)
+        .filter(set => set && set.done)
+        .map(set => ({ weight: set.weight ?? null, reps: set.reps ?? null }));
+
+}
+
+// Más reciente primero. Dos sesiones el mismo día (dos rutinas distintas):
+// desempata la hora de inicio, si la hay.
+function compareNewestFirst(a, b) {
+
+    return String(b.date ?? "").localeCompare(String(a.date ?? ""))
+        || String(b.startedAt ?? "").localeCompare(String(a.startedAt ?? ""));
+
+}
+
+// Cada sesión (más reciente primero) que contiene ese ejercicio, con el
+// ejercicio ya emparejado.
+function exerciseOccurrences(exerciseId, { name = null, excludeSessionId = null } = {}) {
+
+    const resolvedName = resolveExerciseName(exerciseId, name);
+
+    return [...sessions]
+        .sort(compareNewestFirst)
+        .filter(session => session.id !== excludeSessionId)
+        .map(session => ({ session, exercise: findSessionExercise(session, exerciseId, resolvedName) }))
+        .filter(occurrence => occurrence.exercise);
+
+}
+
 // Peso de ESA MISMA serie (por índice) la última vez que se hizo — para
 // prerellenar pirámides (65/70/72,5/75) con el número correcto en cada
 // fila, no un único valor repetido. Si la sesión más reciente no llegó a
 // marcar esa serie concreta como hecha, se sigue mirando hacia atrás por
 // si una sesión anterior sí la tiene, antes de rendirse.
-export function getLastLoggedSetWeight(exerciseId, setIndex) {
+export function getLastLoggedSetWeight(exerciseId, setIndex, { name = null } = {}) {
 
-    const sorted = [...sessions].sort((a, b) => b.date.localeCompare(a.date));
+    for (const { exercise } of exerciseOccurrences(exerciseId, { name })) {
 
-    for (const session of sorted) {
-
-        const exercise = session.exercises.find(e => e.exerciseId === exerciseId);
-        if (!exercise) continue;
-
-        const set = exercise.sets[setIndex];
+        const set = setsOf(exercise)[setIndex];
         if (set && set.done && set.weight != null) return set.weight;
 
     }
@@ -265,34 +369,73 @@ export function getLastLoggedSetWeight(exerciseId, setIndex) {
 
 // Serie completa (peso Y reps) de ESA MISMA serie (por índice) la última
 // vez que se hizo -- misma búsqueda que getLastLoggedSetWeight() de arriba,
-// pero devolviendo también las reps: hace falta para la columna "Anterior"
-// de la tabla de series (Fase 2), que compara serie a serie, no solo el
-// peso.
+// pero devolviendo también las reps.
 //
-// excludeSessionId con el mismo motivo que en getExerciseHistory: a
-// diferencia de getLastLoggedSetWeight() (solo se llama al CREAR una
-// sesión nueva, antes de que exista en `sessions`, así que nunca puede
-// autorreferenciarse), esta función se llama en cada render de una sesión
-// YA en curso -- sin excluirla, marcar la serie 1 como hecha con 65kg hacía
-// que su propia fila mostrara "Anterior: 65×6" un instante después,
-// comparándose consigo misma en vez de con la sesión real anterior.
-export function getLastLoggedSet(exerciseId, setIndex, { excludeSessionId = null } = {}) {
+// excludeSessionId: a diferencia de getLastLoggedSetWeight() (solo se
+// llama al CREAR una sesión nueva, antes de que exista en `sessions`),
+// esta función puede llamarse con una sesión YA en curso -- sin excluirla,
+// se compararía consigo misma.
+export function getLastLoggedSet(exerciseId, setIndex, { excludeSessionId = null, name = null } = {}) {
 
-    const sorted = [...sessions].sort((a, b) => b.date.localeCompare(a.date));
+    for (const { exercise } of exerciseOccurrences(exerciseId, { name, excludeSessionId })) {
 
-    for (const session of sorted) {
-
-        if (session.id === excludeSessionId) continue;
-
-        const exercise = session.exercises.find(e => e.exerciseId === exerciseId);
-        if (!exercise) continue;
-
-        const set = exercise.sets[setIndex];
+        const set = setsOf(exercise)[setIndex];
         if (set && set.done && set.weight != null) return { weight: set.weight, reps: set.reps };
 
     }
 
     return null;
+
+}
+
+// La última sesión REAL con ese ejercicio (al menos una serie hecha) --
+// para la columna "Anterior" de la sesión en curso: cada fila enseña la
+// serie con el mismo índice de ESA sesión (null si esa serie no se hizo),
+// sin mezclar series de sesiones distintas, y la cabecera su fecha.
+// Incluye ejercicios sin peso (plancha, core...): weight null, solo reps.
+export function getLastExerciseSession(exerciseId, { name = null, excludeSessionId = null } = {}) {
+
+    for (const { session, exercise } of exerciseOccurrences(exerciseId, { name, excludeSessionId })) {
+
+        if (!doneSetsOf(exercise).length) continue;
+
+        return {
+            sessionId: session.id,
+            date: session.date,
+            sets: setsOf(exercise).map(set => (set && set.done ? { weight: set.weight ?? null, reps: set.reps ?? null } : null))
+        };
+
+    }
+
+    return null;
+
+}
+
+// Hoja de historial de un ejercicio (toque en su nombre durante la
+// sesión): las últimas `limit` sesiones con series hechas (más reciente
+// primero, cada serie kg × reps) y el mejor peso de TODO el historial,
+// no solo de esas `limit`. Nada de 1RM ni tonelaje -- solo lo guardado.
+export function getExerciseLog(exerciseId, { name = null, excludeSessionId = null, limit = 5 } = {}) {
+
+    const entries = [];
+    let best = null;
+
+    for (const { session, exercise } of exerciseOccurrences(exerciseId, { name, excludeSessionId })) {
+
+        const sets = doneSetsOf(exercise);
+        if (!sets.length) continue;
+
+        if (entries.length < limit) entries.push({ sessionId: session.id, date: session.date, sets });
+
+        for (const set of sets) {
+            if (set.weight != null && (best === null || set.weight > best.weight)) {
+                best = { weight: set.weight, reps: set.reps, date: session.date };
+            }
+        }
+
+    }
+
+    return { entries, best };
 
 }
 
@@ -322,13 +465,12 @@ function modeOfReps(values) {
 
 }
 
-// Resumen de la sesión anterior REAL de un ejercicio (no solo el mejor
-// peso, ver getExerciseHistory) -- para "Anterior: 4×6 @ 60kg" en la
-// cabecera de la tarjeta de ejercicio y en la tarjeta de "ejercicio
-// completado" (Fase 2). null si no hay ninguna sesión pasada con datos.
-export function getPreviousExerciseSummary(exerciseId, { excludeSessionId = null } = {}) {
+// Resumen de la sesión anterior REAL de un ejercicio -- para la tarjeta de
+// "ejercicio completado" y el resumen final. null si no hay ninguna sesión
+// pasada con datos.
+export function getPreviousExerciseSummary(exerciseId, { excludeSessionId = null, name = null } = {}) {
 
-    const history = getExerciseSessionHistory(exerciseId, { excludeSessionId });
+    const history = getExerciseSessionHistory(exerciseId, { excludeSessionId, name });
     if (!history.length) return null;
 
     const last = history[history.length - 1];
@@ -344,28 +486,20 @@ export function getPreviousExerciseSummary(exerciseId, { excludeSessionId = null
 
 // Serie temporal real para el mini-gráfico de progreso: una sesión (con
 // al menos una serie marcada como hecha) aporta un punto, con el peso
-// máximo entre sus series hechas ("mejor serie" de esa sesión) — no la
-// media ni la última, para que el punto represente lo más exigente que se
-// levantó ese día. Solo sesiones con dato real; nada interpolado.
+// máximo entre sus series hechas ("mejor serie" de esa sesión). Solo
+// sesiones con dato real; nada interpolado. Orden cronológico.
 //
 // excludeSessionId excluye la sesión en curso: sin esto, marcar la
-// primera serie de hoy como hecha convertía la propia sesión activa en su
-// "mejor serie anterior" — un badge que se supone habla del pasado
-// mostrando algo que acabas de hacer hace un segundo.
-export function getExerciseHistory(exerciseId, { limit = 8, excludeSessionId = null } = {}) {
+// primera serie de hoy convertía la propia sesión activa en su "mejor
+// serie anterior".
+export function getExerciseHistory(exerciseId, { limit = 8, excludeSessionId = null, name = null } = {}) {
 
-    const sorted = [...sessions].sort((a, b) => a.date.localeCompare(b.date));
     const points = [];
 
-    for (const session of sorted) {
+    for (const { session, exercise } of exerciseOccurrences(exerciseId, { name, excludeSessionId }).reverse()) {
 
-        if (session.id === excludeSessionId) continue;
-
-        const exercise = session.exercises.find(e => e.exerciseId === exerciseId);
-        if (!exercise) continue;
-
-        const doneWeights = exercise.sets
-            .filter(s => s.done && s.weight != null)
+        const doneWeights = setsOf(exercise)
+            .filter(s => s && s.done && s.weight != null)
             .map(s => s.weight);
 
         if (!doneWeights.length) continue;
@@ -378,31 +512,17 @@ export function getExerciseHistory(exerciseId, { limit = 8, excludeSessionId = n
 
 }
 
-// Histórico completo (sin tope) para la pantalla de detalle de ejercicio
-// (Fase 4) — a diferencia de getExerciseHistory(), que solo saca el mejor
-// peso de cada sesión para el mini-gráfico, aquí hace falta cada serie
-// hecha (peso, reps) para poder construir la tabla de HISTORIAL, el
-// desglose por fila y el volumen (peso×reps sumado) de cada sesión.
-// excludeSessionId con el mismo motivo que en getExerciseHistory: la
-// sesión en curso no cuenta como "historial" todavía.
-//
-// No se lee/expone `rir` aquí aunque una sesión antigua todavía lo tenga
-// guardado en IndexedDB (campo retirado de la interfaz, no de los datos
-// históricos ya guardados) — este es el único sitio por el que ese dato
-// llegaba a la UI, así que basta con dejar de mapearlo.
-export function getExerciseSessionHistory(exerciseId, { excludeSessionId = null } = {}) {
+// Histórico completo (orden cronológico) con cada serie hecha (peso, reps)
+// de cada sesión. No se lee/expone `rir` aunque una sesión antigua todavía
+// lo tenga guardado en IndexedDB (campo retirado de la interfaz, no de los
+// datos históricos ya guardados).
+export function getExerciseSessionHistory(exerciseId, { excludeSessionId = null, name = null } = {}) {
 
-    const sorted = [...sessions].sort((a, b) => a.date.localeCompare(b.date));
     const history = [];
 
-    for (const session of sorted) {
+    for (const { session, exercise } of exerciseOccurrences(exerciseId, { name, excludeSessionId }).reverse()) {
 
-        if (session.id === excludeSessionId) continue;
-
-        const exercise = session.exercises.find(e => e.exerciseId === exerciseId);
-        if (!exercise) continue;
-
-        const doneSets = exercise.sets.filter(s => s.done && s.weight != null && s.reps != null);
+        const doneSets = setsOf(exercise).filter(s => s && s.done && s.weight != null && s.reps != null);
         if (!doneSets.length) continue;
 
         history.push({
@@ -416,5 +536,46 @@ export function getExerciseSessionHistory(exerciseId, { excludeSessionId = null 
     }
 
     return history;
+
+}
+
+/*==========================
+   HISTORIAL DE ENTRENOS (Rutinas → "Entrenos hechos")
+==========================*/
+
+// Una sesión tal cual está guardada, reducida a lo que se ve en el
+// historial: solo ejercicios con al menos una serie hecha, cada serie
+// kg × reps (weight null en ejercicios sin peso). Abrir un día ya crea
+// una sesión vacía (ver startSession()), así que una sesión sin ninguna
+// serie hecha no es un "entreno hecho" -- setCount 0 y se filtra fuera.
+export function summarizeGymSession(session) {
+
+    const exercises = (Array.isArray(session?.exercises) ? session.exercises : [])
+        .map(exercise => ({
+            exerciseId: exercise.exerciseId ?? null,
+            name: exercise.name || "Ejercicio",
+            sets: doneSetsOf(exercise)
+        }))
+        .filter(exercise => exercise.sets.length);
+
+    return {
+        id: session.id,
+        date: session.date,
+        dayId: session.dayId ?? null,
+        exercises,
+        exerciseCount: exercises.length,
+        setCount: exercises.reduce((sum, exercise) => sum + exercise.sets.length, 0)
+    };
+
+}
+
+// Entrenos hechos, más reciente primero (sin tope: la sección de Rutinas
+// corta a 3, el historial completo los quiere todos).
+export function getCompletedGymSessions() {
+
+    return [...sessions]
+        .sort(compareNewestFirst)
+        .map(summarizeGymSession)
+        .filter(summary => summary.setCount > 0);
 
 }

@@ -1,0 +1,232 @@
+/*==========================
+   ENTRENOS HECHOS / HISTORIAL DE ENTRENOS
+   Misma tarjeta que "Tus rutinas" (.gym-routine-rows en
+   GymRoutineBuilder.css): mismo radio, fondo y borde, filas sin caja
+   separadas por una línea fina. Cian solo en lo tocable/activo, gris
+   azulado para lo secundario (fecha, conteos).
+==========================*/
+
+.gym-log-section{
+
+    display:flex;
+    flex-direction:column;
+
+}
+
+.gym-log-rows{
+
+    list-style:none;
+    margin:0;
+    display:flex;
+    flex-direction:column;
+    padding:4px 0;
+    border-radius:var(--radius-lg);
+    background:color-mix(in srgb, var(--card-background) 70%, transparent);
+    border:1px solid var(--card-border);
+
+}
+
+.gym-log-rows > * + *{
+
+    border-top:1px solid color-mix(in srgb, var(--card-border) 70%, transparent);
+
+}
+
+.gym-log-item{
+
+    position:relative;
+    display:flex;
+    align-items:center;
+    padding-right:8px;
+
+}
+
+.gym-log-row{
+
+    flex:1;
+    min-width:0;
+    display:flex;
+    align-items:center;
+    gap:14px;
+
+    padding:12px 12px 12px 16px;
+    border:none;
+    border-radius:var(--radius-md);
+    background:none;
+    color:var(--text-primary);
+    font-family:inherit;
+    text-align:left;
+    cursor:pointer;
+
+}
+
+.gym-log-row:active{
+
+    background:color-mix(in srgb, var(--color-primary) 10%, transparent);
+
+}
+
+.gym-log-row-date{
+
+    flex-shrink:0;
+    width:52px;
+    color:var(--text-secondary);
+    font-size:.76rem;
+    font-weight:700;
+
+}
+
+.gym-log-row-main{
+
+    flex:1;
+    min-width:0;
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+
+}
+
+.gym-log-row-title{
+
+    overflow:hidden;
+    white-space:nowrap;
+    text-overflow:ellipsis;
+    font-size:.9rem;
+    font-weight:700;
+
+}
+
+.gym-log-row-meta{
+
+    color:var(--text-secondary);
+    font-size:.76rem;
+    font-weight:500;
+
+}
+
+.gym-log-row-chevron{
+
+    flex-shrink:0;
+    color:var(--color-text-muted);
+    font-size:16px;
+
+}
+
+/* En el historial completo el ••• ya ocupa el borde derecho. */
+.gym-log-item .gym-log-row-chevron{
+
+    display:none;
+
+}
+
+.gym-log-more{
+
+    align-self:flex-end;
+    margin-top:10px;
+    padding:6px 4px;
+    border:none;
+    background:none;
+    color:var(--color-primary);
+    font-family:inherit;
+    font-size:.84rem;
+    font-weight:700;
+    cursor:pointer;
+
+}
+
+.gym-log-empty{
+
+    margin:0;
+    padding:16px;
+    border-radius:var(--radius-lg);
+    background:color-mix(in srgb, var(--card-background) 70%, transparent);
+    border:1px solid var(--card-border);
+    color:var(--text-secondary);
+    font-size:.88rem;
+    text-align:center;
+
+}
+
+/*==========================
+   DETALLE DE UN ENTRENO
+==========================*/
+
+.gym-log-detail-meta{
+
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:space-between;
+    gap:4px 12px;
+    margin:-8px 0 0;
+    color:var(--text-secondary);
+    font-size:.84rem;
+    font-weight:600;
+
+}
+
+.gym-log-exercises{
+
+    display:flex;
+    flex-direction:column;
+    padding:4px 0;
+    border-radius:var(--radius-lg);
+    background:color-mix(in srgb, var(--card-background) 70%, transparent);
+    border:1px solid var(--card-border);
+
+}
+
+.gym-log-exercise{
+
+    padding:14px 16px;
+
+}
+
+.gym-log-exercise + .gym-log-exercise{
+
+    border-top:1px solid color-mix(in srgb, var(--card-border) 70%, transparent);
+
+}
+
+.gym-log-exercise h3{
+
+    margin:0 0 8px;
+    color:var(--text-primary);
+    font-size:.94rem;
+    font-weight:800;
+
+}
+
+.gym-log-sets{
+
+    list-style:none;
+    margin:0;
+    padding:0;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+
+}
+
+.gym-log-sets li{
+
+    display:flex;
+    justify-content:space-between;
+    gap:12px;
+    font-size:.86rem;
+
+}
+
+.gym-log-set-index{
+
+    color:var(--text-secondary);
+    font-weight:600;
+
+}
+
+.gym-log-set-value{
+
+    color:var(--text-primary);
+    font-weight:700;
+    font-variant-numeric:tabular-nums;
+
+}

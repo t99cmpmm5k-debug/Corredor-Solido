@@ -1,12 +1,13 @@
 import "./Gym.css";
+import "./components/GymDetailScreen.css";
 
 import { BottomNavigation } from "../../components/Navigation/BottomNavigation.js";
 import { getRoutines, getGymDay } from "../../data/gymRoutineStore.js";
-import { getSessionById, getGymSessions, getExerciseSessionHistory } from "../../data/gymSessionStore.js";
-import { getStep, getActiveSessionId, getDetailExerciseId, getDetailTab, getDetailExpandedSessionId, getWeekSummaryExpanded, getHighlightedDayId, getRoutineMenuOpenId, getHomeTab } from "./gymStore.js";
+import { getSessionById, getGymSessions } from "../../data/gymSessionStore.js";
+import { getStep, getActiveSessionId, getDetailSessionId, getWeekSummaryExpanded, getHighlightedDayId, getRoutineMenuOpenId, getHomeTab } from "./gymStore.js";
 import { GymSessionView } from "./components/GymSessionView.js";
 import { GymSessionSummaryView } from "./components/GymSessionSummaryView.js";
-import { GymExerciseDetailView } from "./components/GymExerciseDetailView.js";
+import { GymWorkoutsDoneSection, GymWorkoutHistoryView, GymWorkoutSessionDetailView } from "./components/GymWorkoutHistory.js";
 import { GymRoutineBuilder } from "./components/GymRoutineBuilder.js";
 import { GymHomeSummary } from "./components/GymHomeSummary.js";
 import { GymHeader } from "./components/GymHeader.js";
@@ -264,38 +265,13 @@ function GymDaySelect() {
 
                 ${routines.length ? RoutineList(routines) : GymRoutinesEmptyState()}
 
+                ${GymWorkoutsDoneSection()}
+
             `}
 
         </div>
 
     `;
-
-}
-
-// La sesión activa se queda intacta al abrir el detalle (solo cambia
-// `step`, ver openExerciseDetail en initGymEvents.js) — así se puede
-// localizar la definición del ejercicio (nombre, weightUnit, grupo
-// muscular) sin duplicarla en gymStore.
-function ExerciseDetailSection() {
-
-    const exerciseId = getDetailExerciseId();
-    const activeSession = getSessionById(getActiveSessionId());
-    const day = activeSession ? getGymDay(activeSession.dayId) : null;
-    const definition = day?.exercises.find(e => e.id === exerciseId);
-
-    if (!definition) return "";
-
-    // Solo se excluye si sigue de verdad en curso (sin finishedAt) — una
-    // sesión de hoy ya guardada con "Guardar sesión" cuenta como historial
-    // real. Sin este matiz, startSession() retoma la sesión de hoy aunque
-    // ya esté terminada (ver comentario en gymSessionStore.js), y
-    // excluirla por ser "la activa" hacía que el propio entreno que
-    // acabas de guardar pareciera no haberse guardado nunca al abrir el
-    // detalle del ejercicio justo después.
-    const excludeSessionId = activeSession && !activeSession.finishedAt ? activeSession.id : null;
-    const history = getExerciseSessionHistory(exerciseId, { excludeSessionId });
-
-    return GymExerciseDetailView(definition, history, getDetailTab(), getDetailExpandedSessionId());
 
 }
 
@@ -325,7 +301,8 @@ export function Gym() {
 
     function StepContent() {
 
-        if (step === "exercise-detail") return ExerciseDetailSection();
+        if (step === "gym-history") return GymWorkoutHistoryView(getRoutineMenuOpenId());
+        if (step === "gym-session-detail") return GymWorkoutSessionDetailView(getDetailSessionId());
         if (step === "session-summary" && session) return GymSessionSummaryView(session);
         if (session) return GymSessionView(session);
 
