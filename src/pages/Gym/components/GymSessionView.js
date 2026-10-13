@@ -2,9 +2,11 @@ import "./GymSessionView.css";
 
 import { getGymDay } from "../../../data/gymRoutineStore.js";
 import { getLastExerciseSession } from "../../../data/gymSessionStore.js";
-import { getCurrentExerciseIndex, isRestRunning, getRestRemainingSec, getRestDurationSec, isEditingCell, getExerciseCompletionOverlay, getDetailExerciseId } from "../gymStore.js";
+import { getCurrentExerciseIndex, isRestRunning, getRestRemainingSec, getRestDurationSec, isEditingCell, getExerciseCompletionOverlay, getDetailExerciseId, isUnmarkedSheetOpen } from "../gymStore.js";
 import { GymExerciseHistoryChart, PreviousSessionBadge } from "./GymExerciseHistoryChart.js";
 import { GymExerciseHistorySheet } from "./GymExerciseHistorySheet.js";
+import { GymUnmarkedSetsSheet } from "./GymUnmarkedSetsSheet.js";
+import { getUnmarkedTouchedSets } from "../unmarkedSets.js";
 import { formatSetCompact, formatWeightNumber } from "../gymSetFormat.js";
 
 function formatWeight(weight, weightUnit) {
@@ -480,6 +482,8 @@ export function GymSessionView(session) {
         ${ExerciseCompleteOverlay()}
 
         ${definition && getDetailExerciseId() === definition.id ? GymExerciseHistorySheet(definition, excludeSessionId) : ""}
+
+        ${isUnmarkedSheetOpen() ? GymUnmarkedSetsSheet(getUnmarkedTouchedSets(session).length) : ""}
 
     `;
 

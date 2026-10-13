@@ -9,6 +9,8 @@ const store = {
     // Hoja "historial de este ejercicio" abierta sobre la sesión en curso
     // (null = cerrada).
     detailExerciseId: null,
+    // Hoja "Tienes N series sin marcar" al finalizar (ver unmarkedSets.js).
+    unmarkedSheetOpen: false,
 
     // Historial de entrenos: sesión abierta en detalle y a qué pantalla
     // vuelve al cerrarla ("select-day" desde Rutinas, "gym-history" desde
@@ -119,6 +121,18 @@ export function getDetailExerciseId() {
 export function setDetailExerciseId(id) {
 
     store.detailExerciseId = id;
+
+}
+
+export function isUnmarkedSheetOpen() {
+
+    return store.unmarkedSheetOpen;
+
+}
+
+export function setUnmarkedSheetOpen(open) {
+
+    store.unmarkedSheetOpen = Boolean(open);
 
 }
 

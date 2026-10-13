@@ -225,3 +225,44 @@
     to{ transform:translateY(0); opacity:1; }
 
 }
+
+/*==========================
+   HOJA "TIENES N SERIES SIN MARCAR" (GymUnmarkedSetsSheet.js)
+   Misma hoja; solo el texto y las tres acciones apiladas.
+==========================*/
+
+.gym-unmarked-text{
+
+    margin:0;
+    color:var(--text-secondary);
+    font-size:.92rem;
+    line-height:1.4;
+
+}
+
+.gym-unmarked-actions{
+
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+
+}
+
+.gym-unmarked-actions .gym-bodycomp-cancel{
+
+    height:46px;
+    width:100%;
+
+}
+
+.gym-unmarked-link{
+
+    height:40px;
+    border:none;
+    background:transparent;
+    color:var(--text-secondary);
+    font:inherit;
+    font-weight:600;
+    cursor:pointer;
+
+}

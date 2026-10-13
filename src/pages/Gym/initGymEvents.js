@@ -1,4 +1,5 @@
 import { rerender } from "../../core/router.js";
+import { recordSetTouch, getUnmarkedTouchedSets, clearSetTouches } from "./unmarkedSets.js";
 import { startSession, updateSet, updateExerciseNotes, finishSession, getSessionById, deleteSession, hydrate, getPreviousExerciseSummary } from "../../data/gymSessionStore.js";
 import { getRoutineById, createRoutine, updateRoutine, deleteRoutine, getGymDay } from "../../data/gymRoutineStore.js";
 import { addCustomExercise } from "../../data/customExerciseStore.js";
@@ -28,6 +29,8 @@ import {
     REST_STEP_SEC,
     getDetailExerciseId,
     setDetailExerciseId,
+    isUnmarkedSheetOpen,
+    setUnmarkedSheetOpen,
     setDetailSession,
     getSessionDetailReturnStep,
     toggleWeekSummaryExpanded,
@@ -138,6 +141,67 @@ function closeExerciseDetail() {
 
 }
 
+// Hoja "Tienes N series sin marcar" -- su propia entrada de historial,
+// como la de arriba: el gesto de atrás la cierra ("Seguir entrenando").
+const GYM_UNMARKED_SHEET_STATE = { gymUnmarkedSheet: true };
+
+function openUnmarkedSheet() {
+
+    clearEditingCell();
+    setUnmarkedSheetOpen(true);
+    history.pushState(GYM_UNMARKED_SHEET_STATE, "");
+
+    rerender();
+
+}
+
+function closeUnmarkedSheet() {
+
+    if (history.state?.gymUnmarkedSheet) {
+        history.back();
+        return;
+    }
+
+    setUnmarkedSheetOpen(false);
+    rerender();
+
+}
+
+// "Finalizar entrenamiento" de verdad: guarda (finishSession calcula la
+// duración real ahí mismo, con el reloj todavía fresco) y pasa a la
+// pantalla de resumen -- la sesión activa se queda puesta
+// (GymSessionSummaryView la necesita, ver Gym.js) hasta que se confirme
+// con "Guardar entrenamiento" (ver save-session-summary más abajo).
+function completeFinishSession() {
+
+    const id = getActiveSessionId();
+
+    if (id) {
+        finishSession(id);
+        clearSetTouches(id);
+    }
+
+    setDetailExerciseId(null);
+    stopRestTimer();
+    clearEditingCell();
+    clearExerciseCompleteAdvanceTimer();
+    clearExerciseCompletionOverlay();
+    setStep("session-summary");
+    rerender();
+
+}
+
+// Desde la hoja: se cierra y se quita su entrada de historial sin repintar
+// la sesión (el popstate ya no la encuentra abierta), y se finaliza.
+function closeUnmarkedSheetAndFinish() {
+
+    setUnmarkedSheetOpen(false);
+    if (history.state?.gymUnmarkedSheet) history.back();
+
+    completeFinishSession();
+
+}
+
 const GYM_HISTORY_STATE = { gymHistory: true };
 const GYM_SESSION_DETAIL_STATE = { gymSessionDetail: true };
 
@@ -222,6 +286,12 @@ function closeHistoryScreen(stateKey, leave) {
 // que se vuelve a llamar en cada render) — mismo motivo que el listener
 // equivalente de initPlanEvents.js.
 window.addEventListener("popstate", () => {
+
+    if (isUnmarkedSheetOpen()) {
+        setUnmarkedSheetOpen(false);
+        rerender();
+        return;
+    }
 
     if (isBuilderOpen()) {
         closeBuilder();
@@ -405,6 +475,7 @@ function adjustWeight(exerciseId, setIndex, delta) {
 
     const next = Math.max(0, (set.weight ?? 0) + delta);
 
+    recordSetTouch(getActiveSessionId(), exerciseId, setIndex, set);
     updateSet(getActiveSessionId(), exerciseId, setIndex, { weight: next });
     rerender();
 
@@ -417,6 +488,7 @@ function adjustReps(exerciseId, setIndex, delta) {
 
     const next = Math.max(0, (set.reps ?? 0) + delta);
 
+    recordSetTouch(getActiveSessionId(), exerciseId, setIndex, set);
     updateSet(getActiveSessionId(), exerciseId, setIndex, { reps: next });
     rerender();
 
@@ -738,27 +810,52 @@ export function initGymEvents() {
 
     });
 
-    // "Finalizar entrenamiento" (Fase 2.7): guarda de verdad (finishSession
-    // calcula la duración real ahí mismo, con el reloj todavía fresco) y
-    // pasa a la pantalla de resumen -- la sesión activa se queda puesta
-    // (GymSessionSummaryView la necesita, ver Gym.js) hasta que se confirme
-    // con "Guardar entrenamiento" (ver save-session-summary más abajo).
+    // "Finalizar entrenamiento" (Fase 2.7): si hay series con kg/reps
+    // tocados a mano y sin ✓, antes la hoja "Tienes N series sin marcar"
+    // (ver unmarkedSets.js); si no, finaliza directamente.
     document.querySelectorAll('[data-action="finish-session"]').forEach(button => {
 
         button.addEventListener("click", () => {
 
-            const id = getActiveSessionId();
-            if (id) finishSession(id);
+            const session = getSessionById(getActiveSessionId());
 
-            setDetailExerciseId(null);
-            stopRestTimer();
-            clearEditingCell();
-            clearExerciseCompleteAdvanceTimer();
-            clearExerciseCompletionOverlay();
-            setStep("session-summary");
-            rerender();
+            if (getUnmarkedTouchedSets(session).length) {
+                openUnmarkedSheet();
+                return;
+            }
+
+            completeFinishSession();
 
         });
+
+    });
+
+    document.querySelectorAll('[data-action="unmarked-mark-and-finish"]').forEach(button => {
+
+        button.addEventListener("click", () => {
+
+            const id = getActiveSessionId();
+            const session = getSessionById(id);
+
+            getUnmarkedTouchedSets(session).forEach(({ exerciseId, setIndex }) => {
+                updateSet(id, exerciseId, setIndex, { done: true });
+            });
+
+            closeUnmarkedSheetAndFinish();
+
+        });
+
+    });
+
+    document.querySelectorAll('[data-action="unmarked-finish-without"]').forEach(button => {
+
+        button.addEventListener("click", closeUnmarkedSheetAndFinish);
+
+    });
+
+    document.querySelectorAll('[data-action="unmarked-keep-training"]').forEach(button => {
+
+        button.addEventListener("click", closeUnmarkedSheet);
 
     });
 
