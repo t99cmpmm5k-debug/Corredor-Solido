@@ -151,44 +151,136 @@ export function getPlannedWeekendLongRunDay(date) {
 
 }
 
-// Qué día de la dieta toca en una fecha:
-// - lunes a viernes, su día; si el plan tiene tirada larga ese día (y la
-//   dieta trae TIRADA_LARGA), el menú TIRADA_LARGA;
-// - sábado/domingo, el reparto del fin de semana: el elegido a mano esa
-//   semana (dietWeekends) manda; si no hay, el del plan (el día de su
-//   tirada larga es TIRADA_LARGA y el otro DESCANSO); sin tirada larga en
-//   el plan, un día sin sesión es DESCANSO; si no,
-//   { dayKey: null, needsWeekendChoice: true } (hay que elegir).
-// `dietPlan` solo hace falta para saber si existe TIRADA_LARGA.
-export function resolveDietDay(date, dietPlan = null) {
+// Qué día de la dieta toca en una fecha SIN mirar las sesiones del plan
+// (calendario): lunes a viernes, su día; sábado/domingo, el reparto del fin
+// de semana -- el elegido a mano esa semana (dietWeekends) o, si no hay, el
+// de la tirada larga del plan (ese día TIRADA_LARGA, el otro DESCANSO); si
+// tampoco, { dayKey: null, needsWeekendChoice: true } (hay que elegir).
+function resolveCalendarDietDay(date) {
 
     const weekday = parseISODate(date).getDay();
 
-    if (DAY_BY_WEEKDAY[weekday]) {
-
-        if (dietPlan?.days?.TIRADA_LARGA && getPlanDayForDate(date)?.hasLongRun) {
-            return { dayKey: "TIRADA_LARGA", needsWeekendChoice: false };
-        }
-
-        return { dayKey: DAY_BY_WEEKDAY[weekday], needsWeekendChoice: false };
-
-    }
+    if (DAY_BY_WEEKDAY[weekday]) return { dayKey: DAY_BY_WEEKDAY[weekday], needsWeekendChoice: false };
 
     const longRunDay = getWeekendLongRunDay(date) ?? getPlannedWeekendLongRunDay(date);
-
-    if (!longRunDay) {
-
-        const planDay = getPlanDayForDate(date);
-        if (planDay && !planDayHasTraining(planDay)) return { dayKey: REST_DAY_KEY, needsWeekendChoice: false };
-
-        return { dayKey: null, needsWeekendChoice: true };
-
-    }
+    if (!longRunDay) return { dayKey: null, needsWeekendChoice: true };
 
     const isSaturday = weekday === 6;
     const isLongRun = (longRunDay === "sabado") === isSaturday;
 
     return { dayKey: isLongRun ? "TIRADA_LARGA" : REST_DAY_KEY, needsWeekendChoice: false };
+
+}
+
+// Texto del AJUSTE para comparar: sin mayúsculas, sin tildes, espacios
+// colapsados.
+function normalizeAdjustment(text) {
+
+    return String(text ?? "")
+        .normalize("NFD")
+        // Solo los acentos combinables: \p{Diacritic} se llevaría también
+        // el "·" de "Running · series".
+        .replace(/[̀-ͯ]/g, "")
+        .toLowerCase()
+        .replace(/\s+/g, " ")
+        .trim();
+
+}
+
+// Qué día de la dieta (lunes a viernes) corresponde a cada tipo de sesión,
+// por el texto inicial de su AJUSTE.
+const ADJUSTMENT_MATCHERS = {
+    rodaje: text => text.startsWith("running") && !text.includes("series"),
+    series: text => text.includes("running · series"),
+    gym: text => text.startsWith("gym")
+};
+
+const WEEKDAY_DIET_DAYS = ["LUNES", "MARTES", "MIERCOLES", "JUEVES", "VIERNES"];
+
+function hasMeals(dietPlan, dayKey) {
+
+    return Boolean(dietPlan?.days?.[dayKey]?.meals?.length);
+
+}
+
+// El primero (lunes a viernes) cuyo AJUSTE encaja con `kind`, o null.
+export function findDietDayForKind(dietPlan, kind) {
+
+    if (kind === "longRun") return hasMeals(dietPlan, "TIRADA_LARGA") ? "TIRADA_LARGA" : null;
+    if (kind === "rest") return hasMeals(dietPlan, REST_DAY_KEY) ? REST_DAY_KEY : null;
+
+    const matches = ADJUSTMENT_MATCHERS[kind];
+    if (!matches) return null;
+
+    return WEEKDAY_DIET_DAYS.find(key =>
+        hasMeals(dietPlan, key) && matches(normalizeAdjustment(dietPlan.days[key].adjustment))
+    ) ?? null;
+
+}
+
+function isNoTrainingDay(day) {
+
+    return normalizeAdjustment(day?.adjustment).startsWith("sin entreno");
+
+}
+
+export const DIET_NOTICE_NO_MENU = "Tu dieta no tiene menú para este tipo de día";
+export const DIET_NOTICE_NO_TRAINING = "Tu dieta marca este día como sin entreno";
+
+// Día de la dieta de una fecha, a partir de la sesión del plan de ESA fecha
+// (el plan cambia cada semana; la dieta va por día de la semana):
+// - tirada larga -> TIRADA_LARGA; sin sesión de running ni gimnasio ->
+//   DESCANSO (salvo que ese día se haya elegido a mano una franja de
+//   entreno: entonces el de calendario, con esa franja);
+// - rodaje / series / gimnasio -> el primer día (L-V) cuyo AJUSTE empieza
+//   por "Running" sin "series" / contiene "Running · series" / empieza por
+//   "Gym"; running y gimnasio el mismo día: manda running;
+// - sin día de ese tipo en la dieta: el de calendario, con aviso.
+// El fin de semana con reparto elegido a mano, el plan sin cubrir esa
+// fecha o sin dieta: el de calendario, como siempre.
+// { dayKey, needsWeekendChoice, calendarDayKey, kind, notices }.
+export function getDietDayResolution(date, dietPlan = null) {
+
+    const calendar = resolveCalendarDietDay(date);
+    const result = { ...calendar, calendarDayKey: calendar.dayKey, kind: null, notices: [] };
+
+    if (!dietPlan) return result;
+
+    const weekday = parseISODate(date).getDay();
+    if ((weekday === 0 || weekday === 6) && getWeekendLongRunDay(date)) return result;
+
+    const planDay = getPlanDayForDate(date);
+    if (!planDay) return result;
+
+    result.kind = planDay.kind;
+
+    if (planDay.kind === "rest") {
+        const own = checks.find(c => c.id === date)?.trainingTime;
+        if (own && own !== REST_TRAINING_TIME) return result;
+    }
+
+    const planned = findDietDayForKind(dietPlan, planDay.kind);
+
+    if (planned) {
+        result.dayKey = planned;
+        result.needsWeekendChoice = false;
+    } else {
+        result.notices.push(DIET_NOTICE_NO_MENU);
+    }
+
+    if (planDay.kind !== "rest" && result.dayKey && isNoTrainingDay(dietPlan.days[result.dayKey])) {
+        result.notices.push(DIET_NOTICE_NO_TRAINING);
+    }
+
+    return result;
+
+}
+
+// { dayKey, needsWeekendChoice } -- ver getDietDayResolution().
+export function resolveDietDay(date, dietPlan = null) {
+
+    const { dayKey, needsWeekendChoice } = getDietDayResolution(date, dietPlan);
+    return { dayKey, needsWeekendChoice };
 
 }
 

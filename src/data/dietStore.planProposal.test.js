@@ -148,7 +148,8 @@ describe("dietStore -- franja y menú propuestos por el plan", () => {
         await session(THU, "longRun", { title: "Tirada larga 14 km" });
 
         expect(diet.resolveDietDay(THU, plan).dayKey).toBe("TIRADA_LARGA");
-        expect(diet.resolveDietDay(WED, plan).dayKey).toBe("MIERCOLES");
+        // Miércoles sin sesión: DESCANSO (sesión del plan de la fecha, 2026-10-13).
+        expect(diet.resolveDietDay(WED, plan).dayKey).toBe("DESCANSO");
 
     });
 

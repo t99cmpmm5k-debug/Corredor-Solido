@@ -20,6 +20,27 @@ function isTrainingSession(session) {
 
 }
 
+// Tipo de día para elegir el menú (ver getDietDayResolution en
+// dietStore.js). Series = cualquier sesión de calidad: series, tempo y
+// carrera. Fuerza ("strength", o "gym" en planes antiguos) = gimnasio.
+const SERIES_TYPES = new Set(["intervals", "tempo", "race"]);
+const GYM_TYPES = new Set(["strength", "gym"]);
+
+// "longRun" | "series" | "rodaje" | "gym" | "rest". Running y gimnasio el
+// mismo día: manda running (y dentro de running, lo más exigente).
+function planDayKind(sessions, gymDay) {
+
+    const running = sessions.filter(s => !GYM_TYPES.has(s.type));
+
+    if (running.some(s => s.type === "longRun")) return "longRun";
+    if (running.some(s => SERIES_TYPES.has(s.type))) return "series";
+    if (running.length) return "rodaje";
+    if (gymDay || sessions.length) return "gym";
+
+    return "rest";
+
+}
+
 function allGymDays() {
 
     return getRoutines().flatMap(routine => routine.days);
@@ -47,7 +68,7 @@ export function trainingTimeFromClock(clock) {
 // (sin sesiones de running esa semana y sin días de gimnasio programados)
 // -- entonces Nutrición se comporta como siempre. Así un plan importado
 // solo para unas semanas no convierte en "descanso" el resto del año.
-// { sessions, gymDay, hasLongRun, startTime }:
+// { sessions, gymDay, hasLongRun, kind, startTime }:
 // - sessions: las de running/carrera/fuerza de ese día (sin días libres);
 // - gymDay: el día de rutina programado ese día de la semana, o null;
 // - startTime: la hora más temprana que traiga alguna, o null.
@@ -76,6 +97,7 @@ export function getPlanDayForDate(date) {
         sessions,
         gymDay,
         hasLongRun: sessions.some(s => s.type === "longRun"),
+        kind: planDayKind(sessions, gymDay),
         startTime
     };
 
