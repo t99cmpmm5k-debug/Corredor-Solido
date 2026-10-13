@@ -11,6 +11,7 @@
 // entero -- ver homeWeatherStore.js.
 
 import { resolveWorkoutCoordinates } from "./weatherEstimate.js";
+import { resolveHomeWeatherLocation } from "./weatherLocation.js";
 
 const FORECAST_URL = "https://api.open-meteo.com/v1/forecast";
 
@@ -384,11 +385,18 @@ export async function fetchOpenMeteoForecast(lat, lon, onLog) {
 // workouts: lista completa de entrenos (getWorkouts() de workoutStore).
 // onLog opcional, mismo patrón que weatherEstimate.js. Devuelve
 // { hours, current, label } o null -- nunca datos inventados.
-export async function getHourlyForecast(workouts, onLog = () => {}) {
+//
+// Ubicación (2026-10-13): la misma que la insignia de temperatura (ver
+// weatherLocation.js) -- GPS reciente que el usuario dio con "Usar mi
+// ubicación actual", luego `localidad` de Perfil -- sin pedir permiso
+// nunca; si no hay ninguna, el último entreno con ubicación, como antes.
+// El nombre del título sale siempre de la fuente cuyas coordenadas se usan.
+export async function getHourlyForecast(workouts, onLog = () => {}, { localidad = null } = {}) {
 
     try {
 
-        const location = await resolveLocation(workouts, onLog);
+        const location = await resolveHomeWeatherLocation(localidad, onLog)
+            ?? await resolveLocation(workouts, onLog);
         if (!location) return null;
 
         const forecast = await fetchOpenMeteoForecast(location.lat, location.lon, onLog);

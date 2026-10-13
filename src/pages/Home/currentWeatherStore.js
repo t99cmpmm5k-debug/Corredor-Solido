@@ -12,6 +12,7 @@ import { getLiveWeather } from "../../services/currentWeather.js";
 import { rerender } from "../../core/router.js";
 import { loadMyProfile, getMyProfile } from "../Profile/profileStore.js";
 import { forgetDevicePosition } from "../../services/weatherLocation.js";
+import { refreshHourlyWeather } from "./homeWeatherStore.js";
 
 const CACHE_KEY = "corredor-solido-current-weather";
 const CACHE_TTL_MS = 20 * 60 * 1000; // 20 min -- punto medio del rango pedido (15-30 min)
@@ -133,9 +134,14 @@ export function loadCurrentWeather(onLog = () => {}, { resetScroll = true } = {}
 
 // "Usar mi ubicación actual" (Ajustes) -- pide el GPS ahora, aunque haya
 // localidad o una negativa recordada. Resuelve true si hay dato nuevo.
+// La tarjeta "Hoy · <lugar>" usa la misma ubicación: con dato nuevo, se
+// vuelve a resolver también (y su nombre, ver resolveHomeWeatherLocation).
 export function useDeviceLocationForWeather(onLog = () => {}) {
 
-    return fetchAndApply({ manual: true }, onLog, false);
+    return fetchAndApply({ manual: true }, onLog, false).then(ok => {
+        if (ok) refreshHourlyWeather(onLog);
+        return ok;
+    });
 
 }
 
@@ -148,5 +154,6 @@ export function refreshCurrentWeather(onLog = () => {}) {
     forgetDevicePosition();
     state = { status: "idle", ...EMPTY };
     loadCurrentWeather(onLog, { resetScroll: false });
+    refreshHourlyWeather(onLog);
 
 }
