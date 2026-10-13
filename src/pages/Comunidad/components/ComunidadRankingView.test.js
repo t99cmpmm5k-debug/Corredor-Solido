@@ -1,14 +1,30 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { ComunidadRankingView } from "./ComunidadRankingView.js";
-import { formatISODate } from "../../../utils/date.js";
+import { formatISODate, addDays } from "../../../utils/date.js";
 
-const TODAY_ISO = formatISODate(new Date());
+// Reloj congelado: el periodo por defecto es "Semana" (lunes de la semana
+// ISO actual a hoy), así que cualquier fecha del test tiene que estar en
+// relación con un "hoy" fijo -- con el reloj real, un entreno del
+// 2026-09-21 se salía de la ventana en cuanto pasaba esa semana.
+// Hoy = miércoles 2026-09-23; MONDAY_ISO = lunes 21 de esa misma semana.
+const NOW = new Date("2026-09-23T12:00:00");
+const TODAY_ISO = formatISODate(NOW);
+const MONDAY_ISO = addDays(TODAY_ISO, -2);
 
 function entreno(overrides) {
     return { alias: "alguien", id: "w", type: "easy", date: TODAY_ISO, distanceKm: null, avgPaceSecPerKm: null, ...overrides };
 }
 
 describe("ComunidadRankingView -- 5 tablas a partir de la misma lista de Actividad", () => {
+
+    beforeEach(() => {
+        vi.useFakeTimers({ toFake: ["Date"] });
+        vi.setSystemTime(NOW);
+    });
+
+    afterEach(() => {
+        vi.useRealTimers();
+    });
 
     it("idle/loading muestran un aviso de carga", () => {
 
@@ -120,7 +136,7 @@ describe("ComunidadRankingView -- 5 tablas a partir de la misma lista de Activid
 
     it("Mejor ritmo medio lleva el contexto (distancia · fecha) del entreno concreto", () => {
 
-        const entrenos = [entreno({ alias: "Rafa", type: "long", distanceKm: 10, avgPaceSecPerKm: 300, date: "2026-09-21" })];
+        const entrenos = [entreno({ alias: "Rafa", type: "long", distanceKm: 10, avgPaceSecPerKm: 300, date: MONDAY_ISO })];
         const html = ComunidadRankingView({ status: "ready", entrenos }, null);
 
         expect(html).toMatch(/comunidad-ranking-context[^>]*>10 km · 21 SEPT/);
@@ -129,7 +145,7 @@ describe("ComunidadRankingView -- 5 tablas a partir de la misma lista de Activid
 
     it("Mejor tirada larga lleva el contexto (fecha) del entreno concreto", () => {
 
-        const entrenos = [entreno({ alias: "Rafa", type: "long", distanceKm: 25, date: "2026-09-21" })];
+        const entrenos = [entreno({ alias: "Rafa", type: "long", distanceKm: 25, date: MONDAY_ISO })];
         const html = ComunidadRankingView({ status: "ready", entrenos }, null);
 
         expect(html).toMatch(/comunidad-ranking-context[^>]*>21 SEPT/);

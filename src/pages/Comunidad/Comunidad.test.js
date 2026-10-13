@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, beforeAll } from "vitest";
 
 const getComunidadTabMock = vi.fn();
 const getComunidadEntrenosMock = vi.fn();
@@ -24,6 +24,15 @@ vi.mock("./comunidadStore.js", () => ({
 vi.mock("../Profile/profileStore.js", () => ({
     getMyProfile: () => getMyProfileMock()
 }));
+
+// La primera importación de Comunidad.js carga en frío todo su árbol
+// (Leaflet, mapas...): ~3 s aislado y más de 5 s con la suite completa en
+// paralelo, así que el primer test que la hacía superaba el timeout de 5 s
+// sin que fallara nada. Se precarga aquí, con margen propio; los tests
+// siguen haciendo su `await import` (ya en caché).
+beforeAll(async () => {
+    await import("./Comunidad.js");
+}, 30000);
 
 // Bug real corregido: el mapa fullscreen del detalle (RouteMapFullscreenOverlay)
 // y el feed de Actividad (cada tarjeta con GPS con su propio mapa pequeño,
