@@ -18,6 +18,7 @@ import { notifyDataChanged } from "./changeEvents.js";
 import { recordTombstone } from "./tombstoneStore.js";
 import { parseISODate, addDays, formatISODate, getWeekStartDate } from "../utils/date.js";
 import { splitTrainingPrefix } from "../utils/dietCsv.js";
+import { getPlanDayForDate, planDayHasTraining, trainingTimeFromClock } from "./dietPlanContext.js";
 
 const plans = [];
 const checks = [];
@@ -137,22 +138,57 @@ export function setWeekendLongRunDay(date, longRunDay) {
 
 const DAY_BY_WEEKDAY = [null, "LUNES", "MARTES", "MIERCOLES", "JUEVES", "VIERNES", null];
 
+// Fin de semana según el plan: "sabado"/"domingo" si el plan tiene la
+// tirada larga ese día de esa semana, null si no.
+export function getPlannedWeekendLongRunDay(date) {
+
+    const saturday = addDays(getWeekStartDate(date), 5);
+
+    if (getPlanDayForDate(saturday)?.hasLongRun) return "sabado";
+    if (getPlanDayForDate(addDays(saturday, 1))?.hasLongRun) return "domingo";
+
+    return null;
+
+}
+
 // Qué día de la dieta toca en una fecha:
-// { dayKey } de lunes a viernes; sábado/domingo según la elección de esa
-// semana, o { dayKey: null, needsWeekendChoice: true } si no se ha elegido.
-export function resolveDietDay(date) {
+// - lunes a viernes, su día; si el plan tiene tirada larga ese día (y la
+//   dieta trae TIRADA_LARGA), el menú TIRADA_LARGA;
+// - sábado/domingo, el reparto del fin de semana: el elegido a mano esa
+//   semana (dietWeekends) manda; si no hay, el del plan (el día de su
+//   tirada larga es TIRADA_LARGA y el otro DESCANSO); sin tirada larga en
+//   el plan, un día sin sesión es DESCANSO; si no,
+//   { dayKey: null, needsWeekendChoice: true } (hay que elegir).
+// `dietPlan` solo hace falta para saber si existe TIRADA_LARGA.
+export function resolveDietDay(date, dietPlan = null) {
 
     const weekday = parseISODate(date).getDay();
 
-    if (DAY_BY_WEEKDAY[weekday]) return { dayKey: DAY_BY_WEEKDAY[weekday], needsWeekendChoice: false };
+    if (DAY_BY_WEEKDAY[weekday]) {
 
-    const longRunDay = getWeekendLongRunDay(date);
-    if (!longRunDay) return { dayKey: null, needsWeekendChoice: true };
+        if (dietPlan?.days?.TIRADA_LARGA && getPlanDayForDate(date)?.hasLongRun) {
+            return { dayKey: "TIRADA_LARGA", needsWeekendChoice: false };
+        }
+
+        return { dayKey: DAY_BY_WEEKDAY[weekday], needsWeekendChoice: false };
+
+    }
+
+    const longRunDay = getWeekendLongRunDay(date) ?? getPlannedWeekendLongRunDay(date);
+
+    if (!longRunDay) {
+
+        const planDay = getPlanDayForDate(date);
+        if (planDay && !planDayHasTraining(planDay)) return { dayKey: REST_DAY_KEY, needsWeekendChoice: false };
+
+        return { dayKey: null, needsWeekendChoice: true };
+
+    }
 
     const isSaturday = weekday === 6;
     const isLongRun = (longRunDay === "sabado") === isSaturday;
 
-    return { dayKey: isLongRun ? "TIRADA_LARGA" : "DESCANSO", needsWeekendChoice: false };
+    return { dayKey: isLongRun ? "TIRADA_LARGA" : REST_DAY_KEY, needsWeekendChoice: false };
 
 }
 
@@ -191,20 +227,52 @@ const DEFAULT_TRAINING_TIME = "mediodia";
 export const REST_TRAINING_TIME = "descanso";
 const REST_DAY_KEY = "DESCANSO";
 
-// Franja de un día: la elegida ese día (también "descanso"); si no, la del
-// último día anterior en que se eligió un entreno (por fecha, para que el
-// histórico no cambie al elegir otra hoy -- "descanso" no cuenta); si
-// nunca se ha elegido, mediodía.
-export function getTrainingTimeForDate(date) {
-
-    const own = checks.find(c => c.id === date)?.trainingTime;
-    if (own) return own;
+// Franja heredada: la del último día anterior en que se eligió un entreno
+// a mano (por fecha, para que el histórico no cambie al elegir otra hoy --
+// "descanso" no cuenta, nunca se arrastra); si nunca se ha elegido,
+// mediodía.
+function getInheritedTrainingTime(date) {
 
     const previous = checks
         .filter(c => c.trainingTime && c.trainingTime !== REST_TRAINING_TIME && c.date < date)
         .sort((a, b) => b.date.localeCompare(a.date))[0];
 
     return previous?.trainingTime ?? DEFAULT_TRAINING_TIME;
+
+}
+
+// Franja de un día sin mirar el plan: la elegida ese día (también
+// "descanso"); si no, la heredada.
+export function getTrainingTimeForDate(date) {
+
+    return checks.find(c => c.id === date)?.trainingTime ?? getInheritedTrainingTime(date);
+
+}
+
+// Franja de un día -- la única para la pantalla y para cualquier
+// cumplimiento. { trainingTime, source }:
+// - "manual": la elegida a mano en las pestañas ese día, siempre gana;
+// - "plan": propuesta del plan (ver dietPlanContext.js) -- sin sesión de
+//   running ni de gimnasio, "descanso" si el día tiene pestaña Descanso;
+//   con sesión con hora, mañana/mediodía/tarde según la hora;
+// - "inherited": sesión sin hora, plan que no cubre la fecha o día sin
+//   pestaña Descanso -- la heredada, como antes.
+// La propuesta no se guarda: cambia sola si cambia el plan.
+export function resolveTrainingTime(dietPlan, dayKey, date) {
+
+    const own = checks.find(c => c.id === date)?.trainingTime;
+    if (own) return { trainingTime: own, source: "manual" };
+
+    const planDay = getPlanDayForDate(date);
+
+    if (planDay && !planDayHasTraining(planDay) && canChooseRestDay(dietPlan, dayKey)) {
+        return { trainingTime: REST_TRAINING_TIME, source: "plan" };
+    }
+
+    const fromClock = planDayHasTraining(planDay) ? trainingTimeFromClock(planDay.startTime) : null;
+    if (fromClock) return { trainingTime: fromClock, source: "plan" };
+
+    return { trainingTime: getInheritedTrainingTime(date), source: "inherited" };
 
 }
 
@@ -290,7 +358,7 @@ function dayHasRestMeals(day) {
 // DESCANSO y si el plan tiene menú DESCANSO.
 export function canChooseRestDay(plan, dayKey) {
 
-    const day = plan?.days[dayKey];
+    const day = plan?.days?.[dayKey];
     if (dayHasRestMeals(day)) return true;
 
     return dayKey !== REST_DAY_KEY
@@ -369,10 +437,10 @@ export function getDayCompliance(date) {
 
     if (!plan) return null;
 
-    const { dayKey } = resolveDietDay(date);
+    const { dayKey } = resolveDietDay(date, plan);
     if (!dayKey) return null;
 
-    const menu = getDietMenu(plan, dayKey, getTrainingTimeForDate(date));
+    const menu = getDietMenu(plan, dayKey, resolveTrainingTime(plan, dayKey, date).trainingTime);
 
     return computeDayCompliance(menu.day, record?.eaten ?? {}, menu.trainingTime);
 

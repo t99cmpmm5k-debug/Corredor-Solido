@@ -7,7 +7,8 @@ import {
     getWeekendLongRunDay,
     computeDayCompliance,
     getWeekCompliance,
-    getTrainingTimeForDate,
+    getPlannedWeekendLongRunDay,
+    resolveTrainingTime,
     getDietMenu,
     canChooseRestDay,
     REST_TRAINING_TIME
@@ -15,6 +16,7 @@ import {
 import { TRAINING_TIMES } from "../../../utils/dietCsv.js";
 import { formatISODate, formatDayMonth, getWeekStartDate, addDays, parseISODate } from "../../../utils/date.js";
 import { getMealImages, splitMealText } from "../dietDisplay.js";
+import { getPlanDayForDate, describePlanDay } from "../../../data/dietPlanContext.js";
 import { getDietImport, isDietWeekendPickerOpen, isDietDeletePending, isDietSectionOpen } from "../gymStore.js";
 
 // "Mi dieta" (Nutrición, Gimnasio) con la estructura del mockup de
@@ -317,10 +319,11 @@ function DayInfo(day) {
 
 // `menuDay`: el día cuyo AJUSTE/HIDRATACION se enseña -- el propio, o el
 // DESCANSO si ese día se ha elegido la pestaña Descanso.
-function DayHeader(dayKey, menuDay, isRestMenu) {
+// `weekend`: la fecha es sábado/domingo -- un martes con tirada larga en el
+// plan también usa TIRADA_LARGA, pero no tiene reparto que cambiar.
+function DayHeader(dayKey, menuDay, isRestMenu, weekend) {
 
     const info = DAY_INFO[dayKey];
-    const weekend = dayKey === "TIRADA_LARGA" || dayKey === "DESCANSO";
     const subtitle = isRestMenu ? DAY_INFO.DESCANSO.subtitle : info.subtitle;
 
     return `
@@ -558,6 +561,19 @@ function TrainingTimeTabs(date, active, withRest) {
 
 }
 
+// Línea discreta bajo las pestañas: qué dice el plan de ese día. Nada si
+// el plan no cubre la fecha (sin plan, todo como antes).
+function PlanLine(date) {
+
+    const planDay = getPlanDayForDate(date);
+    if (!planDay) return "";
+
+    const session = describePlanDay(planDay);
+
+    return `<p class="gym-diet-plan-line">${session ? `Según tu plan: ${escapeHtml(session)}` : "Sin sesión hoy según tu plan"}</p>`;
+
+}
+
 export function GymDiet(date) {
 
     const plan = getActiveDietPlan();
@@ -565,16 +581,21 @@ export function GymDiet(date) {
 
     if (!plan) return EmptyState(state);
 
-    const { dayKey, needsWeekendChoice } = resolveDietDay(date);
-    const longRunDay = getWeekendLongRunDay(date);
-    // Selector: en cualquier día de una semana sin elegir (la primera vez
-    // que se usa esa semana), o al pulsar "Cambiar".
-    const showPicker = !longRunDay || isDietWeekendPickerOpen();
+    const { dayKey, needsWeekendChoice } = resolveDietDay(date, plan);
+    const longRunDay = getWeekendLongRunDay(date) ?? getPlannedWeekendLongRunDay(date);
+    const saturday = addDays(getWeekStartDate(date), 5);
+    const weekendUnresolved = [saturday, addDays(saturday, 1)].some(day => resolveDietDay(day, plan).needsWeekendChoice);
+    // Selector: en cualquier día de una semana cuyo fin de semana no se
+    // resuelve ni a mano ni con el plan, o al pulsar "Cambiar".
+    const showPicker = weekendUnresolved || isDietWeekendPickerOpen();
+    const weekday = parseISODate(date).getDay();
+    const isWeekend = weekday === 0 || weekday === 6;
 
     const eaten = getEatenForDate(date);
     // Qué menú toca: planes sin prefijos, sin franja y todas las comidas
-    // (igual que antes); con Descanso, el menú DESCANSO entero.
-    const menu = getDietMenu(plan, dayKey, getTrainingTimeForDate(date));
+    // (igual que antes); con Descanso, el menú DESCANSO entero. La franja:
+    // la elegida a mano o, si no, la que propone el plan.
+    const menu = getDietMenu(plan, dayKey, resolveTrainingTime(plan, dayKey, date).trainingTime);
     const hasTimes = menu.trainingTime != null;
     const isRestMenu = menu.trainingTime === REST_TRAINING_TIME;
     const compliance = menu.day ? computeDayCompliance(menu.day, eaten, menu.trainingTime) : null;
@@ -593,8 +614,9 @@ export function GymDiet(date) {
                 <p>Elige arriba qué día del fin de semana haces la tirada larga para ver el menú de hoy.</p>
             </div>
         ` : `
-            ${DayHeader(dayKey, menu.day, isRestMenu)}
+            ${DayHeader(dayKey, menu.day, isRestMenu, isWeekend)}
             ${hasTimes ? TrainingTimeTabs(date, menu.trainingTime, canChooseRestDay(plan, dayKey)) : ""}
+            ${PlanLine(date)}
             <div class="gym-meal-list">
                 ${menu.meals.map(meal => MealCard(meal, eaten[meal.key])).join("")}
             </div>

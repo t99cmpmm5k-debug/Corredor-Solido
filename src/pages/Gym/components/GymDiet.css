@@ -916,6 +916,16 @@
 
 }
 
+/* "Según tu plan: …" -- una línea discreta, sin card. */
+.gym-diet-plan-line{
+
+    margin:-4px 2px 0;
+    color:var(--color-text-muted);
+    font-size:.74rem;
+    line-height:1.35;
+
+}
+
 /* ==========================
    AJUSTE compacto: resumen a 3 líneas + "Ver indicaciones" con el texto
    completo (ver Adjustment() en GymDiet.js).
