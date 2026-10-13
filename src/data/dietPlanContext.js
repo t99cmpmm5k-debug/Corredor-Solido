@@ -41,9 +41,12 @@ function planDayKind(sessions, gymDay) {
 
 }
 
+// Cada día de rutina con el nombre de su rutina (__routineName) -- para
+// emparejar el menú de gimnasio por tipo ("Pierna", "Torso"...), ver
+// getGymSessionNames().
 function allGymDays() {
 
-    return getRoutines().flatMap(routine => routine.days);
+    return getRoutines().flatMap(routine => routine.days.map(day => ({ ...day, __routineName: routine.name })));
 
 }
 
@@ -100,6 +103,19 @@ export function getPlanDayForDate(date) {
         kind: planDayKind(sessions, gymDay),
         startTime
     };
+
+}
+
+// Nombres con los que buscar el tipo de un día de gimnasio: el día de la
+// rutina y su rutina, y el título de las sesiones de fuerza del plan.
+export function getGymSessionNames(planDay) {
+
+    if (!planDay) return [];
+
+    const gymSessions = planDay.sessions.filter(s => GYM_TYPES.has(s.type));
+
+    return [planDay.gymDay?.title, planDay.gymDay?.__routineName, ...gymSessions.map(s => s.title)]
+        .filter(Boolean);
 
 }
 

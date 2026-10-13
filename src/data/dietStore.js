@@ -18,7 +18,7 @@ import { notifyDataChanged } from "./changeEvents.js";
 import { recordTombstone } from "./tombstoneStore.js";
 import { parseISODate, addDays, formatISODate, getWeekStartDate } from "../utils/date.js";
 import { splitTrainingPrefix } from "../utils/dietCsv.js";
-import { getPlanDayForDate, planDayHasTraining, trainingTimeFromClock } from "./dietPlanContext.js";
+import { getPlanDayForDate, planDayHasTraining, trainingTimeFromClock, getGymSessionNames } from "./dietPlanContext.js";
 
 const plans = [];
 const checks = [];
@@ -203,11 +203,68 @@ function hasMeals(dietPlan, dayKey) {
 
 }
 
-// El primero (lunes a viernes) cuyo AJUSTE encaja con `kind`, o null.
-export function findDietDayForKind(dietPlan, kind) {
+// Texto para buscar un tipo de gimnasio: normalizado, sin signos (como
+// palabras separadas por espacios, con espacios en los extremos para
+// buscar palabras enteras) y con los sinónimos unificados: "tren
+// superior" = torso, "tren inferior" = pierna.
+function gymWords(text) {
+
+    const words = ` ${normalizeAdjustment(text).replace(/[^a-z0-9ñ]+/g, " ").trim()} `;
+
+    return words
+        .replace(/ tren superior /g, " torso ")
+        .replace(/ tren inferior /g, " pierna ");
+
+}
+
+// Tipo de un día de gimnasio de la dieta: lo que va tras "Gym" hasta el
+// siguiente "·" o "." ("Gym · pierna suave · objetivo…" -> "pierna suave").
+// null si no hay.
+function gymAdjustmentType(adjustment) {
+
+    const match = /^gym\b\s*[·:-]?\s*([^·.]+)/.exec(normalizeAdjustment(adjustment));
+    const type = match ? gymWords(match[1]).trim() : "";
+
+    return type || null;
+
+}
+
+// Día de gimnasio de la dieta por tipo: el AJUSTE cuyo tipo aparece en el
+// nombre de la rutina o de la sesión. Si encajan tipos distintos ("pierna"
+// y "pierna suave" para "Pierna suave"), el más concreto (más largo); entre
+// varios del mismo tipo, el primero por orden de semana. null si ninguno.
+function findGymDayByType(dietPlan, names) {
+
+    const haystack = names.map(gymWords).join(" ");
+    let best = null;
+
+    for (const key of WEEKDAY_DIET_DAYS) {
+
+        if (!hasMeals(dietPlan, key)) continue;
+
+        const type = gymAdjustmentType(dietPlan.days[key].adjustment);
+        if (!type || !haystack.includes(` ${type} `)) continue;
+
+        if (!best || type.length > best.type.length) best = { key, type };
+
+    }
+
+    return best?.key ?? null;
+
+}
+
+// El primero (lunes a viernes) cuyo AJUSTE encaja con `kind`, o null. Para
+// gimnasio, antes que eso, el que encaje por tipo con `gymNames` (ver
+// findGymDayByType).
+export function findDietDayForKind(dietPlan, kind, gymNames = []) {
 
     if (kind === "longRun") return hasMeals(dietPlan, "TIRADA_LARGA") ? "TIRADA_LARGA" : null;
     if (kind === "rest") return hasMeals(dietPlan, REST_DAY_KEY) ? REST_DAY_KEY : null;
+
+    if (kind === "gym") {
+        const byType = findGymDayByType(dietPlan, gymNames);
+        if (byType) return byType;
+    }
 
     const matches = ADJUSTMENT_MATCHERS[kind];
     if (!matches) return null;
@@ -232,6 +289,8 @@ export const DIET_NOTICE_NO_TRAINING = "Tu dieta marca este día como sin entren
 // - tirada larga -> TIRADA_LARGA; sin sesión de running ni gimnasio ->
 //   DESCANSO (salvo que ese día se haya elegido a mano una franja de
 //   entreno: entonces el de calendario, con esa franja);
+// - gimnasio: primero el día cuyo tipo ("Gym · pierna") está en el nombre
+//   de la rutina o de la sesión (ver findGymDayByType);
 // - rodaje / series / gimnasio -> el primer día (L-V) cuyo AJUSTE empieza
 //   por "Running" sin "series" / contiene "Running · series" / empieza por
 //   "Gym"; running y gimnasio el mismo día: manda running;
@@ -259,7 +318,7 @@ export function getDietDayResolution(date, dietPlan = null) {
         if (own && own !== REST_TRAINING_TIME) return result;
     }
 
-    const planned = findDietDayForKind(dietPlan, planDay.kind);
+    const planned = findDietDayForKind(dietPlan, planDay.kind, getGymSessionNames(planDay));
 
     if (planned) {
         result.dayKey = planned;
